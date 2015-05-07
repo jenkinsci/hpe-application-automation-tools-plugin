@@ -1,0 +1,166 @@
+<!-- - (c) Copyright 2012 Hewlett-Packard Development Company, L.P. - Permission 
+	is hereby granted, free of charge, to any person obtaining a copy of this 
+	software and associated documentation files (the "Software"), to deal in 
+	the Software without restriction, including without limitation the rights 
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+	copies of the Software, and to permit persons to whom the Software is furnished 
+	to do so, subject to the following conditions: - The above copyright notice 
+	and this permission notice shall be included in all copies or substantial 
+	portions of the Software. - THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY 
+	OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+	OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+	IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+	DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
+	ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+	DEALINGS IN THE SOFTWARE. -->
+
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	<tr>
+		<td />
+		<td colspan="2">
+			<div class="help" style="display:block;">
+				${%DontForgetThePublisher}
+        </div>
+		</td>
+		<td />
+	</tr>
+	<f:entry title="Description" field="description">
+		<f:textbox name="pc.description" value="${instance.pcModelOnSlave.description}" />
+	</f:entry>
+	<f:entry title="PC Server" field="pcServerName">
+		<f:textbox name="pc.pcServerName" value="${instance.pcModelOnSlave.pcServerName}" />
+	</f:entry>
+	<f:entry title="User name" field="almUserName">
+		<f:textbox name="pc.almUserName" value="${instance.pcModelOnSlave.almUserName}" />
+	</f:entry>
+	<f:entry title="Password" field="almPassword">
+		<f:password name="pc.almPassword" value="${instance.pcModelOnSlave.almPassword}" />
+	</f:entry>
+	<f:entry title="Domain" field="almDomain">
+		<f:textbox name="pc.almDomain" value="${instance.pcModelOnSlave.almDomain}" />
+	</f:entry>
+	<f:entry title="Project" field="almProject">
+		<f:textbox name="pc.almProject" value="${instance.pcModelOnSlave.almProject}" />
+	</f:entry>
+	<f:entry title="Test ID" field="testId">
+		<f:textbox name="pc.testId" value="${instance.pcModelOnSlave.testId}" />
+	</f:entry>
+	<f:entry title="Test Instance ID &#160;" field="testInstanceId">
+		<f:textbox name="pc.testInstanceId" value="${instance.pcModelOnSlave.testInstanceId}" />
+	</f:entry>
+	<f:block>
+		<br />
+	</f:block>
+	<f:entry title="Post Run Action" field="postRunAction">
+		<select name="pc.postRunAction">
+			<j:forEach var="action" items="${descriptor.postRunActions}">
+				<f:option selected="${action == instance.pcModelOnSlave.postRunAction}"
+					value="${action}">
+					${action.value}
+                        </f:option>
+			</j:forEach>
+		</select>
+	</f:entry>
+
+	<f:block>
+		<j:set var="h_id" value="${h.generateId()}" />
+		<j:set var="m_id" value="${h.generateId()}" />
+		<br />
+		<table cellpadding="0" cellspacing="0" border="0">
+			<tr>
+				<td rowspan="2"
+					style="vertical-align:middle;padding-left:1em;padding-right:3em">
+					<span>Timeslot Duration</span>
+				</td>
+				<td rowspan="2" style="vertical-align:middle">
+					<span>Hours&#160;</span>
+				</td>
+
+				<td rowspan="2" style="vertical-align:middle">
+					<f:textbox name="timeslotDurationHours" id="${h_id}"
+						value="${instance.pcModelOnSlave.timeslotDuration.hours}" default="0"
+						style="width:20px;height:23px;text-align:center"
+						onchange="var hours = parseInt(value); 
+										value = (isNaN(hours) || (hours &lt; 0)) ? 0 : ((hours &gt; 480) ? 480 : hours);
+										var minutes = document.getElementById('${m_id}');
+										if (value == 0 &amp;&amp; minutes.value &lt; 30) minutes.value = 30;
+										else if (value == 480) minutes.value = 0;" />
+				</td>
+				<td>
+					<input type="button" value=" /\ "
+						style="font-size:4px;margin:0;padding:0;width:20px;height:15px;vertical-align:top"
+						onclick="var hours = document.getElementById('${h_id}');
+										var v = parseInt(hours.value); 
+										v = (isNaN(v) || v &lt; 0) ? 0 : v + 1; 
+										hours.value = (v &gt; 480) ? 480 : v;" />
+				</td>
+				<td rowspan="2" style="vertical-align:middle">
+					<span>&#160;&#160;Minutes&#160;</span>
+				</td>
+
+				<td rowspan="2" style="vertical-align:middle">
+					<f:textbox name="timeslotDurationMinutes" id="${m_id}"
+						value="${instance.pcModelOnSlave.timeslotDuration.minutes}" default="30"
+						style="width:20px;height:23px;text-align:center"
+						onchange="var v = parseInt(value); 
+										v = isNaN(v) || (v &lt; 0) || (v &gt; 59) ? 0 : v ;										
+										value = (v &lt; 30 &amp;&amp; document.getElementById('${h_id}').value == 0) ? 30 : v;" />
+				</td>
+				<td>
+					<input type="button" value=" /\ "
+						style="font-size:4px;margin:0;padding:0;width:20px;height:15px;vertical-align:top"
+						onclick="var minutes = document.getElementById('${m_id}');
+										var v = parseInt(minutes.value); 
+										v = (v + 15) % 60; minutes.value = v - v % 15;
+										var hours = document.getElementById('${h_id}');
+										if (hours.value == 0 &amp;&amp; minutes.value &lt; 30) 
+											minutes.value = 30;" />
+				</td>
+				<td rowspan="2" style="vertical-align:middle;padding-left:2em">
+					<span>(Minimum: 30 minutes)</span>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<input type="button" value=" \/ "
+						style="font-size:4px;margin:0;padding:0;width:20px;height:14px;vertical-align:middle"
+						onclick="var hours = document.getElementById('${h_id}');
+										var v = parseInt(hours.value); 
+										v = isNaN(v) || v &lt; 1 ? 1 : hours.value = v - 1;
+										var minutes = document.getElementById('${m_id}');
+										if (hours.value == 0 &amp;&amp; minutes.value &lt; 30) 
+											minutes.value = 30;" />
+				</td>
+				<td>
+					<input type="button" value=" \/ "
+						style="font-size:4px;margin:0;padding:0;width:20px;height:14px;vertical-align:middle"
+						onclick="var minutes = document.getElementById('${m_id}');
+										var v = parseInt(minutes.value);
+										v = (v + 45) % 60;
+										if (v % 15 != 0)
+											v = v + 15 - v % 15;
+										if (document.getElementById('${h_id}').value == 0 &amp;&amp; v &lt; 30)
+											v = 45;
+										minutes.value= v" /> 
+				</td>
+			</tr>
+		</table>
+		<br />
+	</f:block>
+	
+	<f:optionalBlock title="Use VUDs" field="vudsMode"
+		name="pc.vudsMode" checked="${instance.pcModelOnSlave.vudsMode}" inline="true" />
+	<f:block>
+		<br />
+	</f:block>
+	<f:optionalBlock title="Set step status according to SLA"
+		field="statusBySLA" name="pc.statusBySLA" checked="${instance.statusBySLA}"
+		inline="true" />
+	<f:block>
+		<br />
+	</f:block>
+	<f:optionalBlock title="Run on Slave (if applicable)"
+		field="runOnSlave" name="pc.runOnSlave" checked="${instance.pcModelOnSlave.runOnSlave}"
+		inline="true" />
+</j:jelly>
