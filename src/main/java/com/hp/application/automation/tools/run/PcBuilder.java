@@ -10,6 +10,8 @@ import hudson.model.Result;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
+import hudson.remoting.Callable;
+import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -61,6 +63,7 @@ public class PcBuilder extends Builder {
     private FilePath pcReportFile;
     private String junitResultsFileName;
     private PrintStream logger;
+    private String status = null;
     
     @DataBoundConstructor
     public PcBuilder(
@@ -103,17 +106,47 @@ public class PcBuilder extends Builder {
     }
     
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
+    public boolean perform(final AbstractBuild<?, ?> build, Launcher launcher, final BuildListener listener)
             throws InterruptedException {
         
-        Result resultStatus = Result.FAILURE;
-        logger = listener.getLogger();
-        Testsuites testsuites = execute(new PcClient(pcModel, logger), build);
+    	Callable<String, IOException> task = new Callable<String, IOException>() {
+			private static final long serialVersionUID = 1L;
+
+			public String call() {
+    			Result resultStatus = Result.FAILURE;
+    			logger = listener.getLogger();
+    			Testsuites testsuites;
+				try {
+					testsuites = execute(new PcClient(pcModel, logger), build);
+				} catch (InterruptedException e) {
+					testsuites = null;
+					logger.println(e.toString());
+				}
         
-        FilePath resultsFilePath = build.getWorkspace().child(getJunitResultsFileName());
-        resultStatus = createRunResults(resultsFilePath, testsuites);
-        provideStepResultStatus(resultStatus, build);
+    			FilePath resultsFilePath = build.getWorkspace().child(getJunitResultsFileName());
+    			resultStatus = createRunResults(resultsFilePath, testsuites);
+    			provideStepResultStatus(resultStatus, build);
+				return "Task complete";
+    		}
+    	};
         
+    	VirtualChannel channel = launcher.getChannel();
+		if (channel != null) {
+			try {
+				channel.call(task);
+			} catch (IOException e) {
+				logger.println(e.toString());
+			}
+		} else {
+			try {
+				status = task.call();
+			} catch (IOException e) {
+				logger.println(e.toString());
+			}
+		}
+		logger.print("Final status: ");
+		logger.println(status); 
+    	
         return true;
     }
     
@@ -399,7 +432,7 @@ public class PcBuilder extends Builder {
         
         @Override
         public boolean isApplicable(
-                @SuppressWarnings("rawtypes") Class<? extends AbstractProject> jobType) {
+        		@SuppressWarnings("rawtypes") Class<? extends AbstractProject> jobType) {
             
             return true;
         }
