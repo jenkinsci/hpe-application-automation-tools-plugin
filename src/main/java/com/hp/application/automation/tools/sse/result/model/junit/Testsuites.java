@@ -62,6 +62,12 @@ public class Testsuites {
     @XmlAttribute
     protected String errors;
     
+    public void updateCounts() {
+    	for (Testsuite t: testsuite) {
+    		t.updateCounts();
+    	}
+    }
+    
     /**
      * Gets the value of the testsuite property.
      * 

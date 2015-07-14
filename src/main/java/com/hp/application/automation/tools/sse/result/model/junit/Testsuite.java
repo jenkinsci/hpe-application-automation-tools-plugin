@@ -85,6 +85,19 @@ public class Testsuite {
     protected String id;
     @XmlAttribute(name = "package")
     protected String _package;
+
+    public void updateCounts() {
+    	int errors = 0;
+    	int tests = 0;
+    	for (Testcase t: testcase) {
+    		tests++;
+    		if (t.isFailure()) {
+    			errors++;
+    		}
+    	}
+    	this.tests = "" + tests;
+    	this.errors = "" + errors;
+    }
     
     /**
      * Gets the value of the properties property.

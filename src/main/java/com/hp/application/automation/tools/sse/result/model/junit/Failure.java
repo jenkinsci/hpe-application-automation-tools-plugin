@@ -46,6 +46,14 @@ public class Failure {
     @XmlAttribute
     protected String message;
     
+    public Failure() {
+    	
+    }
+    
+    public Failure(String message) {
+    	this.message = message;
+    }
+    
     /**
      * Gets the value of the content property.
      * 

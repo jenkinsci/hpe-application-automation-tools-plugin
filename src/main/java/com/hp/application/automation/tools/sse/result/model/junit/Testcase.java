@@ -76,6 +76,17 @@ public class Testcase {
     @XmlAttribute
     protected String report;
     
+    public Testcase() {};
+    
+    public Testcase(String name, String status) {
+    	this.name = name;
+    	this.status = status;
+    }
+    
+    public boolean isFailure() {
+    	return getStatus().matches("(F|f)ail.*");
+    }
+    
     /**
      * Gets the value of the skipped property.
      * 
