@@ -1,6 +1,7 @@
 package com.ge.applications.automation.testStepRetriever;
 
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,8 +23,11 @@ import com.hp.application.automation.tools.sse.result.model.junit.Testsuites;
 /**
  * Class to handle logic associated with making alm rest api calls.
  */
-public class ALMTestStepRetriever {
+public class AlmTestStepRetriever {
 
+	private static final String ITERATION_PREFIX = "Start .* Iteration ";
+	private static final String ITERATION_REGEX = ITERATION_PREFIX + "(\\d)";
+	
 	public static final String NAME_FIELD = "name";
 	public static final String STATUS_FIELD = "status";
 	public static final String DESCRIPTION_FIELD = "description";
@@ -31,6 +35,9 @@ public class ALMTestStepRetriever {
 	public static final String PARENT_ID = "parent-id";
 	public static final String ID = "id";
 	
+	private static final String ALM_DATE_STRING = "yyyy-MM-dd hh:mm:ss";
+	
+	private SimpleDateFormat almDateFormat;
 	private RestConnector con;
 	private PrintStream logger;
 	private Map<Integer, TestSetFolder> almFolders;
@@ -39,9 +46,11 @@ public class ALMTestStepRetriever {
 	 * Create a new instance of ALMTestStepRetriever
 	 * @param logger Logger to use
 	 */
-	public ALMTestStepRetriever(RestConnector con, PrintStream logger) {
+	public AlmTestStepRetriever(RestConnector con, PrintStream logger) {
 		this.con = con;
 		this.logger = logger;
+		
+		almDateFormat = new SimpleDateFormat(ALM_DATE_STRING);
 	}
 	
 	public Testsuites getTestSetResults(String[] testSetPaths) {
@@ -92,7 +101,7 @@ public class ALMTestStepRetriever {
 	 * @return Returns List of test ids
 	 */
 	private List<Integer> getTestIds(RestConnector con, final int testSetId) {
-		ALMRestHandler<List<Integer>> testIdGetter = new ALMRestHandler<List<Integer>>() {
+		AlmRestHandler<List<Integer>> testIdGetter = new AlmRestHandler<List<Integer>>() {
 			
 			@Override
 			public List<Integer> parseXml(String xml) throws JAXBException {
@@ -125,7 +134,7 @@ public class ALMTestStepRetriever {
 	 * @return Returns test name
 	 */
 	private String getTestNameById(final int testId) {
-		ALMRestHandler<String> testNameGetter = new ALMRestHandler<String>() {
+		AlmRestHandler<String> testNameGetter = new AlmRestHandler<String>() {
 
 			@Override
 			public String parseXml(String xml) throws JAXBException {
@@ -158,7 +167,7 @@ public class ALMTestStepRetriever {
 	 */
 	private int getMostRecentRunIdFromTestId(final int testId) {
 		
-		ALMRestHandler<Integer> runIdGetter = new ALMRestHandler<Integer>() {
+		AlmRestHandler<Integer> runIdGetter = new AlmRestHandler<Integer>() {
 
 			@Override
 			public Integer parseXml(String xml) throws JAXBException {
@@ -197,7 +206,7 @@ public class ALMTestStepRetriever {
 	 * @return Returns a list of Testcases associated with a run
 	 */
 	private List<Testcase> getTestRunResults(final int runId) {
-		ALMRestHandler<List<Testcase>> resultGetter = new ALMRestHandler<List<Testcase>>() {
+		AlmRestHandler<List<Testcase>> resultGetter = new AlmRestHandler<List<Testcase>>() {
 			
 			@Override
 			public List<Testcase> parseXml(String xml) throws JAXBException {
@@ -205,11 +214,18 @@ public class ALMTestStepRetriever {
 				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
 				
 				List<Entity> entities = entitySet.getEntities();
+				
+				// Current iteration must be kept track of.
+	        	// One test step with no status will have a description
+	        	// in the form "Start Global Iteration x".
+	        	// All subsequent steps belong to that iteration
+	        	int currentIteration = 0;
 		        for (Entity entity: entities) {
 		        	List<Field> fields = entity.getFields().getField();
 		        	List<String> stepName = null;
 		        	List<String> stepStatus = null;
 		        	List<String> stepDescription = null;
+		        	
 			        for (Field field : fields) {
 			        	
 			        	// get needed fields
@@ -225,15 +241,27 @@ public class ALMTestStepRetriever {
 			        	// for each status, add a test case
 			        	for (int i = 0; i < stepStatus.size(); i++) {
 			        		String status = stepStatus.get(i);
+			        		
+			        		// if status is non-empty, add the step
 			        		if (!status.isEmpty()) {
+			        			String testName = String.format("[%d]%s", currentIteration, stepName.get(i));
 			        			Testcase testcase = new Testcase(
-			        					stepName.get(i),
+			        					testName,
 			        					stepStatus.get(i));
 			        			results.add(testcase);
 			        			
 			        			// add failure info if needed
 			        			if (testcase.isFailure()) {
 			        				testcase.getFailure().add(new Failure(stepDescription.get(i)));
+			        			}
+			        		}
+			        		
+			        		// if no status, check if we need to update current iteration
+			        		else {
+			        			String description = stepDescription.get(i);
+			        			if (description.matches(ITERATION_REGEX)) {
+			        				currentIteration = Integer.parseInt(
+			        						description.replaceAll(ITERATION_PREFIX, ""));
 			        			}
 			        		}
 			        	}
@@ -253,7 +281,10 @@ public class ALMTestStepRetriever {
 	}
 	
 	private int getTestSetIdFromPath(String testSetPath) {
+		// split path at slashes to separate directory names and the test set name
 		final String[] parts = testSetPath.split("[/\\\\]");
+		
+		// get all test sets with the given test set name
 		List<TestSetFolder> possibleTestSets = getPossibleTestSets(parts[parts.length - 1]); 
 		
 		int testSetId = -1;
@@ -261,10 +292,10 @@ public class ALMTestStepRetriever {
 		/*if (possibleTestSets.size() == 1) {
 			testSetId = possibleTestSets.get(0).getId();
 		} else */{
-			for (TestSetFolder testSet: possibleTestSets) {
-				logger.println("Test set id: " + testSet.getName());
+			//for (TestSetFolder testSet: possibleTestSets) {
+				//logger.println("Test set id: " + testSet.getName());
 				testSetId = getActualTestSet(parts, possibleTestSets).getId();
-			}
+			//}
 		}
 		
 		// TODO return testSetId
@@ -274,7 +305,7 @@ public class ALMTestStepRetriever {
 	
 	private List<TestSetFolder> getPossibleTestSets(final String testSetName) {
 		// get possible test sets based on test set name alone
-		ALMRestHandler<List<TestSetFolder>> testSetGetter = new ALMRestHandler<List<TestSetFolder>>() {
+		AlmRestHandler<List<TestSetFolder>> testSetGetter = new AlmRestHandler<List<TestSetFolder>>() {
 
 			@Override
 			public String getRequest() {
@@ -323,7 +354,7 @@ public class ALMTestStepRetriever {
 	}
 	
 	private Map<Integer, TestSetFolder> getAlmFolders(RestConnector con, final PrintStream logger) {
-		ALMRestHandler<Map<Integer, TestSetFolder>> folderGetter = new ALMRestHandler<Map<Integer, TestSetFolder>>() {
+		AlmRestHandler<Map<Integer, TestSetFolder>> folderGetter = new AlmRestHandler<Map<Integer, TestSetFolder>>() {
 
 			@Override
 			public String getRequest() {

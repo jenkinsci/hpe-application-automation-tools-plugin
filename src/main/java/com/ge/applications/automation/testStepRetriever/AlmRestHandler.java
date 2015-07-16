@@ -14,7 +14,7 @@ import qc.rest.examples.infrastructure.RestConnector;
  *
  * @param <T> Return type for getResult
  */
-public abstract class ALMRestHandler<T>{
+public abstract class AlmRestHandler<T>{
 
 	/**
 	 * Get the string to be appended to the rest url generated

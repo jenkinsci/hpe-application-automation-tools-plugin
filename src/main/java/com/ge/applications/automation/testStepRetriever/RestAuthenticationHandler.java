@@ -16,12 +16,12 @@ import sun.misc.BASE64Encoder;
  * 
  * Slightly altered from sample code provided in ALM rest api documentation
  */
-public class ALMRestAuthenticationHandler {
+public class RestAuthenticationHandler {
 	
     private RestConnector con;
     private PrintStream logger;
 	
-    public ALMRestAuthenticationHandler(PrintStream logger) {
+    public RestAuthenticationHandler(PrintStream logger) {
     	this.logger = logger;
         con = RestConnector.getInstance();
     }
@@ -35,7 +35,7 @@ public class ALMRestAuthenticationHandler {
                         host,
                         domain,
                         project);
-        ALMRestAuthenticationHandler example = new ALMRestAuthenticationHandler(logger);
+        RestAuthenticationHandler example = new RestAuthenticationHandler(logger);
         //Returns null if authenticated. If not authenticated, returns
         //a URL indicating where to login.
         //We are not logged in, so call returns a URL
