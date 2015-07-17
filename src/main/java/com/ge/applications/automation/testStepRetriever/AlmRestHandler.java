@@ -14,15 +14,6 @@ import qc.rest.examples.infrastructure.RestConnector;
  * @param <T> Return type for getResult
  */
 public abstract class AlmRestHandler<T>{
-
-	public static final String NAME = "name";
-	public static final String STATUS = "status";
-	public static final String DESCRIPTION = "description";
-	public static final String TEST_ID = "test-id";
-	public static final String PARENT_ID = "parent-id";
-	public static final String EXECUTION_DATE = "execution-date";
-	public static final String EXECUTION_TIME = "execution-time";
-	public static final String ID = "id";
 	
 	/**
 	 * Get the string to be appended to the rest url generated
@@ -52,7 +43,6 @@ public abstract class AlmRestHandler<T>{
 		requestHeaders.put("Accept", "application/xml");
 		
 		String requestUrl = con.buildEntityCollectionUrl(getRequest());
-		logger.println("Sending request to " + requestUrl);
 		
 		// get xml from alm rest api
 		String responseXml = null;
@@ -68,7 +58,8 @@ public abstract class AlmRestHandler<T>{
 			try {
 				output = parseXml(responseXml);
 			} catch (JAXBException e) {
-				e.printStackTrace(logger);
+				logger.println("An error occurred while retrieving results from ALM.");
+				logger.println("Did you enter the proper credentials in the ALM build step?");
 			}
 		}
 		

@@ -26,6 +26,16 @@ import com.hp.application.automation.tools.sse.result.model.junit.Testsuites;
  */
 public class AlmTestStepRetriever {
 
+	// field names used by ALM
+	public static final String NAME = "name";
+	public static final String STATUS = "status";
+	public static final String DESCRIPTION = "description";
+	public static final String TEST_ID = "test-id";
+	public static final String PARENT_ID = "parent-id";
+	public static final String EXECUTION_DATE = "execution-date";
+	public static final String EXECUTION_TIME = "execution-time";
+	public static final String ID = "id";
+	
 	// pattern for how test step iterations are reported from ALM
 	private static final String ITERATION_PREFIX = "Start .* Iteration ";
 	private static final String ITERATION_REGEX = ITERATION_PREFIX + "(\\d)";
@@ -272,12 +282,16 @@ public class AlmTestStepRetriever {
 		List<TestSetFolder> possibleTestSets = getPossibleTestSets(parts[parts.length - 1]); 
 		
 		Integer testSetId = null;
-		if (possibleTestSets.size() == 1) {
-			testSetId = possibleTestSets.get(0).getId();
-		} else {
-			TestSetFolder testSet = getActualTestSet(parts, possibleTestSets);
-			if (testSet != null) {
-				testSetId = testSet.getId();
+		if (possibleTestSets != null) {
+			if (possibleTestSets.size() == 0) {
+				logger.println("Test set \"" + testSetPath + "\" not found.");
+			} else if (possibleTestSets.size() == 1) {
+				testSetId = possibleTestSets.get(0).getId();
+			} else {
+				TestSetFolder testSet = getActualTestSet(parts, possibleTestSets);
+				if (testSet != null) {
+					testSetId = testSet.getId();
+				}
 			}
 		}
 		

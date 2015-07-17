@@ -63,7 +63,7 @@ public class Testsuites {
     protected String errors;
     
     public void updateCounts() {
-    	for (Testsuite t: testsuite) {
+    	for (Testsuite t: getTestsuite()) {
     		t.updateCounts();
     	}
     }
