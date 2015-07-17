@@ -107,7 +107,6 @@ public class RestAuthenticationHandler {
      */
     public String isAuthenticated() throws Exception {
         String isAuthenticateUrl = con.buildUrl("rest/is-authenticated");
-        logger.println("AUTH url: " + isAuthenticateUrl);
         String ret;
         Response response = con.httpGet(isAuthenticateUrl, null, null);
         int responseCode = response.getStatusCode();

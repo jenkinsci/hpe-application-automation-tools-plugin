@@ -1,8 +1,10 @@
 package com.ge.applications.automation.testStepRetriever;
 
 import java.io.PrintStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,8 @@ public class AlmTestStepRetriever {
 	public static final String DESCRIPTION_FIELD = "description";
 	public static final String TEST_ID = "test-id";
 	public static final String PARENT_ID = "parent-id";
+	public static final String EXECUTION_DATE = "execution-date";
+	public static final String EXECUTION_TIME = "execution-time";
 	public static final String ID = "id";
 	
 	private static final String ALM_DATE_STRING = "yyyy-MM-dd hh:mm:ss";
@@ -40,15 +44,17 @@ public class AlmTestStepRetriever {
 	private SimpleDateFormat almDateFormat;
 	private RestConnector con;
 	private PrintStream logger;
+	private Date buildStartTime;
 	private Map<Integer, TestSetFolder> almFolders;
 	
 	/**
 	 * Create a new instance of ALMTestStepRetriever
 	 * @param logger Logger to use
 	 */
-	public AlmTestStepRetriever(RestConnector con, PrintStream logger) {
+	public AlmTestStepRetriever(RestConnector con, PrintStream logger, Date buildStartTime) {
 		this.con = con;
 		this.logger = logger;
+		this.buildStartTime = buildStartTime;
 		
 		almDateFormat = new SimpleDateFormat(ALM_DATE_STRING);
 	}
@@ -85,8 +91,11 @@ public class AlmTestStepRetriever {
 			testsuite.setName(getTestNameById(testId));
 			testsuites.getTestsuite().add(testsuite);
 			
-			int runId = getMostRecentRunIdFromTestId(testId);
-			testsuite.getTestcase().addAll(getTestRunResults(runId));
+			Integer runId = getMostRecentRunIdFromTestId(testId);
+			logger.println("run id:" + runId);
+			if (runId != null) {
+				testsuite.getTestcase().addAll(getTestRunResults(runId));
+			}
 		}
 		
 		testsuites.setName("All tests");
@@ -165,7 +174,7 @@ public class AlmTestStepRetriever {
 	 * @param testId
 	 * @return Returns run id of most recent run of a given test
 	 */
-	private int getMostRecentRunIdFromTestId(final int testId) {
+	private Integer getMostRecentRunIdFromTestId(final int testId) {
 		
 		AlmRestHandler<Integer> runIdGetter = new AlmRestHandler<Integer>() {
 
@@ -173,28 +182,55 @@ public class AlmTestStepRetriever {
 			public Integer parseXml(String xml) throws JAXBException {
 				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
 				List<Entity> entities = entitySet.getEntities();
+				
+				Integer runIdIfValid = null;
 		        for (Entity entity: entities) {
 		        	List<Field> fields = entity.getFields().getField();
+		        	Integer runId = null;
+		        	String executionDate = null;
+		        	String executionTime = null;
+		        	
 		        	for (Field field : fields) {
 			        	if (field.getName().equals(ID)) {
-			        		return Integer.parseInt(field.getValue().get(0));
+			        		runId = Integer.parseInt(field.getValue().get(0));
+			        		logger.println("found run id: " + runId);
+			        	} else if (field.getName().equals(EXECUTION_DATE)) {
+			        		executionDate = field.getValue().get(0);
+			        	} else if (field.getName().equals(EXECUTION_TIME)) {
+			        		executionTime = field.getValue().get(0);
 			        	}
 			        }
+		        	
+		        	if (runId != null && executionDate != null && executionTime != null) {
+		        		try {
+		        			logger.println("build time: " + buildStartTime);
+							Date lastRunTime = almDateFormat.parse(executionDate + " " + executionTime);
+		        			logger.println("run time: " + lastRunTime);
+							if (lastRunTime.compareTo(buildStartTime) > 0) {
+								logger.println("transfering run id");
+								runIdIfValid = runId;
+							} else {
+								logger.println("Not transferring run id: " + runIdIfValid);
+							}
+						} catch (ParseException e) {
+							logger.println("PARSE ERROR");
+							e.printStackTrace(logger);
+						}
+		        	}
 		        }
-		        return null;
+		        return runIdIfValid;
 			}
 
 			@Override
 			public String getRequest() {
 				return "runs?query={test-id[" + testId + "]}"
 						+ "&page-size=1"
-						+ "&fields=id";
+						+ "&fields=id," + EXECUTION_DATE + "," + EXECUTION_TIME;
 			}
 			
 		};
 		
-		Integer runId = runIdGetter.getResult(con, logger);
-		return runId != null? runId: -1;
+		return runIdGetter.getResult(con, logger);
 	}
 	
 	/**
@@ -210,6 +246,7 @@ public class AlmTestStepRetriever {
 			
 			@Override
 			public List<Testcase> parseXml(String xml) throws JAXBException {
+				logger.println("run xml: " + xml);
 				List<Testcase> results = new ArrayList<Testcase>();
 				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
 				
@@ -289,9 +326,9 @@ public class AlmTestStepRetriever {
 		
 		int testSetId = -1;
 		
-		/*if (possibleTestSets.size() == 1) {
+		if (possibleTestSets.size() == 1) {
 			testSetId = possibleTestSets.get(0).getId();
-		} else */{
+		} else {
 			//for (TestSetFolder testSet: possibleTestSets) {
 				//logger.println("Test set id: " + testSet.getName());
 				testSetId = getActualTestSet(parts, possibleTestSets).getId();

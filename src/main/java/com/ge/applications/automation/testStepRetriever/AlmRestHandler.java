@@ -44,6 +44,7 @@ public abstract class AlmRestHandler<T>{
 		requestHeaders.put("Accept", "application/xml");
 		
 		String requestUrl = con.buildEntityCollectionUrl(getRequest());
+		logger.println("Sending request to " + requestUrl);
 		
 		// get xml from alm rest api
 		String responseXml = null;

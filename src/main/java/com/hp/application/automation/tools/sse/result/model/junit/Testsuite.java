@@ -89,7 +89,7 @@ public class Testsuite {
     public void updateCounts() {
     	int errors = 0;
     	int tests = 0;
-    	for (Testcase t: testcase) {
+    	for (Testcase t: getTestcase()) {
     		tests++;
     		if (t.isFailure()) {
     			errors++;
