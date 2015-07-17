@@ -1,6 +1,11 @@
 package com.ge.applications.automation.testStepRetriever;
 
-
+/**
+ * Representation of Test Set Folder.
+ * Also usable for Test Sets, as they share the same needed fields.
+ * 
+ * @author Tyler Hoffman
+ */
 public class TestSetFolder {
 	private int id;
 	private int parentId;

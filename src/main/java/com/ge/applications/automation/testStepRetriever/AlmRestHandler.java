@@ -11,11 +11,19 @@ import qc.rest.examples.infrastructure.RestConnector;
 
 /**
  * Abstract class for making rest calls
- *
  * @param <T> Return type for getResult
  */
 public abstract class AlmRestHandler<T>{
 
+	public static final String NAME = "name";
+	public static final String STATUS = "status";
+	public static final String DESCRIPTION = "description";
+	public static final String TEST_ID = "test-id";
+	public static final String PARENT_ID = "parent-id";
+	public static final String EXECUTION_DATE = "execution-date";
+	public static final String EXECUTION_TIME = "execution-time";
+	public static final String ID = "id";
+	
 	/**
 	 * Get the string to be appended to the rest url generated
 	 * by con.buildEntityCollectionUrl(). 

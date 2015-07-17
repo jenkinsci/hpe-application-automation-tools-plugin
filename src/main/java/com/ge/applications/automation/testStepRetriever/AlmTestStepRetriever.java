@@ -11,7 +11,6 @@ import java.util.Map;
 
 import javax.xml.bind.JAXBException;
 
-import qc.rest.examples.infrastructure.Entities;
 import qc.rest.examples.infrastructure.Entity;
 import qc.rest.examples.infrastructure.Entity.Fields.Field;
 import qc.rest.examples.infrastructure.EntityMarshallingUtils;
@@ -27,19 +26,10 @@ import com.hp.application.automation.tools.sse.result.model.junit.Testsuites;
  */
 public class AlmTestStepRetriever {
 
+	// pattern for how test step iterations are reported from ALM
 	private static final String ITERATION_PREFIX = "Start .* Iteration ";
 	private static final String ITERATION_REGEX = ITERATION_PREFIX + "(\\d)";
-	
-	public static final String NAME_FIELD = "name";
-	public static final String STATUS_FIELD = "status";
-	public static final String DESCRIPTION_FIELD = "description";
-	public static final String TEST_ID = "test-id";
-	public static final String PARENT_ID = "parent-id";
-	public static final String EXECUTION_DATE = "execution-date";
-	public static final String EXECUTION_TIME = "execution-time";
-	public static final String ID = "id";
-	
-	private static final String ALM_DATE_STRING = "yyyy-MM-dd hh:mm:ss";
+	private static final String ALM_DATE_STRING = "yyyy-MM-dd HH:mm:ss";
 	
 	private SimpleDateFormat almDateFormat;
 	private RestConnector con;
@@ -49,20 +39,29 @@ public class AlmTestStepRetriever {
 	
 	/**
 	 * Create a new instance of ALMTestStepRetriever
-	 * @param logger Logger to use
+	 * @param con
+	 * @param logger
+	 * @param buildStartTime
 	 */
 	public AlmTestStepRetriever(RestConnector con, PrintStream logger, Date buildStartTime) {
 		this.con = con;
 		this.logger = logger;
 		this.buildStartTime = buildStartTime;
-		
 		almDateFormat = new SimpleDateFormat(ALM_DATE_STRING);
 	}
 	
+	/**
+	 * @param testSetPaths Array of test set paths
+	 * 		example path: "Root\automation\TestSetA"
+	 * @return Returns the corresponding testsuite
+	 */
 	public Testsuites getTestSetResults(String[] testSetPaths) {
         List<Integer> testSetIds = new ArrayList<Integer>();
 		for (String testSetPath: testSetPaths) {
-        	testSetIds.add(getTestSetIdFromPath(testSetPath));
+			Integer testSetId = getTestSetIdFromPath(testSetPath);
+			if (testSetId != null) {
+				testSetIds.add(testSetId);
+			}
         }
 		almFolders = null;
 		
@@ -71,7 +70,6 @@ public class AlmTestStepRetriever {
 	
 	/**
 	 * Get test results corresponding to a group of test sets
-	 * @param con
 	 * @param testSetIds 
 	 * @return
 	 */
@@ -81,7 +79,7 @@ public class AlmTestStepRetriever {
 		 
 		// get test ids connected to test set ids
 		for (Integer testSetId: testSetIds) {
-			testIds.addAll(getTestIds(con, testSetId));
+			testIds.addAll(getTestIds(testSetId));
 		}
 		
 		// get run steps for each test id
@@ -92,9 +90,11 @@ public class AlmTestStepRetriever {
 			testsuites.getTestsuite().add(testsuite);
 			
 			Integer runId = getMostRecentRunIdFromTestId(testId);
-			logger.println("run id:" + runId);
 			if (runId != null) {
+				logger.println("Retrieving steps for test id " + testId + "; run id " + runId);
 				testsuite.getTestcase().addAll(getTestRunResults(runId));
+			} else {
+				logger.println("No new test results found for test id " + testId);
 			}
 		}
 		
@@ -105,41 +105,33 @@ public class AlmTestStepRetriever {
 	
 	/**
 	 * Make rest call to get test ids linked to a test set id
-	 * @param con
-	 * @param testSetId
 	 * @return Returns List of test ids
 	 */
-	private List<Integer> getTestIds(RestConnector con, final int testSetId) {
-		AlmRestHandler<List<Integer>> testIdGetter = new AlmRestHandler<List<Integer>>() {
-			
-			@Override
-			public List<Integer> parseXml(String xml) throws JAXBException {
-				List<Integer> testIds = new ArrayList<Integer>();
-				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
-				List<Entity> entities = entitySet.getEntities();
-		        for (Entity entity: entities) {
-		        	List<Field> fields = entity.getFields().getField();
-		        	for (Field field : fields) {
-			        	if (field.getName().equals(TEST_ID)) {
-			        		testIds.add(Integer.parseInt(field.getValue().get(0)));
-			        	}
-			        }
-		        }
-		        return testIds;
-			}
+	private List<Integer> getTestIds(final int testSetId) {
+		
+		AlmRestEntitiesHandler<Integer> testIdGetter = new AlmRestEntitiesHandler<Integer>() {
 			
 			@Override
 			public String getRequest() {
-				return "test-instances?query={cycle-id[" + testSetId + "]}";
+				return buildRequestWithFields("test-instances?query={cycle-id[" + testSetId + "]}");
 			}
+
+			@Override
+			public String[] getRequiredFieldNames() {
+				return new String[] {TEST_ID};
+			}
+
+			@Override
+			public Integer processEntity(Map<String, String> fieldValues) {
+				return Integer.parseInt(fieldValues.get(TEST_ID));
+			}
+			
 		};
 		return testIdGetter.getResult(con, logger);
 	}
 	
 	/**
 	 * Make rest call to get the name associated with a test id
-	 * @param con
-	 * @param testId
 	 * @return Returns test name
 	 */
 	private String getTestNameById(final int testId) {
@@ -150,11 +142,10 @@ public class AlmTestStepRetriever {
 				Entity testEntity = EntityMarshallingUtils.marshal(Entity.class, xml);
 				List<Field> fields = testEntity.getFields().getField();
 	        	for (Field field : fields) {
-		        	if (field.getName().equals(NAME_FIELD)) {
+		        	if (field.getName().equals(NAME)) {
 		        		return field.getValue().get(0);
 		        	}
 		        }
-	        	
 	        	// if nothing found, return null
 	        	return null;
 			}
@@ -169,281 +160,211 @@ public class AlmTestStepRetriever {
 	}
 	
 	/**
-	 * Get the id of the most recent run for the given test id
-	 * @param con
 	 * @param testId
 	 * @return Returns run id of most recent run of a given test
 	 */
 	private Integer getMostRecentRunIdFromTestId(final int testId) {
 		
-		AlmRestHandler<Integer> runIdGetter = new AlmRestHandler<Integer>() {
-
-			@Override
-			public Integer parseXml(String xml) throws JAXBException {
-				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
-				List<Entity> entities = entitySet.getEntities();
-				
-				Integer runIdIfValid = null;
-		        for (Entity entity: entities) {
-		        	List<Field> fields = entity.getFields().getField();
-		        	Integer runId = null;
-		        	String executionDate = null;
-		        	String executionTime = null;
-		        	
-		        	for (Field field : fields) {
-			        	if (field.getName().equals(ID)) {
-			        		runId = Integer.parseInt(field.getValue().get(0));
-			        		logger.println("found run id: " + runId);
-			        	} else if (field.getName().equals(EXECUTION_DATE)) {
-			        		executionDate = field.getValue().get(0);
-			        	} else if (field.getName().equals(EXECUTION_TIME)) {
-			        		executionTime = field.getValue().get(0);
-			        	}
-			        }
-		        	
-		        	if (runId != null && executionDate != null && executionTime != null) {
-		        		try {
-		        			logger.println("build time: " + buildStartTime);
-							Date lastRunTime = almDateFormat.parse(executionDate + " " + executionTime);
-		        			logger.println("run time: " + lastRunTime);
-							if (lastRunTime.compareTo(buildStartTime) > 0) {
-								logger.println("transfering run id");
-								runIdIfValid = runId;
-							} else {
-								logger.println("Not transferring run id: " + runIdIfValid);
-							}
-						} catch (ParseException e) {
-							logger.println("PARSE ERROR");
-							e.printStackTrace(logger);
-						}
-		        	}
-		        }
-		        return runIdIfValid;
-			}
+		AlmRestEntitiesHandler<Integer> runIdGetter = new AlmRestEntitiesHandler<Integer>() {
 
 			@Override
 			public String getRequest() {
-				return "runs?query={test-id[" + testId + "]}"
-						+ "&page-size=1"
-						+ "&fields=id," + EXECUTION_DATE + "," + EXECUTION_TIME;
+				return buildRequestWithFields(
+						"runs?query={test-id[" + testId + "]}"
+						+ "&page-size=1");
+			}
+
+			@Override
+			public String[] getRequiredFieldNames() {
+				return new String[] {ID, EXECUTION_DATE, EXECUTION_TIME};
 			}
 			
+			@Override
+			public Integer processEntity(Map<String, String> fieldValues) {
+				Integer runId = Integer.parseInt(fieldValues.get(ID));
+				String executionDate = fieldValues.get(EXECUTION_DATE);
+				String executionTime = fieldValues.get(EXECUTION_TIME);
+				
+				if (runId != null && executionDate != null && executionTime != null) {
+					try {
+	        			Date lastRunTime = almDateFormat.parse(executionDate + " " + executionTime);
+	        			if (lastRunTime.compareTo(buildStartTime) > 0) {
+							return runId;
+						}
+					} catch (ParseException e) {
+						e.printStackTrace(logger);
+					}
+				}
+				
+				// if we got here, we didn't find a valid runId
+				return null;
+			}
 		};
 		
-		return runIdGetter.getResult(con, logger);
+		List<Integer> runIds = runIdGetter.getResult(con, logger);
+		return (runIds.size() == 1)? runIds.get(0) : null;
 	}
 	
 	/**
 	 * Get test results for a give test run.
 	 * Each Testcase corresponds to one call to Reporter.Report in UFT
-	 * @param con
-	 * @param logger
 	 * @param runId
 	 * @return Returns a list of Testcases associated with a run
 	 */
 	private List<Testcase> getTestRunResults(final int runId) {
-		AlmRestHandler<List<Testcase>> resultGetter = new AlmRestHandler<List<Testcase>>() {
+		
+		AlmRestEntitiesHandler<Testcase> resultGetter = new AlmRestEntitiesHandler<Testcase>() {
 			
-			@Override
-			public List<Testcase> parseXml(String xml) throws JAXBException {
-				logger.println("run xml: " + xml);
-				List<Testcase> results = new ArrayList<Testcase>();
-				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
-				
-				List<Entity> entities = entitySet.getEntities();
-				
-				// Current iteration must be kept track of.
-	        	// One test step with no status will have a description
-	        	// in the form "Start Global Iteration x".
-	        	// All subsequent steps belong to that iteration
-	        	int currentIteration = 0;
-		        for (Entity entity: entities) {
-		        	List<Field> fields = entity.getFields().getField();
-		        	List<String> stepName = null;
-		        	List<String> stepStatus = null;
-		        	List<String> stepDescription = null;
-		        	
-			        for (Field field : fields) {
-			        	
-			        	// get needed fields
-			        	if (field.getName().equals(NAME_FIELD)) {
-			        		stepName = field.getValue();
-			        	} else if (field.getName().equals(STATUS_FIELD)) {
-			        		stepStatus = field.getValue();
-			        	} else if (field.getName().equals(DESCRIPTION_FIELD)) {
-			        		stepDescription = field.getValue();
-			        	}
-			        }
-			        if (stepStatus != null) {
-			        	// for each status, add a test case
-			        	for (int i = 0; i < stepStatus.size(); i++) {
-			        		String status = stepStatus.get(i);
-			        		
-			        		// if status is non-empty, add the step
-			        		if (!status.isEmpty()) {
-			        			String testName = String.format("[%d]%s", currentIteration, stepName.get(i));
-			        			Testcase testcase = new Testcase(
-			        					testName,
-			        					stepStatus.get(i));
-			        			results.add(testcase);
-			        			
-			        			// add failure info if needed
-			        			if (testcase.isFailure()) {
-			        				testcase.getFailure().add(new Failure(stepDescription.get(i)));
-			        			}
-			        		}
-			        		
-			        		// if no status, check if we need to update current iteration
-			        		else {
-			        			String description = stepDescription.get(i);
-			        			if (description.matches(ITERATION_REGEX)) {
-			        				currentIteration = Integer.parseInt(
-			        						description.replaceAll(ITERATION_PREFIX, ""));
-			        			}
-			        		}
-			        	}
-			        }
-		        }
-		        
-		        return results;
-			}
+			private int currentIteration = 0;
 			
 			@Override
 			public String getRequest() {
-				return "runs/" + runId + "/run-steps";
+				return buildRequestWithFields("runs/" + runId + "/run-steps?");
+			}
+
+			@Override
+			public String[] getRequiredFieldNames() {
+				return new String[] {NAME, STATUS, DESCRIPTION};
+			}
+
+			@Override
+			public Testcase processEntity(Map<String, String> fieldValues) {
+				Testcase testcase = null;
+				
+				String status = fieldValues.get(STATUS);
+				String description = fieldValues.get(DESCRIPTION);
+				
+				// if status exists, build the testcase
+				if (!status.isEmpty()) {
+					String testName = String.format("[%d]%s", 
+							currentIteration, 
+							fieldValues.get(NAME));
+					
+        			testcase = new Testcase(testName, status);
+        			
+        			// add failure info if needed
+        			if (testcase.isFailure()) {
+        				testcase.getFailure().add(new Failure(description));
+        			}
+				} 
+				
+				// if announcing a new iteration, update iteration
+				else if (description.matches(ITERATION_REGEX)) {
+					currentIteration = Integer.parseInt(
+    						description.replaceAll(ITERATION_PREFIX, ""));
+				}
+				return testcase;
 			}
 		};
 		
 		return resultGetter.getResult(con, logger);
 	}
 	
-	private int getTestSetIdFromPath(String testSetPath) {
+	/**
+	 * @param testSetPath In the form "Root\(directories\)*TestSetName
+	 * @return Returns the test set id for a given test set path
+	 */
+	private Integer getTestSetIdFromPath(String testSetPath) {
 		// split path at slashes to separate directory names and the test set name
 		final String[] parts = testSetPath.split("[/\\\\]");
 		
 		// get all test sets with the given test set name
 		List<TestSetFolder> possibleTestSets = getPossibleTestSets(parts[parts.length - 1]); 
 		
-		int testSetId = -1;
-		
+		Integer testSetId = null;
 		if (possibleTestSets.size() == 1) {
 			testSetId = possibleTestSets.get(0).getId();
 		} else {
-			//for (TestSetFolder testSet: possibleTestSets) {
-				//logger.println("Test set id: " + testSet.getName());
-				testSetId = getActualTestSet(parts, possibleTestSets).getId();
-			//}
+			TestSetFolder testSet = getActualTestSet(parts, possibleTestSets);
+			if (testSet != null) {
+				testSetId = testSet.getId();
+			}
 		}
 		
-		// TODO return testSetId
 		return testSetId;
-		
 	}
 	
+	/**
+	 * @param testSetName
+	 * @return Returns a list of test sets with the provided name
+	 */
 	private List<TestSetFolder> getPossibleTestSets(final String testSetName) {
-		// get possible test sets based on test set name alone
-		AlmRestHandler<List<TestSetFolder>> testSetGetter = new AlmRestHandler<List<TestSetFolder>>() {
+		
+		AlmRestEntitiesHandler<TestSetFolder> testSetGetter = new AlmRestEntitiesHandler<TestSetFolder>() {
 
 			@Override
 			public String getRequest() {
-				return "test-sets?"
-						+ "query={name[" + testSetName + "]}"
-						+ "&fields=name,id,parent-id";
+				return buildRequestWithFields(
+						"test-sets?"
+						+ "query={name[" + testSetName + "]}");
 			}
 
 			@Override
-			public List<TestSetFolder> parseXml(String xml) throws JAXBException {
-				List<TestSetFolder> possibleTestSets = new ArrayList<TestSetFolder>();
-				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
-				
-				List<Entity> entities = entitySet.getEntities();
-		        for (Entity entity: entities) {
-		        	List<Field> fields = entity.getFields().getField();
-		        	List<String> testSetName = null;
-		        	List<String> testSetId = null;
-		        	List<String> testSetParent = null;
-			        for (Field field : fields) {
-			        	
-			        	// get needed fields
-			        	if (field.getName().equals(NAME_FIELD)) {
-			        		testSetName = field.getValue();
-			        	} else if (field.getName().equals(ID)) {
-			        		testSetId = field.getValue();
-			        	} else if (field.getName().equals(PARENT_ID)) {
-			        		testSetParent = field.getValue();
-			        	}
-			        }
-			        if (testSetName != null) {
-			        	// for each name, check if it matches the desired name
-			        	for (int i = 0; i < testSetName.size(); i++) {
-			        		possibleTestSets.add(new TestSetFolder(testSetName.get(i),
-			        				Integer.parseInt(testSetId.get(i)),
-			        				Integer.parseInt(testSetParent.get(i))));
-			        	}
-			        }
-		        }
-				
-				return possibleTestSets;
+			public String[] getRequiredFieldNames() {
+				return new String[] {NAME, ID, PARENT_ID};
+			}
+
+			@Override
+			public TestSetFolder processEntity(Map<String, String> fieldValues) {
+				return new TestSetFolder(
+						fieldValues.get(NAME),
+						Integer.parseInt(fieldValues.get(ID)),
+						Integer.parseInt(fieldValues.get(PARENT_ID)));
 			}
 		
 		};
 		return testSetGetter.getResult(con, logger);
 	}
 	
-	private Map<Integer, TestSetFolder> getAlmFolders(RestConnector con, final PrintStream logger) {
-		AlmRestHandler<Map<Integer, TestSetFolder>> folderGetter = new AlmRestHandler<Map<Integer, TestSetFolder>>() {
+	/**
+	 * @return Returns a map with test ids as keys and
+	 * 		test sets as values
+	 */
+	private Map<Integer, TestSetFolder> getAlmFolders() {
+		
+		AlmRestEntitiesHandler<TestSetFolder> folderGetter = new AlmRestEntitiesHandler<TestSetFolder>() {
 
 			@Override
 			public String getRequest() {
-				return "test-set-folders?fields=name,id,parent-id";
+				return buildRequestWithFields("test-set-folders?");
 			}
 
 			@Override
-			public Map<Integer, TestSetFolder> parseXml(String xml) throws JAXBException {
-				Map<Integer, TestSetFolder> possibleTestSets = new HashMap<Integer, TestSetFolder>();
-				Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
-				
-				List<Entity> entities = entitySet.getEntities();
-		        for (Entity entity: entities) {
-		        	List<Field> fields = entity.getFields().getField();
-		        	List<String> testSetName = null;
-		        	List<String> testSetId = null;
-		        	List<String> testSetParent = null;
-			        for (Field field : fields) {
-			        	
-			        	// get needed fields
-			        	if (field.getName().equals(NAME_FIELD)) {
-			        		testSetName = field.getValue();
-			        	} else if (field.getName().equals(ID)) {
-			        		testSetId = field.getValue();
-			        	} else if (field.getName().equals(PARENT_ID)) {
-			        		testSetParent = field.getValue();
-			        	}
-			        }
-			        if (testSetName != null) {
-			        	// for each name, check if it matches the desired name
-			        	for (int i = 0; i < testSetName.size(); i++) {
-			        		int id = Integer.parseInt(testSetId.get(i));
-			        		TestSetFolder testSet = new TestSetFolder(testSetName.get(i), id,
-	        						Integer.parseInt(testSetParent.get(i)));
-			        		possibleTestSets.put(id, testSet);
-			        	}
-			        }
-		        }
-				
-				return possibleTestSets;
+			public String[] getRequiredFieldNames() {
+				return new String[] {NAME, ID, PARENT_ID};
 			}
-		
+
+			@Override
+			public TestSetFolder processEntity(Map<String, String> fieldValues) {
+				return new TestSetFolder(
+						fieldValues.get(NAME),
+						Integer.parseInt(fieldValues.get(ID)),
+						Integer.parseInt(fieldValues.get(PARENT_ID)));
+			}
 		};
-		return folderGetter.getResult(con, logger);
 		
+		Map<Integer, TestSetFolder> directoryMap = new HashMap<Integer, TestSetFolder>();
+		List<TestSetFolder> directories = folderGetter.getResult(con, logger);
+		
+		for (TestSetFolder directory: directories) {
+			directoryMap.put(directory.getId(), directory);
+		}
+		
+		return directoryMap;
 	}
 	
+	/**
+	 * Get the TestSet that corresponds to the given path
+	 * @param pathParts Array of directory names, ending with test set name
+	 * 		e.g. {"Root", "automation", "TestSetA"}
+	 * @param possibleTestSets List of test sets whose names equal the last element in pathParts
+	 * @return Returns the TestSet whose directory structure matches pathParts
+	 */
 	private TestSetFolder getActualTestSet(String[] pathParts, List<TestSetFolder> possibleTestSets) {
 		
 		// load test set folder data if it hasn't been done already
 		if (almFolders == null) {
-			almFolders = getAlmFolders(con, logger);
+			almFolders = getAlmFolders();
 		}
 		
 		// check each test set to see if it matches the provide path
