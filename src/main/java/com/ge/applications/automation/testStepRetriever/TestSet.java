@@ -1,17 +1,21 @@
 package com.ge.applications.automation.testStepRetriever;
 
 /**
- * Representation of Test Set Folder.
- * Also usable for Test Sets, as they share the same needed fields.
+ * Representation of Test Set or Test Set Folder.
+ * ParentId is ALM's id for the parent folder.
  * 
  * @author Tyler Hoffman
  */
-public class TestSetFolder {
+public class TestSet {
 	private int id;
 	private int parentId;
 	private String name;
 	
-	public TestSetFolder(String name, int id, int parentId) {
+	public TestSet(String name, int id) {
+		this(name, id, -1);
+	}
+	
+	public TestSet(String name, int id, int parentId) {
 		this.name = name;
 		this.id = id;
 		this.parentId = parentId;

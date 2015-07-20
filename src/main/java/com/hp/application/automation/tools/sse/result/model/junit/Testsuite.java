@@ -53,7 +53,7 @@ import javax.xml.bind.annotation.XmlType;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "", propOrder = { "properties", "testcase", "systemOut", "systemErr" })
+@XmlType(name = "", propOrder = { "testcase", "properties", "systemOut", "systemErr" })
 @XmlRootElement(name = "testsuite")
 public class Testsuite {
     

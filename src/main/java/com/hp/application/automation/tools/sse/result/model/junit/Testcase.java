@@ -15,6 +15,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
 
 /**
@@ -76,11 +77,22 @@ public class Testcase {
     @XmlAttribute
     protected String report;
     
+    @XmlTransient
+    private int iteration;
+    
     public Testcase() {};
     
     public Testcase(String name, String status) {
     	this.name = name;
     	this.status = status;
+    }
+    
+    public int getIteration() {
+    	return iteration;
+    }
+    
+    public void setIteration(int iteration) {
+    	this.iteration = iteration;
     }
     
     public boolean isFailure() {

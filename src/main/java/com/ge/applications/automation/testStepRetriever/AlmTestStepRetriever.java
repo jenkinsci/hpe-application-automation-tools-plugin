@@ -37,15 +37,16 @@ public class AlmTestStepRetriever {
 	public static final String ID = "id";
 	
 	// pattern for how test step iterations are reported from ALM
-	private static final String ITERATION_PREFIX = "Start .* Iteration ";
-	private static final String ITERATION_REGEX = ITERATION_PREFIX + "(\\d)";
+	private static final String ITERATION_PREFIX_REGEX = "Start .* Iteration ";
+	private static final String ITERATION_DESCRIPTION_REGEX = ITERATION_PREFIX_REGEX + "(\\d)";
+	private static final String DIRECTORY_SPLIT_REGEX = "[/\\\\]";
 	private static final String ALM_DATE_STRING = "yyyy-MM-dd HH:mm:ss";
 	
 	private SimpleDateFormat almDateFormat;
 	private RestConnector con;
 	private PrintStream logger;
 	private Date buildStartTime;
-	private Map<Integer, TestSetFolder> almFolders;
+	private Map<Integer, TestSet> almFolders;
 	
 	/**
 	 * Create a new instance of ALMTestStepRetriever
@@ -66,16 +67,18 @@ public class AlmTestStepRetriever {
 	 * @return Returns the corresponding testsuite
 	 */
 	public Testsuites getTestSetResults(String[] testSetPaths) {
-        List<Integer> testSetIds = new ArrayList<Integer>();
+		List<TestSet> testSets = new ArrayList<TestSet>();
 		for (String testSetPath: testSetPaths) {
 			Integer testSetId = getTestSetIdFromPath(testSetPath);
 			if (testSetId != null) {
-				testSetIds.add(testSetId);
+				testSets.add(new TestSet(
+						getTestSetName(testSetPath),
+						testSetId));
 			}
         }
 		almFolders = null;
 		
-		return getTestSetResults(testSetIds);
+		return getTestSetResults(testSets);
 	}
 	
 	/**
@@ -83,32 +86,25 @@ public class AlmTestStepRetriever {
 	 * @param testSetIds 
 	 * @return
 	 */
-	public Testsuites getTestSetResults(List<Integer>testSetIds) {
+	//public Testsuites getTestSetResults(List<Integer>testSetIds) {
+	public Testsuites getTestSetResults(List<TestSet> testSets) {
 		Testsuites testsuites = new Testsuites();
-		List<Integer> testIds = new ArrayList<Integer>();
-		 
-		// get test ids connected to test set ids
-		for (Integer testSetId: testSetIds) {
-			testIds.addAll(getTestIds(testSetId));
-		}
 		
-		// get run steps for each test id
-		for (int testId: testIds) {
-			Testsuite testsuite = new Testsuite();
-			testsuite.setPackage("All tests");
-			testsuite.setName(getTestNameById(testId));
-			testsuites.getTestsuite().add(testsuite);
-			
-			Integer runId = getMostRecentRunIdFromTestId(testId);
-			if (runId != null) {
-				logger.println("Retrieving steps for test id " + testId + "; run id " + runId);
-				testsuite.getTestcase().addAll(getTestRunResults(runId));
-			} else {
-				logger.println("No new test results found for test id " + testId);
+		for (TestSet testSet: testSets) {
+			List<Integer> testIds = getTestIds(testSet.getId());
+			for (int testId: testIds) {
+				Integer runId = getMostRecentRunIdFromTestId(testId);
+				if (runId != null) {
+					testsuites.getTestsuite().addAll(getTestRunResults(
+							testSet.getName(),
+							getTestNameById(testId), 
+							runId));
+				} else {
+					logger.println("No new test results found for test id " + testId);
+				}
 			}
 		}
 		
-		testsuites.setName("All tests");
 		testsuites.updateCounts();
 		return testsuites;
 	}
@@ -221,7 +217,10 @@ public class AlmTestStepRetriever {
 	 * @param runId
 	 * @return Returns a list of Testcases associated with a run
 	 */
-	private List<Testcase> getTestRunResults(final int runId) {
+	private List<Testsuite> getTestRunResults(
+			final String testSetName,
+			final String testName, 
+			final int runId) {
 		
 		AlmRestEntitiesHandler<Testcase> resultGetter = new AlmRestEntitiesHandler<Testcase>() {
 			
@@ -246,12 +245,12 @@ public class AlmTestStepRetriever {
 				
 				// if status exists, build the testcase
 				if (!status.isEmpty()) {
-					String testName = String.format("[%d]%s", 
-							currentIteration, 
-							fieldValues.get(NAME));
-					
-        			testcase = new Testcase(testName, status);
-        			
+        			testcase = new Testcase(fieldValues.get(NAME), status);
+        			testcase.setIteration(currentIteration);
+        			testcase.setClassname(String.format("%s.%s[%d]", 
+        					testSetName,
+        					testName, 
+        					currentIteration));
         			// add failure info if needed
         			if (testcase.isFailure()) {
         				testcase.getFailure().add(new Failure(description));
@@ -259,15 +258,35 @@ public class AlmTestStepRetriever {
 				} 
 				
 				// if announcing a new iteration, update iteration
-				else if (description.matches(ITERATION_REGEX)) {
+				else if (description.matches(ITERATION_DESCRIPTION_REGEX)) {
 					currentIteration = Integer.parseInt(
-    						description.replaceAll(ITERATION_PREFIX, ""));
+    						description.replaceAll(ITERATION_PREFIX_REGEX, ""));
 				}
 				return testcase;
 			}
 		};
 		
-		return resultGetter.getResult(con, logger);
+		List<Testcase> runSteps = resultGetter.getResult(con, logger);
+		
+		// put testcases into testsuites by iteration
+		// NOTE: this assumes runsteps are ordered by iteration
+		List<Testsuite> tests = new ArrayList<Testsuite>();
+		Testsuite currentTest = null;
+		int currentIteration = -1;
+		for (Testcase runStep: runSteps) {
+			
+			// create a new testsuite if we reached a new iteration
+			if (currentIteration != runStep.getIteration()) {
+				currentIteration = runStep.getIteration();
+				currentTest = new Testsuite();
+				tests.add(currentTest);
+				currentTest.setName(String.format("%s[%d]", testName, currentIteration));
+			}
+			currentTest.getTestcase().add(runStep);
+		}
+		
+		return tests;
+		//return resultGetter.getResult(con, logger);
 	}
 	
 	/**
@@ -276,10 +295,10 @@ public class AlmTestStepRetriever {
 	 */
 	private Integer getTestSetIdFromPath(String testSetPath) {
 		// split path at slashes to separate directory names and the test set name
-		final String[] parts = testSetPath.split("[/\\\\]");
+		final String[] parts = testSetPath.split(DIRECTORY_SPLIT_REGEX);
 		
 		// get all test sets with the given test set name
-		List<TestSetFolder> possibleTestSets = getPossibleTestSets(parts[parts.length - 1]); 
+		List<TestSet> possibleTestSets = getPossibleTestSets(parts[parts.length - 1]); 
 		
 		Integer testSetId = null;
 		if (possibleTestSets != null) {
@@ -288,7 +307,7 @@ public class AlmTestStepRetriever {
 			} else if (possibleTestSets.size() == 1) {
 				testSetId = possibleTestSets.get(0).getId();
 			} else {
-				TestSetFolder testSet = getActualTestSet(parts, possibleTestSets);
+				TestSet testSet = getActualTestSet(parts, possibleTestSets);
 				if (testSet != null) {
 					testSetId = testSet.getId();
 				}
@@ -302,9 +321,9 @@ public class AlmTestStepRetriever {
 	 * @param testSetName
 	 * @return Returns a list of test sets with the provided name
 	 */
-	private List<TestSetFolder> getPossibleTestSets(final String testSetName) {
+	private List<TestSet> getPossibleTestSets(final String testSetName) {
 		
-		AlmRestEntitiesHandler<TestSetFolder> testSetGetter = new AlmRestEntitiesHandler<TestSetFolder>() {
+		AlmRestEntitiesHandler<TestSet> testSetGetter = new AlmRestEntitiesHandler<TestSet>() {
 
 			@Override
 			public String getRequest() {
@@ -319,8 +338,8 @@ public class AlmTestStepRetriever {
 			}
 
 			@Override
-			public TestSetFolder processEntity(Map<String, String> fieldValues) {
-				return new TestSetFolder(
+			public TestSet processEntity(Map<String, String> fieldValues) {
+				return new TestSet(
 						fieldValues.get(NAME),
 						Integer.parseInt(fieldValues.get(ID)),
 						Integer.parseInt(fieldValues.get(PARENT_ID)));
@@ -334,9 +353,9 @@ public class AlmTestStepRetriever {
 	 * @return Returns a map with test ids as keys and
 	 * 		test sets as values
 	 */
-	private Map<Integer, TestSetFolder> getAlmFolders() {
+	private Map<Integer, TestSet> getAlmFolders() {
 		
-		AlmRestEntitiesHandler<TestSetFolder> folderGetter = new AlmRestEntitiesHandler<TestSetFolder>() {
+		AlmRestEntitiesHandler<TestSet> folderGetter = new AlmRestEntitiesHandler<TestSet>() {
 
 			@Override
 			public String getRequest() {
@@ -349,18 +368,18 @@ public class AlmTestStepRetriever {
 			}
 
 			@Override
-			public TestSetFolder processEntity(Map<String, String> fieldValues) {
-				return new TestSetFolder(
+			public TestSet processEntity(Map<String, String> fieldValues) {
+				return new TestSet(
 						fieldValues.get(NAME),
 						Integer.parseInt(fieldValues.get(ID)),
 						Integer.parseInt(fieldValues.get(PARENT_ID)));
 			}
 		};
 		
-		Map<Integer, TestSetFolder> directoryMap = new HashMap<Integer, TestSetFolder>();
-		List<TestSetFolder> directories = folderGetter.getResult(con, logger);
+		Map<Integer, TestSet> directoryMap = new HashMap<Integer, TestSet>();
+		List<TestSet> directories = folderGetter.getResult(con, logger);
 		
-		for (TestSetFolder directory: directories) {
+		for (TestSet directory: directories) {
 			directoryMap.put(directory.getId(), directory);
 		}
 		
@@ -374,7 +393,7 @@ public class AlmTestStepRetriever {
 	 * @param possibleTestSets List of test sets whose names equal the last element in pathParts
 	 * @return Returns the TestSet whose directory structure matches pathParts
 	 */
-	private TestSetFolder getActualTestSet(String[] pathParts, List<TestSetFolder> possibleTestSets) {
+	private TestSet getActualTestSet(String[] pathParts, List<TestSet> possibleTestSets) {
 		
 		// load test set folder data if it hasn't been done already
 		if (almFolders == null) {
@@ -382,8 +401,8 @@ public class AlmTestStepRetriever {
 		}
 		
 		// check each test set to see if it matches the provide path
-		for (TestSetFolder testSet: possibleTestSets) {
-			TestSetFolder currentFolder = almFolders.get(testSet.getParentId());
+		for (TestSet testSet: possibleTestSets) {
+			TestSet currentFolder = almFolders.get(testSet.getParentId());
 			int i = pathParts.length - 2;
 			
 			/*
@@ -409,6 +428,16 @@ public class AlmTestStepRetriever {
 		
 		// execution should never get here
 		return null;
+	}
+	
+	/**
+	 * Helper function to get test set name from path
+	 * @param testSetPath
+	 * @return Returns test set name
+	 */
+	private String getTestSetName(String testSetPath) {
+		String[] parts = testSetPath.split(DIRECTORY_SPLIT_REGEX);
+		return parts[parts.length - 1].replaceAll("_", " ");
 	}
 	
 }
