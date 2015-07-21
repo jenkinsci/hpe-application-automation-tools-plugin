@@ -1,4 +1,4 @@
-package com.ge.applications.automation.testStepRetriever;
+package com.ge.application.automation.steps;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,16 +42,6 @@ public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> 
 	public abstract T processEntity(Map<String, String> fieldValues);
 	
 	/**
-	 * Return a list of results. By default, returns the list it
-	 * is provided. Override for additional processing
-	 * @param results
-	 * @return results
-	 */
-	public List<T> processIntermediateResults(List<T> results) {
-		return results;
-	}
-	
-	/**
 	 * Appends field constraint to the provided request string
 	 * @param request Base request to api
 	 * @return Returns the base request + "&fields=<fields from getRequiredFieldNames>"
@@ -71,8 +61,8 @@ public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> 
 	@Override
 	public List<T> parseXml(String xml) throws JAXBException {
 		
-		// list to hold non-null results from processIntermediateResults
-		List<T> intermediateResults = new ArrayList<T>();
+		// list to hold non-null results from processEntity
+		List<T> results = new ArrayList<T>();
 		
 		// set of fields to get from each entity returned from rest call
 		Set<String> requiredFields = new HashSet<String>(Arrays.asList(getRequiredFieldNames()));
@@ -95,11 +85,11 @@ public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> 
         	// add output from intermediateResults to list 
         	T intermediateResult = processEntity(fieldValues);
         	if (intermediateResult != null) {
-        		intermediateResults.add(intermediateResult);
+        		results.add(intermediateResult);
         	}
         }
 		
-		return intermediateResults;
+		return results;
 	}
 
 }

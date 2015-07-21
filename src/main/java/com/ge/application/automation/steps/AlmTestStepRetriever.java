@@ -1,4 +1,4 @@
-package com.ge.applications.automation.testStepRetriever;
+package com.ge.application.automation.steps;
 
 import java.io.PrintStream;
 import java.text.ParseException;
@@ -68,6 +68,8 @@ public class AlmTestStepRetriever {
 	 */
 	public Testsuites getTestSetResults(String[] testSetPaths) {
 		List<TestSet> testSets = new ArrayList<TestSet>();
+		
+		// load testSets based on provided test set paths
 		for (String testSetPath: testSetPaths) {
 			Integer testSetId = getTestSetIdFromPath(testSetPath);
 			if (testSetId != null) {
@@ -78,6 +80,7 @@ public class AlmTestStepRetriever {
         }
 		almFolders = null;
 		
+		// get and return testsuites holding all test results
 		return getTestSetResults(testSets);
 	}
 	
@@ -86,19 +89,26 @@ public class AlmTestStepRetriever {
 	 * @param testSetIds 
 	 * @return
 	 */
-	//public Testsuites getTestSetResults(List<Integer>testSetIds) {
 	public Testsuites getTestSetResults(List<TestSet> testSets) {
 		Testsuites testsuites = new Testsuites();
 		
 		for (TestSet testSet: testSets) {
+			
+			// get test ids for test set
 			List<Integer> testIds = getTestIds(testSet.getId());
 			for (int testId: testIds) {
 				Integer runId = getMostRecentRunIdFromTestId(testId);
+				
+				// if valid run id, add results
 				if (runId != null) {
-					testsuites.getTestsuite().addAll(getTestRunResults(
+					
+					// get run results as a list of testsuites
+					List<Testsuite> testsuiteList = getTestRunResults(
 							testSet.getName(),
 							getTestNameById(testId), 
-							runId));
+							runId);
+					
+					testsuites.getTestsuite().addAll(testsuiteList);
 				} else {
 					logger.println("No new test results found for test id " + testId);
 				}
@@ -247,9 +257,9 @@ public class AlmTestStepRetriever {
 				if (!status.isEmpty()) {
         			testcase = new Testcase(fieldValues.get(NAME), status);
         			testcase.setIteration(currentIteration);
-        			testcase.setClassname(String.format("%s.%s[%d]", 
+        			testcase.setClassname(String.format("%s.%s [%d]", 
         					testSetName,
-        					testName, 
+        					toHumanReadable(testName), 
         					currentIteration));
         			// add failure info if needed
         			if (testcase.isFailure()) {
@@ -267,7 +277,10 @@ public class AlmTestStepRetriever {
 		};
 		
 		List<Testcase> runSteps = resultGetter.getResult(con, logger);
-		
+		return contertTestStepsToTestsuites(runSteps, testName);
+	}
+	
+	private List<Testsuite> contertTestStepsToTestsuites(List<Testcase> runSteps, String testName) {
 		// put testcases into testsuites by iteration
 		// NOTE: this assumes runsteps are ordered by iteration
 		List<Testsuite> tests = new ArrayList<Testsuite>();
@@ -286,7 +299,6 @@ public class AlmTestStepRetriever {
 		}
 		
 		return tests;
-		//return resultGetter.getResult(con, logger);
 	}
 	
 	/**
@@ -437,7 +449,11 @@ public class AlmTestStepRetriever {
 	 */
 	private String getTestSetName(String testSetPath) {
 		String[] parts = testSetPath.split(DIRECTORY_SPLIT_REGEX);
-		return parts[parts.length - 1].replaceAll("_", " ");
+		return toHumanReadable(parts[parts.length - 1]);
+	}
+	
+	private String toHumanReadable(String s) {
+		return s.replaceAll("_", " ");
 	}
 	
 }

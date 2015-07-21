@@ -1,4 +1,4 @@
-package com.ge.applications.automation.testStepRetriever;
+package com.ge.application.automation.steps;
 
 /**
  * Representation of Test Set or Test Set Folder.
