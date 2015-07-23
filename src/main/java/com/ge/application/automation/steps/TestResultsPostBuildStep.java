@@ -13,6 +13,7 @@ import hudson.tasks.Builder;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Date;
 import java.util.List;
@@ -22,20 +23,24 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-import qc.rest.examples.infrastructure.EntityMarshallingUtils;
-import qc.rest.examples.infrastructure.RestConnector;
-
 import com.hp.application.automation.tools.common.RuntimeUtils;
 import com.hp.application.automation.tools.model.RunFromAlmModel;
+import com.hp.application.automation.tools.rest.RestClient;
 import com.hp.application.automation.tools.run.RunFromAlmBuilder;
 import com.hp.application.automation.tools.sse.result.model.junit.Testsuites;
+import com.hp.application.automation.tools.sse.sdk.Logger;
+import com.hp.application.automation.tools.sse.sdk.RestAuthenticator;
 
 /**
- * Post-build step for Jenkins ALM plugin
- * 
- * @author Tyler Hoffman
+ * Post-build step for Jenkins ALM plugin.
+ * This uses information from "Execute HP functional tests from HP ALM" build step
+ * and makes REST calls to ALM to get detailed test results.
  */
 public class TestResultsPostBuildStep extends Notifier {
+	
+	private static String TEST_RESULTS_FILE = "test_results.xml";
+	
+	private RunFromAlmBuilder runFromAlmBuilder;
 	
     @DataBoundConstructor
     public TestResultsPostBuildStep() {
@@ -45,90 +50,124 @@ public class TestResultsPostBuildStep extends Notifier {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
         
-    	Project<?, ?> project = RuntimeUtils.cast(build.getProject());
-        List<Builder> builders = project.getBuilders();
-    	String serverAddress = null;
-    	String almUsername = null;
-    	String almPassword = null;
-    	String almDomain = null;
-    	String almProject = null;
-    	String almTestSetPathsString = null;
-    	boolean foundBuilder = false;
-        for (Builder builder : builders) {
-            if (builder instanceof RunFromAlmBuilder) {
-                foundBuilder = true;
-            	serverAddress = ((RunFromAlmBuilder) builder).getAlmServerSettingsModel().getAlmServerUrl();
-                
-                RunFromAlmModel runFromAlmModel = ((RunFromAlmBuilder) builder).getRunFromAlmModel();
-                almUsername = runFromAlmModel.getAlmUserName();
-                almPassword = runFromAlmModel.getAlmPassword();
-                almDomain = runFromAlmModel.getAlmDomain();
-                almProject = runFromAlmModel.getAlmProject();
-                almTestSetPathsString = runFromAlmModel.getAlmTestSets();
-                
-                break;
-            }
-        }
-        
-        // check that ALM build step was actually used
-        if (!foundBuilder) {
-        	listener.getLogger().println("No ALM build step found; "
+    	PrintStreamLogger logger = new PrintStreamLogger(listener.getLogger());
+    	
+    	// get data from the previous build step (Execute HP functional tests from HP ALM)
+    	loadDataFromAlmBuildStep(build);
+    	
+    	if (runFromAlmBuilder == null) {
+    		listener.getLogger().println("No ALM build step found; "
         			+ getDescriptor().getDisplayName() + " may only be after "
         			+ "\"Execute HP functional tests from HP ALM\" "
         			+ "build step");
-        } else {
-	        
-	        String[] testSetPaths = almTestSetPathsString.replaceAll("\r", "").split("\\n");
-	        for (int i = 0; i < testSetPaths.length; i++) {
-	        	testSetPaths[i] = testSetPaths[i].trim();
-	        }
-	        
-	        listener.getLogger().println("Retrieving test set data...");
-	        
-	        // connect
-	        RestAuthenticationHandler handler = new RestAuthenticationHandler(listener.getLogger());
-	        RestConnector connector = handler.connect(almUsername, almPassword, 
-	        		serverAddress, almDomain, almProject);
-	        
-	        // get test results
+    	} else {
+    		
+    		listener.getLogger().println("Retrieving test set data...");
+    		
+    		// connect
+    		RestAuthenticator authenticator = new RestAuthenticator();
+    		RestClient restClient = makeRestClientAndLogin(authenticator, logger);
+    		
+    		// get test results
 	        Testsuites results = null;
 	        try {
 	        	Date startTime = new Date(build.getStartTimeInMillis());
-	        	results = new AlmTestStepRetriever(connector, listener.getLogger(), startTime)
-	        			.getTestSetResults(testSetPaths);
+	        	results = new AlmTestStepRetriever(restClient, listener.getLogger(), startTime)
+	        			.getTestSetResults(getTestSetPaths());
 	        } catch (Exception e) {
 	        	e.printStackTrace(listener.getLogger());
 	        }
 	        
 	        // logout
-	        try {
-				handler.logout();
-			} catch (Exception e) {
-				e.printStackTrace(listener.getLogger());
-			}
+	        logout(restClient, authenticator);
 	        
 	        // log results
 	        if (results != null) {
-	        	listener.getLogger().println("Writing test results to file");
-	        	try {
-	        		String testResults = EntityMarshallingUtils.unmarshal(
-							Testsuites.class, 
-							results);
-	        		FilePath resultsPath = new FilePath(build.getWorkspace(), "test_results.xml");
-	        		
-	        		PrintWriter writer = new PrintWriter(resultsPath.write());
-	        		writer.println(testResults);
-	        		writer.close();
-	        		
-				} catch (Exception e) {
-					e.printStackTrace(listener.getLogger());
-				}
+	        	logResults(build, listener.getLogger(), results);
 	        } else {
 	        	listener.getLogger().println("Error: no test results found");
 	        }
-        }
+    	}
         
         return true;
+    }
+    
+    private void loadDataFromAlmBuildStep(AbstractBuild<?, ?> build) {
+    	Project<?, ?> project = RuntimeUtils.cast(build.getProject());
+        List<Builder> builders = project.getBuilders();
+    	for (Builder builder : builders) {
+            if (builder instanceof RunFromAlmBuilder) {
+            	runFromAlmBuilder = (RunFromAlmBuilder) builder;
+            	break;
+            }
+    	}
+    }
+    
+    /**
+     * @return Returns array of test set paths used in previous build step
+     */
+    private String[] getTestSetPaths() {
+		String almTestSetPathsString = runFromAlmBuilder.getRunFromAlmModel().getAlmTestSets();
+        String[] testSetPaths = almTestSetPathsString.replaceAll("\r", "").split("\\n");
+        for (int i = 0; i < testSetPaths.length; i++) {
+        	testSetPaths[i] = testSetPaths[i].trim();
+        }
+        return testSetPaths;
+    }
+    
+    /**
+     * Generate a rest client for alm and login.
+     * @param authenticator
+     * @param logger
+     * @return Returns the RestClient used to make requests
+     */
+    private RestClient makeRestClientAndLogin(RestAuthenticator authenticator, Logger logger) {
+    	RunFromAlmModel runFromAlmModel = runFromAlmBuilder.getRunFromAlmModel();
+    	
+    	RestClient restClient = new RestClient(
+    			runFromAlmBuilder.getAlmServerSettingsModel().getAlmServerUrl(), 
+    			runFromAlmModel.getAlmDomain(), 
+    			runFromAlmModel.getAlmProject(), 
+    			runFromAlmModel.getAlmUserName());
+    	
+    	authenticator.login(restClient,
+    			runFromAlmModel.getAlmUserName(), 
+    			runFromAlmModel.getAlmPassword(),
+    			logger);
+    	
+    	return restClient;
+    }
+    
+    /**
+     * Log out of the rest client
+     * @param restClient
+     * @param authenticator
+     */
+    private void logout(RestClient restClient, RestAuthenticator authenticator) {
+    	RunFromAlmModel runFromAlmModel = runFromAlmBuilder.getRunFromAlmModel();
+    	authenticator.logout(
+    			restClient, 
+    			runFromAlmModel.getAlmUserName());
+    }
+    
+    /**
+     * Write test results to xml file
+     * @param build
+     * @param logger
+     * @param results
+     */
+    private void logResults(AbstractBuild<?, ?> build, PrintStream logger, Testsuites results) {
+    	logger.println("Writing test results to file: " + TEST_RESULTS_FILE);
+    	try {
+    		String testResults = MarshallingUtility.marshal(/*Testsuites.class, */results);
+    		FilePath resultsPath = new FilePath(build.getWorkspace(), TEST_RESULTS_FILE);
+    		
+    		PrintWriter writer = new PrintWriter(resultsPath.write());
+    		writer.println(testResults);
+    		writer.close();
+		} catch (Exception e) {
+			e.printStackTrace(logger);
+		}
     }
     
     @Override

@@ -6,8 +6,9 @@ import java.util.Map;
 
 import javax.xml.bind.JAXBException;
 
-import qc.rest.examples.infrastructure.Response;
-import qc.rest.examples.infrastructure.RestConnector;
+import com.hp.application.automation.tools.rest.RestClient;
+import com.hp.application.automation.tools.sse.sdk.ResourceAccessLevel;
+import com.hp.application.automation.tools.sse.sdk.Response;
 
 /**
  * Abstract class for making rest calls
@@ -37,17 +38,19 @@ public abstract class AlmRestHandler<T>{
 	 * @param logger Logger
 	 * @return Returns output from parseXml
 	 */
-	public T getResult(RestConnector con, PrintStream logger) {
+	//public T getResult(RestConnector con, PrintStream logger) {
+	public T getResult(RestClient con, PrintStream logger) {
 		T output = null;
 		Map<String, String> requestHeaders = new HashMap<String, String>();
 		requestHeaders.put("Accept", "application/xml");
 		
-		String requestUrl = con.buildEntityCollectionUrl(getRequest());
+		//String requestUrl = //con.buildEntityCollectionUrl(getRequest()); 
+		String requestUrl = con.buildRestRequest(getRequest());
 		
 		// get xml from alm rest api
 		String responseXml = null;
 		try {
-			Response response = con.httpGet(requestUrl, "", requestHeaders);
+			Response response = con.httpGet(requestUrl, "", requestHeaders, ResourceAccessLevel.PRIVATE);
 			responseXml = response.toString();
 		} catch (Exception e) {
 			e.printStackTrace(logger);
@@ -60,6 +63,9 @@ public abstract class AlmRestHandler<T>{
 			} catch (JAXBException e) {
 				logger.println("An error occurred while retrieving results from ALM.");
 				logger.println("Did you enter the proper credentials in the ALM build step?");
+				e.printStackTrace(logger);
+				logger.println("URL: " + requestUrl);
+				logger.println(responseXml);
 			}
 		}
 		

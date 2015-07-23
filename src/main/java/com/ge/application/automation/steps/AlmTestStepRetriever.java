@@ -11,11 +11,10 @@ import java.util.Map;
 
 import javax.xml.bind.JAXBException;
 
-import qc.rest.examples.infrastructure.Entity;
-import qc.rest.examples.infrastructure.Entity.Fields.Field;
-import qc.rest.examples.infrastructure.EntityMarshallingUtils;
-import qc.rest.examples.infrastructure.RestConnector;
-
+import com.ge.application.automation.steps.Entity;
+import com.ge.application.automation.steps.Entities;
+import com.ge.application.automation.steps.Entity.Fields.Field;
+import com.hp.application.automation.tools.rest.RestClient;
 import com.hp.application.automation.tools.sse.result.model.junit.Failure;
 import com.hp.application.automation.tools.sse.result.model.junit.Testcase;
 import com.hp.application.automation.tools.sse.result.model.junit.Testsuite;
@@ -43,45 +42,22 @@ public class AlmTestStepRetriever {
 	private static final String ALM_DATE_STRING = "yyyy-MM-dd HH:mm:ss";
 	
 	private SimpleDateFormat almDateFormat;
-	private RestConnector con;
+	private RestClient restClient;
 	private PrintStream logger;
 	private Date buildStartTime;
 	private Map<Integer, TestSet> almFolders;
 	
 	/**
 	 * Create a new instance of ALMTestStepRetriever
-	 * @param con
+	 * @param restClient
 	 * @param logger
 	 * @param buildStartTime
 	 */
-	public AlmTestStepRetriever(RestConnector con, PrintStream logger, Date buildStartTime) {
-		this.con = con;
+	public AlmTestStepRetriever(RestClient restClient, PrintStream logger, Date buildStartTime) {
+		this.restClient = restClient;
 		this.logger = logger;
 		this.buildStartTime = buildStartTime;
 		almDateFormat = new SimpleDateFormat(ALM_DATE_STRING);
-	}
-	
-	/**
-	 * @param testSetPaths Array of test set paths
-	 * 		example path: "Root\automation\TestSetA"
-	 * @return Returns the corresponding testsuite
-	 */
-	public Testsuites getTestSetResults(String[] testSetPaths) {
-		List<TestSet> testSets = new ArrayList<TestSet>();
-		
-		// load testSets based on provided test set paths
-		for (String testSetPath: testSetPaths) {
-			Integer testSetId = getTestSetIdFromPath(testSetPath);
-			if (testSetId != null) {
-				testSets.add(new TestSet(
-						getTestSetName(testSetPath),
-						testSetId));
-			}
-        }
-		almFolders = null;
-		
-		// get and return testsuites holding all test results
-		return getTestSetResults(testSets);
 	}
 	
 	/**
@@ -89,7 +65,8 @@ public class AlmTestStepRetriever {
 	 * @param testSetIds 
 	 * @return
 	 */
-	public Testsuites getTestSetResults(List<TestSet> testSets) {
+	public Testsuites getTestSetResults(String[] testSetPaths) {
+		List<TestSet> testSets = getTestSetsFromPaths(testSetPaths);
 		Testsuites testsuites = new Testsuites();
 		
 		for (TestSet testSet: testSets) {
@@ -120,6 +97,27 @@ public class AlmTestStepRetriever {
 	}
 	
 	/**
+	 * Get test sets associated with test set paths
+	 * @param testSetPaths
+	 * @return Returns a list of TestSets in the same order
+	 * 		as the test set paths.
+	 */
+	private List<TestSet> getTestSetsFromPaths(String[] testSetPaths) {
+		List<TestSet> testSets = new ArrayList<TestSet>();
+		
+		// load testSets based on provided test set paths
+		for (String testSetPath: testSetPaths) {
+			Integer testSetId = getTestSetIdFromPath(testSetPath);
+			if (testSetId != null) {
+				testSets.add(new TestSet(
+						getTestSetName(testSetPath),
+						testSetId));
+			}
+        }
+		return testSets;
+	}
+	
+	/**
 	 * Make rest call to get test ids linked to a test set id
 	 * @return Returns List of test ids
 	 */
@@ -143,7 +141,7 @@ public class AlmTestStepRetriever {
 			}
 			
 		};
-		return testIdGetter.getResult(con, logger);
+		return testIdGetter.getResult(restClient, logger);
 	}
 	
 	/**
@@ -155,11 +153,11 @@ public class AlmTestStepRetriever {
 
 			@Override
 			public String parseXml(String xml) throws JAXBException {
-				Entity testEntity = EntityMarshallingUtils.marshal(Entity.class, xml);
+				Entity testEntity = MarshallingUtility.unmarshal(Entity.class, xml);
 				List<Field> fields = testEntity.getFields().getField();
 	        	for (Field field : fields) {
 		        	if (field.getName().equals(NAME)) {
-		        		return field.getValue().get(0);
+		        		return field.getValue().get(0).getValue();
 		        	}
 		        }
 	        	// if nothing found, return null
@@ -172,7 +170,7 @@ public class AlmTestStepRetriever {
 			}
 			
 		};
-		return testNameGetter.getResult(con, logger);
+		return testNameGetter.getResult(restClient, logger);
 	}
 	
 	/**
@@ -217,7 +215,7 @@ public class AlmTestStepRetriever {
 			}
 		};
 		
-		List<Integer> runIds = runIdGetter.getResult(con, logger);
+		List<Integer> runIds = runIdGetter.getResult(restClient, logger);
 		return (runIds.size() == 1)? runIds.get(0) : null;
 	}
 	
@@ -276,13 +274,18 @@ public class AlmTestStepRetriever {
 			}
 		};
 		
-		List<Testcase> runSteps = resultGetter.getResult(con, logger);
-		return contertTestStepsToTestsuites(runSteps, testName);
+		List<Testcase> runSteps = resultGetter.getResult(restClient, logger);
+		return convertTestStepsToTestsuites(runSteps, testName);
 	}
 	
-	private List<Testsuite> contertTestStepsToTestsuites(List<Testcase> runSteps, String testName) {
-		// put testcases into testsuites by iteration
-		// NOTE: this assumes runsteps are ordered by iteration
+	/**
+	 * Group test steps into test suites
+	 * @param runSteps List of run steps. If test steps are from multiple iterations,
+	 * 		they must be grouped by iteration.
+	 * @param testName Name of the test the steps are associated with.
+	 * @return Returns a list of Testsuites (1 per iteration)
+	 */
+	private List<Testsuite> convertTestStepsToTestsuites(List<Testcase> runSteps, String testName) {
 		List<Testsuite> tests = new ArrayList<Testsuite>();
 		Testsuite currentTest = null;
 		int currentIteration = -1;
@@ -358,7 +361,7 @@ public class AlmTestStepRetriever {
 			}
 		
 		};
-		return testSetGetter.getResult(con, logger);
+		return testSetGetter.getResult(restClient, logger);
 	}
 	
 	/**
@@ -389,7 +392,7 @@ public class AlmTestStepRetriever {
 		};
 		
 		Map<Integer, TestSet> directoryMap = new HashMap<Integer, TestSet>();
-		List<TestSet> directories = folderGetter.getResult(con, logger);
+		List<TestSet> directories = folderGetter.getResult(restClient, logger);
 		
 		for (TestSet directory: directories) {
 			directoryMap.put(directory.getId(), directory);
@@ -424,8 +427,7 @@ public class AlmTestStepRetriever {
 			 * and the current directory's name == the desired directory's name,
 			 * move references to parent directory.
 			 */
-			while (i > 0 
-					&& currentFolder != null 
+			while (i > 0 && currentFolder != null 
 					&& currentFolder.getName().equals(pathParts[i])) {
 				currentFolder = almFolders.get(currentFolder.getParentId());
 				i--;

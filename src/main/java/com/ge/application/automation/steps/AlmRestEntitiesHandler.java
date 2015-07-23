@@ -10,23 +10,20 @@ import java.util.Set;
 
 import javax.xml.bind.JAXBException;
 
-import qc.rest.examples.infrastructure.Entities;
-import qc.rest.examples.infrastructure.Entity;
-import qc.rest.examples.infrastructure.Entity.Fields.Field;
-import qc.rest.examples.infrastructure.EntityMarshallingUtils;
+import com.ge.application.automation.steps.Entity;
+import com.ge.application.automation.steps.Entities;
+import com.ge.application.automation.steps.Entity.Fields.Field;
 
 /**
  * Abstract class to handle making rest calls and iterating
  * through entities when return type is Entities
  * 
- * @author 212412070
- *
  * @param <T> Type to be returned by parseXml.
  * 		This is the data type the implementation
  * 		is attempting to get from ALM.
  */
 public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> {
-
+		
 	/**
 	 * @return Returns an array of fields to get from the rest api
 	 */
@@ -60,7 +57,6 @@ public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> 
 	
 	@Override
 	public List<T> parseXml(String xml) throws JAXBException {
-		
 		// list to hold non-null results from processEntity
 		List<T> results = new ArrayList<T>();
 		
@@ -68,8 +64,8 @@ public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> 
 		Set<String> requiredFields = new HashSet<String>(Arrays.asList(getRequiredFieldNames()));
 		
 		// iterate through all entities returned by api call
-		Entities entitySet = EntityMarshallingUtils.marshal(Entities.class, xml);
-		List<Entity> entities = entitySet.getEntities();
+		Entities entitySet = MarshallingUtility.unmarshal(Entities.class, xml);
+		List<Entity> entities = entitySet.getEntity();
         for (Entity entity: entities) {
         	Map<String, String> fieldValues = new HashMap<String, String>();
         	List<Field> fields = entity.getFields().getField();
@@ -78,7 +74,7 @@ public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> 
         	for (Field field : fields) {
         		String fieldName = field.getName();
         		if (requiredFields.contains(fieldName)) {
-        			fieldValues.put(fieldName, field.getValue().get(0));
+        			fieldValues.put(fieldName, field.getValue().get(0).getValue());
         		}
 	        }
         	
@@ -91,5 +87,5 @@ public abstract class AlmRestEntitiesHandler<T> extends AlmRestHandler<List<T>> 
 		
 		return results;
 	}
-
+	
 }
