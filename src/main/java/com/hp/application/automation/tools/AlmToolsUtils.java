@@ -67,7 +67,9 @@ public class AlmToolsUtils {
         args.add(paramFileName);
         
         hpToolsAborterFile.copyFrom(hpToolsAborterUrl);
-        
+
+        out.println("hpToolsAborterUrl:" + hpToolsAborterUrl + " copy it to " + hpToolsAborterFile);
+
         int returnCode = launcher.launch().cmds(args).stdout(out).pwd(hpToolsAborterFile.getParent()).join();
         
         try {
