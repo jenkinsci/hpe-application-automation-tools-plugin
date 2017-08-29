@@ -14,8 +14,7 @@ Latest release branch status:
 ##### The plugin provides the ability to run HPE products with Jenkins during builds.
 
 ## Relevent links
--	**Download the most recent LTS version of the plugin** at [offical plugin Wiki page](https://wiki.jenkins-ci
-.org/display/JENKINS/HPE+Application+Automation+Tools)
+-	**Download the most recent LTS version of the plugin** at [offical plugin Wiki page](https://wiki.jenkins-ci.org/display/JENKINS/HPE+Application+Automation+Tools)
 -	**Check the open issues (and add new issues)** at [Jenkins plugin jira](https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20hp-application-automation-tools-plugin)
 -	**View the plugin’s usage statistics** at [Jenkins.io plugin stats](http://stats.jenkins.io/plugin-installation-trend/hp-application-automation-tools-plugin.stats.json).
 

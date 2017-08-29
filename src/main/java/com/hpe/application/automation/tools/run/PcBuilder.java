@@ -724,7 +724,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
         return getPcModel().getTrendReportId();
     }
 
-    public String autoTestInstanceID()
+    public String getAutoTestInstanceID()
     {
         return getPcModel().getAutoTestInstanceID();
     }
