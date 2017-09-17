@@ -19,7 +19,6 @@ public class SrfServerSettingsModel {
     @DataBoundConstructor
     public SrfServerSettingsModel(String srfTunnelPath, String srfServerName, String srfProxyName,String srfAppName, String srfSecretName ) {
 
-        SrfServerSettingsBuilder mdl = new SrfServerSettingsBuilder();
         Properties props = getProperties();
         this.srfTunnelPath = srfTunnelPath;
         this.srfServerName = srfServerName;

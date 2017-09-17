@@ -84,7 +84,6 @@ public class SrfResultsReport extends Recorder implements Serializable {
             props.setProperty("stapler.resourcePath", "");
             URL[] urls = {this.getClass().getProtectionDomain().getCodeSource().getLocation()};
             try {
-              String jarPath = URLDecoder.decode(urls[0].getFile(), "UTF-8");
               MetaClassLoader.debugLoader = new MetaClassLoader(new SrfClassLoader(urls, null));
             }catch (Exception e){}
             _result =super.getResult();
@@ -140,7 +139,7 @@ public class SrfResultsReport extends Recorder implements Serializable {
                 if(name.compareTo(testName) != 0)
                     continue;
                 JSONArray scriptRuns = jTest.getJSONArray("scriptRuns");
-                JSONObject scriptRun = scriptRuns.getJSONObject(idx - 1);
+
                 JSONObject jo = (JSONObject)_buildInfo.get(0);
                 String y1 = jo.getString("yac");
                 JSONArray runs = jo.getJSONArray("scriptRuns");
