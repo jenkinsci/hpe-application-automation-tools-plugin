@@ -209,9 +209,10 @@ namespace HpToolsLauncher
                 return runDesc;
             }
 
-            if (_qtpApplication.Test != null && _qtpApplication.Test.Modified)
+            if ((_qtpApplication.Test != null) && (_qtpApplication.Test.Modified) && (!_qtpApplication.Test.IsNew))
             {
-                var message = Resources.QtpNotLaunchedError;
+                
+                var message = Resources.QtpUnsavedError;
                 errorReason = message;
                 runDesc.TestState = TestState.Error;
                 runDesc.ErrorDesc = errorReason;
@@ -667,6 +668,8 @@ namespace HpToolsLauncher
 
                             }
                         }
+
+                        _qtpApplication.Test.Close();
                     }
                 }
             }
