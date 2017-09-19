@@ -559,36 +559,7 @@
 			<version>2.0</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.jenkins-ci.main/jenkins-core -->
-		<dependency>
-			<groupId>org.jenkins-ci.main</groupId>
-			<artifactId>jenkins-core</artifactId>
-			<version>2.0</version>
-			<scope>provided</scope>
-		</dependency>
-	        <dependency>
-	            <groupId>commons-io</groupId>
-	            <artifactId>commons-io</artifactId>
-	            <version>2.5</version>
-	        </dependency>
-		<!-- https://mvnrepository.com/artifact/org.fusesource.jansi/jansi -->
-		<dependency>
-			<groupId>org.fusesource.jansi</groupId>
-			<artifactId>jansi</artifactId>
-			<version>1.16</version>
-		</dependency>
 
-		<dependency>
-			<groupId>org.kohsuke.stapler</groupId>
-			<artifactId>stapler</artifactId>
-			<version>1.250</version>
-		</dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>1.3.2</version>
-        </dependency>
 
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
