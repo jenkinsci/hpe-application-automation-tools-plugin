@@ -42,7 +42,7 @@ public class LrScriptHtmlReportAction implements Action {
 
     @Override
     public String getIconFileName() {
-        return "/plugin/hp-application-automation-tools-plugin/PerformanceReport/VuGen.png";
+        return "/plugin/hpe-application-automation-tools-plugin/PerformanceReport/VuGen.png";
     }
 
     @Override

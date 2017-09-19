@@ -104,7 +104,7 @@ public class PerformanceReportAction implements Action, SimpleBuildStep.LastBuil
 
     @Override
     public String getIconFileName() {
-        return "/plugin/hp-application-automation-tools-plugin/PerformanceReport/LoadRunner.png";
+        return "/plugin/hpe-application-automation-tools-plugin/PerformanceReport/LoadRunner.png";
     }
 
     @Override

@@ -49,7 +49,7 @@
 
          <j:forEach var="s" items="${it.allReports}">
            <tr>
-            <td class = "bodycell" align = "center"><img src="${rootURL}/plugin/hp-application-automation-tools-plugin/icons/16x16/html_report.png" alt="Html_report" title="Html Report"/></td>
+            <td class = "bodycell" align = "center"><img src="${rootURL}/plugin/hpe-application-automation-tools-plugin/icons/16x16/html_report.png" alt="Html_report" title="Html Report"/></td>
             <td class = "bodycell"><a href="../${s.htmlUrl}" target="_blank">${s.scriptName}</a></td>
                <td class="bodycell">
                    <a href="../${s.scriptFolderPath}">Open ${s.scriptName} result</a>

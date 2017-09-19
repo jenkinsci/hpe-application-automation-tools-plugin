@@ -77,7 +77,7 @@ public class ConfigurationService {
      * @return
      */
     public static String getPluginVersion() {
-        Plugin plugin = Jenkins.getInstance().getPlugin("hp-application-automation-tools-plugin");
+        Plugin plugin = Jenkins.getInstance().getPlugin("hpe-application-automation-tools-plugin");
         return plugin.getWrapper().getVersion();
     }
 
