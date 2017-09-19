@@ -386,14 +386,14 @@
 		<dependency>
 			<artifactId>integrations-sdk</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.4.4</version>
+			<version>1.4.7</version>
 		</dependency>
 
 		<!-- Obsolete TO BE REMOVED -->
 		<dependency>
 			<artifactId>mqm-rest-client</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.4.12</version>
+			<version>1.4.14</version>
 		</dependency>
 
 		<!-- org.jenkins-ci.main -->
