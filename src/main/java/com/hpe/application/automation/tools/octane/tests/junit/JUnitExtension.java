@@ -18,6 +18,7 @@ package com.hpe.application.automation.tools.octane.tests.junit;
 
 import com.google.inject.Inject;
 import com.hpe.application.automation.tools.octane.actions.cucumber.CucumberTestResultsAction;
+import com.hpe.application.automation.tools.octane.executor.CheckOutSubDirEnvContributor;
 import com.hpe.application.automation.tools.octane.tests.HPRunnerType;
 import com.hpe.application.automation.tools.octane.tests.MqmTestsExtension;
 import com.hpe.application.automation.tools.octane.tests.TestResultContainer;
@@ -157,6 +158,7 @@ public class JUnitExtension extends MqmTestsExtension {
 		private long buildStarted;
 		private FilePath workspace;
 		private boolean stripPackageAndClass;
+		private String sharedCheckOutDirectory;
 
 		//this class is run on master and JUnitXmlIterator is runnning on slave.
 		//this object pass some master2slave data
@@ -172,7 +174,7 @@ public class JUnitExtension extends MqmTestsExtension {
 			this.hpRunnerType = hpRunnerType;
 			this.jenkinsRootUrl = jenkinsRootUrl;
 			this.buildRootDir = build.getRootDir().getCanonicalPath();
-
+			this.sharedCheckOutDirectory = CheckOutSubDirEnvContributor.getSharedCheckOutDirectory(build.getParent());
 
 			//AbstractProject project = (AbstractProject)build.getParent();/*build.getProject()*/;
 			this.jobName =build.getParent().getName();// project.getName();
@@ -209,7 +211,7 @@ public class JUnitExtension extends MqmTestsExtension {
 
 			try {
 				for (FilePath report : reports) {
-					JUnitXmlIterator iterator = new JUnitXmlIterator(report.read(), moduleDetection, workspace, jobName, buildId, buildStarted, stripPackageAndClass, hpRunnerType, jenkinsRootUrl, additionalContext);
+					JUnitXmlIterator iterator = new JUnitXmlIterator(report.read(), moduleDetection, workspace, sharedCheckOutDirectory, jobName, buildId, buildStarted, stripPackageAndClass, hpRunnerType, jenkinsRootUrl, additionalContext);
 					while (iterator.hasNext()) {
 						oos.writeObject(iterator.next());
 					}

@@ -31,6 +31,7 @@ import java.io.*;
 
 public abstract class AbstractResultQueueImpl implements ResultQueue {
 
+	private static final int RETRIES = 3;
 	private final int MAX_RETRIES;
 
 	private FileObjectQueue<QueueItem> queue;
@@ -38,7 +39,7 @@ public abstract class AbstractResultQueueImpl implements ResultQueue {
 	private QueueItem currentItem;
 
 	public AbstractResultQueueImpl() {
-		this.MAX_RETRIES = 3;
+		this.MAX_RETRIES = RETRIES;
 	}
 
 	public AbstractResultQueueImpl(int maxRetries) {

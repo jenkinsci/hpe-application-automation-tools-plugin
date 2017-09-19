@@ -1,0 +1,31 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form"
+         xmlns:st="jelly:stapler">
+
+    <script type="text/javascript">
+        var descriptorImpl =
+        <st:bind value="${descriptor}"/>
+
+        function getTooltip(divElement, selectedProfileName) {
+        descriptorImpl.getTooltip(selectedProfileName,function(response) {
+        var value = response.responseObject();
+        divElement.title = value;
+        });
+        }
+    </script>
+
+    <f:entry title="Network Profile" field="profileName">
+        <div title="${descriptor.getTooltip()}">
+            <f:select default="${descriptor.getDefaultProfileName()}"
+                      onmouseover="{getTooltip(this.parentElement, this.value)}"/>
+        </div>
+    </f:entry>
+
+    <f:entry title="">
+        <div align="right">
+            <f:repeatableDeleteButton/>
+        </div>
+    </f:entry>
+
+</j:jelly>

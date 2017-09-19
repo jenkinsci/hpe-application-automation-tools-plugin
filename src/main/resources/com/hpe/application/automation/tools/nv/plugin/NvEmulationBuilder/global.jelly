@@ -1,0 +1,31 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
+
+    <f:section title="HPE Network Virtualization">
+        <f:block>
+            <div style="padding-top: 1em;">
+                <fieldset style="margin-bottom:1em">
+                    <legend style="font-weight:bold">NV Test Manager Hosts</legend>
+                    <table width="100%">
+                        <f:entry title="">
+                            <f:repeatableProperty field="nvServers" add="Add Test Manager" header="Test Manager"/>
+                        </f:entry>
+                    </table>
+                </fieldset>
+            </div>
+            <div style="padding-top: 1em">
+                <fieldset style="margin-bottom:1em">
+                    <legend style="font-weight:bold">Custom Network Profiles</legend>
+                    <table width="100%">
+                        <f:entry title="">
+                            <f:repeatableProperty field="customProfiles" add="Add Network Profile"
+                                                  header="Network Profile"/>
+                        </f:entry>
+                    </table>
+                </fieldset>
+            </div>
+        </f:block>
+    </f:section>
+
+</j:jelly>

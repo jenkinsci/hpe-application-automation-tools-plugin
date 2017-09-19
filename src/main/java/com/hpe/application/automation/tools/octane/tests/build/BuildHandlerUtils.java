@@ -81,12 +81,21 @@ public class BuildHandlerUtils {
 
 	public static String getJobCiId(Run r) {
 		if (r.getParent() instanceof MatrixConfiguration) {
-			return JobProcessorFactory.getFlowProcessor(((MatrixRun) r).getParentBuild().getParent()).getJobCiId();
+			return JobProcessorFactory.getFlowProcessor(((MatrixRun) r).getParentBuild().getParent()).getTranslateJobName();
 		}
 		if (r.getParent().getClass().getName().equals("org.jenkinsci.plugins.workflow.job.WorkflowJob")) {
-			return JobProcessorFactory.getFlowProcessor(r.getParent()).getJobCiId();
+			return JobProcessorFactory.getFlowProcessor(r.getParent()).getTranslateJobName();
 		}
-		return JobProcessorFactory.getFlowProcessor(((AbstractBuild) r).getProject()).getJobCiId();
+		return JobProcessorFactory.getFlowProcessor(((AbstractBuild) r).getProject()).getTranslateJobName();
 	}
 
+	/**
+	 * Retrieve Job's CI ID
+	 *
+	 * @return Job's CI ID
+	 */
+	public static String translateFolderJobName(String jobPlainName) {
+		String newSplitterCharacters = "/job/";
+		return jobPlainName.replaceAll("/", newSplitterCharacters);
+	}
 }

@@ -154,7 +154,7 @@ public class JobConfigurationProxy {
 				fields.add(new ListField(jsonObject.getString("name"), assignedValues));
 			}
 
-            final String jobCiId = JobProcessorFactory.getFlowProcessor(job).getJobCiId();
+            final String jobCiId = JobProcessorFactory.getFlowProcessor(job).getTranslateJobName();
 
             Pipeline pipeline = client.updatePipeline(ConfigurationService.getModel().getIdentity(), jobCiId,
 					new Pipeline(pipelineId, pipelineObject.getString("name"), null, pipelineObject.getLong("workspaceId"), pipelineObject.getLong("releaseId"), taxonomies, fields, pipelineObject.getBoolean("ignoreTests")));
@@ -248,7 +248,7 @@ public class JobConfigurationProxy {
 			}
 			ret.put("isUftJob", isUftJob);
 
-            final String jobCiId = JobProcessorFactory.getFlowProcessor(job).getJobCiId();
+            final String jobCiId = JobProcessorFactory.getFlowProcessor(job).getTranslateJobName();
             JobConfiguration jobConfiguration = client.getJobConfiguration(ConfigurationService.getModel().getIdentity(), jobCiId);
 
 			if (!jobConfiguration.getWorkspacePipelinesMap().isEmpty()) {

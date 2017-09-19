@@ -94,7 +94,8 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
                 .setUrl(serverUrl)
                 .setInstanceId(model.getIdentity())
                 .setInstanceIdFrom(model.getIdentityFrom())
-                .setSendingTime(System.currentTimeMillis());
+                .setSendingTime(System.currentTimeMillis())
+                .setImpersonatedUser(model.getImpersonatedUser());
         return result;
     }
 
@@ -177,7 +178,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
                             continue;
                         }
                         tmpConfig = dtoFactory.newDTO(PipelineNode.class)
-                                .setJobCiId(JobProcessorFactory.getFlowProcessor(abstractProject).getJobCiId())
+                                .setJobCiId(JobProcessorFactory.getFlowProcessor(abstractProject).getTranslateJobName())
                                 .setName(name);
                         if (includeParameters) {
                             tmpConfig.setParameters(ParameterProcessors.getConfigs(abstractProject));
@@ -186,7 +187,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
                     } else if (tmpItem.getClass().getName().equals("org.jenkinsci.plugins.workflow.job.WorkflowJob")) {
                         Job tmpJob = (Job) tmpItem;
                         tmpConfig = dtoFactory.newDTO(PipelineNode.class)
-                                .setJobCiId(JobProcessorFactory.getFlowProcessor(tmpJob).getJobCiId())
+                                .setJobCiId(JobProcessorFactory.getFlowProcessor(tmpJob).getTranslateJobName())
                                 .setName(name);
                         if (includeParameters) {
                             tmpConfig.setParameters(ParameterProcessors.getConfigs(tmpJob));
@@ -195,7 +196,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
                     } else if (tmpItem.getClass().getName().equals("com.cloudbees.hudson.plugins.folder.Folder")) {
                         for (Job tmpJob : tmpItem.getAllJobs()) {
                             tmpConfig = dtoFactory.newDTO(PipelineNode.class)
-                                    .setJobCiId(JobProcessorFactory.getFlowProcessor(tmpJob).getJobCiId())
+                                    .setJobCiId(JobProcessorFactory.getFlowProcessor(tmpJob).getTranslateJobName())
                                     .setName(tmpJob.getName());
                             if (includeParameters) {
                                 tmpConfig.setParameters(ParameterProcessors.getConfigs(tmpJob));

@@ -20,6 +20,7 @@ import com.hp.mqm.client.MqmRestClient;
 import com.hp.mqm.client.exception.AuthenticationException;
 import com.hp.mqm.client.exception.ServerException;
 import com.hp.mqm.client.exception.TemporarilyUnavailableException;
+import com.hp.mqm.client.model.AbridgedTaskPluginInfo;
 import com.hp.octane.integrations.OctaneSDK;
 import com.hp.octane.integrations.spi.CIPluginServices;
 import com.hp.octane.integrations.api.TasksProcessor;
@@ -27,6 +28,7 @@ import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.connectivity.OctaneResultAbridged;
 import com.hp.octane.integrations.dto.connectivity.OctaneTaskAbridged;
 import com.hpe.application.automation.tools.octane.client.JenkinsMqmRestClientFactory;
+import com.hpe.application.automation.tools.octane.configuration.ConfigurationService;
 import com.hpe.application.automation.tools.octane.configuration.ServerConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -75,12 +77,16 @@ public class BridgeClient {
 					CIPluginServices pluginServices = OctaneSDK.getInstance().getPluginServices();
 					try {
 						MqmRestClient restClient = restClientFactory.obtain(mqmConfig.location, mqmConfig.sharedSpace, mqmConfig.username, mqmConfig.password);
-						tasksJSON = restClient.getAbridgedTasks(
-								serverInstanceId,
-								pluginServices.getServerInfo().getType().value(),
-								pluginServices.getServerInfo().getUrl(),
-								OctaneSDK.API_VERSION,
-								OctaneSDK.SDK_VERSION);
+						AbridgedTaskPluginInfo info = new AbridgedTaskPluginInfo()
+								.setSelfIdentity(serverInstanceId)
+								.setSelfType(pluginServices.getServerInfo().getType().value())
+								.setSelfLocation(pluginServices.getServerInfo().getUrl())
+								.setApiVersion(OctaneSDK.API_VERSION)
+								.setSdkVersion(OctaneSDK.SDK_VERSION)
+								.setPluginVersion(OctaneSDK.getInstance().getPluginServices().getPluginInfo().getVersion())
+								.setOctaneUser(pluginServices.getOctaneConfiguration().getApiKey())
+								.setCiServerUser(ConfigurationService.getModel().getImpersonatedUser());
+						tasksJSON = restClient.getAbridgedTasks(info);
 						isConnected = false;
 						connect();
 						if (tasksJSON != null && !tasksJSON.isEmpty()) {
@@ -144,18 +150,23 @@ public class BridgeClient {
 				taskProcessingExecutors.execute(new Runnable() {
 					@Override
 					public void run() {
-						TasksProcessor TasksProcessor = OctaneSDK.getInstance().getTasksProcessor();
-						OctaneResultAbridged result = TasksProcessor.execute(task);
-						MqmRestClient restClient = restClientFactory.obtain(
-								mqmConfig.location,
-								mqmConfig.sharedSpace,
-								mqmConfig.username,
-								mqmConfig.password);
-						int submitStatus = restClient.putAbridgedResult(
+						try {
+							TasksProcessor TasksProcessor = OctaneSDK.getInstance().getTasksProcessor();
+							OctaneResultAbridged result = TasksProcessor.execute(task);
+							MqmRestClient restClient = restClientFactory.obtain(
+									mqmConfig.location,
+									mqmConfig.sharedSpace,
+									mqmConfig.username,
+									mqmConfig.password);
+
+							int submitStatus = restClient.putAbridgedResult(
 								serverInstanceId,
 								result.getId(),
 								dtoFactory.dtoToJson(result));
-						logger.info("result for task '" + result.getId() + "' submitted with status " + submitStatus);
+							logger.info("result for task '" + result.getId() + "' submitted with status " + submitStatus);
+						} catch (Exception e) {
+							logger.error("failed to submit task '" + task.getId(), e);
+						}
 					}
 				});
 			}

@@ -422,7 +422,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 		String firstTestContent = mergedProperties.getProperty(firstTestKey, "");
 		if (RunFromFileSystemModel.isMtbxContent(firstTestContent)) {
 			try {
-				String mtbxFilePath = createMtbxFileInWs(workspace, firstTestContent);
+				String mtbxFilePath = createMtbxFileInWs(workspace, firstTestContent, time);
 				mergedProperties.setProperty(firstTestKey, mtbxFilePath);
 			} catch (IOException | InterruptedException e) {
 				build.setResult(Result.FAILURE);
@@ -504,12 +504,8 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 		}
 	}
 
-	private static String createMtbxFileInWs(FilePath workspace, String mtbxContent) throws IOException, InterruptedException {
-		Date now = new Date();
-		Format formatter = new SimpleDateFormat("ddMMyyyyHHmmssSSS");
-		String time = formatter.format(now);
-
-		String fileName = "test_suite_" + time + ".mtbx";
+	private static String createMtbxFileInWs(FilePath workspace, String mtbxContent, String timeString) throws IOException, InterruptedException {
+		String fileName = "test_suite_" + timeString + ".mtbx";
 
 		FilePath remoteFile = workspace.child(fileName);
 

@@ -44,8 +44,8 @@ public class RunListenerForLogs extends RunListener<Run> {
 	public void onCompleted(Run r, @Nonnull TaskListener listener) {
 		if (r instanceof AbstractBuild && ConfigurationService.getServerConfiguration().isValid()) {
 			AbstractBuild build = (AbstractBuild) r;
-			logger.info(String.format("Enqueued job [%s#%d]", build.getParent().getName(), build.getNumber()));
-			logDispatcher.enqueueLog(build.getProject().getName(), build.getNumber());
+			logger.info(String.format("Enqueued job [%s#%d]", build.getProject().getFullName(), build.getNumber()));
+			logDispatcher.enqueueLog(build.getProject().getFullName(), build.getNumber());
 		} else {
 			logger.warn("Octane configuration is not valid");
 		}

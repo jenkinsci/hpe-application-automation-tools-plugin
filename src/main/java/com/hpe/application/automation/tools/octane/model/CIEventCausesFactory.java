@@ -19,6 +19,7 @@ package com.hpe.application.automation.tools.octane.model;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.causes.CIEventCause;
 import com.hp.octane.integrations.dto.causes.CIEventCauseType;
+import com.hpe.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.model.Cause;
 import hudson.triggers.SCMTrigger;
 import hudson.triggers.TimerTrigger;
@@ -71,8 +72,8 @@ public final class CIEventCausesFactory {
 	}
 
 	private static String resolveJobCiId(String jobPlainName) {
-		if(jobPlainName.contains("/")  && !jobPlainName.contains(",")) {
-			return jobPlainName.replaceAll("/", "/job/");
+		if(!jobPlainName.contains(",")) {
+			return BuildHandlerUtils.translateFolderJobName(jobPlainName);
 		}
 		return jobPlainName;
 	}

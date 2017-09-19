@@ -1,0 +1,29 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
+
+    <f:entry title="Host Name" field="serverName">
+        <f:textbox name="serverName" clazz="required"/>
+    </f:entry>
+    <f:entry title="IP" field="serverIp">
+        <f:textbox name="serverIp" clazz="required" default="127.0.0.1"/>
+    </f:entry>
+    <f:entry title="Port" field="nvPort">
+        <f:textbox name="nvPort" clazz="required" default="8182"/>
+    </f:entry>
+    <f:entry title="Proxy Port" field="proxyPort">
+        <f:number name="proxyPort" clazz="required" default="8888"/>
+    </f:entry>
+    <f:entry title="Username" field="username">
+        <f:textbox name="username" clazz="required"/>
+    </f:entry>
+    <f:entry title="Password" field="password">
+        <f:password name="password" clazz="required"/>
+    </f:entry>
+    <f:entry title="">
+        <div align="right">
+            <f:repeatableDeleteButton/>
+        </div>
+    </f:entry>
+
+</j:jelly>

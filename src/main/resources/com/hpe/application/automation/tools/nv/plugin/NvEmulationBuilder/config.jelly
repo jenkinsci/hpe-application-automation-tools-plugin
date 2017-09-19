@@ -1,0 +1,78 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
+
+    <f:block>
+        <f:entry title="NV Test Manager Host" field="serverName">
+            <f:select/>
+        </f:entry>
+        <f:advanced>
+            <f:block>
+                <div style="padding-top: 1em">
+                    <f:entry title="Include Client IPs" field="includeClientIPs">
+                        <f:textarea value="${instance.nvModel.includeClientIPs}"/>
+                    </f:entry>
+                </div>
+            </f:block>
+            <f:block>
+                <div style="padding-top: 1em">
+                    <f:entry title="Exclude Server IPs" field="excludeServerIPs">
+                        <f:textarea value="${instance.nvModel.excludeServerIPs}"/>
+                    </f:entry>
+                </div>
+            </f:block>
+        </f:advanced>
+        <f:block>
+            <div style="padding-top: 1em">
+                <f:optionalBlock title="Use NV Test Manager host as a proxy"
+                                 checked="${instance.nvModel.useProxy}" field="useProxyCheckbox">
+                    <f:entry title="Environment Variable" field="envVariable">
+                        <f:textbox name="envVariable" clazz="required"
+                                   value="${instance.nvModel.envVariable}"/>
+                    </f:entry>
+                </f:optionalBlock>
+            </div>
+        </f:block>
+    </f:block>
+
+    <f:block>
+        <div style="padding-top: 2em">
+            <f:entry title="Test Report XMLs" field="reportFiles">
+                <f:textbox name="reportFiles" default="**/TEST-*.xml" value="${instance.nvModel.reportFiles}"/>
+            </f:entry>
+            <f:entry title="Thresholds File" field="thresholdsFile">
+                <f:textbox name="thresholdsFile" clazz="required" value="${instance.nvModel.thresholdsFile}"/>
+            </f:entry>
+        </div>
+    </f:block>
+
+    <f:block>
+        <div style="padding-top: 1em">
+            <fieldset style="margin-bottom:1em">
+                <legend style="font-weight:bold">Network Profiles</legend>
+                <table width="100%">
+                    <f:entry title="">
+                        <f:repeatableProperty field="profileNames" add="Add Network Profile"/>
+                    </f:entry>
+                </table>
+            </fieldset>
+        </div>
+    </f:block>
+
+    <f:block>
+        <div style="padding-top: 1em">
+            <fieldset style="margin-bottom:1em">
+                <legend style="font-weight:bold">Steps to Run</legend>
+                <table width="100%">
+                    <f:section>
+                        <f:nested>
+                            <f:hetero-list name="steps" hasHeader="true" descriptors="${descriptor.getSteps(it)}"
+                                           items="${instance.nvModel.steps}" addCaption="Add Step"/>
+                        </f:nested>
+                    </f:section>
+                </table>
+            </fieldset>
+        </div>
+    </f:block>
+</j:jelly>
+

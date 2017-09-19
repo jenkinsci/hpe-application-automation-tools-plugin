@@ -1,0 +1,39 @@
+[
+	{
+		"profileName" : "No Emulation",
+		"latency" : "0",
+		"packet" : "0",
+		"bandwidthIn" : "UNRESTRICTED",
+		"bandwidthOut" : "UNRESTRICTED"
+	}, {
+		"profileName" : "2.5G Busy",
+		"latency" : "300",
+		"packet" : "0.5",
+		"bandwidthIn" : "KBPS128",
+		"bandwidthOut" : "KBPS56"
+	}, {
+		"profileName" : "3G Busy",
+		"latency" : "200",
+		"packet" : "0.5",
+		"bandwidthIn" : "KBPS512",
+		"bandwidthOut" : "KBPS128"
+	}, {
+		"profileName" : "3G Good",
+		"latency" : "80",
+		"packet" : "0",
+		"bandwidthIn" : "KBPS2048",
+		"bandwidthOut" : "KBPS512"
+	}, {
+		"profileName" : "3G Typical",
+		"latency" : "120",
+		"packet" : "0.5",
+		"bandwidthIn" : "KBPS512",
+		"bandwidthOut" : "KBPS256"
+	}, {
+		"profileName" : "4G Good",
+		"latency" : "40",
+		"packet" : "0",
+		"bandwidthIn" : "KBPS10240",
+		"bandwidthOut" : "KBPS8192"
+	}
+]

@@ -17,21 +17,23 @@
 package com.hpe.application.automation.tools.octane.executor;
 
 import antlr.ANTLRException;
-import com.hpe.application.automation.tools.model.ResultsPublisherModel;
-import com.hpe.application.automation.tools.octane.actions.UFTTestDetectionPublisher;
-import com.hpe.application.automation.tools.results.RunResultRecorder;
-import com.hpe.application.automation.tools.run.RunFromFileBuilder;
 import com.hp.octane.integrations.dto.executor.DiscoveryInfo;
 import com.hp.octane.integrations.dto.executor.TestExecutionInfo;
 import com.hp.octane.integrations.dto.executor.TestSuiteExecutionInfo;
 import com.hp.octane.integrations.dto.executor.impl.TestingToolType;
 import com.hp.octane.integrations.dto.scm.SCMRepository;
 import com.hp.octane.integrations.dto.scm.SCMType;
+import com.hpe.application.automation.tools.model.ResultsPublisherModel;
+import com.hpe.application.automation.tools.octane.actions.UFTTestDetectionPublisher;
+import com.hpe.application.automation.tools.results.RunResultRecorder;
+import com.hpe.application.automation.tools.run.RunFromFileBuilder;
 import hudson.model.*;
 import hudson.plugins.git.BranchSpec;
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.SubmoduleConfig;
 import hudson.plugins.git.UserRemoteConfig;
+import hudson.plugins.git.extensions.GitSCMExtension;
+import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
 import hudson.tasks.LogRotator;
 import hudson.triggers.SCMTrigger;
 import jenkins.model.BuildDiscarder;
@@ -125,7 +127,7 @@ public class TestExecutionJobCreatorService {
                         suiteExecutionInfo.getTestingToolType().toString(), suiteExecutionInfo.getSuiteId()));
             }
 
-            setScmRepository(suiteExecutionInfo.getScmRepository(), suiteExecutionInfo.getScmRepositoryCredentialsId(), proj);
+            setScmRepository(suiteExecutionInfo.getScmRepository(), suiteExecutionInfo.getScmRepositoryCredentialsId(), proj, true);
             setBuildDiscarder(proj, 40);
             addConstantParameter(proj, SUITE_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteId(), "ALM Octane test suite ID");
             addStringParameter(proj, SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the ALM Octane test suite run to associate with the test run results. Provided by ALM Octane when running a planned suite run.\nOtherwise, leave this parameter empty. ALM Octane creates a new  test suite run for the new results.");
@@ -159,12 +161,19 @@ public class TestExecutionJobCreatorService {
         }
     }
 
-    private static void setScmRepository(SCMRepository scmRepository, String scmRepositoryCredentialsId, FreeStyleProject proj) {
+    private static void setScmRepository(SCMRepository scmRepository, String scmRepositoryCredentialsId, FreeStyleProject proj, boolean sharedCheckoutFolder) {
         if (SCMType.GIT.equals(scmRepository.getType())) {
             try {
 
                 List<UserRemoteConfig> repoLists = Arrays.asList(new UserRemoteConfig(scmRepository.getUrl(), null, null, scmRepositoryCredentialsId));
-                GitSCM scm = new GitSCM(repoLists, Collections.singletonList(new BranchSpec("")), Boolean.valueOf(false), Collections.<SubmoduleConfig>emptyList(), null, null, null);
+                List<GitSCMExtension> extensions = null;
+
+                if (sharedCheckoutFolder) {
+                    String relativeCheckOut = "..\\..\\_test_sources\\" + scmRepository.getUrl().replaceAll("[<>:\"/\\|?*]", "_");
+                    RelativeTargetDirectory targetDirectory = new RelativeTargetDirectory(relativeCheckOut);
+                    extensions = Arrays.<GitSCMExtension>asList(targetDirectory);
+                }
+                GitSCM scm = new GitSCM(repoLists, Collections.singletonList(new BranchSpec("")), false, Collections.<SubmoduleConfig>emptyList(), null, null, extensions);
 
                 //GitSCM scm = new GitSCM(scmRepository.getUrl());
                 proj.setScm(scm);
@@ -178,12 +187,12 @@ public class TestExecutionJobCreatorService {
 
     private static String prepareMtbxData(List<TestExecutionInfo> tests) throws IOException {
         /*<Mtbx>
-            <Test name="test1" path="c:\tests\APITest1">
+            <Test name="test1" path="${WORKSPACE}\${CHECKOUT_SUBDIR}\APITest1">
 			<Parameter name="A" value="abc" type="string"/>
 			<DataTable path="${WORKSPACE}\aa\bbb.xslx"/>
 			 ….
 			</Test>
-			<Test name="test2" path="${WORKSPACE}\test2">
+			<Test name="test2" path="${WORKSPACE}\${CHECKOUT_SUBDIR}\test2">
 				<Parameter name="p1" value="123" type="int"/>
 				<Parameter name="p4" value="123.4" type="float"/>
 			….
@@ -200,12 +209,12 @@ public class TestExecutionJobCreatorService {
             for (TestExecutionInfo test : tests) {
                 Element testElement = doc.createElement("Test");
                 testElement.setAttribute("name", test.getTestName());
-                String path = "${WORKSPACE}" + (StringUtils.isEmpty(test.getPackageName()) ? "" : OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getPackageName()) + OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getTestName();
+                String path = "${WORKSPACE}\\${CHECKOUT_SUBDIR}" + (StringUtils.isEmpty(test.getPackageName()) ? "" : OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getPackageName()) + OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getTestName();
                 testElement.setAttribute("path", path);
 
                 if (StringUtils.isNotEmpty(test.getDataTable())) {
                     Element dataTableElement = doc.createElement("DataTable");
-                    dataTableElement.setAttribute("path", "${WORKSPACE}" + OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getDataTable());
+                    dataTableElement.setAttribute("path", "${WORKSPACE}\\${CHECKOUT_SUBDIR}" + OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getDataTable());
                     testElement.appendChild(dataTableElement);
                 }
 
@@ -276,7 +285,7 @@ public class TestExecutionJobCreatorService {
                         discoveryInfo.getTestingToolType().toString(), discoveryInfo.getExecutorId()));
             }
 
-            setScmRepository(discoveryInfo.getScmRepository(), discoveryInfo.getScmRepositoryCredentialsId(), proj);
+            setScmRepository(discoveryInfo.getScmRepository(), discoveryInfo.getScmRepositoryCredentialsId(), proj, false);
             setBuildDiscarder(proj, 20);
             addConstantParameter(proj, EXECUTOR_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "ALM Octane testing tool connection ID");
             addConstantParameter(proj, EXECUTOR_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "ALM Octane testing tool connection logical name");

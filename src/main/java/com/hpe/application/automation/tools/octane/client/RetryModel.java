@@ -25,10 +25,12 @@ import hudson.util.TimeUnit2;
 @Extension
 public class RetryModel implements ConfigurationListener {
 
+    private static final long[] QUIET_PERIOD_DURATION = { 1, 10, 60 };
+
     private long[] QUIET_PERIOD = {
-            TimeUnit2.MINUTES.toMillis(1),
-            TimeUnit2.MINUTES.toMillis(10),
-            TimeUnit2.MINUTES.toMillis(60)
+            TimeUnit2.MINUTES.toMillis(QUIET_PERIOD_DURATION[0]),
+            TimeUnit2.MINUTES.toMillis(QUIET_PERIOD_DURATION[1]),
+            TimeUnit2.MINUTES.toMillis(QUIET_PERIOD_DURATION[2])
     };
 
     private long boundary;

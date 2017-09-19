@@ -65,13 +65,15 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 	private String externalURL;
 	private List<ModuleDetection> moduleDetection;
 	private String jenkinsRootUrl;
+	private String sharedCheckOutDirectory;
 	private Object additionalContext;
 
-	public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext) throws XMLStreamException {
+	public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String sharedCheckOutDirectory, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext) throws XMLStreamException {
 		super(read);
 		this.stripPackageAndClass = stripPackageAndClass;
 		this.moduleDetection = moduleDetection;
 		this.workspace = workspace;
+		this.sharedCheckOutDirectory = sharedCheckOutDirectory;
 		this.buildId = buildId;
 		this.jobName = jobName;
 		this.buildStarted = buildStarted;
@@ -140,7 +142,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 				errorMsg = "";
 			} else if ("className".equals(localName)) { // NON-NLS
 				String fqn = readNextValue();
-				int p = fqn.lastIndexOf(".");
+				int p = fqn.lastIndexOf('.');
 				className = fqn.substring(p + 1);
 				if (p > 0) {
 					packageName = fqn.substring(0, p);
@@ -160,7 +162,8 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 					if (testName.startsWith(workspace.getRemote())) {
 						// if workspace is prefix of the method name, cut it off
 						// currently this handling is needed for UFT tests
-						String path = testName.substring(workspace.getRemote().length());
+						int testStartIndex = workspace.getRemote().length() + (sharedCheckOutDirectory == null ? 0 : (sharedCheckOutDirectory.length() + 1));
+						String path = testName.substring(testStartIndex);
 						path = path.replace(OctaneConstants.General.LINUX_PATH_SPLITTER, OctaneConstants.General.WINDOWS_PATH_SPLITTER);
 						path = StringUtils.strip(path, OctaneConstants.General.WINDOWS_PATH_SPLITTER);
 
@@ -216,7 +219,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 			} else if ("errorDetails".equals(localName)) { // NON-NLS
 				status = TestResultStatus.FAILED;
 				errorMsg = readNextValue();
-				int index = stackTraceStr.indexOf(":");
+				int index = stackTraceStr.indexOf(':');
 				if (index >= 0) {
 					errorType = stackTraceStr.substring(0, index);
 				}
@@ -241,10 +244,10 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 	private String cleanTestName(String testName) {
 		// subfolder\testname
 		if (testName.contains("\\")) {
-			return testName.substring(testName.lastIndexOf("\\") + 1);
+			return testName.substring(testName.lastIndexOf('\\') + 1);
 		}
 		if (testName.contains("/")) {
-			return testName.substring(testName.lastIndexOf("/") + 1);
+			return testName.substring(testName.lastIndexOf('/') + 1);
 		}
 		return testName;
 	}
