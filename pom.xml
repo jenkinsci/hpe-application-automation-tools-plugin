@@ -7,7 +7,7 @@
 		<!-- which version of Jenkins is this plugin built against? -->
 	</parent>
 
-	<artifactId>hpe-application-automation-tools-plugin</artifactId>
+	<artifactId>hp-application-automation-tools-plugin</artifactId>
 	<version>5.2.0.2-beta-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>HPE Application Automation Tools</name>
@@ -51,7 +51,7 @@
 	</scm>
 	<issueManagement>
 		<system>JIRA</system>
-		<url>https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20hpe-application-automation-tools-plugin</url>
+		<url>https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20hp-application-automation-tools-plugin</url>
 	</issueManagement>
 
 	<organization>

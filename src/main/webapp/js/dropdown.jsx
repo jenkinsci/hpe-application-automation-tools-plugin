@@ -333,15 +333,15 @@ class ScenarioTable extends React.Component{
                         </td>
                         <td className = "st-table-cell">
                             <td className = "st-table-inner-cell">
-                                <img src="/plugin/hpe-application-automation-tools-plugin/icons/16x16/passed.png" alt="Passed:"/>
+                                <img src="/plugin/hp-application-automation-tools-plugin/icons/16x16/passed.png" alt="Passed:"/>
                                 {this.props.scenData.TransactionSummary.Pass} Passed
                             </td>
                             <td className = "st-table-inner-cell">
-                                <img src="/plugin/hpe-application-automation-tools-plugin/icons/16x16/stop.png" alt="Stopped:"/>
+                                <img src="/plugin/hp-application-automation-tools-plugin/icons/16x16/stop.png" alt="Stopped:"/>
                                 {this.props.scenData.TransactionSummary.Stop} Stopped
                             </td>
                             <td className = "st-table-inner-cell">
-                                <img src="/plugin/hpe-application-automation-tools-plugin/icons/16x16/failed.png" alt="Failed:"/>
+                                <img src="/plugin/hp-application-automation-tools-plugin/icons/16x16/failed.png" alt="Failed:"/>
                                 {this.props.scenData.TransactionSummary.Fail} Failed
                             </td>
                         </td>

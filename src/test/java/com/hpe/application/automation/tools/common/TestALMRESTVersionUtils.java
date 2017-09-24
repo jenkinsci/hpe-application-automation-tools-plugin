@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;
 
-/**888
+/**
  * @author Effi Bar-She'an
  */
 @SuppressWarnings("squid:S2699")

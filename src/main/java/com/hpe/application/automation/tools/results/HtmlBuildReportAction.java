@@ -85,7 +85,7 @@ public class HtmlBuildReportAction implements Action {
 
     @Override
     public String getIconFileName() {
-		return "/plugin/hpe-application-automation-tools-plugin/icons/24x24/uft_report.png";
+		return "/plugin/hp-application-automation-tools-plugin/icons/24x24/uft_report.png";
     }
 
     // other property of the report

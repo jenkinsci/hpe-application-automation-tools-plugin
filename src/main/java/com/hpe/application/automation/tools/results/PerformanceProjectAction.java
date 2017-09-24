@@ -193,7 +193,7 @@ public class PerformanceProjectAction implements Action {
 
     @Override
     public String getIconFileName() {
-        return "/plugin/hpe-application-automation-tools-plugin/PerformanceReport/LoadRunner.png";
+        return "/plugin/hp-application-automation-tools-plugin/PerformanceReport/LoadRunner.png";
     }
 
     @Override
