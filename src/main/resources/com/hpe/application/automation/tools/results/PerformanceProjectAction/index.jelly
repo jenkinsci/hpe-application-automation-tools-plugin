@@ -33,23 +33,23 @@
 
         <l:main-panel>
             <link rel="stylesheet" type="text/css"
-                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/chartist.css"></link>
+                  href="${resURL}/plugin/hpe-application-automation-tools-plugin/css/chartist.css"></link>
             <link rel="stylesheet" type="text/css"
-                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/chartistLegend.css"></link>
+                  href="${resURL}/plugin/hpe-application-automation-tools-plugin/css/chartistLegend.css"></link>
             <link rel="stylesheet" type="text/css"
-                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/chartist-plugin-tooltip.css"></link>
+                  href="${resURL}/plugin/hpe-application-automation-tools-plugin/css/chartist-plugin-tooltip.css"></link>
             <link rel="stylesheet" type="text/css"
-                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/ColorPlate.css"></link>
+                  href="${resURL}/plugin/hpe-application-automation-tools-plugin/css/ColorPlate.css"></link>
             <link rel="stylesheet" type="text/css"
-                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/projectReport.css"></link>
-            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist.js"/>
-            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-legend.js"/>
-            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-tooltip.min.js"/>
-            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-axistitle.min.js"/>
-            <!--<script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/react/react-with-addons.min.js"></script>-->
+                  href="${resURL}/plugin/hpe-application-automation-tools-plugin/css/projectReport.css"></link>
+            <script src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/libaries/chartist/chartist.js"/>
+            <script src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-legend.js"/>
+            <script src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-tooltip.min.js"/>
+            <script src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-axistitle.min.js"/>
+            <!--<script src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/libaries/react/react-with-addons.min.js"></script>-->
             <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.3.2/react-with-addons.js"></script>
             <script
-                    src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/react/react-dom.js"></script>
+                    src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/libaries/react/react-dom.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.38/browser.js"></script>
             <st:bind var="graphData" value="${it.GraphData}"/>
 
@@ -69,9 +69,9 @@
             <div class="scenarioSummary"></div>
             <div class="graphCon"></div>
 
-            <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/jslib.js"/>
+            <script type="text/javascript" src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/jslib.js"/>
             <script type="text/babel"
-                    src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/dropdown.jsx"></script>
+                    src="${rootURL}/plugin/hpe-application-automation-tools-plugin/js/dropdown.jsx"></script>
         </l:main-panel>
     </l:layout>
 </j:jelly>

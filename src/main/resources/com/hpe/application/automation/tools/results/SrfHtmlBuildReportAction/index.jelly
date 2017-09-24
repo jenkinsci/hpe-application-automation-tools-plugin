@@ -1,4 +1,5 @@
 <?jelly escape-by-default='true'?>
+
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:p="/lib/hudson/project" xmlns:s="/lib/samples">
   <l:layout title="UFT Report">
     <style type="text/css">
@@ -53,7 +54,6 @@
            <tr>
              <j:choose>
                 <j:when test="${s.isHtmlReport}">
-
                     <td class = "bodycell" align = "center"><img src="${rootURL}/plugin/hpe-application-automation-tools-plugin/icons/16x16/html_report.png" alt="Html_report" title="Html Report"/></td>
                     <td class = "bodycell"><a href="../${s.urlName}" target="_blank">${s.disPlayName}</a></td>
                 </j:when>
