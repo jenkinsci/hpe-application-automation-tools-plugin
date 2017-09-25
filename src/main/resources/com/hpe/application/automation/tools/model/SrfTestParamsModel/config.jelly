@@ -6,10 +6,25 @@
 - THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 -->
-<!--
-  This view is used to render the installed plugins page.
--->
 <?jelly escape-by-default='true'?>
-<div>
-  This plugin enables integration with HPE products, such as: ALM, ALM Octane, Unified Functional Testing, LoadRunner, and Performance Center.
-</div>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+
+
+    <f:entry title="Parameter Name" field="name">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry title="Parameter Value" field="value">
+        <f:textbox/>
+
+    </f:entry>
+
+    <f:entry>
+        <div align="right">
+            <f:repeatableDeleteButton/>
+        </div>
+    </f:entry>
+
+</j:jelly>

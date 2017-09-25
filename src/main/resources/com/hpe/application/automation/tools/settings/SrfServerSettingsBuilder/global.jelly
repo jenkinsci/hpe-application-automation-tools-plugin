@@ -1,0 +1,163 @@
+<!--
+
+- (c) Copyright 2012 Hewlett-Packard Development Company, L.P.
+- Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+- The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<body>
+	<script>
+		var anchor;
+
+		setInterval(srfInit, 350);
+		function getAddButton(collection) {
+			var len = collection.length;
+			if (len === 0)
+				return null;
+			if (len === 1) {
+				var name = collection.item(0).innerText;
+				if (name.charAt(0) === 'A')
+					return collection.item(0);
+				else
+					return null;
+			}
+			else {
+				var name = collection.item(0).innerText;
+				if (name.charAt(0) === 'A')
+					return collection.item(0);
+				else
+					return collection.item(1);
+
+			}
+		}
+		function getDelButton(collection) {
+			var len = collection.length;
+			if (len === 0)
+				return null;
+			if (len === 1) {
+				var name = collection.item(0).innerText;
+				if (name.charAt(0) === 'D')
+					return collection.item(0);
+				else
+					return null;
+			}
+			else {
+				var name = collection.item(0).innerText;
+				if (name.charAt(0) === 'D')
+					return collection.item(0);
+				else
+					return collection.item(1);
+
+			}
+		}
+		function srfInit() {
+			if(document.readyState.localeCompare("loading") == 0)
+			    return;
+			anchor = document.getElementById('SRF_123');
+			var p = anchor.parentNode;
+			if (p == null) {
+				anchor.innerText = "null";
+			}
+			else {
+				//noinspection JSUnresolvedVariable
+				anchor.innerText = '${instance}'.toString();
+			}
+			var buttons = p.getElementsByTagName("button");
+			anchor.innerText = buttons.item(0).toString();
+			window.btn = getAddButton(buttons);
+			window.delBtn = getDelButton(buttons);
+			if(delBtn != undefined)
+			    btn.disabled=true;
+			else
+			    btn.disabled=false;
+			anchor.innerText = btn.id;
+//			if (btn.onclick == undefined)
+//				btn.addEventListener("click", srfClick);
+			window.srfAddButton = btn;
+		}
+
+		function srfClick(e) {
+			anchor.innerText = "click entered";
+			srfAddButton.disabled = true;
+			var p = anchor.parentNode;
+			if (p.getElementsByTagName("button").length > 1) {
+				window.delBtn = p.getElementsByTagName("button").item(1);
+				delBtn.addEventListener("click", srfDelClick);
+			}
+			return;
+		}
+
+		function srfDelClick(e) {
+			anchor.innerText = "del clicked";
+			btn.disabled = false;
+			return;
+		}
+
+		function getSrfButton() {
+			return window.srfAddButton;
+		}
+	</script>
+	<!--
+      This Jelly script is used to produce the global configuration option.
+
+      Jenkins uses a set of tag libraries to provide uniformity in forms.
+      To determine where this tag is defined, first check the namespace URI,
+      and then look under $JENKINS/views/. For example, <f:section> is defined
+      in $JENKINS/views/lib/form/section.jelly.
+
+      It's also often useful to just check other similar scripts to see what
+      tags they use. Views are always organized according to its owner class,
+      so it should be straightforward to find them.
+    -->
+
+	<f:section title="SRF Common Settings" name="SrfCommon">
+		<j:set var="noAdd"   value="${descriptor.hasSrfServers()}"/>
+
+		<f:entry  title="SRF Server"  description="">
+
+			<j:set var="descr"   value="${instance}"/>
+
+
+
+
+
+			<p hidden="true"  id="SRF_123">empty</p>
+			<f:repeatable name="SRF_123"  var="inst" items="${descriptor.installations}" add="Add SRF Server"  >
+
+
+				<table width="100%">
+					<f:entry title="${%SRF Tunnel Client}" field="srfTunnelPath">
+						<f:textbox value="${inst.srfTunnelPath}" name="srf.srfTunnelPath" />
+					</f:entry>
+
+					<f:entry title="${%SRF Server}" field="srfServerName">
+						<f:textbox value="${inst.srfServerName}" name="srf.srfServerName" />
+					</f:entry>
+
+					<f:entry title="${%SRF Proxy}" field="srfProxyName">
+						<f:textbox value="${inst.srfProxyName}" name="srf.srfProxyName" />
+					</f:entry>
+					<f:entry title="${%Client ID}" field="srfAppName">
+						<f:textbox value="${inst.srfAppName}" name="srf.srfAppName" />
+					</f:entry>
+					<f:entry title="${%Client Secret}" field="srfSecretName">
+						<f:textbox value="${inst.srfSecretName}" name="srf.srfSecretName" />
+					</f:entry>
+					<f:entry title="">
+						<div align="right">
+							<f:repeatableDeleteButton value="Delete SRF Server" />
+						</div>
+					</f:entry>
+				</table>
+			</f:repeatable>
+		</f:entry>
+
+
+
+
+	</f:section>
+</body>
+</j:jelly>
