@@ -30,7 +30,7 @@
             }
         }
     </script>
-    <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/configure.js"/>
+    <script type="text/javascript" src="${rootURL}/plugin/hpe-application-automation-tools-plugin/configure.js"/>
 
     <f:entry title="Tests" field="fsTests">
         <f:expandableTextbox name="runfromfs.fsTests" value="${instance.runFromFileModel.fsTests}"/>
