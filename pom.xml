@@ -8,7 +8,7 @@
 	</parent>
 
 	<artifactId>hp-application-automation-tools-plugin</artifactId>
-	<version>5.2.0.2-beta-SNAPSHOT</version>
+	<version>5.2</version>
 	<packaging>hpi</packaging>
 	<name>HPE Application Automation Tools</name>
 	<description>The plugin integrates Jenkins with the following HPE products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
@@ -30,10 +30,6 @@
 		<workflow.version>2.2</workflow.version>
 		<maven.exec.skip>false</maven.exec.skip>
 		<bdi.version>1.0.4a</bdi.version>
-		<google.gson.version>2.5</google.gson.version>
-		<apache.commons.validator.version>1.5.0</apache.commons.validator.version>
-		<jackson.version>2.7.0</jackson.version>
-		<jdom.version>2.0.6</jdom.version>
 	</properties>
 
 	<distributionManagement>
@@ -52,7 +48,7 @@
 		<developerConnection>scm:git:ssh://git@github.com/jenkinsci/hpe-application-automation-tools-plugin.git
 		</developerConnection>
 		<url>https://github.com/jenkinsci/hpe-application-automation-tools-plugin</url>
-		<tag>HEAD</tag>
+		<tag>hpe-application-automation-tools-plugin-5.2</tag>
 	</scm>
 	<issueManagement>
 		<system>JIRA</system>
@@ -391,47 +387,14 @@
 		<dependency>
 			<artifactId>integrations-sdk</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.4.13</version>
+			<version>1.4.4</version>
 		</dependency>
-		
-		<!-- NV jenkins plugins -->
-		
-		<dependency>
-            <groupId>com.hpe.nv</groupId>
-            <artifactId>hpe-nv-java-api</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>${google.gson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-validator</groupId>
-            <artifactId>commons-validator</artifactId>
-            <version>${apache.commons.validator.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
 
 		<!-- Obsolete TO BE REMOVED -->
 		<dependency>
 			<artifactId>mqm-rest-client</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.4.18</version>
+			<version>1.4.7</version>
 		</dependency>
 
 		<!-- org.jenkins-ci.main -->
@@ -549,6 +512,12 @@
 			<version>1.2.3</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.hp.bdi</groupId>
+			<artifactId>bdi-sdk</artifactId>
+			<version>${bdi.version}</version>
+		</dependency>
+
 		<!--Extensibility-->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
@@ -596,6 +565,18 @@
 			<artifactId>jenkins-test-harness-tools</artifactId>
 			<version>2.0</version>
 			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-common</artifactId>
+			<version>2.9</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
+		<dependency>
+			<groupId>org.glassfish.jersey.media</groupId>
+			<artifactId>jersey-media-sse</artifactId>
+			<version>2.9</version>
 		</dependency>
 
 	</dependencies>
