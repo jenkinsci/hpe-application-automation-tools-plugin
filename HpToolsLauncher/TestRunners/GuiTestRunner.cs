@@ -418,7 +418,13 @@ namespace HpToolsLauncher
                     Thread.Sleep(200);
                     if (_timeLeftUntilTimeout - _stopwatch.Elapsed <= TimeSpan.Zero)
                     {
-                        _qtpApplication.Test.Stop();
+                        Process timeBomb = StartTimedUftProcessKiller();
+                        if(TryStopUftExecution())
+                        {
+                            // If UFT was Stopped properly we can kill the Killer.
+                            timeBomb.Kill();
+                        }
+                        
                         testResults.TestState = TestState.Error;
                         testResults.ErrorDesc = Resources.GeneralTimeoutExpired;
                         ConsoleWriter.WriteLine(Resources.GeneralTimeoutExpired);
@@ -503,6 +509,38 @@ namespace HpToolsLauncher
 
             return result;
         }
+
+        private bool TryStopUftExecution()
+        {
+            try
+            {
+                _qtpApplication.Test.Stop();
+                return true;
+            }
+            catch (Exception)
+            {
+                // ERROR Is Not Interesting
+                Console.WriteLine("UFT Stop Failed. Most Probably UFT Hanged and a TimeBomb process Killed it");
+                return false;
+            }
+        }
+
+        private Process StartTimedUftProcessKiller()
+        {
+            ProcessStartInfo processInfo;
+            Process process;
+
+            processInfo = new ProcessStartInfo("cmd.exe", "/c \"timeout /t 30 /nobreak & taskkill /F /IM uft* /IM qtpautomationagent*\"");
+            processInfo.CreateNoWindow = true;
+            processInfo.UseShellExecute = false;
+            // *** Redirect the output ***
+            processInfo.RedirectStandardError = true;
+            processInfo.RedirectStandardOutput = true;
+
+            process = Process.Start(processInfo);
+            return process;
+        }
+
 
         private void KillQtp()
         {
