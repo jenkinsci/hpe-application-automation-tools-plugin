@@ -186,92 +186,167 @@ namespace HpToolsLauncher
         {
             //create a new Run Results object
             TestSuiteRunResults activeRunDesc = new TestSuiteRunResults();
+            TestInfo firstTest = _tests[0];
 
             double totalTime = 0;
+            var start = DateTime.Now;
+
             try
             {
-                var start = DateTime.Now;
+                logCleanupTestInfo();
+
                 foreach (var test in _tests)
                 {
+                    if (IsTestPlaceholder(test)) continue;
                     if (RunCancelled()) break;
 
-                    var testStart = DateTime.Now;
-
-                    string errorReason = string.Empty;
                     TestRunResults runResult = null;
-                    try
-                    {
-                        runResult = RunHPToolsTest(test, ref errorReason);
-                    }
-                    catch (Exception ex)
-                    {
-                        runResult = new TestRunResults();
-                        runResult.TestState = TestState.Error;
-                        runResult.ErrorDesc = ex.Message;
-                        runResult.TestName = test.TestName;
-                    }
 
-                    //get the original source for this test, for grouping tests under test classes
-                    runResult.TestGroup = test.TestGroup;
+                    runResult = ExecuteTest(test);
+                    if (RunCancelled()) break;
+
+                    if (IsTestFailed(runResult) && IsCleanupTestDefined())
+                    {
+                        Console.WriteLine("Cleanup Test Execution: " + test.TestName);
+                        runRobotCleanup();
+                        ExecuteTest(GetCleanupTest());
+           
+                        if (RunCancelled()) break;
+
+                        runResult = ExecuteTest(test);
+                    }
 
                     activeRunDesc.TestRuns.Add(runResult);
-
-                    //if fail was terminated before this step, continue
-                    if (runResult.TestState != TestState.Failed)
-                    {
-                        if (runResult.TestState != TestState.Error)
-                        {
-                            Helper.GetTestStateFromReport(runResult);
-                        }
-                        else
-                        {
-                            if (string.IsNullOrEmpty(runResult.ErrorDesc))
-                            {
-                                if (RunCancelled())
-                                {
-                                    runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionUserCancelled;
-                                }
-                                else
-                                {
-                                    runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionExternalProcess;
-                                }
-                            }
-                            runResult.ReportLocation = null;
-                            runResult.TestState = TestState.Error;
-                        }
-                    }
-
-                    if (runResult.TestState == TestState.Passed && runResult.HasWarnings)
-                    {
-                        runResult.TestState = TestState.Warning;
-                        ConsoleWriter.WriteLine(Resources.FsRunnerTestDoneWarnings);
-                    }
-                    else
-                    {
-                        ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerTestDone, runResult.TestState));
-                    }
-
-                    ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Test complete: " + runResult.TestPath + "\n-------------------------------------------------------------------------------------------------------");
-
-                    UpdateCounters(runResult.TestState);
-                    var testTotalTime = (DateTime.Now - testStart).TotalSeconds;
+                    AnalyzeRunResult(runResult);
                 }
-                totalTime = (DateTime.Now - start).TotalSeconds;
             }
             finally
             {
-                activeRunDesc.NumTests = _tests.Count;
+                totalTime = (DateTime.Now - start).TotalSeconds;
+                activeRunDesc.NumTests = IsCleanupTestDefined() ? _tests.Count - 1 : _tests.Count;
                 activeRunDesc.NumErrors = _errors;
                 activeRunDesc.TotalRunTime = TimeSpan.FromSeconds(totalTime);
                 activeRunDesc.NumFailures = _fail;
 
-                foreach (IFileSysTestRunner cleanupRunner in _colRunnersForCleanup.Values)
+                runRobotCleanup();
+            }
+ 
+            return activeRunDesc;
+        }
+
+
+        private void logCleanupTestInfo()
+        {
+            if (IsCleanupTestDefined())
+            {
+                Console.WriteLine("Used Cleanup Test: " + GetCleanupTest().TestPath);
+            }
+            else
+            {
+                Console.WriteLine("No Cleanup Test was Defined!");
+            }
+        }
+
+        private void AnalyzeRunResult(TestRunResults runResult)
+        {
+            //if fail was terminated before this step, continue
+            if (runResult.TestState != TestState.Failed)
+            {
+                if (runResult.TestState != TestState.Error)
                 {
-                    cleanupRunner.CleanUp();
+
+                    Helper.GetTestStateFromReport(runResult);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(runResult.ErrorDesc))
+                    {
+                        if (RunCancelled())
+                        {
+                            runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionUserCancelled;
+                        }
+                        else
+                        {
+                            runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionExternalProcess;
+                        }
+                    }
+                    runResult.ReportLocation = null;
+                    runResult.TestState = TestState.Error;
                 }
             }
 
-            return activeRunDesc;
+            if (runResult.TestState == TestState.Passed && runResult.HasWarnings)
+            {
+                runResult.TestState = TestState.Warning;
+                ConsoleWriter.WriteLine(Resources.FsRunnerTestDoneWarnings);
+            }
+            else
+            {
+                ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerTestDone, runResult.TestState));
+            }
+
+            ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Test complete: " + runResult.TestPath + "\n-------------------------------------------------------------------------------------------------------");
+
+            UpdateCounters(runResult.TestState);
+        }
+
+        private TestRunResults ExecuteTest(TestInfo test)
+        {
+            TestRunResults runResult = null;
+            string errorReason = string.Empty;
+            var testStart = DateTime.Now;
+            try
+            {
+                runResult = RunHPToolsTest(test, ref errorReason);
+            }
+            catch (Exception ex)
+            {
+                runResult = new TestRunResults();
+                runResult.TestState = TestState.Error;
+                runResult.ErrorDesc = ex.Message;
+                runResult.TestName = test.TestName;
+            }
+
+            //get the original source for this test, for grouping tests under test classes
+            runResult.Runtime = (DateTime.Now - testStart);
+            runResult.TestGroup = test.TestGroup;
+            return runResult;
+        }
+
+        private TestInfo GetCleanupTest()
+        {
+            return _tests[0];
+        }
+
+
+        private bool IsCleanupTestDefined()
+        {
+            if(_tests.Count == 1)
+            {
+                return false;
+            }
+
+            return !IsTestPlaceholder(_tests[0]);
+        }
+
+
+        private bool IsTestPlaceholder(TestInfo test)
+        {
+            return test.TestPath.Equals("-");
+        }
+
+        private bool IsTestFailed(TestRunResults runResult)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void runRobotCleanup()
+        {
+
+            foreach (IFileSysTestRunner cleanupRunner in _colRunnersForCleanup.Values)
+            {
+                cleanupRunner.CleanUp();
+            }
         }
 
         /// <summary>

@@ -259,6 +259,7 @@ namespace HpToolsLauncher
         {
             try
             {
+                Process timeBomb = StartTimedUftProcessKiller();
                 //if we don't have a qtp instance, create one
                 if (_qtpApplication == null)
                 {
@@ -269,6 +270,7 @@ namespace HpToolsLauncher
                 //if the app is running, close it.
                 if (_qtpApplication.Launched)
                     _qtpApplication.Quit();
+                timeBomb.Kill();
             }
             catch
             {
