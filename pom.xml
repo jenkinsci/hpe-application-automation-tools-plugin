@@ -26,7 +26,7 @@
 		<concurrency>1</concurrency>
 		<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
 		<msbuild.configuration>Release</msbuild.configuration>
-		<jenkins.version>1.642.4</jenkins.version>
+		<jenkins.version>2.60.3</jenkins.version>
 		<workflow.version>2.2</workflow.version>
 		<maven.exec.skip>false</maven.exec.skip>
 		<bdi.version>1.0.4a</bdi.version>
@@ -609,8 +609,13 @@
 			<artifactId>jersey-media-sse</artifactId>
 			<version>2.9</version>
 		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>junit</artifactId>
+            <version>1.21</version>
+        </dependency>
 
-	</dependencies>
+    </dependencies>
 
 
 </project>
