@@ -402,6 +402,7 @@ namespace HpToolsLauncher
                 }
                 ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerRunningTest, testResults.TestPath));
 
+                Process timeBomb = StartTimedUftProcessKiller();
                 _qtpApplication.Test.Run(options, false, _qtpParameters);
 
                 result.ReportPath = Path.Combine(testResults.ReportLocation, "Report");
@@ -418,7 +419,6 @@ namespace HpToolsLauncher
                     Thread.Sleep(200);
                     if (_timeLeftUntilTimeout - _stopwatch.Elapsed <= TimeSpan.Zero)
                     {
-                        Process timeBomb = StartTimedUftProcessKiller();
                         if(TryStopUftExecution())
                         {
                             // If UFT was Stopped properly we can kill the Killer.
@@ -438,6 +438,7 @@ namespace HpToolsLauncher
                 {
                     QTPTestCleanup();
                     KillQtp();
+                    timeBomb.Kill();
                     testResults.TestState = TestState.Error;
                     testResults.ErrorDesc = Resources.GeneralTestCanceled;
                     ConsoleWriter.WriteLine(Resources.GeneralTestCanceled);
@@ -475,6 +476,7 @@ namespace HpToolsLauncher
 
                     Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
                 }
+                timeBomb.Kill();
             }
             catch (NullReferenceException e)
             {
@@ -483,6 +485,7 @@ namespace HpToolsLauncher
                 testResults.ErrorDesc = Resources.QtpRunError;
 
                 result.IsSuccess = false;
+ 
                 return result;
             }
             catch (SystemException e)
@@ -505,7 +508,6 @@ namespace HpToolsLauncher
                 result.IsSuccess = false;
                 return result;
             }
-
 
             return result;
         }
@@ -530,7 +532,8 @@ namespace HpToolsLauncher
             ProcessStartInfo processInfo;
             Process process;
 
-            processInfo = new ProcessStartInfo("cmd.exe", "/c \"timeout /t 30 /nobreak & taskkill /F /IM uft* /IM qtpautomationagent*\"");
+            processInfo = new ProcessStartInfo("cmd.exe", "/c \"waitfor SomethingThatIsNeverHappening /t " + 
+                _timeLeftUntilTimeout.TotalSeconds +  " & taskkill /F /IM uft* /IM qtpautomationagent*\"");
             processInfo.CreateNoWindow = true;
             processInfo.UseShellExecute = false;
             // *** Redirect the output ***
