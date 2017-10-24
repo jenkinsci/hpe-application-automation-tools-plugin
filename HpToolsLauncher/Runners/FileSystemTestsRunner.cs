@@ -123,6 +123,7 @@ namespace HpToolsLauncher
                         foreach (var loc in testsLocations)
                         {
                             var test = new TestInfo(loc, loc, source);
+                            test.TestGroup = Directory.GetParent(loc).Name;
                             testGroup.Add(test);
                         }
                     }
@@ -161,7 +162,7 @@ namespace HpToolsLauncher
                 //--handle single test dir, add it with no group
                 if (testGroup.Count == 1)
                 {
-                    testGroup[0].TestGroup = "<None>";
+                    testGroup[0].TestGroup = Directory.GetParent(source).Name;
                 }
 
                 _tests.AddRange(testGroup);
@@ -205,14 +206,14 @@ namespace HpToolsLauncher
                     runResult = ExecuteTest(test);
                     if (RunCancelled()) break;
 
-                    if (IsTestFailed(runResult) && IsCleanupTestDefined())
+                    if (IsTestFailed(runResult) && IsCleanupTestDefined() && !IsCleanupTest(test))
                     {
-                        Console.WriteLine("Cleanup Test Execution: " + test.TestName);
+                        ConsoleWriter.WriteLine("Test Failed: " + runResult.FailureDesc);
+                        Console.WriteLine("CLEANUP AND RE-RUN");
                         runRobotCleanup();
                         ExecuteTest(GetCleanupTest());
            
                         if (RunCancelled()) break;
-
                         runResult = ExecuteTest(test);
                     }
 
@@ -223,7 +224,7 @@ namespace HpToolsLauncher
             finally
             {
                 totalTime = (DateTime.Now - start).TotalSeconds;
-                activeRunDesc.NumTests = IsCleanupTestDefined() ? _tests.Count - 1 : _tests.Count;
+                activeRunDesc.NumTests = _tests.Count;
                 activeRunDesc.NumErrors = _errors;
                 activeRunDesc.TotalRunTime = TimeSpan.FromSeconds(totalTime);
                 activeRunDesc.NumFailures = _fail;
@@ -329,6 +330,11 @@ namespace HpToolsLauncher
             return !IsTestPlaceholder(_tests[0]);
         }
 
+        private bool IsCleanupTest(TestInfo test)
+        {
+            return IsCleanupTestDefined() && test.TestPath.Equals(_tests[0].TestPath);
+        }
+
 
         private bool IsTestPlaceholder(TestInfo test)
         {
@@ -337,7 +343,7 @@ namespace HpToolsLauncher
 
         private bool IsTestFailed(TestRunResults runResult)
         {
-            throw new NotImplementedException();
+            return runResult.TestState == TestState.Failed || runResult.TestState == TestState.Error;
         }
 
         private void runRobotCleanup()

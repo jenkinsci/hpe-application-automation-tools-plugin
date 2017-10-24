@@ -259,7 +259,7 @@ namespace HpToolsLauncher
         {
             try
             {
-                Process timeBomb = StartTimedUftProcessKiller();
+                Process timeBomb = StartTimedUftProcessKiller(10);
                 //if we don't have a qtp instance, create one
                 if (_qtpApplication == null)
                 {
@@ -386,6 +386,7 @@ namespace HpToolsLauncher
         private GuiTestRunResult ExecuteQTPRun(TestRunResults testResults)
         {
             GuiTestRunResult result = new GuiTestRunResult { IsSuccess = true };
+            Process timeBomb = StartTimedUftProcessKiller();
             try
             {
                 Type runResultsOptionstype = Type.GetTypeFromProgID("QuickTest.RunResultsOptions");
@@ -404,7 +405,7 @@ namespace HpToolsLauncher
                 }
                 ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerRunningTest, testResults.TestPath));
 
-                Process timeBomb = StartTimedUftProcessKiller();
+                
                 _qtpApplication.Test.Run(options, false, _qtpParameters);
 
                 result.ReportPath = Path.Combine(testResults.ReportLocation, "Report");
@@ -421,17 +422,13 @@ namespace HpToolsLauncher
                     Thread.Sleep(200);
                     if (_timeLeftUntilTimeout - _stopwatch.Elapsed <= TimeSpan.Zero)
                     {
-                        if(TryStopUftExecution())
-                        {
-                            // If UFT was Stopped properly we can kill the Killer.
-                            timeBomb.Kill();
-                        }
-                        
+                        TryStopUftExecution();
                         testResults.TestState = TestState.Error;
                         testResults.ErrorDesc = Resources.GeneralTimeoutExpired;
                         ConsoleWriter.WriteLine(Resources.GeneralTimeoutExpired);
 
                         result.IsSuccess = false;
+                        timeBomb.Kill();
                         return result;
                     }
                 }
@@ -482,12 +479,13 @@ namespace HpToolsLauncher
             }
             catch (NullReferenceException e)
             {
+                timeBomb.Kill();
                 ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e.Message, e.StackTrace));
                 testResults.TestState = TestState.Error;
                 testResults.ErrorDesc = Resources.QtpRunError;
 
                 result.IsSuccess = false;
- 
+                timeBomb.Kill();
                 return result;
             }
             catch (SystemException e)
@@ -498,16 +496,17 @@ namespace HpToolsLauncher
                 testResults.ErrorDesc = Resources.QtpRunError;
 
                 result.IsSuccess = false;
+                timeBomb.Kill();
                 return result;
             }
             catch (Exception e2)
             {
-
                 ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e2.Message, e2.StackTrace));
                 testResults.TestState = TestState.Error;
                 testResults.ErrorDesc = Resources.QtpRunError;
 
                 result.IsSuccess = false;
+                timeBomb.Kill();
                 return result;
             }
 
@@ -529,13 +528,14 @@ namespace HpToolsLauncher
             }
         }
 
-        private Process StartTimedUftProcessKiller()
+        private Process StartTimedUftProcessKiller(int timeoutInSeconds)
         {
             ProcessStartInfo processInfo;
             Process process;
 
-            processInfo = new ProcessStartInfo("cmd.exe", "/c \"waitfor SomethingThatIsNeverHappening /t " + 
-                _timeLeftUntilTimeout.TotalSeconds +  " & taskkill /F /IM uft* /IM qtpautomationagent*\"");
+            ConsoleWriter.WriteLine("UFT Process Killer Started: " + timeoutInSeconds);
+            processInfo = new ProcessStartInfo("cmd.exe", "/c \"timeout /t " +
+                timeoutInSeconds + " & taskkill /F /IM uft* /IM qtpautomationagent*\"");
             processInfo.CreateNoWindow = true;
             processInfo.UseShellExecute = false;
             // *** Redirect the output ***
@@ -544,6 +544,11 @@ namespace HpToolsLauncher
 
             process = Process.Start(processInfo);
             return process;
+        }
+
+        private Process StartTimedUftProcessKiller()
+        {
+            return StartTimedUftProcessKiller(Convert.ToInt32(_timeLeftUntilTimeout.TotalSeconds));
         }
 
 
