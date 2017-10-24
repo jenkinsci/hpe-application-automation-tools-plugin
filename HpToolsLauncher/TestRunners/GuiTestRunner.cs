@@ -548,7 +548,7 @@ namespace HpToolsLauncher
 
         private Process StartTimedUftProcessKiller()
         {
-            return StartTimedUftProcessKiller(Convert.ToInt32(_timeLeftUntilTimeout.TotalSeconds));
+            return StartTimedUftProcessKiller(Convert.ToInt32(_timeLeftUntilTimeout.TotalSeconds) + 30);
         }
 
 
