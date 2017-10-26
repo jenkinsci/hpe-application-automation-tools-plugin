@@ -129,22 +129,22 @@
 
 
 				<table width="100%">
-					<f:entry title="${%SRF Tunnel Client}" field="srfTunnelPath">
-						<f:textbox value="${inst.srfTunnelPath}" name="srf.srfTunnelPath" />
+					<f:entry title="${%SRF Tunnel Client}" field="srfTunnelPath" >
+                                                <input id="srf_tunnel" size="200%" type="text" value="${inst.srfTunnelPath}" name="srf.srfTunnelPath"  placeholder="Enter your tunnel client location"/>
 					</f:entry>
 
 					<f:entry title="${%SRF Server}" field="srfServerName">
-						<f:textbox value="${inst.srfServerName}" name="srf.srfServerName" />
+						<input size="200%" value="${inst.srfServerName}" name="srf.srfServerName" placeholder="https://srf-qa-nightly-ga.dev-ga.srf-rnd.click"/>
 					</f:entry>
 
 					<f:entry title="${%SRF Proxy}" field="srfProxyName">
-						<f:textbox value="${inst.srfProxyName}" name="srf.srfProxyName" />
+						<input size="200%" value="${inst.srfProxyName}" name="srf.srfProxyName" placeholder="proxy.il.hpecorp.net:8080"/>
 					</f:entry>
 					<f:entry title="${%Client ID}" field="srfAppName">
 						<f:textbox value="${inst.srfAppName}" name="srf.srfAppName" />
 					</f:entry>
 					<f:entry title="${%Client Secret}" field="srfSecretName">
-						<f:textbox value="${inst.srfSecretName}" name="srf.srfSecretName" />
+						<f:password value="${inst.srfSecretName}" name="srf.srfSecretName" />
 					</f:entry>
 					<f:entry title="">
 						<div align="right">
