@@ -56,7 +56,11 @@ public class PcClient {
     public PcClient(PcModel pcModel, PrintStream logger) {
         try {
             model = pcModel;
-            restProxy = new PcRestProxy(model.isHTTPSProtocol(),model.getPcServerName(), model.getAlmDomain(), model.getAlmProject(),logger, model.getProxyOutURL());
+
+            if(model.getProxyOutURL() != null && !model.getProxyOutURL().isEmpty()){
+                logger.println("Using proxy: " + model.getProxyOutURL());
+            }
+            restProxy = new PcRestProxy(model.isHTTPSProtocol(),model.getPcServerName(), model.getAlmDomain(), model.getAlmProject(),logger, model.getProxyOutURL(),model.getProxyOutUser(),model.getProxyOutPassword());
             this.logger = logger;
         }catch (PcException e){
             logger.println(e.getMessage());
@@ -339,13 +343,13 @@ public class PcClient {
                     Thread.sleep(5000);
                     counter++;
                     if(counter >= 120){
-                        logger.println("Error: Publishing didn't ended after 10 minutes, aborting...");
-                        break;
+                        String msg = "Error: Publishing didn't ended after 10 minutes, aborting...";
+                        throw new PcException(msg);
                     }
                 }
              }
 
-        }while (!publishEnded );
+        }while (!publishEnded && counter < 120);
     }
 
     public boolean downloadTrendReportAsPdf(String trendReportId, String directory) throws PcException {

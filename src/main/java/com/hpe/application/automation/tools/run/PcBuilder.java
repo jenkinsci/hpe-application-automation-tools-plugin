@@ -125,7 +125,9 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
             String addRunToTrendReport,
             String trendReportId,
             boolean HTTPSProtocol,
-            String proxyOutURL) {
+            String proxyOutURL,
+            String proxyOutUser,
+            String proxyOutPassword) {
         this.almUserName = almUserName;
         this.almPassword = almPassword;
         this.timeslotDurationHours = timeslotDurationHours;
@@ -151,7 +153,9 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
                         addRunToTrendReport,
                         trendReportId,
                         HTTPSProtocol,
-                        proxyOutURL);
+                        proxyOutURL,
+                        proxyOutUser,
+                        proxyOutPassword);
     }
     
     @Override
@@ -691,6 +695,10 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
 
     }
 
+    public String getServerAndPort()
+    {
+        return getPcModel().getserverAndPort();
+    }
     public String getPcServerName()
     {
         return getPcModel().getPcServerName();
@@ -771,6 +779,8 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
     }
 
     public String getProxyOutURL(){ return getPcModel().getProxyOutURL();}
+    public String getProxyOutUser(){ return getPcModel().getProxyOutUser();}
+    public String getProxyOutPassword(){ return getPcModel().getProxyOutPassword();}
 
     // This indicates to Jenkins that this is an implementation of an extension
     // point

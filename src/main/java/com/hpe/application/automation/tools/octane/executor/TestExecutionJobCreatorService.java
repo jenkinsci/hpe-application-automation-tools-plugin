@@ -61,14 +61,7 @@ import java.util.*;
 public class TestExecutionJobCreatorService {
 
     private static final Logger logger = LogManager.getLogger(TestExecutionJobCreatorService.class);
-    public static final String EXECUTOR_ID_PARAMETER_NAME = "Connection ID";
-    public static final String EXECUTOR_LOGICAL_NAME_PARAMETER_NAME = "Connection logical name";
-    public static final String SUITE_ID_PARAMETER_NAME = "suiteId";//"Suite ID";
-    public static final String SUITE_RUN_ID_PARAMETER_NAME = "suiteRunId";//"Suite run ID";
-    public static final String FULL_SCAN_PARAMETER_NAME = "Full sync";
 
-    public static final String EXECUTION_JOB_MIDDLE_NAME = "test run job - Suite ID";
-    public static final String DISCOVERY_JOB_MIDDLE_NAME = "test discovery job - Connection ID";
 
     /**
      * Create (if needed) and run test execution
@@ -101,8 +94,8 @@ public class TestExecutionJobCreatorService {
 
         //start job
         if (proj != null) {
-            ParameterValue suiteRunIdParam = new StringParameterValue(SUITE_RUN_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteRunId());
-            ParameterValue suiteIdParam = new StringParameterValue(SUITE_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteId());
+            ParameterValue suiteRunIdParam = new StringParameterValue(UftConstants.SUITE_RUN_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteRunId());
+            ParameterValue suiteIdParam = new StringParameterValue(UftConstants.SUITE_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteId());
             ParametersAction parameters = new ParametersAction(suiteRunIdParam, suiteIdParam);
 
             Cause cause = StringUtils.isNotEmpty(suiteExecutionInfo.getSuiteRunId()) ? TriggeredBySuiteRunCause.create(suiteExecutionInfo.getSuiteRunId()) : new Cause.UserIdCause();
@@ -116,7 +109,7 @@ public class TestExecutionJobCreatorService {
         try {
             String projectName = String.format("%s %s %s",
                     suiteExecutionInfo.getTestingToolType().toString(),
-                    EXECUTION_JOB_MIDDLE_NAME,
+                    UftConstants.EXECUTION_JOB_MIDDLE_NAME,
                     suiteExecutionInfo.getSuiteId());
 
             //validate creation of job
@@ -129,8 +122,8 @@ public class TestExecutionJobCreatorService {
 
             setScmRepository(suiteExecutionInfo.getScmRepository(), suiteExecutionInfo.getScmRepositoryCredentialsId(), proj, true);
             setBuildDiscarder(proj, 40);
-            addConstantParameter(proj, SUITE_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteId(), "ALM Octane test suite ID");
-            addStringParameter(proj, SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the ALM Octane test suite run to associate with the test run results. Provided by ALM Octane when running a planned suite run.\nOtherwise, leave this parameter empty. ALM Octane creates a new  test suite run for the new results.");
+            addConstantParameter(proj, UftConstants.SUITE_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteId(), "ALM Octane test suite ID");
+            addStringParameter(proj, UftConstants.SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the ALM Octane test suite run to associate with the test run results. Provided by ALM Octane when running a planned suite run.\nOtherwise, leave this parameter empty. ALM Octane creates a new  test suite run for the new results.");
             addAssignedNode(proj);
 
             //add build action
@@ -230,8 +223,7 @@ public class TestExecutionJobCreatorService {
             StringWriter writer = new StringWriter();
             transformer.transform(new DOMSource(doc), new StreamResult(writer));
 
-            String str = writer.toString();
-            return str;
+            return writer.toString();
         } catch (Exception e) {
             throw new IOException("Failed to build MTBX content : " + e.getMessage());
         }
@@ -262,8 +254,8 @@ public class TestExecutionJobCreatorService {
 
         //start job
         if (proj != null) {
-            ParameterValue executorIdParam = new StringParameterValue(EXECUTOR_ID_PARAMETER_NAME, discoveryInfo.getExecutorId());
-            ParameterValue fullScanParam = new BooleanParameterValue(FULL_SCAN_PARAMETER_NAME, discoveryInfo.isForceFullDiscovery());
+            ParameterValue executorIdParam = new StringParameterValue(UftConstants.EXECUTOR_ID_PARAMETER_NAME, discoveryInfo.getExecutorId());
+            ParameterValue fullScanParam = new BooleanParameterValue(UftConstants.FULL_SCAN_PARAMETER_NAME, discoveryInfo.isForceFullDiscovery());
             ParametersAction parameters = new ParametersAction(executorIdParam, fullScanParam);
 
             Cause cause = new Cause.UserIdCause();
@@ -287,9 +279,9 @@ public class TestExecutionJobCreatorService {
 
             setScmRepository(discoveryInfo.getScmRepository(), discoveryInfo.getScmRepositoryCredentialsId(), proj, false);
             setBuildDiscarder(proj, 20);
-            addConstantParameter(proj, EXECUTOR_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "ALM Octane testing tool connection ID");
-            addConstantParameter(proj, EXECUTOR_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "ALM Octane testing tool connection logical name");
-            addBooleanParameter(proj, FULL_SCAN_PARAMETER_NAME, false, "Specify whether to synchronize the set of tests on ALM Octane with the whole SCM repository or to update the set of tests on ALM Octane based on the latest commits.");
+            addConstantParameter(proj, UftConstants.EXECUTOR_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "ALM Octane testing tool connection ID");
+            addConstantParameter(proj, UftConstants.EXECUTOR_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "ALM Octane testing tool connection logical name");
+            addBooleanParameter(proj, UftConstants.FULL_SCAN_PARAMETER_NAME, false, "Specify whether to synchronize the set of tests on ALM Octane with the whole SCM repository or to update the set of tests on ALM Octane based on the latest commits.");
 
             //set polling once in two minutes
             SCMTrigger scmTrigger = new SCMTrigger("H/2 * * * *");//H/2 * * * * : once in two minutes
@@ -320,13 +312,13 @@ public class TestExecutionJobCreatorService {
     }
 
     private static String buildDiscoveryJobName(TestingToolType testingToolType, String executorId, String executorLogicalName) {
-        String name = String.format("%s %s %s (%s)", testingToolType.toString(), DISCOVERY_JOB_MIDDLE_NAME, executorId, executorLogicalName);
+        String name = String.format("%s %s %s (%s)", testingToolType.toString(), UftConstants.DISCOVERY_JOB_MIDDLE_NAME, executorId, executorLogicalName);
         return name;
     }
 
     private static void setBuildDiscarder(FreeStyleProject proj, int numBuildsToKeep) throws IOException {
-        int IRRELEVANT = -1;
-        BuildDiscarder bd = new LogRotator(IRRELEVANT, numBuildsToKeep, IRRELEVANT, IRRELEVANT);
+        int irrelevant = -1;
+        BuildDiscarder bd = new LogRotator(irrelevant, numBuildsToKeep, irrelevant, irrelevant);
         proj.setBuildDiscarder(bd);
     }
 
@@ -337,7 +329,7 @@ public class TestExecutionJobCreatorService {
      * @param scmTrigger
      */
     private static void delayPollingStart(final FreeStyleProject proj, final SCMTrigger scmTrigger) {
-        long delayStartPolling = 1000 * 60 * 5;//5 minute
+        long delayStartPolling = 1000L * 60 * 5;//5 minute
         Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override

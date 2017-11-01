@@ -11,6 +11,7 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.*;
+import hudson.tasks.junit.CaseResult;
 import hudson.tasks.junit.TestResult;
 import hudson.tasks.junit.TestResultAction;
 import hudson.tasks.test.TestObject;
@@ -36,7 +37,6 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -51,24 +51,17 @@ import java.util.Properties;
 public class SrfResultsReport extends Recorder implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final String PERFORMANCE_REPORT_FOLDER = "PerformanceReport";
-    private static final String IE_REPORT_FOLDER = "IE";
-    private static final String HTML_REPORT_FOLDER = "HTML";
-    private static final String INDEX_HTML_NAME = "index.html";
-    private static final String REPORT_INDEX_NAME = "report.index";
-    private static final String REPORTMETADATE_XML = "report_metadata.xml";
-    private static final String TRANSACTION_SUMMARY_FOLDER = "TransactionSummary";
-    private static final String TRANSACTION_REPORT_NAME = "Report3";
-    private static Hashtable<String, SrfTestResultAction> _hash = new Hashtable<String, SrfTestResultAction>();
-
+    public  static Hashtable<String, SrfTestResultAction> myHash = new Hashtable<String, SrfTestResultAction>();
 
     @DataBoundConstructor
     public SrfResultsReport() {
-
+        if(myHash == null)
+            myHash = new Hashtable<String, SrfTestResultAction>();
 
     }
 
-    public class SrfTestResultAction extends TestResultAction implements Serializable {//implements //StaplerProxy,
+    public class SrfTestResultAction extends TestResultAction {
+        private AbstractBuild<?, ?> _build;
         private JSONArray _buildInfo;
         private int _idx;
         private PrintStream _logger;
@@ -92,25 +85,58 @@ public class SrfResultsReport extends Recorder implements Serializable {
         public Object getWrappedTarget(){
             return _target;
         }
+        private void getBuildInfo(CaseResult p){
+            String data = null;
+            BufferedReader reader = null;
+            try {
+                String path = p.getRun().getRootDir().getPath().concat("/report.json");
+                reader = new BufferedReader(new FileReader(path));
+                String line = null;
+                StringBuffer buf = new StringBuffer();
+                while ( (line = reader.readLine() ) != null){
+                    buf.append(line);
+                }
+                data = buf.toString();
+            }
+            catch (Exception e) {
+            }
+            finally {
+                try {
+                    if(reader != null)
+                        reader.close();
+                } catch (IOException e) {
 
+                }
+            }
+            _buildInfo = JSONArray.fromObject(data);
+        }
         public SrfTestResultAction(AbstractBuild owner, TestResult result, BuildListener listener) {
            super(owner, result, listener);
             String data = null;
             if(listener != null)
              _logger = listener.getLogger();
             _result=result;
+            BufferedReader reader = null;
               try {
                     String path = _build.getRootDir().getPath().concat("/report.json");
-                    BufferedReader reader = new BufferedReader(new FileReader(path));
+                    reader = new BufferedReader(new FileReader(path));
                     String line = null;
                     StringBuffer buf = new StringBuffer();
                     while ( (line = reader.readLine() ) != null){
                         buf.append(line);
                     }
                     data = buf.toString();
-                    reader.close();}
+              }
             catch (Exception e) {
             }
+            finally {
+                  try {
+                      if(reader != null)
+                        reader.close();
+                  } catch (IOException e) {
+
+                  }
+              }
             _buildInfo = JSONArray.fromObject(data);
         }
         public void startLoop(){
@@ -119,18 +145,8 @@ public class SrfResultsReport extends Recorder implements Serializable {
         public  String getDeepLink(Object p){
             String testName = "";
             int idx = ++_idx;
-            try{
-                testName = p.getClass().getMethod("getClassName").invoke(p).toString().toLowerCase();
-            }
-            catch (NoSuchMethodException e){
-                return "NoSuchMethodException";
-            }
-            catch (IllegalAccessException e){
-                return "IllegalAccessException";
-            }
-            catch(InvocationTargetException e){
-                return "InvocationTargetException";
-            }
+            testName = ((CaseResult) p).getClassName().toLowerCase();
+            getBuildInfo((CaseResult)p);
             int cnt = _buildInfo.size();
             String srfUrl = "";
             for (int i = 0; i < cnt; i++) {
@@ -138,7 +154,6 @@ public class SrfResultsReport extends Recorder implements Serializable {
                 String name = jTest.getString("name").toLowerCase();
                 if(name.compareTo(testName) != 0)
                     continue;
-                JSONArray scriptRuns = jTest.getJSONArray("scriptRuns");
 
                 JSONObject jo = (JSONObject)_buildInfo.get(0);
                 String y1 = jo.getString("yac");
@@ -146,10 +161,11 @@ public class SrfResultsReport extends Recorder implements Serializable {
                 int len = runs.size();
                 JSONObject run = runs.getJSONObject(len - idx );
                 String y2 = run.getString("yac");
-                srfUrl = String.format("%1s/results/%1s/details/compare?script-runs=%1s", GetSrfServer(owner), y1, y2);
+                srfUrl = String.format("%1s/results/%1s/details/compare?script-runs=%1s", getSrfServer(owner), y1, y2);
                 String tenant = jTest.getString("tenantid");
                 srfUrl = srfUrl.concat("&TENANTID=").concat(tenant);
             }
+            _logger.println(srfUrl);
             return srfUrl;
         }
         public String getEnvString(Object p){
@@ -188,11 +204,11 @@ public class SrfResultsReport extends Recorder implements Serializable {
         }
         private void setTarget(TestObject t, Hashtable<String, SrfTestResultAction>  h){
             _target = t;
-            _hash.putAll(h);
+            myHash.putAll(h);
         }
     }
-    AbstractBuild<?, ?> _build;
-    private String GetSrfServer(AbstractBuild<?, ?> build){
+
+    private String getSrfServer(AbstractBuild<?, ?> build){
         String ftaasServerAddress = "";
         try {
             String path = build.getProject().getParent().getRootDir().toString();
@@ -201,17 +217,14 @@ public class SrfResultsReport extends Recorder implements Serializable {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
             Document document = documentBuilder.parse(file);
-            String app = document.getElementsByTagName("srfAppName").item(0).getTextContent();
-            String secret = document.getElementsByTagName("srfSecretName").item(0).getTextContent();
             ftaasServerAddress = document.getElementsByTagName("srfServerName").item(0).getTextContent();
-            if((ftaasServerAddress.startsWith("http://")== false) && (ftaasServerAddress.startsWith("https://")== false))
+            if( !ftaasServerAddress.startsWith("http://") && !ftaasServerAddress.startsWith("https://"))
             {
                 String tmp = ftaasServerAddress;
                 ftaasServerAddress="https://";
                 ftaasServerAddress = ftaasServerAddress.concat(tmp);
             }
-            if(ftaasServerAddress.startsWith("http://")) {
-                if (ftaasServerAddress.substring(6).contains(":") == false)
+            if(ftaasServerAddress.startsWith("http://") && !ftaasServerAddress.substring(6).contains(":") ){
                     ftaasServerAddress = ftaasServerAddress.concat(":8080");
             }
             else if(ftaasServerAddress.startsWith("https://")) {
@@ -243,7 +256,7 @@ public class SrfResultsReport extends Recorder implements Serializable {
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
         final List<String> mergedResultNames = new ArrayList<String>();
-        _build = build;
+
 //        TestNameTransformer.all().add(new TestNameTransformer()  );
         SrfTestResultAction action;
         Project<?, ?> project = RuntimeUtils.cast(build.getProject());
@@ -415,6 +428,7 @@ public class SrfResultsReport extends Recorder implements Serializable {
 
     private void write2XML(Document document,String filename)
     {
+        PrintWriter pw = null;
         try {
             document.normalize();
 
@@ -424,11 +438,15 @@ public class SrfResultsReport extends Recorder implements Serializable {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
             DOMSource source = new DOMSource(document);
-            PrintWriter pw = new PrintWriter(new FileOutputStream(filename));
+            pw = new PrintWriter(new FileOutputStream(filename));
             StreamResult result = new StreamResult(pw);
             transformer.transform(source, result);
         } catch (Exception e) {
-            e.printStackTrace();
+            ;
+        }
+        finally {
+            if(pw != null)
+                pw.close();
         }
 
     }
@@ -463,10 +481,9 @@ public class SrfResultsReport extends Recorder implements Serializable {
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-        public static DescriptorImpl _inst;
+        public static  DescriptorImpl _inst;
         public DescriptorImpl() {
             String s=this.getDescriptorUrl();
-
             load();
             _inst = this;
         }

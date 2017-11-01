@@ -84,7 +84,7 @@ public class UftJobCleaner extends AbstractSafeLoggingAsyncPeriodWork {
         long thresholdTimeInMillis = new Date().getTime() - PeriodicWork.DAY * getOutdateThreshold();
         int clearCounter = 0;
         for (FreeStyleProject job : jobs) {
-            if (isExecutorJob(job) && job.getLastBuild() != null && !job.isBuilding()) {
+            if (UftJobRecognizer.isExecutorJob(job) && job.getLastBuild() != null && !job.isBuilding()) {
                 if (thresholdTimeInMillis > job.getLastBuild().getTimeInMillis()) {
                     try {
                         logger.warn(String.format("Job %s is going to be deleted as outdated job, last build was executed at %s", job.getName(), job.getLastBuild().getTimestampString2()));
@@ -101,24 +101,6 @@ public class UftJobCleaner extends AbstractSafeLoggingAsyncPeriodWork {
         logger.warn(String.format("Cleaner found %s outdated execution job", clearCounter));
     }
 
-    private static boolean isExecutorJob(FreeStyleProject job) {
-        ParametersDefinitionProperty parameters = job.getProperty(ParametersDefinitionProperty.class);
-        boolean isExecutorJob = job.getName().contains(TestExecutionJobCreatorService.EXECUTION_JOB_MIDDLE_NAME) &&
-                parameters != null &&
-                parameters.getParameterDefinition(TestExecutionJobCreatorService.SUITE_ID_PARAMETER_NAME) != null &&
-                parameters.getParameterDefinition(TestExecutionJobCreatorService.SUITE_RUN_ID_PARAMETER_NAME) != null;
-
-        return isExecutorJob;
-    }
-
-    private static boolean isDiscoveryJobJob(FreeStyleProject job) {
-        ParametersDefinitionProperty parameters = job.getProperty(ParametersDefinitionProperty.class);
-        boolean isDiscoveryJob = job.getName().contains(TestExecutionJobCreatorService.DISCOVERY_JOB_MIDDLE_NAME) &&
-                parameters != null &&
-                parameters.getParameterDefinition(TestExecutionJobCreatorService.EXECUTOR_ID_PARAMETER_NAME) != null;
-        return isDiscoveryJob;
-    }
-
     private void clearDiscoveryJobs(List<FreeStyleProject> jobs) {
 
         //Generally, after deleting executor in Octane, relevant job in Jenkins is also deleted. But if jenkins was down during delete of executor, job remains
@@ -130,7 +112,7 @@ public class UftJobCleaner extends AbstractSafeLoggingAsyncPeriodWork {
 
         Map<Long, Map<String, FreeStyleProject>> workspace2executorLogical2DiscoveryJobMap = new HashMap<>();
         for (FreeStyleProject job : jobs) {
-            if (isDiscoveryJobJob(job)) {
+            if (UftJobRecognizer.isDiscoveryJobJob(job)) {
                 String executorLogicalName = getExecutorLogicalName(job);
                 Long workspaceId = getOctaneWorkspaceId(job);
                 if (executorLogicalName != null && workspaceId != null) {
@@ -189,14 +171,14 @@ public class UftJobCleaner extends AbstractSafeLoggingAsyncPeriodWork {
 
     private static Long getExecutorId(FreeStyleProject job) {
         ParametersDefinitionProperty parameters = job.getProperty(ParametersDefinitionProperty.class);
-        ParameterDefinition pd = parameters.getParameterDefinition(TestExecutionJobCreatorService.EXECUTOR_ID_PARAMETER_NAME);
+        ParameterDefinition pd = parameters.getParameterDefinition(UftConstants.EXECUTOR_ID_PARAMETER_NAME);
         String value = (String) pd.getDefaultParameterValue().getValue();
         return Long.valueOf(value);
     }
 
     private static String getExecutorLogicalName(FreeStyleProject job) {
         ParametersDefinitionProperty parameters = job.getProperty(ParametersDefinitionProperty.class);
-        ParameterDefinition pd = parameters.getParameterDefinition(TestExecutionJobCreatorService.EXECUTOR_LOGICAL_NAME_PARAMETER_NAME);
+        ParameterDefinition pd = parameters.getParameterDefinition(UftConstants.EXECUTOR_LOGICAL_NAME_PARAMETER_NAME);
         String value = (String) pd.getDefaultParameterValue().getValue();
         return value;
     }
@@ -225,7 +207,7 @@ public class UftJobCleaner extends AbstractSafeLoggingAsyncPeriodWork {
         long executorToDelete = Long.parseLong(id);
         List<FreeStyleProject> jobs = Jenkins.getInstance().getAllItems(FreeStyleProject.class);
         for (FreeStyleProject proj : jobs) {
-            if (isDiscoveryJobJob(proj)) {
+            if (UftJobRecognizer.isDiscoveryJobJob(proj)) {
                 Long executorId = getExecutorId(proj);
                 if (executorId != null && executorId == executorToDelete) {
                     boolean waitBeforeDelete = false;

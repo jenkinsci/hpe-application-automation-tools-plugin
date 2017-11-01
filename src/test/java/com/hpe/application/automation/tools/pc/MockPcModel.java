@@ -12,7 +12,7 @@ public class MockPcModel extends PcModel {
                        String almProject, String testId, String autoTestInstanceID, String testInstanceId, String timeslotDurationHours,
                        String timeslotDurationMinutes, PostRunAction postRunAction, boolean vudsMode, String description, boolean webProtocol) {
         super(serverAndPort, pcServerName, almUserName, almPassword, almDomain, almProject, testId, autoTestInstanceID, testInstanceId, timeslotDurationHours,
-            timeslotDurationMinutes, postRunAction, vudsMode, description, "NO_TREND", null,false,null
+            timeslotDurationMinutes, postRunAction, vudsMode, description, "NO_TREND", null,false,null,null,null
         );
     }
 

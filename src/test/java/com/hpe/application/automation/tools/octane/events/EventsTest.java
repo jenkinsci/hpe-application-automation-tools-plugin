@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.*;
 
@@ -169,7 +170,9 @@ public class EventsTest {
 				}
 			} else if (request.getPathInfo().equals("/internal-api/shared_spaces/" + sharedSpaceId + "/analytics/ci/events")) {
 				buffer = new byte[1024];
-				while ((len = request.getInputStream().read(buffer, 0, 1024)) > 0) {
+
+				GZIPInputStream gzis = new GZIPInputStream( request.getInputStream() );
+				while ((len = gzis.read(buffer, 0, 1024)) > 0) {
 					body += new String(buffer, 0, len);
 				}
 				try {

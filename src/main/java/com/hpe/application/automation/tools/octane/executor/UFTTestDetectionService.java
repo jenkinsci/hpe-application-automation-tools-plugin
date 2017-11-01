@@ -144,7 +144,7 @@ public class UFTTestDetectionService {
     private static boolean isFullScan(AbstractBuild<?, ?> build) {
         ParametersAction parameters = build.getAction(ParametersAction.class);
         if (parameters != null) {
-            ParameterValue parameterValue = parameters.getParameter(TestExecutionJobCreatorService.FULL_SCAN_PARAMETER_NAME);
+            ParameterValue parameterValue = parameters.getParameter(UftConstants.FULL_SCAN_PARAMETER_NAME);
             if (parameterValue != null) {
                 return (Boolean) parameterValue.getValue();
             }

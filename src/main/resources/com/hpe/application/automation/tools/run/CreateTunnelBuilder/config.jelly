@@ -21,7 +21,7 @@
     </tr>
     </j:if-->
 
-    <f:entry title="SRF Tunnel Name" field="srfTunnelName">
+    <f:entry title="SRF Tunnel Config File" field="srfTunnelName">
        <f:textbox name="createTunnel.srfTunnelName" value="${instance.createTunnel.srfTunnelName}"/>
     </f:entry>
     </j:jelly>

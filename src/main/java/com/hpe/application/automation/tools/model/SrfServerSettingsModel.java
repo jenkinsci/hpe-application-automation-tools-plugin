@@ -1,10 +1,7 @@
 package com.hpe.application.automation.tools.model;
 
-import com.hpe.application.automation.tools.settings.SrfServerSettingsBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-import java.util.Properties;
 
 /**
  * Created by shepshel on 20/07/2016.
@@ -19,7 +16,6 @@ public class SrfServerSettingsModel {
     @DataBoundConstructor
     public SrfServerSettingsModel(String srfTunnelPath, String srfServerName, String srfProxyName,String srfAppName, String srfSecretName ) {
 
-        Properties props = getProperties();
         this.srfTunnelPath = srfTunnelPath;
         this.srfServerName = srfServerName;
         this.srfProxyName = srfProxyName;
@@ -47,15 +43,4 @@ public class SrfServerSettingsModel {
         return srfProxyName;
     }
 
-    public Properties getProperties() {
-
-        Properties prop = new Properties();
-        if (!StringUtils.isEmpty(srfProxyName)) {
-            prop.put("srfProxyName", srfProxyName);
-        } else {
-            prop.put("srfProxyName", "");
-        }
-
-        return prop;
-    }
 }

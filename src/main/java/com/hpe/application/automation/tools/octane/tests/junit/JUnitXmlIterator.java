@@ -256,7 +256,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 		if (StringUtils.isEmpty(testName)) {
 			return testName;
 		}
-		return testName.trim().replaceAll("[-:\\ ,()/\\[\\]]", "_").replace('#', '_').replace('\\', '_');
+		return testName.trim().replaceAll("[-:\\ ,()/\\[\\]]", "_").replace('#', '_').replace('\\', '_').replace('.', '_');
 	}
 
 	private String jenkinsTestClassFormat(String className) {

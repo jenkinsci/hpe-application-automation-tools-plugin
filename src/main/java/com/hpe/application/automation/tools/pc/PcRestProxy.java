@@ -34,9 +34,12 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -45,6 +48,7 @@ import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.SchemeRegistryFactory;
@@ -93,13 +97,15 @@ public class PcRestProxy {
 	private String proxyScheme;
 	private String proxyHostName;
 	private int proxyPort;
+    private String proxyUser;
+    private String proxyPassword;
 
-	private HttpClient client;
+	private DefaultHttpClient client;
     private HttpContext context;
     private CookieStore cookieStore;
   //  private PrintStream logger;
 
-    public PcRestProxy(String webProtocolName, String pcServerName, String almDomain, String almProject,PrintStream mainLogger, String proxyOutURL) throws PcException {
+    public PcRestProxy(String webProtocolName, String pcServerName, String almDomain, String almProject,PrintStream mainLogger, String proxyOutURL, String proxyUser, String proxyPassword) throws PcException {
 
 //        logger = mainLogger;
     	pcServer = pcServerName;
@@ -119,36 +125,51 @@ public class PcRestProxy {
             // we should get the full proxy URL from the user: http(s)://<server>:<port>
             // PAC (proxy auto-config) or Automatic configuration script is not supported (for example our proxy: http://autocache.hpecorp.net/)
             getProxyDataFromURL(proxyOutURL);
+            this.proxyUser = proxyUser;
+            this.proxyPassword = proxyPassword;
             HttpHost proxy = new HttpHost(proxyHostName, proxyPort, proxyScheme);
+
+            if (proxyUser != null && !proxyUser.isEmpty()) {
+                Credentials credentials = new UsernamePasswordCredentials(proxyUser, proxyPassword);
+                AuthScope authScope = new AuthScope(proxyHostName, proxyPort);
+                CredentialsProvider credsProvider = new BasicCredentialsProvider();
+                client.getCredentialsProvider().setCredentials(authScope, credentials);
+            }
             client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
+
         }
     	context = new BasicHttpContext();
     	cookieStore = new BasicCookieStore();
     	context.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
 	}
 
-	private void getProxyDataFromURL(String proxyURL) throws PcException{
+        private void getProxyDataFromURL(String proxyURL) throws PcException{
 
-        try {
-            if (proxyURL != null && !proxyURL.isEmpty()){
-                proxyScheme = proxyURL.split("://")[0];
-                proxyHostName = proxyURL.split("://")[1].split(":")[0];
-                if (proxyURL.split("://")[1].contains(":")){
-                    proxyPort = Integer.parseInt(proxyURL.split("://")[1].split(":")[1]);
-                }else{
-                    proxyPort = 80;
+            try {
+                String mainStr = "";
+                if (proxyURL != null && !proxyURL.isEmpty()){
+                    String[] urlSplit = proxyURL.split("://");
+
+                    proxyScheme = urlSplit[0];
+                        mainStr = urlSplit[1];
+                    if (mainStr.contains(":")){
+                        proxyHostName = mainStr.split(":")[0];
+                        proxyPort = Integer.parseInt(mainStr.split(":")[1]);
+                    }else{
+                        proxyHostName = mainStr;
+                        proxyPort = 80;
+                    }
+
+
+
                 }
-
+            } catch (Exception ex) {
+                throw new PcException("Error: Validating Proxy URL: " + ex + " Please add a proxy URL in this pattern: http(s)://<host>:<port> or leave blank");
             }
-        } catch (Exception ex) {
-            throw new PcException("Error: Validating Proxy URL: " + ex + " Please add a proxy URL in this pattern: http(s)://<host>:<port> or leave blank");
+
+
+
         }
-
-
-
-
-    }
-
     
     public boolean authenticate(String userName, String password) throws PcException, ClientProtocolException, IOException {
         String userNameAndPassword = userName + ":" + password;

@@ -16,15 +16,13 @@
 
 package com.hpe.application.automation.tools.octane.executor;
 
+import com.hpe.application.automation.tools.octane.configuration.ConfigurationService;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.EnvironmentContributor;
 import hudson.model.FreeStyleProject;
 import hudson.model.Job;
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitSCM;
-import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
-import hudson.scm.SCM;
 
 import java.io.IOException;
 
@@ -34,7 +32,7 @@ import java.io.IOException;
 @Extension
 public class CheckOutSubDirEnvContributor extends EnvironmentContributor {
 
-    public static final String CHECKOUT_SUBDIR_ENV_NAME  = "CHECKOUT_SUBDIR";
+    public static final String CHECKOUT_SUBDIR_ENV_NAME = "CHECKOUT_SUBDIR";
 
     @Override
     public void buildEnvironmentFor(Job j, EnvVars envs, TaskListener listener) throws IOException, InterruptedException {
@@ -45,17 +43,10 @@ public class CheckOutSubDirEnvContributor extends EnvironmentContributor {
     }
 
     public static String getSharedCheckOutDirectory(Job j) {
-        if (j instanceof FreeStyleProject) {
-            SCM scm = ((FreeStyleProject) j).getScm();
-            if (scm != null && scm instanceof GitSCM) {
-                GitSCM gitScm = (GitSCM) scm;
-                RelativeTargetDirectory sharedCheckOutDirectory = gitScm.getExtensions().get(RelativeTargetDirectory.class);
-                if (sharedCheckOutDirectory != null) {
-                    return sharedCheckOutDirectory.getRelativeTargetDir();
-                }
-            }
-
+        if (j instanceof FreeStyleProject && UftJobRecognizer.isExecutorJob((FreeStyleProject) j) && ConfigurationService.getServerConfiguration().isValid()) {
+            return CheckOutSubDirEnvService.getSharedCheckOutDirectory(j);
         }
+
         return null;
     }
 

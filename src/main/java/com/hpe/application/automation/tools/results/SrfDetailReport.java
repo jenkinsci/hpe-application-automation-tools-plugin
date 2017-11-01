@@ -9,8 +9,6 @@ import org.kohsuke.stapler.StaplerResponse;
 import javax.servlet.ServletException;
 import java.io.IOException;
 
-//import javax.servlet.ServletException;
-
 public class SrfDetailReport implements ModelObject {
 
     private String name = "";
@@ -18,7 +16,7 @@ public class SrfDetailReport implements ModelObject {
     private String duration = "";
     private String pass = "";
     private String fail = "";
-    private AbstractBuild<?,?> build = null;
+    private AbstractBuild<?,?> build;
     private DirectoryBrowserSupport _directoryBrowserSupport = null;
 
     public SrfDetailReport(AbstractBuild<?,?> build, String name, DirectoryBrowserSupport directoryBrowserSupport) {

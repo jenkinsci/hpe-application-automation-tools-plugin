@@ -24,7 +24,6 @@ import com.hpe.application.automation.tools.octane.tests.detection.UFTExtension;
 import com.hpe.application.automation.tools.octane.tests.xml.TestResultXmlWriter;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.model.AbstractBuild;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -44,7 +43,7 @@ import java.util.List;
 public class TestListener {
 	private static Logger logger = LogManager.getLogger(TestListener.class);
 
-	static final String TEST_RESULT_FILE = "mqmTests.xml";
+	public static final String TEST_RESULT_FILE = "mqmTests.xml";
 	public static final String JENKINS_STORM_TEST_RUNNER_CLASS = "com.hpe.sr.plugins.jenkins.StormTestRunner";
 	public static final String JENKINS_PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "com.hpe.application.automation.tools.run.PcBuilder";
 
@@ -121,11 +120,6 @@ public class TestListener {
 				logger.error("Error processing test results", xmlse);
 			}
 		}
-	}
-
-	private boolean isUFTRunner(AbstractBuild build) {
-		UFTExtension uftExtension = new UFTExtension();
-		return uftExtension.detect(build) != null;
 	}
 
 	@Inject

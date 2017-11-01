@@ -31,12 +31,14 @@ public class PcModel {
     private String trendReportId;
     private final boolean HTTPSProtocol;
     private final String proxyOutURL;
+    private final String proxyOutUser;
+    private final String proxyOutPassword;
 
 
     @DataBoundConstructor
     public PcModel(String serverAndPort, String pcServerName, String almUserName, String almPassword, String almDomain, String almProject,
                    String testId,String autoTestInstanceID, String testInstanceId, String timeslotDurationHours, String timeslotDurationMinutes,
-                   PostRunAction postRunAction, boolean vudsMode, String description, String addRunToTrendReport, String trendReportId, boolean HTTPSProtocol, String proxyOutURL) {
+                   PostRunAction postRunAction, boolean vudsMode, String description, String addRunToTrendReport, String trendReportId, boolean HTTPSProtocol, String proxyOutURL, String proxyOutUser, String proxyOutPassword) {
 
         this.serverAndPort = serverAndPort;
         this.pcServerName = pcServerName;
@@ -55,6 +57,9 @@ public class PcModel {
         this.HTTPSProtocol = HTTPSProtocol;
         this.trendReportId = trendReportId;
         this.proxyOutURL = proxyOutURL;
+        this.proxyOutUser = proxyOutUser;
+        this.proxyOutPassword = proxyOutPassword;
+
     }
 
     protected SecretContainer setPassword(String almPassword) {
@@ -132,6 +137,14 @@ public class PcModel {
 
     public String getProxyOutURL(){
         return this.proxyOutURL;
+    }
+
+    public String getProxyOutUser(){
+        return this.proxyOutUser;
+    }
+
+    public String getProxyOutPassword(){
+        return this.proxyOutPassword;
     }
 
     public static List<PostRunAction> getPostRunActions() {

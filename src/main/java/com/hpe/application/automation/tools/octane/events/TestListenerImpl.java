@@ -29,7 +29,6 @@ import javax.annotation.Nonnull;
  */
 @Extension
 public class TestListenerImpl extends RunListener<Run> {
-
 	@Inject
 	private TestListener testListener;
 

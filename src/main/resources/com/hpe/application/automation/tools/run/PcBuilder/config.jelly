@@ -34,6 +34,53 @@
 	.myClass{
 		border: 5px solid red;
 	}
+
+
+	/* Tooltip container */
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+    }
+
+    /* Tooltip text */
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 350px;
+        background-color: #555;
+        color: #fff;
+        padding: 5px;
+        border-radius: 6px;
+
+        /* Position the tooltip text */
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+
+        /* Fade in tooltip */
+        opacity: 0;
+        transition: opacity 1s;
+    }
+
+    /* Tooltip arrow */
+    .tooltip .tooltiptext::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #555 transparent transparent transparent;
+    }
+
+    /* Show the tooltip text when you mouse over the tooltip container */
+    .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+    }
 	</style>
 	
 		<script>
@@ -124,12 +171,13 @@
 	<f:entry title="Domain" field="almDomain">
 		<f:textbox name="pc.almDomain" value="${instance.pcModel.almDomain}" />
 	</f:entry>
+
 	<f:entry title="Project" field="almProject">
 		<f:textbox name="pc.almProject" value="${instance.pcModel.almProject}" />
 	</f:entry>
-		<f:invisibleEntry title="" field="serverAndPort">
-    		<f:textbox id="serverAndPort" name="pc.serverAndPort" value="" onchange="assignhostPath()" />
-    	</f:invisibleEntry>
+    <f:invisibleEntry title="" field="serverAndPort">
+        <f:textbox id="serverAndPort" name="pc.serverAndPort" value="" onchange="assignhostPath()" />
+    </f:invisibleEntry>
 
 
         <script>assignhostPath();</script>
@@ -162,9 +210,52 @@
     </td>
 
 
-	<f:entry title="Local Proxy" field="proxyOutURL">
-		<f:textbox name="pc.proxyOutURL" value="${instance.pcModel.proxyOutURL}" />
-	</f:entry>
+	<f:block>
+		<br />
+
+	</f:block>
+	<f:block>
+
+
+            <tr>
+                <td colspan="5">
+                    <table>
+
+                        <tr>
+                            <td class="setting-leftspace"></td>
+                            <td class="setting-name">
+                                <span>Local Proxy<div class="tooltip">(?) <span class="tooltiptext"> Add your local proxy as following: <br/><b>http(s)://host:port</b><br/> or
+                                                                                                        Leave empty if not using a local proxy.<br/>
+                                                                                                        PAC (proxy auto-config) or Automatic configuration script are not supported.</span></div></span>
+                            </td>
+                            <td class="setting-main" style="width:30%;padding-right:3em;" >
+                                <f:textbox name="pc.proxyOutURL" value="${instance.pcModel.proxyOutURL}"  />
+
+
+                            </td>
+                            <td style="vertical-align:middle;">
+                                <span>User:&#160;</span>
+                            </td>
+                            <td>
+                                <f:textbox name="pc.proxyOutUser" value="${instance.pcModel.proxyOutUser}" />
+                            </td>
+                            <td style="vertical-align:middle;">
+                                <span>Password:&#160;</span>
+                            </td>
+                            <td>
+
+                                <f:password name="pc.proxyOutPassword" value="${instance.pcModel.proxyOutPassword}" />
+
+                            </td>
+                        </tr>
+
+                    </table>
+                </td>
+
+            </tr>
+
+
+	</f:block>
 	<f:block>
 		<br />
 	</f:block>
