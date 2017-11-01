@@ -1,22 +1,19 @@
 package com.hpe.application.automation.tools.run;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 import groovy.transform.Synchronized;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
-import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import javax.annotation.Nonnull;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 import javax.xml.parsers.DocumentBuilder;
@@ -24,16 +21,17 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.*;
+import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
 import java.util.Timer;
 
-public class CreateTunnelBuilder extends Builder implements SimpleBuildStep {
+public class CreateTunnelBuilder extends Builder  {
     private PrintStream logger;
     private  String srfTunnelName;
     private AbstractBuild<?, ?> build;
-    public static ArrayList<Process> Tunnels = new ArrayList<Process>();
+    protected static final ArrayList<Process> Tunnels = new ArrayList<Process>();
     @DataBoundConstructor
     public CreateTunnelBuilder( String srfTunnelName ){
 
@@ -52,93 +50,80 @@ public class CreateTunnelBuilder extends Builder implements SimpleBuildStep {
 
 
     @Override
-    public void perform( @Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener ) throws InterruptedException, IOException {
+    public boolean perform(final AbstractBuild<?, ?> build, final Launcher launcher, BuildListener listener)
+            throws InterruptedException, IOException {
         logger = listener.getLogger();
-        Run<?,?> r = run.getParent().getBuild(run.getId());
-        JSONObject connectionData = RunFromSrfBuilder.GetSrfConnectionData((AbstractBuild<?,?>)r, logger);
-    String[] s = new String[5] ;
-    URL url = new URL(connectionData.getString("server"));
-    //check if tunnel exist
-    String server = url.getHost() + ":443" ;
-
-    if(server.indexOf("-ftaas") < 0)
-        server= "opb-" + server;
-    else
-        server = server.replaceFirst("-ftaas", "-tunnel-ftaas");
-    server ="\"" +"-server=wss://" + server + "/opb\"" ;
-    String client = "\"" +"-client="  + connectionData.getString("app") +"\"";
-
-    String secret ="\"" + "-secret="+ connectionData.getString("secret")+"\"";
-    s[2]=secret;
-
-    String name = "-name=" + srfTunnelName;
+        JSONObject connectionData = RunFromSrfBuilder.GetSrfConnectionData(build, logger);
+        JSONObject configData;
+        String client = "\"" +"-client="  + connectionData.getString("app") +"\"";
 
 
+        String path =connectionData.getString("tunnel");
+        String config = String.format("-\"config=%s\"", srfTunnelName);
 
-    URL proxyUrl ;
-    try {
-        proxyUrl =new URL(connectionData.getString("proxy"));
-    }
-        catch (MalformedURLException e){
-        proxyUrl = new URL("http://"+connectionData.getString("proxy"));
-    }
-    String proxy = "\"" + "-http-proxy=" + proxyUrl.toString() +"\"" ;
-    s[4] = proxy;
-    String path =connectionData.getString("tunnel");
+        ProcessBuilder pb = new ProcessBuilder(path,  config, "-reconnect-attempts=3", "-log-level=info", "-log=stdout");
+        pb.redirectOutput();
+        logger.println("Launching "+path + " " + config );
 
-
-
-    ProcessBuilder pb = new ProcessBuilder(path, server, client, name, proxy, secret, "\"-log-level=INFO\"","\"-log=stdout\"");
-    logger.println("Launching "+path );
-
-    Process p = pb.start();
-    TunnelTracker tracker = new TunnelTracker(logger, p);
-    java.lang.Thread th = new Thread(tracker, "trackeer");
+        Process p = pb.start();
+        TunnelTracker tracker = new TunnelTracker(logger, p);
+        java.lang.Thread th = new Thread(tracker, "trackeer");
         Tunnels.add(p);
 
-    InputStream is = p.getInputStream();
-    InputStreamReader isr = new InputStreamReader(is);
-    BufferedReader br = new BufferedReader(isr);
-    String line;
-    Timer t = new Timer();
-    Date date = new Date();
+        InputStream is = p.getInputStream();
+        InputStreamReader isr = new InputStreamReader(is);
+        BufferedReader br = new BufferedReader(isr);
+        String line;
+
         while(true){
-        Date current = new Date();
-        long diffSeconds = (current.getTime() - date.getTime())/1000;
-        if(diffSeconds > 30){
-            p.destroy();
-            logger.println("Failed to launch "+path);
-            Tunnels.remove(p);
-            return ;
-        }
 
-        while ((line = br.readLine()) != null) {
-            logger.println(line);
-            if(line.indexOf("established at") >=0)
-                break;
-            Thread.sleep(100);
-            diffSeconds = (current.getTime() - date.getTime())/1000;
-            if(diffSeconds > 30){
+            while ((line = br.readLine()) != null) {
+                logger.println(line);
+                if(line.indexOf("established at") >=0){
+                    th.start();
+                    p.destroy();
+                    logger.println("Launched "+path);
+                    return true;
+                }
+                Thread.sleep(100);
+                if(p.isAlive()) {
+                    continue;
+                }
+                switch (p.exitValue()) {
+                    case 0:
+                        logger.println("Tunnel client terminated by the user or the server");
+                        return true;
+                    case 1:
+                        logger.println("Failed to launch tunnel client : unplanned failure");
+                        break;
+                    case 2:
+                        logger.println("Failed to launch tunnel client : Authentication with client/secret failed");
+                        break;
+                    case 3:
+                        logger.println("Failed to launch tunnel client : Max connection attempts acceded ");
+                        break;
+                    case 4:
+                        logger.println("Failed to launch tunnel client : Allocation of tunnel filed E.g. Tunnel name is not unique.");
+                        break;
+                    default:
+                        logger.println(String.format("Failed to launch tunnel client : Unknown reason(Exit code =%d", p.exitValue()));
+                        break;
+
+                }
+
                 p.destroy();
-                logger.println("Failed to launch "+path);
-                return ;
+                return false;
+
             }
+
         }
-        break;
+
+
     }
-
-        th.start();
-
-
-
-
-        return ;
-}
     private JSONObject GetSrfConnectionData(){
         return new JSONObject();
     }
     @Extension
-    @Symbol("CreateTunnelBuilder")
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         private  String srfTunnelName;
         @DataBoundConstructor
@@ -159,7 +144,8 @@ public class CreateTunnelBuilder extends Builder implements SimpleBuildStep {
             return "Create Tunnel";
         }
     }
-    class TestRunData implements java.io.Serializable {
+    static class TestRunData implements Serializable {
+        static final long serialVersionUID=11;
         public TestRunData(JSONObject obj)
         {
             try {
@@ -202,7 +188,8 @@ public class CreateTunnelBuilder extends Builder implements SimpleBuildStep {
     }
 
 
-    class TunnelTracker implements Runnable{
+    private class TunnelTracker implements Runnable{
+        static final long serialVersionUID=456;
         PrintStream logger;
         Process p;
         public TunnelTracker(PrintStream log, Process p){
@@ -210,7 +197,7 @@ public class CreateTunnelBuilder extends Builder implements SimpleBuildStep {
             this.p=p;
         }
         @Override
-        public  void run(){
+        public  void run() {
             try{
                 //Read out dir output
                 logger.println("In tracker!");
@@ -230,9 +217,9 @@ public class CreateTunnelBuilder extends Builder implements SimpleBuildStep {
                 int exitValue =0;
                 p.waitFor();
                 logger.println("\n\nExit Value is " + exitValue);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            } catch (final InterruptedException e) {
+                p.destroy();
+                return;
             }
         }
     }
