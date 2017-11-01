@@ -1,4 +1,6 @@
 package com.hpe.application.automation.tools.run;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 import groovy.transform.Synchronized;
 import hudson.Extension;
 import hudson.FilePath;
@@ -19,6 +21,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.*;
+import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
@@ -51,84 +54,72 @@ public class CreateTunnelBuilder extends Builder  {
             throws InterruptedException, IOException {
         logger = listener.getLogger();
         JSONObject connectionData = RunFromSrfBuilder.GetSrfConnectionData(build, logger);
-    String[] s = new String[5] ;
-    URL url = new URL(connectionData.getString("server"));
-    //check if tunnel exist
-    String server = url.getHost() + ":443" ;
-
-    if(server.indexOf("-ftaas") < 0)
-        server= "opb-" + server;
-    else
-        server = server.replaceFirst("-ftaas", "-tunnel-ftaas");
-    server ="\"" +"-server=wss://" + server + "/opb\"" ;
-    String client = "\"" +"-client="  + connectionData.getString("app") +"\"";
-
-    String secret ="\"" + "-secret="+ connectionData.getString("secret")+"\"";
-    s[2]=secret;
-
-    String name = "-name=" + srfTunnelName;
-
-    String config = "\"-config="+srfTunnelName+"\"";
-
-    URL proxyUrl ;
-    try {
-        proxyUrl =new URL(connectionData.getString("proxy"));
-    }
-        catch (MalformedURLException e){
-        proxyUrl = new URL("http://"+connectionData.getString("proxy"));
-    }
-    String proxy = "\"" + "-http-proxy=" + proxyUrl.toString() +"\"" ;
-    s[4] = proxy;
-    String path =connectionData.getString("tunnel");
+        JSONObject configData;
+        String client = "\"" +"-client="  + connectionData.getString("app") +"\"";
 
 
+        String path =connectionData.getString("tunnel");
+        String config = String.format("-\"config=%s\"", srfTunnelName);
 
-    ProcessBuilder pb = new ProcessBuilder(path,  config, "\"-log-level=INFO\"","\"-log=stdout\"");
-    logger.println("Launching "+path + " " + config );
+        ProcessBuilder pb = new ProcessBuilder(path,  config, "-reconnect-attempts=3", "-log-level=info", "-log=stdout");
+        pb.redirectOutput();
+        logger.println("Launching "+path + " " + config );
 
-    Process p = pb.start();
-    TunnelTracker tracker = new TunnelTracker(logger, p);
-    java.lang.Thread th = new Thread(tracker, "trackeer");
+        Process p = pb.start();
+        TunnelTracker tracker = new TunnelTracker(logger, p);
+        java.lang.Thread th = new Thread(tracker, "trackeer");
         Tunnels.add(p);
 
-    InputStream is = p.getInputStream();
-    InputStreamReader isr = new InputStreamReader(is);
-    BufferedReader br = new BufferedReader(isr);
-    String line;
-    Timer t = new Timer();
-    Date date = new Date();
+        InputStream is = p.getInputStream();
+        InputStreamReader isr = new InputStreamReader(is);
+        BufferedReader br = new BufferedReader(isr);
+        String line;
+
         while(true){
-        Date current = new Date();
-        long diffSeconds = (current.getTime() - date.getTime())/1000;
-        if(diffSeconds > 30){
-            p.destroy();
-            logger.println("Failed to launch "+path);
-            Tunnels.remove(p);
-            return false;
-        }
 
-        while ((line = br.readLine()) != null) {
-            logger.println(line);
-            if(line.indexOf("established at") >=0)
-                break;
-            Thread.sleep(100);
-            diffSeconds = (current.getTime() - date.getTime())/1000;
-            if(diffSeconds > 30){
+            while ((line = br.readLine()) != null) {
+                logger.println(line);
+                if(line.indexOf("established at") >=0){
+                    th.start();
+                    p.destroy();
+                    logger.println("Launched "+path);
+                    return true;
+                }
+                Thread.sleep(100);
+                if(p.isAlive()) {
+                    continue;
+                }
+                switch (p.exitValue()) {
+                    case 0:
+                        logger.println("Tunnel client terminated by the user or the server");
+                        return true;
+                    case 1:
+                        logger.println("Failed to launch tunnel client : unplanned failure");
+                        break;
+                    case 2:
+                        logger.println("Failed to launch tunnel client : Authentication with client/secret failed");
+                        break;
+                    case 3:
+                        logger.println("Failed to launch tunnel client : Max connection attempts acceded ");
+                        break;
+                    case 4:
+                        logger.println("Failed to launch tunnel client : Allocation of tunnel filed E.g. Tunnel name is not unique.");
+                        break;
+                    default:
+                        logger.println(String.format("Failed to launch tunnel client : Unknown reason(Exit code =%d", p.exitValue()));
+                        break;
+
+                }
+
                 p.destroy();
-                logger.println("Failed to launch "+path);
                 return false;
+
             }
+
         }
-        break;
+
+
     }
-
-        th.start();
-
-
-
-
-        return true;
-}
     private JSONObject GetSrfConnectionData(){
         return new JSONObject();
     }

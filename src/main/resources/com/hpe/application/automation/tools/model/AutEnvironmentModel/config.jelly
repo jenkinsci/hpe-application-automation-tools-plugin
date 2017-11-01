@@ -85,5 +85,5 @@
         <f:repeatableProperty field="autEnvironmentParameters" minimum="0" add="Add Parameter"/>
     </f:entry>
 
-    <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/autEnvironment.js"/>
+    <script type="text/javascript" src="${rootURL}/plugin/hpe-application-automation-tools-plugin/autEnvironment.js"/>
 </j:jelly>
