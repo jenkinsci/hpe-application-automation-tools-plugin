@@ -33,7 +33,7 @@
         </div>
         <f:textbox name="runFromSrf.srfTagNames" value="${instance.runFromSrf.srfTagNames}"/>
     </f:entry>
-    <f:entry title="SRF Tunnel Config File Paath" field="srfTunnelName">
+    <f:entry title="SRF Tunnel Config File Path" field="srfTunnelName">
            <f:textbox name="runFromSrf.srfTunnelName" value="${instance.runFromSrf.srfTunnelName}"/>
     </f:entry>
     <f:entry title="Close Tunnel When Job Completed" field="srfCloseTunnel">
