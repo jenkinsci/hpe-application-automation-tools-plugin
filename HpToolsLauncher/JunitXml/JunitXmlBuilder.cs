@@ -125,12 +125,13 @@ namespace HpToolsLauncher
 
         private testcase CreateXmlFromUFTRunResults(TestRunResults testRes)
         {
+            string baseClassName = "GUI-Tests";
             testcase tc = new testcase
             {
                 systemout = testRes.ConsoleOut,
                 systemerr = testRes.ConsoleErr,
                 report = testRes.ReportLocation,
-                classname = "All-Tests." + ((testRes.TestGroup == null) ? "" : testRes.TestGroup.Replace(".", "_")),
+                classname = baseClassName + "." + ((testRes.TestGroup == null) ? "" : testRes.TestGroup.Replace(".", "_")),
                 name = testRes.TestPath,
                 type = testRes.TestType,
                 time = testRes.Runtime.TotalSeconds.ToString()

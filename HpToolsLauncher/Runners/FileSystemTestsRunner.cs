@@ -120,10 +120,12 @@ namespace HpToolsLauncher
                     {
 
                         var testsLocations = Helper.GetTestsLocations(source);
-                        foreach (var loc in testsLocations)
+                        foreach (var testPath in testsLocations)
                         {
-                            var test = new TestInfo(loc, loc, source);
-                            test.TestGroup = Directory.GetParent(loc).Name;
+                            var testClass = Directory.GetParent(testPath).Name;
+                            var testName = Path.GetDirectoryName(testPath);
+                            var test = new TestInfo(testPath, testName, testClass);
+
                             testGroup.Add(test);
                         }
                     }
@@ -157,12 +159,6 @@ namespace HpToolsLauncher
                 catch (Exception)
                 {
                     testGroup = new List<TestInfo>();
-                }
-
-                //--handle single test dir, add it with no group
-                if (testGroup.Count == 1)
-                {
-                    testGroup[0].TestGroup = Directory.GetParent(source).Name;
                 }
 
                 _tests.AddRange(testGroup);
