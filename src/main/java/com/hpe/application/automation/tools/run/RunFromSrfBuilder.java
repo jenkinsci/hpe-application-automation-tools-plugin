@@ -368,7 +368,7 @@ import java.util.*;
         }
         if (srfTunnelName != null && srfTunnelName.length() > 0) {
 
-            testParams.put("tunnelName", srfTunnelName);
+            data.put("tunnelName", srfTunnelName);
         }
         if(data.size() == 0){
             throw new IOException("Wrong filter");

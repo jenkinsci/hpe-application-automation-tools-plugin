@@ -74,8 +74,6 @@
 			else
 			    btn.disabled=false;
 			anchor.innerText = btn.id;
-//			if (btn.onclick == undefined)
-//				btn.addEventListener("click", srfClick);
 			window.srfAddButton = btn;
 		}
 
@@ -161,3 +159,6 @@
 	</f:section>
 </body>
 </j:jelly>
+
+
+
