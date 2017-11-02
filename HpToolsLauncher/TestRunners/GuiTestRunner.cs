@@ -384,6 +384,7 @@ namespace HpToolsLauncher
         {
             try
             {
+                CleanupUftProcessKillers();
                 RunResultsOptions options = CreateRunResultOptions(testResults);
                 if (_runCancelled()) return HandleExecutionCanceled(testResults);
         
@@ -416,6 +417,25 @@ namespace HpToolsLauncher
                 result.IsSuccess = false;
                 return result;
             }
+        }
+
+        private void CleanupUftProcessKillers()
+        {
+            Process[] processes = Process.GetProcessesByName("cmd");
+            IEnumerable<Process> taskKillers = processes.Where(p => 
+                p.SessionId == Process.GetCurrentProcess().SessionId && 
+                p.StartInfo.Arguments.ToLower().Contains("taskkill") &&
+                p.StartInfo.Arguments.ToLower().Contains("uft"));
+
+            try
+            {
+                taskKillers.ToList().ForEach(p => p.Kill());
+            }
+            catch (Exception)
+            {
+                ConsoleWriter.WriteLine("Error While Killing CMD Processes");
+            }
+            
         }
 
         private GuiTestRunResult AnalyzeLastRunResults(TestRunResults testResults)
@@ -533,6 +553,7 @@ namespace HpToolsLauncher
 
         private GuiTestRunResult HandleExecutionCanceled(TestRunResults testResults)
         {
+            ConsoleWriter.WriteLine("Execution Canceled!");
             GuiTestRunResult result = new GuiTestRunResult();
 
             testResults.TestState = TestState.Error;
@@ -720,6 +741,7 @@ namespace HpToolsLauncher
 
         private void CloseTARobot()
         {
+            ConsoleWriter.WriteLine("FORCED CLEANUP OF THE TA ROBOT");
             Process killer = StartTimedUftProcessKiller(60);
             try
             {

@@ -123,7 +123,7 @@ namespace HpToolsLauncher
                         foreach (var testPath in testsLocations)
                         {
                             var testClass = Directory.GetParent(testPath).Name;
-                            var testName = Path.GetDirectoryName(testPath);
+                            var testName = Path.GetFileName(testPath);
                             var test = new TestInfo(testPath, testName, testClass);
 
                             testGroup.Add(test);
@@ -204,8 +204,7 @@ namespace HpToolsLauncher
 
                     if (IsTestFailed(runResult) && IsCleanupTestDefined() && !IsCleanupTest(test))
                     {
-                        ConsoleWriter.WriteLine("Test Failed: " + runResult.FailureDesc);
-                        Console.WriteLine("CLEANUP AND RE-RUN");
+                        Console.WriteLine("Test Failed: CLEANUP AND RE-RUN");
                         runRobotCleanup();
                         ExecuteTest(GetCleanupTest());
            
@@ -302,6 +301,8 @@ namespace HpToolsLauncher
                 runResult.TestState = TestState.Error;
                 runResult.ErrorDesc = ex.Message;
                 runResult.TestName = test.TestName;
+
+                ConsoleWriter.WriteLine("ExecuteTest Exception: " + ex.Message);
             }
 
             //get the original source for this test, for grouping tests under test classes
