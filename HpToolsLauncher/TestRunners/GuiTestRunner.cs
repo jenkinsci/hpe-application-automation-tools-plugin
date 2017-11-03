@@ -382,12 +382,12 @@ namespace HpToolsLauncher
         /// <returns></returns>
         private GuiTestRunResult ExecuteQTPRun(TestRunResults testResults)
         {
+            RunResultsOptions options = CreateRunResultOptions(testResults);
+            CleanupUftProcessKillers();
+            if (_runCancelled()) return HandleExecutionCanceled(testResults);
+
             try
             {
-                CleanupUftProcessKillers();
-                RunResultsOptions options = CreateRunResultOptions(testResults);
-                if (_runCancelled()) return HandleExecutionCanceled(testResults);
-        
                 ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerRunningTest, testResults.TestPath));
                 _qtpApplication.Options.Run.RunMode = _uftRunMode;
                 _qtpApplication.Test.Run(options, false, _qtpParameters);
@@ -403,11 +403,13 @@ namespace HpToolsLauncher
             }
             catch (Exception e2)
             {
-                CloseTARobot();
-                GuiTestRunResult result = new GuiTestRunResult();
-
                 ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e2.Message, e2.StackTrace));
+                CloseTARobot();
+
+                GuiTestRunResult result = new GuiTestRunResult();
+                result.ReportPath = options.ResultsLocation;
                 testResults.TestState = TestState.Error;
+                testResults.ReportLocation = result.ReportPath;
 
                 if(String.IsNullOrEmpty(testResults.ErrorDesc))
                 {
@@ -533,9 +535,14 @@ namespace HpToolsLauncher
             ProcessStartInfo processInfo;
             Process process;
 
+            if(timeoutInSeconds < 1)
+            {
+                timeoutInSeconds = 1;
+            }
+
             ConsoleWriter.WriteLine("UFT Process Killer Started: " + timeoutInSeconds);
             processInfo = new ProcessStartInfo("cmd.exe", "/c \"timeout /t " +
-                timeoutInSeconds + " & taskkill /F /IM uft* /IM qtpautomationagent*\"");
+                timeoutInSeconds + " & taskkill /F /IM uft.exe* /IM qtpautomationagent*\"");
             processInfo.CreateNoWindow = true;
             processInfo.UseShellExecute = false;
             // *** Redirect the output ***
@@ -548,7 +555,7 @@ namespace HpToolsLauncher
 
         private Process StartTimedUftProcessKiller()
         {
-            return StartTimedUftProcessKiller(Convert.ToInt32(_timeLeftUntilTimeout.TotalSeconds));
+            return StartTimedUftProcessKiller(Convert.ToInt32(_timeLeftUntilTimeout.TotalSeconds) + 30);
         }
 
         private GuiTestRunResult HandleExecutionCanceled(TestRunResults testResults)
@@ -747,26 +754,27 @@ namespace HpToolsLauncher
             {
                 QTPTestCleanup();
                 CleanUp();
+                KillQtp();
             } 
             catch (Exception)
+            {
+                ConsoleWriter.WriteLine(DateTime.Now + ": Error Occured Cleaning Up UFT!");
+            }
+            finally
             {
                 if (!killer.HasExited)
                 {
                     try
                     {
-                        ConsoleWriter.WriteLine(DateTime.Now + ": Error Occured Cleaning Up UFT!" +
-                                "Killing the UFT Process Killer!");
                         killer.Kill();
                         killer = null;
                     }
-                    catch
+                    catch (Exception)
                     {
                         // Do Nothing
                     }
                 }
             }
-
-            KillQtp();
         }
 
         /// <summary>
