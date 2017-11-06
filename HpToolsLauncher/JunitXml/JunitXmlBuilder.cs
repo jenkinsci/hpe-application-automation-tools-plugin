@@ -126,7 +126,13 @@ namespace HpToolsLauncher
         private testcase CreateXmlFromUFTRunResults(TestRunResults testRes)
         {
             string baseClassName = "GUI-Tests";
-            string testName = string.IsNullOrEmpty(testRes.TestName) ? Directory.GetParent(testRes.ReportLocation).Name : testRes.TestName;
+            string testName = testRes.TestName;
+
+            if(string.IsNullOrEmpty(testName) && !string.IsNullOrEmpty(testRes.ReportLocation))
+            {
+                testName = Directory.GetParent(testRes.ReportLocation).Name;
+            }
+
             testcase tc = new testcase
             {
                 name = testName,
