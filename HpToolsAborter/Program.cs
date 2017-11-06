@@ -60,9 +60,16 @@ namespace HpToolsAborter
                JavaProperties _ciParams = new JavaProperties();
 
                 _ciParams.Load(args[0]);
+                string timeout = _ciParams["timeout"];
 
-               string runType = _ciParams["runType"];
-                
+                if(!string.IsNullOrEmpty(timeout))
+                {
+                    int timeoutInSeconds = Int32.Parse(timeout);
+                    System.Threading.Thread.Sleep(timeoutInSeconds * 1000);
+                }
+
+                string runType = _ciParams["runType"];
+
                 if (string.IsNullOrEmpty(runType))
                 {
                     Console.Out.WriteLine("Unable to find runType in " + args[0]);

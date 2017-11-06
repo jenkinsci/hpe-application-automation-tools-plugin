@@ -383,7 +383,6 @@ namespace HpToolsLauncher
         private GuiTestRunResult ExecuteQTPRun(TestRunResults testResults)
         {
             RunResultsOptions options = CreateRunResultOptions(testResults);
-            CleanupUftProcessKillers();
             if (_runCancelled()) return HandleExecutionCanceled(testResults);
 
             try
@@ -421,24 +420,6 @@ namespace HpToolsLauncher
             }
         }
 
-        private void CleanupUftProcessKillers()
-        {
-            Process[] processes = Process.GetProcessesByName("cmd");
-            IEnumerable<Process> taskKillers = processes.Where(p => 
-                p.SessionId == Process.GetCurrentProcess().SessionId && 
-                p.StartInfo.Arguments.ToLower().Contains("taskkill") &&
-                p.StartInfo.Arguments.ToLower().Contains("uft"));
-
-            try
-            {
-                taskKillers.ToList().ForEach(p => p.Kill());
-            }
-            catch (Exception)
-            {
-                ConsoleWriter.WriteLine("Error While Killing CMD Processes");
-            }
-            
-        }
 
         private GuiTestRunResult AnalyzeLastRunResults(TestRunResults testResults)
         {
@@ -483,79 +464,35 @@ namespace HpToolsLauncher
         private void WaitForTestExecutionComplete(TestRunResults testResults)
         {
             int slept = 0;
-            Process killer = null;
 
             try
             {
-                killer = StartTimedUftProcessKiller();
                 while ((slept < 20000 && _qtpApplication.GetStatus().Equals("Ready")) || _qtpApplication.GetStatus().Equals("Waiting"))
                 {
                     Thread.Sleep(50);
                     slept += 50;
                 }
 
-
+                ConsoleWriter.WriteLine("UFT Entering Busy Mode");
                 while (!_runCancelled() && (_qtpApplication.GetStatus().Equals("Running") || _qtpApplication.GetStatus().Equals("Busy")))
                 {
                     Thread.Sleep(200);
                     if (_timeLeftUntilTimeout - _stopwatch.Elapsed <= TimeSpan.Zero)
                     {
+                        ConsoleWriter.WriteLine(Resources.GeneralTimeoutExpired);
                         TryStopUftExecution();
                         testResults.TestState = TestState.Error;
                         testResults.ErrorDesc = Resources.GeneralTimeoutExpired;
-                        ConsoleWriter.WriteLine(Resources.GeneralTimeoutExpired);
+                        ConsoleWriter.WriteLine("UFT Stopped");
                     }
                 }
-
-                killer.Kill();
+                ConsoleWriter.WriteLine("UFT Leaving Busy Mode");
             }
             catch(Exception e) {
-                if((killer != null) && (!killer.HasExited))
-                {
-                    try
-                    {
-                        ConsoleWriter.WriteLine(DateTime.Now + ": Error Occured While Waiting " +
-                                "for the Test Execution to Complete. Killing the UFT Process Killer");
-                        killer.Kill();
-                        killer = null;
-                    }
-                    catch
-                    {
-                        // Do Nothing
-                    }
-                }
-
+                ConsoleWriter.WriteLine(DateTime.Now + ": Error Occured While Waiting " +
+                    "for the Test Execution to Complete. Killing the UFT Process Killer");
                 throw e;
             }
-        }
-
-
-        private Process StartTimedUftProcessKiller(int timeoutInSeconds)
-        {
-            ProcessStartInfo processInfo;
-            Process process;
-
-            if(timeoutInSeconds < 1)
-            {
-                timeoutInSeconds = 1;
-            }
-
-            ConsoleWriter.WriteLine("UFT Process Killer Started: " + timeoutInSeconds);
-            processInfo = new ProcessStartInfo("cmd.exe", "/c \"timeout /t " +
-                timeoutInSeconds + " & taskkill /F /IM uft.exe* /IM qtpautomationagent*\"");
-            processInfo.CreateNoWindow = true;
-            processInfo.UseShellExecute = false;
-            // *** Redirect the output ***
-            processInfo.RedirectStandardError = true;
-            processInfo.RedirectStandardOutput = true;
-
-            process = Process.Start(processInfo);
-            return process;
-        }
-
-        private Process StartTimedUftProcessKiller()
-        {
-            return StartTimedUftProcessKiller(Convert.ToInt32(_timeLeftUntilTimeout.TotalSeconds) + 30);
         }
 
         private GuiTestRunResult HandleExecutionCanceled(TestRunResults testResults)
@@ -598,8 +535,15 @@ namespace HpToolsLauncher
 
         private void KillQtp()
         {
-            KillQtpAutomation();
-            KillQtpExe();
+            try
+            {
+                KillQtpAutomation();
+                KillQtpExe();
+            }
+            catch (Exception e)
+            {
+                // Ignore
+            }
 
             _qtpParameters = null;
             _qtpParamDefs = null;
@@ -619,7 +563,7 @@ namespace HpToolsLauncher
         private void KillQtpExe()
         {
             //kill the qtp automation, to make sure it will run correctly next time
-            Process[] processes = Process.GetProcessesByName("uft");
+            Process[] processes = Process.GetProcessesByName("uft.exe");
             Process qtpAuto = processes.Where(p => p.SessionId == Process.GetCurrentProcess().SessionId).FirstOrDefault();
             if (qtpAuto != null)
                 qtpAuto.Kill();
@@ -749,7 +693,6 @@ namespace HpToolsLauncher
         private void CloseTARobot()
         {
             ConsoleWriter.WriteLine("FORCED CLEANUP OF THE TA ROBOT");
-            Process killer = StartTimedUftProcessKiller(60);
             try
             {
                 QTPTestCleanup();
@@ -762,18 +705,7 @@ namespace HpToolsLauncher
             }
             finally
             {
-                if (!killer.HasExited)
-                {
-                    try
-                    {
-                        killer.Kill();
-                        killer = null;
-                    }
-                    catch (Exception)
-                    {
-                        // Do Nothing
-                    }
-                }
+                
             }
         }
 

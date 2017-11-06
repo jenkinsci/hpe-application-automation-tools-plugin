@@ -187,10 +187,12 @@ namespace HpToolsLauncher
 
             double totalTime = 0;
             var start = DateTime.Now;
+            KillAllAborterProcesses();
+            Process aborter = StartHPToolsAborter();
 
             try
             {
-                logCleanupTestInfo();
+                LogCleanupTestInfo();    
 
                 foreach (var test in _tests)
                 {
@@ -216,8 +218,17 @@ namespace HpToolsLauncher
                     AnalyzeRunResult(runResult);
                 }
             }
+            catch (Exception)
+            {
+                //Ignore
+            }
             finally
             {
+                if (!aborter.HasExited)
+                {
+                    aborter.Kill();
+                }
+
                 totalTime = (DateTime.Now - start).TotalSeconds;
                 activeRunDesc.NumTests = _tests.Count;
                 activeRunDesc.NumErrors = _errors;
@@ -231,7 +242,7 @@ namespace HpToolsLauncher
         }
 
 
-        private void logCleanupTestInfo()
+        private void LogCleanupTestInfo()
         {
             if (IsCleanupTestDefined())
             {
@@ -291,6 +302,7 @@ namespace HpToolsLauncher
             TestRunResults runResult = null;
             string errorReason = string.Empty;
             var testStart = DateTime.Now;
+
             try
             {
                 runResult = RunHPToolsTest(test, ref errorReason);
@@ -309,6 +321,38 @@ namespace HpToolsLauncher
             runResult.Runtime = (DateTime.Now - testStart);
             runResult.TestGroup = test.TestGroup;
             return runResult;
+        }
+
+        private void KillAllAborterProcesses()
+        {
+            //kill the qtp automation, to make sure it will run correctly next time
+            Process[] processes = Process.GetProcessesByName("HpToolsAborter.exe");
+            foreach(Process aProcess in processes)
+            {
+                aProcess.Kill();
+            }
+        }
+
+        private Process StartHPToolsAborter()
+        {
+            ConsoleWriter.WriteLine("Starting HP Tools Aborter");
+            JavaProperties aborterProps = new JavaProperties();
+            aborterProps.Add("runType", "FileSystem");
+
+            // Timeout + 60 to give time for UFT to stop Gratefully
+            aborterProps.Add("timeout", Convert.ToString(Convert.ToInt32(_timeout.TotalSeconds) + 60));
+            aborterProps.Save("aborter.properties", "Properties for Stopping the HP Tools Launcher");
+
+            Process process = new Process();
+            process.StartInfo.FileName = "HpToolsAborter.exe";
+            process.StartInfo.Arguments = "aborter.properties";
+            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.UseShellExecute = false;
+            process.Start();
+
+            return process;
         }
 
         private TestInfo GetCleanupTest()
