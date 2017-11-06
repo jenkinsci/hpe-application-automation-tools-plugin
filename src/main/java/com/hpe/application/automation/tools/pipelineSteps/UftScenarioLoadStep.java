@@ -186,6 +186,7 @@ public class UftScenarioLoadStep extends AbstractStepImpl {
 
             return ResultsPublisherModel.archiveModes;
         }
+        
 
         /**
          * Do check test paths validation.

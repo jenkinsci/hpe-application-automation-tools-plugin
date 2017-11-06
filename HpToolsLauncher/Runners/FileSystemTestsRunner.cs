@@ -120,9 +120,12 @@ namespace HpToolsLauncher
                     {
 
                         var testsLocations = Helper.GetTestsLocations(source);
-                        foreach (var loc in testsLocations)
+                        foreach (var testPath in testsLocations)
                         {
-                            var test = new TestInfo(loc, loc, source);
+                            var testClass = Directory.GetParent(testPath).Name;
+                            var testName = Path.GetFileName(testPath);
+                            var test = new TestInfo(testPath, testName, testClass);
+
                             testGroup.Add(test);
                         }
                     }
@@ -158,12 +161,6 @@ namespace HpToolsLauncher
                     testGroup = new List<TestInfo>();
                 }
 
-                //--handle single test dir, add it with no group
-                if (testGroup.Count == 1)
-                {
-                    testGroup[0].TestGroup = "<None>";
-                }
-
                 _tests.AddRange(testGroup);
             }
 
@@ -186,92 +183,217 @@ namespace HpToolsLauncher
         {
             //create a new Run Results object
             TestSuiteRunResults activeRunDesc = new TestSuiteRunResults();
+            TestInfo firstTest = _tests[0];
 
             double totalTime = 0;
+            var start = DateTime.Now;
+            KillAllAborterProcesses();
+            Process aborter = StartHPToolsAborter();
+
             try
             {
-                var start = DateTime.Now;
+                LogCleanupTestInfo();    
+
                 foreach (var test in _tests)
                 {
+                    if (IsTestPlaceholder(test)) continue;
                     if (RunCancelled()) break;
 
-                    var testStart = DateTime.Now;
-
-                    string errorReason = string.Empty;
                     TestRunResults runResult = null;
-                    try
-                    {
-                        runResult = RunHPToolsTest(test, ref errorReason);
-                    }
-                    catch (Exception ex)
-                    {
-                        runResult = new TestRunResults();
-                        runResult.TestState = TestState.Error;
-                        runResult.ErrorDesc = ex.Message;
-                        runResult.TestName = test.TestName;
-                    }
 
-                    //get the original source for this test, for grouping tests under test classes
-                    runResult.TestGroup = test.TestGroup;
+                    runResult = ExecuteTest(test);
+                    if (RunCancelled()) break;
+
+                    if (IsTestFailed(runResult) && IsCleanupTestDefined() && !IsCleanupTest(test))
+                    {
+                        Console.WriteLine("Test Failed: CLEANUP AND RE-RUN");
+                        runRobotCleanup();
+                        ExecuteTest(GetCleanupTest());
+           
+                        if (RunCancelled()) break;
+                        runResult = ExecuteTest(test);
+                    }
 
                     activeRunDesc.TestRuns.Add(runResult);
-
-                    //if fail was terminated before this step, continue
-                    if (runResult.TestState != TestState.Failed)
-                    {
-                        if (runResult.TestState != TestState.Error)
-                        {
-                            Helper.GetTestStateFromReport(runResult);
-                        }
-                        else
-                        {
-                            if (string.IsNullOrEmpty(runResult.ErrorDesc))
-                            {
-                                if (RunCancelled())
-                                {
-                                    runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionUserCancelled;
-                                }
-                                else
-                                {
-                                    runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionExternalProcess;
-                                }
-                            }
-                            runResult.ReportLocation = null;
-                            runResult.TestState = TestState.Error;
-                        }
-                    }
-
-                    if (runResult.TestState == TestState.Passed && runResult.HasWarnings)
-                    {
-                        runResult.TestState = TestState.Warning;
-                        ConsoleWriter.WriteLine(Resources.FsRunnerTestDoneWarnings);
-                    }
-                    else
-                    {
-                        ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerTestDone, runResult.TestState));
-                    }
-
-                    ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Test complete: " + runResult.TestPath + "\n-------------------------------------------------------------------------------------------------------");
-
-                    UpdateCounters(runResult.TestState);
-                    var testTotalTime = (DateTime.Now - testStart).TotalSeconds;
+                    AnalyzeRunResult(runResult);
                 }
-                totalTime = (DateTime.Now - start).TotalSeconds;
+            }
+            catch (Exception)
+            {
+                //Ignore
             }
             finally
             {
+                if (!aborter.HasExited)
+                {
+                    aborter.Kill();
+                }
+
+                totalTime = (DateTime.Now - start).TotalSeconds;
                 activeRunDesc.NumTests = _tests.Count;
                 activeRunDesc.NumErrors = _errors;
                 activeRunDesc.TotalRunTime = TimeSpan.FromSeconds(totalTime);
                 activeRunDesc.NumFailures = _fail;
 
-                foreach (IFileSysTestRunner cleanupRunner in _colRunnersForCleanup.Values)
+                runRobotCleanup();
+            }
+ 
+            return activeRunDesc;
+        }
+
+
+        private void LogCleanupTestInfo()
+        {
+            if (IsCleanupTestDefined())
+            {
+                Console.WriteLine("Used Cleanup Test: " + GetCleanupTest().TestPath);
+            }
+            else
+            {
+                Console.WriteLine("No Cleanup Test was Defined!");
+            }
+        }
+
+        private void AnalyzeRunResult(TestRunResults runResult)
+        {
+            //if fail was terminated before this step, continue
+            if (runResult.TestState != TestState.Failed)
+            {
+                if (runResult.TestState != TestState.Error)
                 {
-                    cleanupRunner.CleanUp();
+
+                    Helper.GetTestStateFromReport(runResult);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(runResult.ErrorDesc))
+                    {
+                        if (RunCancelled())
+                        {
+                            runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionUserCancelled;
+                        }
+                        else
+                        {
+                            runResult.ErrorDesc = HpToolsLauncher.Properties.Resources.ExceptionExternalProcess;
+                        }
+                    }
+                    runResult.ReportLocation = null;
+                    runResult.TestState = TestState.Error;
                 }
             }
 
-            return activeRunDesc;
+            if (runResult.TestState == TestState.Passed && runResult.HasWarnings)
+            {
+                runResult.TestState = TestState.Warning;
+                ConsoleWriter.WriteLine(Resources.FsRunnerTestDoneWarnings);
+            }
+            else
+            {
+                ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerTestDone, runResult.TestState));
+            }
+
+            ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Test complete: " + runResult.TestPath + "\n-------------------------------------------------------------------------------------------------------");
+
+            UpdateCounters(runResult.TestState);
+        }
+
+        private TestRunResults ExecuteTest(TestInfo test)
+        {
+            TestRunResults runResult = null;
+            string errorReason = string.Empty;
+            var testStart = DateTime.Now;
+
+            try
+            {
+                runResult = RunHPToolsTest(test, ref errorReason);
+            }
+            catch (Exception ex)
+            {
+                runResult = new TestRunResults();
+                runResult.TestState = TestState.Error;
+                runResult.ErrorDesc = ex.Message;
+                runResult.TestName = test.TestName;
+
+                ConsoleWriter.WriteLine("ExecuteTest Exception: " + ex.Message);
+            }
+
+            //get the original source for this test, for grouping tests under test classes
+            runResult.Runtime = (DateTime.Now - testStart);
+            runResult.TestGroup = test.TestGroup;
+            return runResult;
+        }
+
+        private void KillAllAborterProcesses()
+        {
+            //kill the qtp automation, to make sure it will run correctly next time
+            Process[] processes = Process.GetProcessesByName("HpToolsAborter.exe");
+            foreach(Process aProcess in processes)
+            {
+                aProcess.Kill();
+            }
+        }
+
+        private Process StartHPToolsAborter()
+        {
+            ConsoleWriter.WriteLine("Starting HP Tools Aborter");
+            JavaProperties aborterProps = new JavaProperties();
+            aborterProps.Add("runType", "FileSystem");
+
+            // Timeout + 60 to give time for UFT to stop Gratefully
+            aborterProps.Add("timeout", Convert.ToString(Convert.ToInt32(_timeout.TotalSeconds) + 60));
+            aborterProps.Save("aborter.properties", "Properties for Stopping the HP Tools Launcher");
+
+            Process process = new Process();
+            process.StartInfo.FileName = "HpToolsAborter.exe";
+            process.StartInfo.Arguments = "aborter.properties";
+            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.UseShellExecute = false;
+            process.Start();
+
+            return process;
+        }
+
+        private TestInfo GetCleanupTest()
+        {
+            return _tests[0];
+        }
+
+
+        private bool IsCleanupTestDefined()
+        {
+            if(_tests.Count == 1)
+            {
+                return false;
+            }
+
+            return !IsTestPlaceholder(_tests[0]);
+        }
+
+        private bool IsCleanupTest(TestInfo test)
+        {
+            return IsCleanupTestDefined() && test.TestPath.Equals(_tests[0].TestPath);
+        }
+
+
+        private bool IsTestPlaceholder(TestInfo test)
+        {
+            return test.TestPath.Equals("-");
+        }
+
+        private bool IsTestFailed(TestRunResults runResult)
+        {
+            return runResult.TestState == TestState.Failed || runResult.TestState == TestState.Error;
+        }
+
+        private void runRobotCleanup()
+        {
+
+            foreach (IFileSysTestRunner cleanupRunner in _colRunnersForCleanup.Values)
+            {
+                cleanupRunner.CleanUp();
+            }
         }
 
         /// <summary>

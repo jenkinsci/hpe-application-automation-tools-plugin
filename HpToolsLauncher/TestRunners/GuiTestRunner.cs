@@ -188,8 +188,7 @@ namespace HpToolsLauncher
                     {
                         if (_runCancelled())
                         {
-                            QTPTestCleanup();
-                            KillQtp();
+                            CloseTARobot();
                             runDesc.TestState = TestState.Error;
                             return runDesc;
                         }
@@ -209,9 +208,10 @@ namespace HpToolsLauncher
                 return runDesc;
             }
 
-            if (_qtpApplication.Test != null && _qtpApplication.Test.Modified)
+            if ((_qtpApplication.Test != null) && (_qtpApplication.Test.Modified) && (!_qtpApplication.Test.IsNew))
             {
-                var message = Resources.QtpNotLaunchedError;
+                
+                var message = Resources.QtpUnsavedError;
                 errorReason = message;
                 runDesc.TestState = TestState.Error;
                 runDesc.ErrorDesc = errorReason;
@@ -382,134 +382,188 @@ namespace HpToolsLauncher
         /// <returns></returns>
         private GuiTestRunResult ExecuteQTPRun(TestRunResults testResults)
         {
-            GuiTestRunResult result = new GuiTestRunResult { IsSuccess = true };
+            RunResultsOptions options = CreateRunResultOptions(testResults);
+            if (_runCancelled()) return HandleExecutionCanceled(testResults);
+
             try
             {
-                Type runResultsOptionstype = Type.GetTypeFromProgID("QuickTest.RunResultsOptions");
-                var options = (RunResultsOptions)Activator.CreateInstance(runResultsOptionstype);
-                options.ResultsLocation = testResults.ReportLocation;
-                _qtpApplication.Options.Run.RunMode = _uftRunMode;
-
-                //Check for cancel before executing
-                if (_runCancelled())
-                {
-                    testResults.TestState = TestState.Error;
-                    testResults.ErrorDesc = Resources.GeneralTestCanceled;
-                    ConsoleWriter.WriteLine(Resources.GeneralTestCanceled);
-                    result.IsSuccess = false;
-                    return result;
-                }
                 ConsoleWriter.WriteLine(string.Format(Resources.FsRunnerRunningTest, testResults.TestPath));
-
+                _qtpApplication.Options.Run.RunMode = _uftRunMode;
                 _qtpApplication.Test.Run(options, false, _qtpParameters);
 
-                result.ReportPath = Path.Combine(testResults.ReportLocation, "Report");
-                int slept = 0;
+                WaitForTestExecutionComplete(testResults);
+                if (_runCancelled())
+                {
+                    CloseTARobot();
+                    return HandleExecutionCanceled(testResults);
+                }
+
+                return AnalyzeLastRunResults(testResults);
+            }
+            catch (Exception e2)
+            {
+                ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e2.Message, e2.StackTrace));
+                CloseTARobot();
+
+                GuiTestRunResult result = new GuiTestRunResult();
+                result.ReportPath = options.ResultsLocation;
+                testResults.TestState = TestState.Error;
+                testResults.ReportLocation = result.ReportPath;
+
+                if(String.IsNullOrEmpty(testResults.ErrorDesc))
+                {
+                    testResults.ErrorDesc = Resources.QtpRunError;
+                }
+                
+                result.IsSuccess = false;
+                return result;
+            }
+        }
+
+
+        private GuiTestRunResult AnalyzeLastRunResults(TestRunResults testResults)
+        {
+            GuiTestRunResult result = new GuiTestRunResult { IsSuccess = true };
+
+            result.ReportPath = Path.Combine(testResults.ReportLocation, "Report");
+            string lastError = _qtpApplication.Test.LastRunResults.LastError;
+
+            //read the lastError
+            if (!String.IsNullOrEmpty(lastError))
+            {
+                testResults.TestState = TestState.Error;
+                testResults.ErrorDesc = lastError;
+            }
+
+            // the way to check the logical success of the target QTP test is: app.Test.LastRunResults.Status == "Passed".
+            if (_qtpApplication.Test.LastRunResults.Status.Equals("Passed"))
+            {
+                testResults.TestState = TestState.Passed;
+
+            }
+            else if (_qtpApplication.Test.LastRunResults.Status.Equals("Warning"))
+            {
+                testResults.TestState = TestState.Passed;
+                testResults.HasWarnings = true;
+
+                if (Launcher.ExitCode != Launcher.ExitCodeEnum.Failed && Launcher.ExitCode != Launcher.ExitCodeEnum.Aborted)
+                    Launcher.ExitCode = Launcher.ExitCodeEnum.Unstable;
+            }
+            else
+            {
+                testResults.TestState = TestState.Failed;
+                testResults.FailureDesc = "Test failed";
+
+                Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
+            }
+
+            return result;
+        }
+
+
+        private void WaitForTestExecutionComplete(TestRunResults testResults)
+        {
+            int slept = 0;
+
+            try
+            {
                 while ((slept < 20000 && _qtpApplication.GetStatus().Equals("Ready")) || _qtpApplication.GetStatus().Equals("Waiting"))
                 {
                     Thread.Sleep(50);
                     slept += 50;
                 }
 
-
+                ConsoleWriter.WriteLine("UFT Entering Busy Mode");
                 while (!_runCancelled() && (_qtpApplication.GetStatus().Equals("Running") || _qtpApplication.GetStatus().Equals("Busy")))
                 {
                     Thread.Sleep(200);
                     if (_timeLeftUntilTimeout - _stopwatch.Elapsed <= TimeSpan.Zero)
                     {
-                        _qtpApplication.Test.Stop();
+                        ConsoleWriter.WriteLine(Resources.GeneralTimeoutExpired);
+                        TryStopUftExecution();
                         testResults.TestState = TestState.Error;
                         testResults.ErrorDesc = Resources.GeneralTimeoutExpired;
-                        ConsoleWriter.WriteLine(Resources.GeneralTimeoutExpired);
-
-                        result.IsSuccess = false;
-                        return result;
+                        ConsoleWriter.WriteLine("UFT Stopped");
                     }
                 }
-
-                if (_runCancelled())
-                {
-                    QTPTestCleanup();
-                    KillQtp();
-                    testResults.TestState = TestState.Error;
-                    testResults.ErrorDesc = Resources.GeneralTestCanceled;
-                    ConsoleWriter.WriteLine(Resources.GeneralTestCanceled);
-                    Launcher.ExitCode = Launcher.ExitCodeEnum.Aborted;
-                    result.IsSuccess = false;
-                    return result;
-                }
-                string lastError = _qtpApplication.Test.LastRunResults.LastError;
-
-                //read the lastError
-                if (!String.IsNullOrEmpty(lastError))
-                {
-                    testResults.TestState = TestState.Error;
-                    testResults.ErrorDesc = lastError;
-                }
-
-                // the way to check the logical success of the target QTP test is: app.Test.LastRunResults.Status == "Passed".
-                if (_qtpApplication.Test.LastRunResults.Status.Equals("Passed"))
-                {
-                    testResults.TestState = TestState.Passed;
-
-                }
-                else if (_qtpApplication.Test.LastRunResults.Status.Equals("Warning"))
-                {
-                    testResults.TestState = TestState.Passed;
-                    testResults.HasWarnings = true;
-
-                    if (Launcher.ExitCode != Launcher.ExitCodeEnum.Failed && Launcher.ExitCode != Launcher.ExitCodeEnum.Aborted)
-                        Launcher.ExitCode = Launcher.ExitCodeEnum.Unstable;
-                }
-                else
-                {
-                    testResults.TestState = TestState.Failed;
-                    testResults.FailureDesc = "Test failed";
-
-                    Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
-                }
+                ConsoleWriter.WriteLine("UFT Leaving Busy Mode");
             }
-            catch (NullReferenceException e)
-            {
-                ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e.Message, e.StackTrace));
-                testResults.TestState = TestState.Error;
-                testResults.ErrorDesc = Resources.QtpRunError;
-
-                result.IsSuccess = false;
-                return result;
+            catch(Exception e) {
+                ConsoleWriter.WriteLine(DateTime.Now + ": Error Occured While Waiting " +
+                    "for the Test Execution to Complete. Killing the UFT Process Killer");
+                throw e;
             }
-            catch (SystemException e)
-            {
-                KillQtp();
-                ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e.Message, e.StackTrace));
-                testResults.TestState = TestState.Error;
-                testResults.ErrorDesc = Resources.QtpRunError;
+        }
 
-                result.IsSuccess = false;
-                return result;
-            }
-            catch (Exception e2)
-            {
+        private GuiTestRunResult HandleExecutionCanceled(TestRunResults testResults)
+        {
+            ConsoleWriter.WriteLine("Execution Canceled!");
+            GuiTestRunResult result = new GuiTestRunResult();
 
-                ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e2.Message, e2.StackTrace));
-                testResults.TestState = TestState.Error;
-                testResults.ErrorDesc = Resources.QtpRunError;
-
-                result.IsSuccess = false;
-                return result;
-            }
-
-
+            testResults.TestState = TestState.Error;
+            testResults.ErrorDesc = Resources.GeneralTestCanceled;
+            ConsoleWriter.WriteLine(Resources.GeneralTestCanceled);
+            Launcher.ExitCode = Launcher.ExitCodeEnum.Aborted;
+            result.IsSuccess = false;
             return result;
         }
 
+        private RunResultsOptions CreateRunResultOptions(TestRunResults testResults)
+        {
+            Type runResultsOptionstype = Type.GetTypeFromProgID("QuickTest.RunResultsOptions");
+            var options = (RunResultsOptions)Activator.CreateInstance(runResultsOptionstype);
+            options.ResultsLocation = testResults.ReportLocation;
+            
+            return options;
+        }
+
+        private bool TryStopUftExecution()
+        {
+            try
+            {
+                _qtpApplication.Test.Stop();
+                return true;
+            }
+            catch (Exception)
+            {
+                // ERROR Is Not Interesting
+                Console.WriteLine("UFT Stop Failed. Most Probably UFT Hanged and a TimeBomb process Killed it");
+                return false;
+            }
+        }
+
+
         private void KillQtp()
         {
-            //error during run, process may have crashed (need to cleanup, close QTP and qtpRemote for next test to run correctly)
-            CleanUp();
+            try
+            {
+                KillQtpAutomation();
+                KillQtpExe();
+            }
+            catch (Exception e)
+            {
+                // Ignore
+            }
 
+            _qtpParameters = null;
+            _qtpParamDefs = null;
+            _qtpApplication = null;
+        }
+
+
+        private void KillQtpAutomation()
+        {
             //kill the qtp automation, to make sure it will run correctly next time
             Process[] processes = Process.GetProcessesByName("qtpAutomationAgent");
+            Process qtpAuto = processes.Where(p => p.SessionId == Process.GetCurrentProcess().SessionId).FirstOrDefault();
+            if (qtpAuto != null)
+                qtpAuto.Kill();
+        }
+
+        private void KillQtpExe()
+        {
+            //kill the qtp automation, to make sure it will run correctly next time
+            Process[] processes = Process.GetProcessesByName("uft.exe");
             Process qtpAuto = processes.Where(p => p.SessionId == Process.GetCurrentProcess().SessionId).FirstOrDefault();
             if (qtpAuto != null)
                 qtpAuto.Kill();
@@ -585,8 +639,7 @@ namespace HpToolsLauncher
 
                 if (_runCancelled())
                 {
-                    QTPTestCleanup();
-                    KillQtp();
+                    CloseTARobot();
                     return false;
                 }
 
@@ -636,6 +689,26 @@ namespace HpToolsLauncher
 
         }
 
+
+        private void CloseTARobot()
+        {
+            ConsoleWriter.WriteLine("FORCED CLEANUP OF THE TA ROBOT");
+            try
+            {
+                QTPTestCleanup();
+                CleanUp();
+                KillQtp();
+            } 
+            catch (Exception)
+            {
+                ConsoleWriter.WriteLine(DateTime.Now + ": Error Occured Cleaning Up UFT!");
+            }
+            finally
+            {
+                
+            }
+        }
+
         /// <summary>
         /// stops and closes qtp test, to make sure nothing is left floating after run.
         /// </summary>
@@ -659,7 +732,7 @@ namespace HpToolsLauncher
                             {
                                 _qtpApplication.Test.Stop();
                             }
-                            catch (Exception e)
+                            catch (Exception)
                             {
                             }
                             finally
@@ -667,10 +740,12 @@ namespace HpToolsLauncher
 
                             }
                         }
+
+                        _qtpApplication.Test.Close();
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
 

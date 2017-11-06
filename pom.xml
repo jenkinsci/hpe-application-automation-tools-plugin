@@ -8,7 +8,7 @@
 	</parent>
 
 	<artifactId>hp-application-automation-tools-plugin</artifactId>
-	<version>5.2</version>
+	<version>5.2.5-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>HPE Application Automation Tools</name>
 	<description>The plugin integrates Jenkins with the following HPE products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
@@ -166,6 +166,11 @@
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+				<version>2.5</version>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>

@@ -60,6 +60,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 	private final RunFromFileSystemModel runFromFileModel;
 	private static final  String HP_TOOLS_LAUNCHER_EXE = "HpToolsLauncher.exe";
 	private static final  String LRANALYSIS_LAUNCHER_EXE = "LRAnalysisLauncher.exe";
+	private static final  String HP_TOOLS_ABORTER_EXE = "HpToolsAborter.exe";
 
 	/**
 	 * Instantiates a new Run from file builder.
@@ -457,10 +458,18 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 				listener.fatalError(LRANALYSIS_LAUNCHER_EXE + "not found in resources");
 				return;
 			}
+			
+			@SuppressWarnings("squid:S2259")
+			URL aborterExeUrl = Jenkins.getInstance().pluginManager.uberClassLoader.getResource(HP_TOOLS_ABORTER_EXE);
+			if (aborterExeUrl == null) {
+				listener.fatalError(HP_TOOLS_ABORTER_EXE + " not found in resources");
+				return;
+			}
 
 			FilePath propsFileName = workspace.child(ParamFileName);
 			CmdLineExe = workspace.child(HP_TOOLS_LAUNCHER_EXE);
 			FilePath CmdLineExe2 = workspace.child(LRANALYSIS_LAUNCHER_EXE);
+			FilePath aborterExe = workspace.child(HP_TOOLS_ABORTER_EXE);
 
 			try {
 				// create a file for the properties file, and save the properties
@@ -470,6 +479,8 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 				CmdLineExe.copyFrom(cmdExeUrl);
 
 				CmdLineExe2.copyFrom(cmdExe2Url);
+				
+				aborterExe.copyFrom(aborterExeUrl);
 
 			} catch (IOException | InterruptedException e) {
 				build.setResult(Result.FAILURE);
