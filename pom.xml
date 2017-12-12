@@ -32,581 +32,594 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.jenkins-ci.plugins</groupId>
-		<artifactId>plugin</artifactId>
-		<version>2.14</version>
-		<!-- which version of Jenkins is this plugin built against? -->
-	</parent>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.jenkins-ci.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>2.14</version>
+        <!-- which version of Jenkins is this plugin built against? -->
+    </parent>
 
-	<artifactId>hp-application-automation-tools-plugin</artifactId>
-	<version>5.3.1-beta</version>
-	<packaging>hpi</packaging>
-	<name>HPE Application Automation Tools</name>
-	<description>The plugin integrates Jenkins with the following HPE products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
-	<url>https://wiki.jenkins-ci.org/display/JENKINS/HPE+Application+Automation+Tools</url>
+    <artifactId>hp-application-automation-tools-plugin</artifactId>
+    <version>5.3.1-beta</version>
+    <packaging>hpi</packaging>
+    <name>HPE Application Automation Tools</name>
+    <description>The plugin integrates Jenkins with the following HPE products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/HPE+Application+Automation+Tools</url>
 
-	<licenses>
-		<license>
-			<name>MIT License</name>
-			<url>http://www.opensource.org/licenses/mit-license.php</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
-	<properties>
-		<concurrency>1</concurrency>
-		<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
-		<msbuild.configuration>Release</msbuild.configuration>
-		<jenkins.version>1.642.4</jenkins.version>
-		<workflow.version>2.2</workflow.version>
-		<maven.exec.skip>false</maven.exec.skip>
-		<bdi.version>1.0.4a</bdi.version>
-	</properties>
+    <properties>
+        <concurrency>1</concurrency>
+        <msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
+        <msbuild.configuration>Release</msbuild.configuration>
+        <jenkins.version>1.642.4</jenkins.version>
+        <workflow.version>2.2</workflow.version>
+        <maven.exec.skip>false</maven.exec.skip>
+        <bdi.version>1.0.4a</bdi.version>
+    </properties>
 
-	<distributionManagement>
-		<repository>
-		  <id>repo.jenkins-ci.org</id>
-		  <url>https://repo.jenkins-ci.org/releases</url>
-		</repository>
-		<snapshotRepository>
-			<id>maven.jenkins-ci.org</id>
-		  <url>https://repo.jenkins-ci.org/snapshots</url>
-		</snapshotRepository>
-	</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>repo.jenkins-ci.org</id>
+            <url>https://repo.jenkins-ci.org/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>maven.jenkins-ci.org</id>
+            <url>https://repo.jenkins-ci.org/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
-	<scm>
-		<connection>scm:git:ssh://github.com/jenkinsci/hpe-application-automation-tools-plugin.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/jenkinsci/hpe-application-automation-tools-plugin.git
-		</developerConnection>
-		<url>https://github.com/jenkinsci/hpe-application-automation-tools-plugin</url>
-		<tag>head</tag>
-	</scm>
-	<issueManagement>
-		<system>JIRA</system>
-		<url>https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20hp-application-automation-tools-plugin</url>
-	</issueManagement>
+    <scm>
+        <connection>scm:git:ssh://github.com/jenkinsci/hpe-application-automation-tools-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/hpe-application-automation-tools-plugin.git
+        </developerConnection>
+        <url>https://github.com/jenkinsci/hpe-application-automation-tools-plugin</url>
+        <tag>HEAD</tag>
+    </scm>
+    <issueManagement>
+        <system>JIRA</system>
+        <url>https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20hp-application-automation-tools-plugin</url>
+    </issueManagement>
 
-	<organization>
-		<name>HPE</name>
-		<url>http://www.hpe.com</url>
-	</organization>
+    <organization>
+        <name>HPE</name>
+        <url>http://www.hpe.com</url>
+    </organization>
 
-	<developers>
-		<developer>
-			<id>YafimK</id>
-			<name>Fima (Yafim) Kazak</name>
-			<email>kazak@hpe.com</email>
-			<roles>
-				<role>Global owner and Load Runner Dev</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>mseldin</id>
-			<name>Michael Seldin</name>
-			<email>michael.seldin@hpe.com</email>
-			<roles>
-				<role>ALM Octane</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>Rlu</id>
-			<name>Roy Lu</name>
-			<email>li.lu@hpe.com</email>
-			<roles>
-				<role>ALM Lab managment</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>pavelchuchma</id>
-			<name>Pavel Chuchma</name>
-			<email>pavel.chuchma@hpe.com</email>
-			<roles>
-				<role>Service Virtualization</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>imrman</id>
-			<name>Avishai Moshka</name>
-			<email>avishai.moshka@hp.com</email>
-			<roles>
-				<role>LoadRunner</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>amitb</id>
-			<name>Amit Bezalel</name>
-			<email>amit.bezalel@hpe.com</email>
-			<roles>
-				<role>UFT</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>bamh</id>
-			<name>Hanan Bem</name>
-			<email>hanan.bem@hpe.com</email>
-			<roles>
-				<role>Performance Center</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>michaelhpe</id>
-			<name>Weimin Jing</name>
-			<email>weimin.jing@hpe.com</email>
-			<roles>
-				<role>Mobile Center</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>JackyZhuHPE</id>
-			<name>Chunjiang Zhu (Jacky)</name>
-			<email>chun-jiang.zhu@hpe.com</email>
-			<roles>
-				<role>ALM/Upload test result to ALM (External Test)</role>
-			</roles>
-		</developer>
-	</developers>
+    <developers>
+        <developer>
+            <id>YafimK</id>
+            <name>Fima (Yafim) Kazak</name>
+            <email>kazak@hpe.com</email>
+            <roles>
+                <role>Global owner and Load Runner Dev</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>mseldin</id>
+            <name>Michael Seldin</name>
+            <email>michael.seldin@hpe.com</email>
+            <roles>
+                <role>ALM Octane</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>Rlu</id>
+            <name>Roy Lu</name>
+            <email>li.lu@hpe.com</email>
+            <roles>
+                <role>ALM Lab managment</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>pavelchuchma</id>
+            <name>Pavel Chuchma</name>
+            <email>pavel.chuchma@hpe.com</email>
+            <roles>
+                <role>Service Virtualization</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>imrman</id>
+            <name>Avishai Moshka</name>
+            <email>avishai.moshka@hp.com</email>
+            <roles>
+                <role>LoadRunner</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>amitb</id>
+            <name>Amit Bezalel</name>
+            <email>amit.bezalel@hpe.com</email>
+            <roles>
+                <role>UFT</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>bamh</id>
+            <name>Hanan Bem</name>
+            <email>hanan.bem@hpe.com</email>
+            <roles>
+                <role>Performance Center</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>michaelhpe</id>
+            <name>Weimin Jing</name>
+            <email>weimin.jing@hpe.com</email>
+            <roles>
+                <role>Mobile Center</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>JackyZhuHPE</id>
+            <name>Chunjiang Zhu (Jacky)</name>
+            <email>chun-jiang.zhu@hpe.com</email>
+            <roles>
+                <role>ALM/Upload test result to ALM (External Test)</role>
+            </roles>
+        </developer>
+    </developers>
 
-	<build>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>org.eclipse.m2e</groupId>
-					<artifactId>lifecycle-mapping</artifactId>
-					<version>1.0.0</version>
-					<configuration>
-						<lifecycleMappingMetadata>
-							<pluginExecutions>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.codehaus.mojo</groupId>
-										<artifactId>exec-maven-plugin</artifactId>
-										<versionRange>[1.2.1,)</versionRange>
-										<goals>
-											<goal>java</goal>
-											<goal>exec</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<ignore />
-									</action>
-								</pluginExecution>
-							</pluginExecutions>
-						</lifecycleMappingMetadata>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-release-plugin</artifactId>
-				<version>2.5.3</version>
-			</plugin>
-			<!--  -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<configuration>
-					<additionalparam>-Xdoclint:none</additionalparam>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>findbugs-maven-plugin</artifactId>
-				<executions>
-					<execution>
-						<phase>none</phase>
-					</execution>
-				</executions>
-				<configuration>
-					<skip>true</skip>
-				</configuration>
-			</plugin>
-			<!--  -->
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>1.4.0</version>
-				<configuration>
-					<executable>${msbuild.exe}</executable>
-					<workingDirectory>${basedir}/HpToolsLauncher</workingDirectory>
-					<skip>${maven.exec.skip}</skip>
-				</configuration>
-				<executions>
-					<execution>
-						<id>InstallPlugin - "${project.artifactId}"</id>
-						<phase>install</phase>
-						<goals>
-							<goal>exec</goal>
-						</goals>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.codehaus.mojo</groupId>
+                                        <artifactId>exec-maven-plugin</artifactId>
+                                        <versionRange>[1.2.1,)</versionRange>
+                                        <goals>
+                                            <goal>java</goal>
+                                            <goal>exec</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore />
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+            </plugin>
+            <!--  -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <!--  -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+                <configuration>
+                    <executable>${msbuild.exe}</executable>
+                    <workingDirectory>${basedir}/HpToolsLauncher</workingDirectory>
+                    <skip>${maven.exec.skip}</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>InstallPlugin - "${project.artifactId}"</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
 
-						<configuration>
-							<skip>true</skip>
-							<executable>java</executable>
-							<arguments>
-								<argument> -jar</argument>
-								<argument>${env.JENKINS_HOME}war\WEB-INF\jenkins-cli.jar</argument>
-								<argument>-s</argument>
-								<argument>http://localhost:8080</argument>
-								<argumnet>install-plugin</argumnet>
-								<argumnet>${project.build.directory}\${project.build.finalName}.${project.packaging}</argumnet>
-								<argument>-name</argument>
-								<argument>"${project.artifactId}"</argument>
-								<!-- <argument>-deploy</argument> -->
-								<argument>-restart</argument>
-								<argument>password-file ${id_rsa_file}</argument>
-							</arguments>
-						</configuration>
-					</execution>
-					<execution>
-						<id>clean HPToolsLauncher</id>
-						<phase>clean</phase>
-						<goals>
-							<goal>exec</goal>
-						</goals>
-						<configuration>
-							<arguments>
-								<argument>/t:Clean</argument>
-								<argument>/p:Configuration=${msbuild.configuration}</argument>
-							</arguments>
-						</configuration>
-					</execution>
-					<execution>
-						<id>creating HPToolsLauncher</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>exec</goal>
-						</goals>
-						<configuration>
-							<arguments>
-								<argument>/t:Rebuild</argument>
-								<argument>/p:Configuration=${msbuild.configuration}</argument>
-							</arguments>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.19.1</version>
-				<configuration>
-					<excludes>
-						<exclude>**/GherkinResultsTest.java</exclude>
-						<exclude>**/JUnitResultsTest.java</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-
-
-		</plugins>
-
-	</build>
-
-
-	<!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
-	<repositories>
-		<repository>
-			<id>repo.jenkins-ci.org</id>
-			<url>https://repo.jenkins-ci.org/public/</url>
-		</repository>
-		<repository>
-			<id>central</id>
-			<url>http://repo1.maven.org/maven2</url>
-		</repository>
-		<repository>
-			<id>bintray-adm-maven</id>
-			<name>bintray</name>
-			<url>http://dl.bintray.com/adm/maven</url>
-		</repository>
-	</repositories>
-
-	<pluginRepositories>
-		<pluginRepository>
-			<id>repo.jenkins-ci.org</id>
-			<url>https://repo.jenkins-ci.org/public/</url>
-		</pluginRepository>
-	</pluginRepositories>
-
-	<dependencies>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-aggregator</artifactId>
-			<version>${workflow.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-			<version>4.5.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore</artifactId>
-			<version>4.4.4</version>
-		</dependency>
-		<dependency>
-			<groupId>com.jayway.jsonpath</groupId>
-			<artifactId>json-path</artifactId>
-			<version>1.1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>matrix-project</artifactId>
-			<version>1.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-step-api</artifactId>
-			<version>${workflow.version}</version>
-		</dependency>
-		<dependency> <!-- Test framework -->
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-step-api</artifactId>
-			<version>${workflow.version}</version>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-cps</artifactId>
-			<version>2.6</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>pipeline-build-step</artifactId>
-			<version>2.2</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>structs</artifactId>
-			<version>1.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci</groupId>
-			<artifactId>symbol-annotation</artifactId>
-			<version>1.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>credentials</artifactId>
-			<version>2.1.4</version>
-		</dependency>
-		<dependency>
-			<groupId>com.hp.sv</groupId>
-			<artifactId>SVConfigurator</artifactId>
-			<version>4.10.1.48219</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-io</groupId>
-					<artifactId>commons-io</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>junit</artifactId>
-			<version>1.19</version>
-			<!--version>1.6</version-->
-		</dependency>
+                        <configuration>
+                            <skip>true</skip>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument> -jar</argument>
+                                <argument>${env.JENKINS_HOME}war\WEB-INF\jenkins-cli.jar</argument>
+                                <argument>-s</argument>
+                                <argument>http://localhost:8080</argument>
+                                <argumnet>install-plugin</argumnet>
+                                <argumnet>${project.build.directory}\${project.build.finalName}.${project.packaging}</argumnet>
+                                <argument>-name</argument>
+                                <argument>"${project.artifactId}"</argument>
+                                <!-- <argument>-deploy</argument> -->
+                                <argument>-restart</argument>
+                                <argument>password-file ${id_rsa_file}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>clean HPToolsLauncher</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>
+                                <argument>/t:Clean</argument>
+                                <argument>/p:Configuration=${msbuild.configuration}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>creating HPToolsLauncher</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>
+                                <argument>/t:Rebuild</argument>
+                                <argument>/p:Configuration=${msbuild.configuration}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/GherkinResultsTest.java</exclude>
+                        <exclude>**/JUnitResultsTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
 
 
-		<!-- Octane jenkins plugins -->
+        </plugins>
 
-		<dependency>
-			<artifactId>integrations-sdk</artifactId>
-			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.4.13</version>
-		</dependency>
-		
-		<!-- Obsolete TO BE REMOVED -->
-		<dependency>
-			<artifactId>mqm-rest-client</artifactId>
-			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.4.20</version>
-		</dependency>
+    </build>
 
-		<!-- org.jenkins-ci.main -->
-		<dependency>
-			<groupId>org.jenkins-ci.main</groupId>
-			<artifactId>maven-plugin</artifactId>
-			<version>2.6</version>
-		</dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>branch-api</artifactId>
-			<version>1.10</version>
-			<optional>true</optional>
-		</dependency>
+    <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
+    <repositories>
+        <repository>
+            <id>repo.jenkins-ci.org</id>
+            <url>https://repo.jenkins-ci.org/public/</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+            <id>bintray-adm-maven</id>
+            <name>bintray</name>
+            <url>http://dl.bintray.com/adm/maven</url>
+        </repository>
+    </repositories>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>ssh-credentials</artifactId>
-			<version>1.13</version>
-		</dependency>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>repo.jenkins-ci.org</id>
+            <url>https://repo.jenkins-ci.org/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>git-server</artifactId>
-			<version>1.7</version>
-			<optional>true</optional>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-aggregator</artifactId>
+            <version>${workflow.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>4.4.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jayway.jsonpath</groupId>
+            <artifactId>json-path</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>matrix-project</artifactId>
+            <version>1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-step-api</artifactId>
+            <version>${workflow.version}</version>
+        </dependency>
+        <dependency> <!-- Test framework -->
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-step-api</artifactId>
+            <version>${workflow.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>git-client</artifactId>
-			<version>1.19.6</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.workflow</groupId>
+            <artifactId>workflow-cps</artifactId>
+            <version>2.6</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.pipeline-stage-view</groupId>
-			<artifactId>pipeline-rest-api</artifactId>
-			<version>1.7</version>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>pipeline-build-step</artifactId>
+            <version>2.2</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>git</artifactId>
-			<version>2.4.4</version>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>structs</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci</groupId>
+            <artifactId>symbol-annotation</artifactId>
+            <version>1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>credentials</artifactId>
+            <version>2.1.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hp.sv</groupId>
+            <artifactId>SVConfigurator</artifactId>
+            <version>4.10.1.48219</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>junit</artifactId>
+            <version>1.19</version>
+            <!--version>1.6</version-->
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>token-macro</artifactId>
-			<version>1.12</version>
-			<optional>true</optional>
-		</dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>mailer</artifactId>
-			<version>1.16</version>
-		</dependency>
+        <!-- Octane jenkins plugins -->
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>jenkins-multijob-plugin</artifactId>
-			<version>1.15</version>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>parameterized-trigger</artifactId>
-			<version>2.25</version>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <artifactId>integrations-sdk</artifactId>
+            <groupId>com.hpe.adm.octane.ciplugins</groupId>
+            <version>1.4.13</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>extended-choice-parameter</artifactId>
-			<version>0.34</version>
-			<optional>true</optional>
-		</dependency>
+        <!-- Obsolete TO BE REMOVED -->
+        <dependency>
+            <artifactId>mqm-rest-client</artifactId>
+            <groupId>com.hpe.adm.octane.ciplugins</groupId>
+            <version>1.4.20</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>random-string-parameter</artifactId>
-			<version>1.0</version>
-			<optional>true</optional>
-		</dependency>
+        <!-- org.jenkins-ci.main -->
+        <dependency>
+            <groupId>org.jenkins-ci.main</groupId>
+            <artifactId>maven-plugin</artifactId>
+            <version>2.6</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>nodelabelparameter</artifactId>
-			<version>1.5.0</version>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>branch-api</artifactId>
+            <version>1.10</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>jquery</artifactId>
-			<version>1.7.2-1</version>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>ssh-credentials</artifactId>
+            <version>1.13</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>subversion</artifactId>
-			<version>2.5</version>
-			<optional>true</optional>
-		</dependency>
-		<!-- pipeline as a code  ends here -->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git-server</artifactId>
+            <version>1.7</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>com.squareup</groupId>
-			<artifactId>tape</artifactId>
-			<version>1.2.3</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git-client</artifactId>
+            <version>1.19.6</version>
+        </dependency>
 
-		<!--Extensibility-->
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi</artifactId>
-			<version>3.7</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins.pipeline-stage-view</groupId>
+            <artifactId>pipeline-rest-api</artifactId>
+            <version>1.7</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>com.seitenbau.jenkins.plugins</groupId>
-			<artifactId>dynamicparameter</artifactId>
-			<version>0.2.0</version>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <version>2.4.4</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>org.json</groupId>
-			<artifactId>json</artifactId>
-			<version>20090211</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>token-macro</artifactId>
+            <version>1.12</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jdom</groupId>
-			<artifactId>jdom2</artifactId>
-			<version>2.0.4</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>mailer</artifactId>
+            <version>1.16</version>
+        </dependency>
 
-		<!--Test-->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>jenkins-multijob-plugin</artifactId>
+            <version>1.15</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>parameterized-trigger</artifactId>
+            <version>2.25</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-server</artifactId>
-			<version>9.2.6.v20141205</version>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>extended-choice-parameter</artifactId>
+            <version>0.34</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>1.10.19</version>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>random-string-parameter</artifactId>
+            <version>1.0</version>
+            <optional>true</optional>
+        </dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.main</groupId>
-			<artifactId>jenkins-test-harness-tools</artifactId>
-			<version>2.0</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
-		<dependency>
-			<groupId>org.glassfish.jersey.core</groupId>
-			<artifactId>jersey-common</artifactId>
-			<version>2.9</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
-		<dependency>
-			<groupId>org.glassfish.jersey.media</groupId>
-			<artifactId>jersey-media-sse</artifactId>
-			<version>2.9</version>
-		</dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>nodelabelparameter</artifactId>
+            <version>1.5.0</version>
+            <optional>true</optional>
+        </dependency>
 
-	</dependencies>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>jquery</artifactId>
+            <version>1.7.2-1</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>subversion</artifactId>
+            <version>2.5</version>
+            <optional>true</optional>
+        </dependency>
+        <!-- pipeline as a code  ends here -->
+
+        <dependency>
+            <groupId>com.squareup</groupId>
+            <artifactId>tape</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+
+        <!--Extensibility-->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>3.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.seitenbau.jenkins.plugins</groupId>
+            <artifactId>dynamicparameter</artifactId>
+            <version>0.2.0</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20090211</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jdom</groupId>
+            <artifactId>jdom2</artifactId>
+            <version>2.0.4</version>
+        </dependency>
+
+        <!--Test-->
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.2.6.v20141205</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jenkins-ci.main</groupId>
+            <artifactId>jenkins-test-harness-tools</artifactId>
+            <version>2.0</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-common</artifactId>
+            <version>2.9</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-common -->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-sse</artifactId>
+            <version>2.9</version>
+        </dependency>
+
+    </dependencies>
 
 
 </project>
