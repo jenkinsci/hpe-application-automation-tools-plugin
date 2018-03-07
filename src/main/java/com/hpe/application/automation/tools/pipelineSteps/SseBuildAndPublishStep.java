@@ -206,7 +206,7 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
 
         @Override
         public String getDisplayName() {
-            return "Execute HPE tests using HPE ALM Lab Management and Publish HPE tests result";
+            return "Execute Micro Focus tests using Micro Focus ALM Lab Management and Publish Micro Focus tests result";
         }
 
         public boolean hasAlmServers() {
