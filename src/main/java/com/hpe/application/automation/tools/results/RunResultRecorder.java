@@ -1323,7 +1323,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
         @Override
         public String getDisplayName() {
 
-            return "Publish Micro Focus tests result";
+            return "Publish tests result";
         }
 
         @Override
