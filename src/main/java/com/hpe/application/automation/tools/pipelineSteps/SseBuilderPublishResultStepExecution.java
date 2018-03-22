@@ -67,7 +67,7 @@ public class SseBuilderPublishResultStepExecution extends AbstractSynchronousNon
 
     @Override
     protected Void run() throws Exception {
-        listener.getLogger().println("Execute tests using HPE ALM Lab Management");
+        listener.getLogger().println("Execute tests using ALM Lab Management");
 
         SseBuilder sseBuilder = step.getSseBuilder();
         RunResultRecorder runResultRecorder = step.getRunResultRecorder();
