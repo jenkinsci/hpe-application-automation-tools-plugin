@@ -72,7 +72,10 @@ public class ConfigurationService {
      * @return
      */
     public static ServerConfiguration getServerConfiguration() {
-        return getOctaneDescriptor().getServerConfiguration();
+        if(getOctaneDescriptor() != null) {
+            return getOctaneDescriptor().getServerConfiguration();
+        }
+        return null;
     }
 
     /**
@@ -81,7 +84,9 @@ public class ConfigurationService {
      * @param newModel
      */
     public static void configurePlugin(OctaneServerSettingsModel newModel) {
-        getOctaneDescriptor().setModel(newModel);
+        if(getOctaneDescriptor() != null) {
+            getOctaneDescriptor().setModel(newModel);
+        }
     }
 
     private static OctaneServerSettingsBuilder.OctaneDescriptorImpl getOctaneDescriptor() {
