@@ -41,6 +41,7 @@ import com.hpe.application.automation.tools.common.HttpStatus;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
 import hudson.model.Job;
+import hudson.scm.ChangeLogSet;
 import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
@@ -97,5 +98,15 @@ public class SvnPluginHandler implements ScmPluginHandler {
             result.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.getCode());
             result.setBody(e.getMessage());
         }
+    }
+
+    @Override
+    public String getChangeSetSrc(ChangeLogSet.AffectedFile affectedFile) {
+        return null;
+    }
+
+    @Override
+    public String getChangeSetDst(ChangeLogSet.AffectedFile affectedFile) {
+        return null;
     }
 }

@@ -35,7 +35,7 @@ package com.hpe.application.automation.tools.octane.tests.gherkin;
 
 import com.hpe.application.automation.tools.octane.actions.cucumber.CucumberTestResultsAction;
 import com.hpe.application.automation.tools.octane.tests.HPRunnerType;
-import com.hpe.application.automation.tools.octane.tests.MqmTestsExtension;
+import com.hpe.application.automation.tools.octane.tests.OctaneTestsExtension;
 import com.hpe.application.automation.tools.octane.tests.TestProcessingException;
 import com.hpe.application.automation.tools.octane.tests.TestResultContainer;
 import com.hpe.application.automation.tools.octane.tests.testResult.TestResult;
@@ -48,7 +48,7 @@ import java.io.IOException;
 import java.util.List;
 
 @Extension
-public class GherkinTestExtention extends MqmTestsExtension {
+public class GherkinTestExtention extends OctaneTestsExtension {
     private static Logger logger = LogManager.getLogger(GherkinTestExtention.class);
 
     @Override

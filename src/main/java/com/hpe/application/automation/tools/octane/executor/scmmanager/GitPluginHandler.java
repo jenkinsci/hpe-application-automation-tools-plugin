@@ -45,6 +45,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.plugins.git.extensions.GitSCMExtension;
 import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
+import hudson.scm.ChangeLogSet;
 import hudson.scm.SCM;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -121,5 +122,15 @@ public class GitPluginHandler implements ScmPluginHandler {
             result.setBody(e.getMessage());
         }
 
+    }
+
+    @Override
+    public String getChangeSetSrc(ChangeLogSet.AffectedFile affectedFile) {
+        return ((GitChangeSet.Path)affectedFile).getSrc();
+    }
+
+    @Override
+    public String getChangeSetDst(ChangeLogSet.AffectedFile affectedFile) {
+        return ((GitChangeSet.Path)affectedFile).getDst();
     }
 }

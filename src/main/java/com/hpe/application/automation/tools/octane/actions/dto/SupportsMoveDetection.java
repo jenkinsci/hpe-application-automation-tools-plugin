@@ -31,30 +31,19 @@
  *
  */
 
-package com.hpe.application.automation.tools.octane.buildLogs;
+package com.hpe.application.automation.tools.octane.actions.dto;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+/**
+ * Interface for entities that support changeSet source and destination properties
+ */
+public interface SupportsMoveDetection {
 
-class OctaneLog {
+    String getChangeSetSrc();
 
-	final private Long fileLength;
+    void setChangeSetSrc(String changeSetSrc);
 
-	final private InputStream logStream;
+    String getChangeSetDst();
 
-	OctaneLog(File logFile) throws FileNotFoundException {
-		this.fileLength = logFile.length();
-		this.logStream = new FileInputStream(logFile);
-	}
-
-	public Long getFileLength() {
-		return this.fileLength;
-	}
-
-	public InputStream getLogStream() {
-		return this.logStream;
-	}
+    void setChangeSetDst(String changeSetDst);
 
 }

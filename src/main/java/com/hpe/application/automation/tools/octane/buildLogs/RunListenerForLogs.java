@@ -33,17 +33,15 @@
 
 package com.hpe.application.automation.tools.octane.buildLogs;
 
-import com.google.inject.Inject;
+import com.hp.octane.integrations.OctaneSDK;
 import com.hpe.application.automation.tools.octane.configuration.ConfigurationService;
+import com.hpe.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
-import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import javax.annotation.Nonnull;
 
 /**
  * Created by benmeior on 11/16/2016
@@ -54,20 +52,18 @@ import javax.annotation.Nonnull;
 public class RunListenerForLogs extends RunListener<Run> {
 	private static Logger logger = LogManager.getLogger(RunListenerForLogs.class);
 
-	@Inject
-	private LogDispatcher logDispatcher;
-
 	@Override
-	public void onCompleted(Run r, @Nonnull TaskListener listener) {
-
-		if(ConfigurationService.getModel().isSuspend()){
+	public void onFinalized(Run r) {
+		if (ConfigurationService.getModel().isSuspend()) {
 			return;
 		}
 
-		if (r instanceof AbstractBuild && ConfigurationService.getServerConfiguration().isValid()) {
+		if (r instanceof AbstractBuild && ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) {
 			AbstractBuild build = (AbstractBuild) r;
-			logger.info(String.format("Enqueued job [%s#%d]", build.getProject().getFullName(), build.getNumber()));
-			logDispatcher.enqueueLog(build.getProject().getFullName(), build.getNumber());
+			String jobCiId = BuildHandlerUtils.getJobCiId(build);
+			String buildCiId = BuildHandlerUtils.getBuildCiId(build);
+			logger.info("enqueued build '" + jobCiId + " #" + buildCiId + "' for log submission");
+			OctaneSDK.getInstance().getLogsService().enqueuePushBuildLog(jobCiId, buildCiId);
 		} else {
 			logger.warn("Octane configuration is not valid");
 		}

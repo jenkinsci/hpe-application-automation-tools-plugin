@@ -34,26 +34,20 @@
 package com.hpe.application.automation.tools.octane.executor;
 
 import com.google.inject.Inject;
-import com.hpe.application.automation.tools.common.HttpStatus;
-import com.hpe.application.automation.tools.octane.ResultQueue;
-import com.hpe.application.automation.tools.octane.actions.UftTestType;
-import com.hpe.application.automation.tools.octane.actions.dto.*;
-import com.hpe.application.automation.tools.octane.actions.dto.AutomatedTests;
-import com.hpe.application.automation.tools.octane.actions.dto.ListNodeEntity;
-import com.hpe.application.automation.tools.octane.actions.dto.ListNodeEntityCollection;
-import com.hpe.application.automation.tools.octane.actions.dto.ScmResourceFile;
-import com.hpe.application.automation.tools.octane.configuration.ConfigurationService;
-import com.hpe.application.automation.tools.octane.configuration.ServerConfiguration;
-import com.hpe.application.automation.tools.octane.tests.AbstractSafeLoggingAsyncPeriodWork;
 import com.hp.mqm.client.MqmRestClient;
 import com.hp.mqm.client.QueryHelper;
 import com.hp.mqm.client.exception.RequestErrorException;
 import com.hp.mqm.client.model.Entity;
 import com.hp.mqm.client.model.ListItem;
 import com.hp.mqm.client.model.PagedList;
-import com.hpe.application.automation.tools.octane.actions.dto.AutomatedTest;
-import com.hpe.application.automation.tools.octane.actions.dto.BaseRefEntity;
-import com.hpe.application.automation.tools.octane.actions.dto.ScmResources;
+import com.hpe.application.automation.tools.common.HttpStatus;
+import com.hpe.application.automation.tools.octane.ResultQueue;
+import com.hpe.application.automation.tools.octane.actions.UftTestType;
+import com.hpe.application.automation.tools.octane.actions.dto.*;
+import com.hpe.application.automation.tools.octane.configuration.ConfigurationListener;
+import com.hpe.application.automation.tools.octane.configuration.ConfigurationService;
+import com.hpe.application.automation.tools.octane.configuration.ServerConfiguration;
+import com.hpe.application.automation.tools.octane.tests.AbstractSafeLoggingAsyncPeriodWork;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.FreeStyleProject;
@@ -85,12 +79,15 @@ import java.util.*;
  * Actually list of discovered tests are persisted in job run directory. Queue contains only reference to that job run.
  */
 @Extension
-public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWork {
+public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWork implements ConfigurationListener {
 
     private final static Logger logger = LogManager.getLogger(UftTestDiscoveryDispatcher.class);
     private final static String DUPLICATE_ERROR_CODE = "platform.duplicate_entity_error";
     private final static int POST_BULK_SIZE = 100;
     private final static int MAX_DISPATCH_TRIALS = 5;
+    private final static int QUERY_CONDITION_SIZE_THRESHOLD = 3000;
+    private static final String OCTANE_VERSION_SUPPORTING_TEST_RENAME = "12.60.3";
+    private static String OCTANE_VERSION = null;
 
     private UftTestDiscoveryQueue queue;
 
@@ -161,9 +158,17 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
             validateTestDiscoveryForFullDetection(client, result);
             validateDataTablesDiscoveryForFullDetection(client, result);
         } else {
+            if (isOctaneSupportTestRename(client)) {
+                handleMovedTests(result);
+                handleMovedDataTables(result);
+            }
+
             validateTestDiscoveryAndCompleteTestIdsForScmChangeDetection(client, result);
+            validateTestDiscoveryAndCompleteDataTableIdsForScmChangeDetection(client, result);
             //no need to add validation for dataTables, because there is no DTs update and there is no special delete strategy
         }
+        removeItemsWithStatusNone(result.getAllTests());
+        removeItemsWithStatusNone(result.getAllScmResourceFiles());
 
         //publish final results
         FreeStyleProject project = (FreeStyleProject) Jenkins.getInstance().getItemByFullName(item.getProjectName());
@@ -179,34 +184,110 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
         }
 
         //post new tests
-        if (!result.getNewTests().isEmpty()) {
-            boolean posted = postTests(client, result.getNewTests(), result.getWorkspaceId(), result.getScmRepositoryId());
-            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + result.getNewTests().size() + "  new tests posted successfully = " + posted);
+        List<AutomatedTest> tests = result.getNewTests();
+        if (!tests.isEmpty()) {
+            boolean posted = postTests(client, tests, result.getWorkspaceId(), result.getScmRepositoryId());
+            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + tests + "  new tests posted successfully = " + posted);
         }
 
         //post test updated
-        if (!result.getUpdatedTests().isEmpty()) {
-            boolean updated = updateTests(client, result.getUpdatedTests(), result.getWorkspaceId());
-            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + result.getUpdatedTests().size() + "  updated tests posted successfully = " + updated);
+        tests = result.getUpdatedTests();
+        if (!tests.isEmpty()) {
+            boolean updated = updateTests(client, tests, result.getWorkspaceId());
+            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + tests.size() + "  updated tests posted successfully = " + updated);
         }
 
         //post test deleted
-        if (!result.getDeletedTests().isEmpty()) {
-            boolean updated = updateTests(client, result.getDeletedTests(), result.getWorkspaceId());
-            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + result.getDeletedTests().size() + "  deleted tests set as not executable successfully = " + updated);
+        tests = result.getDeletedTests();
+        if (!tests.isEmpty()) {
+            boolean updated = updateTests(client, tests, result.getWorkspaceId());
+            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + tests.size() + "  deleted tests set as not executable successfully = " + updated);
         }
 
         //post scm resources
-        if (!result.getNewScmResourceFiles().isEmpty()) {
-            boolean posted = postScmResources(client, result.getNewScmResourceFiles(), result.getWorkspaceId(), result.getScmRepositoryId());
-            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + result.getNewScmResourceFiles().size() + "  new scmResources posted successfully = " + posted);
+        List<ScmResourceFile> resources = result.getNewScmResourceFiles();
+        if (!resources.isEmpty()) {
+            boolean posted = postScmResources(client, resources, result.getWorkspaceId(), result.getScmRepositoryId());
+            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + resources.size() + "  new scmResources posted successfully = " + posted);
+        }
+
+        //update scm resources
+        resources = result.getUpdatedScmResourceFiles();
+        if (!resources.isEmpty()) {
+            boolean posted = updateScmResources(client, resources, result.getWorkspaceId());
+            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + resources.size() + "  updated scmResources posted successfully = " + posted);
         }
 
         //delete scm resources
-        if (!result.getDeletedScmResourceFiles().isEmpty()) {
-            boolean posted = deleteScmResources(client, result.getDeletedScmResourceFiles(), result.getWorkspaceId(), result.getScmRepositoryId());
-            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + result.getDeletedScmResourceFiles().size() + "  scmResources deleted successfully = " + posted);
+        resources = result.getDeletedScmResourceFiles();
+        if (!resources.isEmpty()) {
+            boolean posted = deleteScmResources(client, resources, result.getWorkspaceId(), result.getScmRepositoryId());
+            logger.warn("Persistence [" + item.getProjectName() + "#" + item.getBuildNumber() + "] : " + resources.size() + "  scmResources deleted successfully = " + posted);
         }
+    }
+
+    private static void removeItemsWithStatusNone(List<? extends SupportsOctaneStatus> list) {
+        for (int i = list.size(); i > 0; i--) {
+            if (list.get(i - 1).getOctaneStatus().equals(OctaneStatus.NONE)) {
+                list.remove(i - 1);
+            }
+        }
+    }
+
+    private static boolean validateTestDiscoveryAndCompleteDataTableIdsForScmChangeDetection(MqmRestClient client, UFTTestDetectionResult result) {
+        boolean hasDiff = false;
+        Set<String> allNames = new HashSet<>();
+        for (ScmResourceFile file : result.getAllScmResourceFiles()) {
+            if (file.getIsMoved()) {
+                allNames.add(file.getOldName());
+            } else {
+                allNames.add(file.getName());
+            }
+        }
+
+        //GET DataTables FROM OCTANE
+        Map<String, Entity> octaneEntityMapByRelativePath = getDataTablesFromServer(client, Long.parseLong(result.getWorkspaceId()), Long.parseLong(result.getScmRepositoryId()), allNames);
+
+
+        //MATCHING
+        for (ScmResourceFile file : result.getAllScmResourceFiles()) {
+
+            String key = file.getIsMoved() ? file.getOldRelativePath() : file.getRelativePath();
+            Entity octaneFile = octaneEntityMapByRelativePath.get(key);
+
+            boolean octaneFileFound = (octaneFile != null);
+            if (octaneFileFound) {
+                file.setId(octaneFile.getId());
+            }
+
+            switch (file.getOctaneStatus()) {
+                case DELETED:
+                    if (!octaneFileFound) {
+                        //file that is marked to be deleted - doesn't exist in Octane - do nothing
+                        hasDiff = true;
+                        file.setOctaneStatus(OctaneStatus.NONE);
+                    }
+                    break;
+                case MODIFIED:
+                    if (!octaneFileFound) {
+                        //updated file that has no matching in Octane, possibly was remove from Octane. So we move it to new
+                        hasDiff = true;
+                        file.setOctaneStatus(OctaneStatus.NEW);
+                    }
+                    break;
+                case NEW:
+                    if (octaneFileFound) {
+                        //new file was found in Octane - do nothing(there is nothing to update)
+                        hasDiff = true;
+                        file.setOctaneStatus(OctaneStatus.NONE);
+                    }
+                    break;
+                default:
+                    //do nothing
+            }
+        }
+
+        return hasDiff;
     }
 
     /**
@@ -218,12 +299,14 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
      */
     private static boolean validateTestDiscoveryAndCompleteTestIdsForScmChangeDetection(MqmRestClient client, UFTTestDetectionResult result) {
         boolean hasDiff = false;
-        List<AutomatedTest> allTests = new ArrayList<>();
-        allTests.addAll(result.getUpdatedTests());
-        allTests.addAll(result.getDeletedTests());
+
         Set<String> allTestNames = new HashSet<>();
-        for (AutomatedTest test : allTests) {
-            allTestNames.add(test.getName());
+        for (AutomatedTest test : result.getAllTests()) {
+            if (test.getIsMoved()) {
+                allTestNames.add(test.getOldName());
+            } else {
+                allTestNames.add(test.getName());
+            }
         }
 
         //GET TESTS FROM OCTANE
@@ -231,19 +314,42 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
 
 
         //MATCHING
-        for (AutomatedTest test : allTests) {
-            String key = createKey(test.getPackage(), test.getName());
+        for (AutomatedTest discoveredTest : result.getAllTests()) {
+            String key = discoveredTest.getIsMoved() ? createKey(discoveredTest.getOldPackage(), discoveredTest.getOldName()) : createKey(discoveredTest.getPackage(), discoveredTest.getName());
             Entity octaneTest = octaneTestsMapByKey.get(key);
-            if (octaneTest != null) {
-                test.setId(octaneTest.getId());
-            } else {//no match{
-                hasDiff = true;
-                if (result.getUpdatedTests().remove(test)) {
-                    result.getNewTests().add(test);
-                } else {
-                    //test that is marked to be deleted - doesn't exist in Octane - do nothing
-                    result.getDeletedTests().remove(test);
-                }
+            boolean octaneTestFound = (octaneTest != null);
+            if (octaneTestFound) {
+                discoveredTest.setId(octaneTest.getId());
+            }
+            switch (discoveredTest.getOctaneStatus()) {
+                case DELETED:
+                    if (!octaneTestFound) {
+                        //discoveredTest that is marked to be deleted - doesn't exist in Octane - do nothing
+                        hasDiff = true;
+                        discoveredTest.setOctaneStatus(OctaneStatus.NONE);
+                    }
+                    break;
+                case MODIFIED:
+                    if (!octaneTestFound) {
+                        //updated discoveredTest that has no matching in Octane, possibly was remove from Octane. So we move it to new tests
+                        hasDiff = true;
+                        discoveredTest.setOctaneStatus(OctaneStatus.NEW);
+                    } else {
+                        boolean testsEqual = checkTestEquals(discoveredTest, octaneTest);
+                        if (testsEqual) { //if equal - skip
+                            discoveredTest.setOctaneStatus(OctaneStatus.NONE);
+                        }
+                    }
+                    break;
+                case NEW:
+                    if (octaneTestFound) {
+                        //new discoveredTest was found in Octane - move it to update
+                        hasDiff = true;
+                        discoveredTest.setOctaneStatus(OctaneStatus.MODIFIED);
+                    }
+                    break;
+                default:
+                    //do nothing
             }
         }
 
@@ -259,31 +365,27 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
      * 2.2 if tests are equal - skip test
      * 3. all tests that are found in Octane but not discovered - those deleted tests and they will be turned to not executable
      *
-     * @return true if there were changes comparing to discoverede results
+     * @return true if there were changes comparing to discovered results
      */
     private static boolean validateTestDiscoveryForFullDetection(MqmRestClient client, UFTTestDetectionResult detectionResult) {
         boolean hasDiff = false;
         Map<String, Entity> octaneTestsMap = getTestsFromServer(client, Long.parseLong(detectionResult.getWorkspaceId()), Long.parseLong(detectionResult.getScmRepositoryId()), null);
 
-        List<AutomatedTest> discoveredTests = new ArrayList(detectionResult.getNewTests());
-        detectionResult.getNewTests().clear();
-        for (AutomatedTest discoveredTest : discoveredTests) {
+        for (AutomatedTest discoveredTest : detectionResult.getAllTests()) {
             String key = createKey(discoveredTest.getPackage(), discoveredTest.getName());
             Entity octaneTest = octaneTestsMap.remove(key);
 
             if (octaneTest == null) {
-                detectionResult.getNewTests().add(discoveredTest);
+                //do nothing, status of test should remain NEW
             } else {
                 hasDiff = true;//if we get here - there is diff with discovered tests
                 //the only fields that might be different is description and executable
-                boolean octaneExecutable = octaneTest.getBooleanValue(OctaneConstants.Tests.EXECUTABLE_FIELD);
-                String octaneDescription = octaneTest.getStringValue(OctaneConstants.Tests.DESCRIPTION_FIELD);
-                boolean descriptionEquals = ((StringUtils.isEmpty(octaneDescription) || "null".equals(octaneDescription)) && discoveredTest.getDescription() == null) ||
-                        octaneDescription.contains(discoveredTest.getDescription());
-                boolean testsEqual = (octaneExecutable && descriptionEquals);
+                boolean testsEqual = checkTestEquals(discoveredTest, octaneTest);
                 if (!testsEqual) { //if equal - skip
                     discoveredTest.setId(octaneTest.getId());
-                    detectionResult.getUpdatedTests().add(discoveredTest);
+                    discoveredTest.setOctaneStatus(OctaneStatus.MODIFIED);
+                } else {
+                    discoveredTest.setOctaneStatus(OctaneStatus.NONE);
                 }
             }
         }
@@ -298,11 +400,20 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
                 test.setExecutable(false);
                 test.setName(octaneTest.getName());
                 test.setPackage(octaneTest.getStringValue(OctaneConstants.Tests.PACKAGE_FIELD));
-                detectionResult.getDeletedTests().add(test);
+                test.setOctaneStatus(OctaneStatus.DELETED);
             }
         }
 
         return hasDiff;
+    }
+
+    private static boolean checkTestEquals(AutomatedTest discoveredTest, Entity octaneTest) {
+        boolean octaneExecutable = octaneTest.getBooleanValue(OctaneConstants.Tests.EXECUTABLE_FIELD);
+        String octaneDescription = octaneTest.getStringValue(OctaneConstants.Tests.DESCRIPTION_FIELD);
+        boolean descriptionEquals = ((StringUtils.isEmpty(octaneDescription) || "null".equals(octaneDescription)) && discoveredTest.getDescription() == null) ||
+                octaneDescription.contains(discoveredTest.getDescription());
+        boolean testsEqual = (octaneExecutable && descriptionEquals && !discoveredTest.getIsMoved());
+        return testsEqual;
     }
 
     /**
@@ -312,15 +423,13 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
      */
     private static boolean validateDataTablesDiscoveryForFullDetection(MqmRestClient client, UFTTestDetectionResult detectionResult) {
         boolean hasDiff = false;
-        List<ScmResourceFile> discoveredDataTables = new ArrayList(detectionResult.getNewScmResourceFiles());
-        detectionResult.getNewScmResourceFiles().clear();
 
-        Map<String, Entity> octaneDataTablesMap = getDataTablesFromServer(client, Long.parseLong(detectionResult.getWorkspaceId()), Long.parseLong(detectionResult.getScmRepositoryId()));
-        for (ScmResourceFile dataTable : discoveredDataTables) {
+
+        Map<String, Entity> octaneDataTablesMap = getDataTablesFromServer(client, Long.parseLong(detectionResult.getWorkspaceId()), Long.parseLong(detectionResult.getScmRepositoryId()), null);
+        for (ScmResourceFile dataTable : detectionResult.getAllScmResourceFiles()) {
             Entity octaneDataTable = octaneDataTablesMap.remove(dataTable.getRelativePath());
-            if (octaneDataTable == null) {
-                detectionResult.getNewScmResourceFiles().add(dataTable);
-            } else {
+            if (octaneDataTable != null) {//found in Octnat - skip
+                dataTable.setOctaneStatus(OctaneStatus.NONE);
                 hasDiff = true;
             }
         }
@@ -332,7 +441,8 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
             dt.setId(octaneDataTable.getId());
             dt.setName(octaneDataTable.getName());
             dt.setRelativePath(octaneDataTable.getStringValue(OctaneConstants.DataTables.RELATIVE_PATH_FIELD));
-            detectionResult.getDeletedScmResourceFiles().add(dt);
+            dt.setOctaneStatus(OctaneStatus.DELETED);
+            detectionResult.getAllScmResourceFiles().add(dt);
         }
 
         return hasDiff;
@@ -342,10 +452,9 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
         List<String> conditions = new ArrayList<>();
         if (allTestNames != null && !allTestNames.isEmpty()) {
             String byNameCondition = QueryHelper.conditionIn(OctaneConstants.Tests.NAME_FIELD, allTestNames, false);
-            int byNameConditionSizeThreshold = 3000;
             //Query string is part of UR, some servers limit request size by 4K,
             //Here we limit nameCondition by 3K, if it exceed, we will fetch all tests
-            if (byNameCondition.length() < byNameConditionSizeThreshold) {
+            if (byNameCondition.length() < QUERY_CONDITION_SIZE_THRESHOLD) {
                 conditions.add(byNameCondition);
             }
         }
@@ -361,11 +470,23 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
         return octaneTestsMapByKey;
     }
 
-    private static Map<String, Entity> getDataTablesFromServer(MqmRestClient client, long workspaceId, long scmRepositoryId) {
-        List<String> conditionByScmRepository = Arrays.asList(QueryHelper.conditionRef(OctaneConstants.DataTables.SCM_REPOSITORY_FIELD, scmRepositoryId));
+    private static Map<String, Entity> getDataTablesFromServer(MqmRestClient client, long workspaceId, long scmRepositoryId, Set<String> allNames) {
+        List<String> conditions = new ArrayList<>();
+        if (allNames != null && !allNames.isEmpty()) {
+            String byPathCondition = QueryHelper.conditionIn(OctaneConstants.DataTables.NAME_FIELD, allNames, false);
+
+            //Query string is part of UR, some servers limit request size by 4K,
+            //Here we limit nameCondition by 3K, if it exceed, we will fetch all
+            if (byPathCondition.length() < QUERY_CONDITION_SIZE_THRESHOLD) {
+                conditions.add(byPathCondition);
+            }
+        }
+
+        String conditionByScmRepository = QueryHelper.conditionRef(OctaneConstants.DataTables.SCM_REPOSITORY_FIELD, scmRepositoryId);
+        conditions.add(conditionByScmRepository);
 
         List<String> dataTablesFields = Arrays.asList(OctaneConstants.DataTables.ID_FIELD, OctaneConstants.DataTables.NAME_FIELD, OctaneConstants.DataTables.RELATIVE_PATH_FIELD);
-        List<Entity> octaneDataTables = client.getEntities(workspaceId, OctaneConstants.DataTables.COLLECTION_NAME, conditionByScmRepository, dataTablesFields);
+        List<Entity> octaneDataTables = client.getEntities(workspaceId, OctaneConstants.DataTables.COLLECTION_NAME, conditions, dataTablesFields);
 
         Map<String, Entity> octaneDataTablesMap = new HashedMap();
         for (Entity dataTable : octaneDataTables) {
@@ -396,8 +517,7 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
 
             for (int i = 0; i < tests.size(); i += POST_BULK_SIZE) {
                 try {
-                    AutomatedTests
-                            data = AutomatedTests.createWithTests(tests.subList(i, Math.min(i + POST_BULK_SIZE, tests.size())));
+                    AutomatedTests data = AutomatedTests.createWithTests(tests.subList(i, Math.min(i + POST_BULK_SIZE, tests.size())));
                     String uftTestJson = convertToJsonString(data);
                     client.postEntities(Long.parseLong(workspaceId), OctaneConstants.Tests.COLLECTION_NAME, uftTestJson);
                 } catch (RequestErrorException e) {
@@ -421,8 +541,8 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
             for (int i = 0; i < resources.size(); i += POST_BULK_SIZE)
                 try {
                     ScmResources data = ScmResources.createWithItems(resources.subList(i, Math.min(i + POST_BULK_SIZE, resources.size())));
-                    String uftTestJson = convertToJsonString(data);
-                    client.postEntities(Long.parseLong(workspaceId), OctaneConstants.DataTables.COLLECTION_NAME, uftTestJson);
+                    String json = convertToJsonString(data);
+                    client.postEntities(Long.parseLong(workspaceId), OctaneConstants.DataTables.COLLECTION_NAME, json);
                 } catch (RequestErrorException e) {
                     return checkIfExceptionCanBeIgnoredInPOST(e, "Failed to post scm resource files");
                 }
@@ -531,7 +651,8 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
         config.setJsonPropertyFilter(pf);
 
         //skip fields
-        config.registerPropertyExclusion(AutomatedTest.class, "uftTestType");
+        config.registerPropertyExclusions(AutomatedTest.class, new String[]{"uftTestType", "changeSetSrc", "changeSetDst", "oldName", "oldPackage", "isMoved", "octaneStatus"});
+        config.registerPropertyExclusions(ScmResourceFile.class, new String[]{"changeSetSrc", "changeSetDst", "oldName", "oldRelativePath", "isMoved", "octaneStatus"});
         return config;
     }
 
@@ -547,6 +668,11 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
                 }
                 testForUpdate.setExecutable(test.getExecutable());
                 testForUpdate.setId(test.getId());
+
+                if (test.getIsMoved()) {
+                    testForUpdate.setName(test.getName());
+                    testForUpdate.setPackage(test.getPackage());
+                }
                 testsForUpdate.add(testForUpdate);
             }
 
@@ -565,13 +691,31 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
         }
     }
 
-    private static Entity fetchDataTableFromOctane(MqmRestClient client, long workspaceIdAsLong, long scmRepositoryId, ScmResourceFile scmResource) {
+    private static Entity fetchDataTableFromOctane(MqmRestClient client, long workspaceIdAsLong, long scmRepositoryId, String relativePath) {
         List<String> conditions = new ArrayList<>();
-        conditions.add(QueryHelper.condition(OctaneConstants.DataTables.RELATIVE_PATH_FIELD, scmResource.getRelativePath()));
+        conditions.add(QueryHelper.condition(OctaneConstants.DataTables.RELATIVE_PATH_FIELD, relativePath));
         conditions.add(QueryHelper.conditionRef(OctaneConstants.DataTables.SCM_REPOSITORY_FIELD, scmRepositoryId));
         List<Entity> entities = client.getEntities(workspaceIdAsLong, OctaneConstants.DataTables.COLLECTION_NAME, conditions, Arrays.asList("id, name"));
 
         return entities.size() == 1 ? entities.get(0) : null;
+    }
+
+    private static boolean updateScmResources(MqmRestClient client, List<ScmResourceFile> updatedResourceFiles, String workspaceId) {
+        try {
+
+            if (!updatedResourceFiles.isEmpty()) {
+                for (int i = 0; i < updatedResourceFiles.size(); i += POST_BULK_SIZE) {
+                    ScmResources data = ScmResources.createWithItems(updatedResourceFiles.subList(i, Math.min(i + POST_BULK_SIZE, updatedResourceFiles.size())));
+                    String json = convertToJsonString(data);
+                    client.updateEntities(Long.parseLong(workspaceId), OctaneConstants.DataTables.COLLECTION_NAME, json);
+                }
+            }
+
+            return true;
+        } catch (Exception e) {
+            logger.error("Failed to update data tables : " + e.getMessage());
+            return false;
+        }
     }
 
     private static boolean deleteScmResources(MqmRestClient client, List<ScmResourceFile> deletedResourceFiles, String workspaceId, String scmRepositoryId) {
@@ -581,7 +725,7 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
         Set<Long> deletedIds = new HashSet<>();
         try {
             for (ScmResourceFile scmResource : deletedResourceFiles) {
-                Entity found = fetchDataTableFromOctane(client, workspaceIdAsLong, scmRepositoryIdAsLong, scmResource);
+                Entity found = fetchDataTableFromOctane(client, workspaceIdAsLong, scmRepositoryIdAsLong, scmResource.getRelativePath());
                 if (found != null) {
                     deletedIds.add(found.getId());
                 }
@@ -702,4 +846,134 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
     public void enqueueResult(String projectName, int buildNumber) {
         queue.add(projectName, buildNumber);
     }
+
+
+    private static void handleMovedTests(UFTTestDetectionResult result) {
+        List<AutomatedTest> newTests = result.getNewTests();
+        List<AutomatedTest> deletedTests = result.getDeletedTests();
+        if (!newTests.isEmpty() && !deletedTests.isEmpty()) {
+            Map<String, AutomatedTest> dst2Test = new HashMap<>();
+            Map<AutomatedTest, AutomatedTest> deleted2newMovedTests = new HashMap<>();
+            for (AutomatedTest newTest : newTests) {
+                if (StringUtils.isNotEmpty(newTest.getChangeSetDst())) {
+                    dst2Test.put(newTest.getChangeSetDst(), newTest);
+                }
+            }
+            for (AutomatedTest deletedTest : deletedTests) {
+                if (StringUtils.isNotEmpty(deletedTest.getChangeSetDst()) && dst2Test.containsKey(deletedTest.getChangeSetDst())) {
+                    AutomatedTest newTest = dst2Test.get(deletedTest.getChangeSetDst());
+                    deleted2newMovedTests.put(deletedTest, newTest);
+                }
+            }
+
+            for (Map.Entry<AutomatedTest, AutomatedTest> entry : deleted2newMovedTests.entrySet()) {
+                AutomatedTest deletedTest = entry.getKey();
+                AutomatedTest newTest = entry.getValue();
+
+                newTest.setIsMoved(true);
+                newTest.setOldName(deletedTest.getName());
+                newTest.setOldPackage(deletedTest.getPackage());
+                newTest.setOctaneStatus(OctaneStatus.MODIFIED);
+
+                result.getAllTests().remove(deletedTest);
+            }
+        }
+    }
+
+    private static void handleMovedDataTables(UFTTestDetectionResult result) {
+        List<ScmResourceFile> newItems = result.getNewScmResourceFiles();
+        List<ScmResourceFile> deletedItems = result.getDeletedScmResourceFiles();
+        if (!newItems.isEmpty() && !deletedItems.isEmpty()) {
+            Map<String, ScmResourceFile> dst2File = new HashMap<>();
+            Map<ScmResourceFile, ScmResourceFile> deleted2newMovedFiles = new HashMap<>();
+            for (ScmResourceFile newFile : newItems) {
+                if (StringUtils.isNotEmpty(newFile.getChangeSetDst())) {
+                    dst2File.put(newFile.getChangeSetDst(), newFile);
+                }
+            }
+            for (ScmResourceFile deletedFile : deletedItems) {
+                if (StringUtils.isNotEmpty(deletedFile.getChangeSetDst()) && dst2File.containsKey(deletedFile.getChangeSetDst())) {
+                    ScmResourceFile newFile = dst2File.get(deletedFile.getChangeSetDst());
+                    deleted2newMovedFiles.put(deletedFile, newFile);
+                }
+            }
+
+            for (Map.Entry<ScmResourceFile, ScmResourceFile> entry : deleted2newMovedFiles.entrySet()) {
+                ScmResourceFile deletedFile = entry.getKey();
+                ScmResourceFile newFile = entry.getValue();
+
+                newFile.setIsMoved(true);
+                newFile.setOldName(deletedFile.getName());
+                newFile.setOldRelativePath(deletedFile.getRelativePath());
+                newFile.setOctaneStatus(OctaneStatus.MODIFIED);
+
+                result.getAllScmResourceFiles().remove(deletedFile);
+            }
+        }
+    }
+
+
+    private static boolean isOctaneSupportTestRename(MqmRestClient client) {
+        String octane_version = getOctaneVersion(client);
+        boolean supportTestRename = (octane_version != null && versionCompare(OCTANE_VERSION_SUPPORTING_TEST_RENAME, octane_version) <= 0);
+        logger.warn("Support test rename = " + supportTestRename);
+        return supportTestRename;
+    }
+
+    private static String getOctaneVersion(MqmRestClient client) {
+
+        if (OCTANE_VERSION == null) {
+            List<Entity> entities = client.getEntities(null, "server_version", null, null);
+            if (entities.size() == 1) {
+                Entity entity = entities.get(0);
+                OCTANE_VERSION = entity.getStringValue("version");
+                logger.warn("Received Octane version - " + OCTANE_VERSION);
+
+            } else {
+                logger.error(String.format("Request for Octane version returned %s items. return version is not defined.", entities.size()));
+            }
+        }
+
+        return OCTANE_VERSION;
+    }
+
+    @Override
+    public void onChanged(ServerConfiguration conf, ServerConfiguration oldConf) {
+        OCTANE_VERSION = null;
+    }
+
+    /**
+     * Compares two version strings.
+     * <p>
+     * Use this instead of String.compareTo() for a non-lexicographical
+     * comparison that works for version strings. e.g. "1.10".compareTo("1.6").
+     *
+     * @param str1 a string of ordinal numbers separated by decimal points.
+     * @param str2 a string of ordinal numbers separated by decimal points.
+     * @return The result is a negative integer if str1 is _numerically_ less than str2.
+     * The result is a positive integer if str1 is _numerically_ greater than str2.
+     * The result is zero if the strings are _numerically_ equal.
+     * @note It does not work if "1.10" is supposed to be equal to "1.10.0".
+     */
+    private static Integer versionCompare(String str1, String str2) {
+        String[] vals1 = str1.split("\\.");
+        String[] vals2 = str2.split("\\.");
+        int i = 0;
+        // set index to first non-equal ordinal or length of shortest version string
+        while (i < vals1.length && i < vals2.length && vals1[i].equals(vals2[i])) {
+            i++;
+        }
+        // compare first non-equal ordinal number
+        if (i < vals1.length && i < vals2.length) {
+            int diff = Integer.valueOf(vals1[i]).compareTo(Integer.valueOf(vals2[i]));
+            return Integer.signum(diff);
+        }
+        // the strings are equal or one string is a substring of the other
+        // e.g. "1.2.3" = "1.2.3" or "1.2.3" < "1.2.3.4"
+        else {
+            return Integer.signum(vals1.length - vals2.length);
+        }
+    }
+
+
 }

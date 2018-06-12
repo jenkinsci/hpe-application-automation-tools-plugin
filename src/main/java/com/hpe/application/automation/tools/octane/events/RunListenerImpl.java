@@ -172,6 +172,8 @@ public final class RunListenerImpl extends RunListener<Run> {
 		OctaneSDK.getInstance().getEventsService().publishEvent(event);
 	}
 
+
+
 	private CIEvent getCiEvent(Run r, SCMProcessor.CommonOriginRevision commonOriginRevision, boolean hasTests, CIBuildResult result) {
 		return dtoFactory.newDTO(CIEvent.class)
 				.setEventType(CIEventType.FINISHED)

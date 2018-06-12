@@ -148,7 +148,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 					}
 				}
 				if (hpRunnerType.equals(HPRunnerType.StormRunnerLoad)) {
-					logger.error("HPE Runner: " + hpRunnerType);
+					logger.error("ALM Octane Runner: " + hpRunnerType);
 					externalURL = getStormRunnerURL(path);
 				}
 			} else if ("id".equals(localName)) {

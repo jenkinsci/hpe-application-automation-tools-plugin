@@ -31,30 +31,11 @@
  *
  */
 
-package com.hpe.application.automation.tools.octane.buildLogs;
-
-import com.hpe.application.automation.tools.octane.AbstractResultQueueImpl;
-import jenkins.model.Jenkins;
-
-import java.io.File;
-import java.io.IOException;
+package com.hpe.application.automation.tools.octane.actions.dto;
 
 /**
- * Created by benmeior on 11/21/2016
- *
- * Queue, based on persisted, file-object backed by base queue, serving the logs dispatching logic to BDI via Octane
+ * Octane status of items that should be dispatched to Octane
  */
-
-class LogsResultQueue extends AbstractResultQueueImpl {
-
-	LogsResultQueue(int maxRetries) throws IOException {
-		super(maxRetries);
-		Jenkins jenkinsContainer = Jenkins.getInstance();
-		if (jenkinsContainer != null) {
-			File queueFile = new File(jenkinsContainer.getRootDir(), "octane-log-result-queue.dat");
-			init(queueFile);
-		} else {
-			throw new IllegalStateException("Jenkins container not initialized properly");
-		}
-	}
+public enum OctaneStatus {
+    NEW, MODIFIED, DELETED , NONE
 }

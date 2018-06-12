@@ -60,6 +60,8 @@ public class JobProcessorFactory {
 
 	private static String FREE_STYLE_JOB_NAME = "hudson.model.FreeStyleProject";
 
+	public static String GITHUB_ORGANIZATION_FOLDER = "jenkins.branch.OrganizationFolder";
+
 
 	private JobProcessorFactory() {
 	}

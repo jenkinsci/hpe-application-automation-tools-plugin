@@ -152,7 +152,7 @@ public class ExecutorConnectivityService {
         }
         if (StringUtils.isNotEmpty(credentialsInfo.getUsername()) && credentialsInfo.getPassword() != null) {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-            String desc = "Created by the HPE Application Automation Tools plugin on " + formatter.format(new Date());
+            String desc = "Created by the Microfocus Application Automation Tools plugin on " + formatter.format(new Date());
             BaseStandardCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialsInfo.getCredentialsId(), desc, credentialsInfo.getUsername(), credentialsInfo.getPassword());
             CredentialsStore store = new SystemCredentialsProvider.StoreImpl();
             try {

@@ -155,7 +155,7 @@ public class UFTTestDetectionPublisher extends Recorder {
 		}
 
 		public String getDisplayName() {
-			return "HPE Octane UFT Tests Scanner";
+			return "ALM Octane UFT Tests Scanner";
 		}
 
 		@Override

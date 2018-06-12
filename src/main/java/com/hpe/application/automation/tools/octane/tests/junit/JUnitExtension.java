@@ -37,7 +37,7 @@ import com.google.inject.Inject;
 import com.hpe.application.automation.tools.octane.actions.cucumber.CucumberTestResultsAction;
 import com.hpe.application.automation.tools.octane.executor.CheckOutSubDirEnvContributor;
 import com.hpe.application.automation.tools.octane.tests.HPRunnerType;
-import com.hpe.application.automation.tools.octane.tests.MqmTestsExtension;
+import com.hpe.application.automation.tools.octane.tests.OctaneTestsExtension;
 import com.hpe.application.automation.tools.octane.tests.TestResultContainer;
 import com.hpe.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import com.hpe.application.automation.tools.octane.tests.detection.ResultFields;
@@ -69,7 +69,7 @@ import java.util.*;
  * Converter of Jenkins test report to ALM Octane test report format(junitResult.xml->mqmTests.xml)
  */
 @Extension
-public class JUnitExtension extends MqmTestsExtension {
+public class JUnitExtension extends OctaneTestsExtension {
 	private static Logger logger = LogManager.getLogger(JUnitExtension.class);
 
 	private static final String STORMRUNNER_LOAD = "StormRunner Load";

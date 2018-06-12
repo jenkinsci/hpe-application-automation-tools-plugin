@@ -35,8 +35,9 @@ package com.hpe.application.automation.tools.octane.executor;
 
 import com.hpe.application.automation.tools.octane.actions.UFTTestUtil;
 import com.hpe.application.automation.tools.octane.actions.UftTestType;
-import com.hpe.application.automation.tools.octane.actions.dto.AutomatedTest;
-import com.hpe.application.automation.tools.octane.actions.dto.ScmResourceFile;
+import com.hpe.application.automation.tools.octane.actions.dto.*;
+import com.hpe.application.automation.tools.octane.executor.scmmanager.ScmPluginFactory;
+import com.hpe.application.automation.tools.octane.executor.scmmanager.ScmPluginHandler;
 import hudson.ExtensionList;
 import hudson.FilePath;
 import hudson.model.*;
@@ -72,7 +73,6 @@ public class UFTTestDetectionService {
     private static final String windowsPathSplitter = "\\";
     private static final String linuxPathSplitter = "/";
 
-
     public static UFTTestDetectionResult startScanning(AbstractBuild<?, ?> build, String workspaceId, String scmRepositoryId, BuildListener buildListener) {
         ChangeLogSet<? extends ChangeLogSet.Entry> changeSet = build.getChangeSet();
         Object[] changeSetItems = changeSet.getItems();
@@ -87,24 +87,19 @@ public class UFTTestDetectionService {
             } else {
                 printToConsole(buildListener, "Executing changeSet sync");
                 result = doChangeSetDetection(changeSetItems, build.getWorkspace());
-                removeTestDuplicated(result.getUpdatedTests());
-                removeFalsePositiveDeletedDataTables(result.getDeletedTests(), result.getDeletedScmResourceFiles());
+                removeTestDuplicatedForUpdateTests(result);
+                removeFalsePositiveDataTables(result, result.getDeletedTests(), result.getDeletedScmResourceFiles());
+                removeFalsePositiveDataTables(result, result.getNewTests(), result.getNewScmResourceFiles());
             }
 
-            if (!result.getNewTests().isEmpty()) {
-                printToConsole(buildListener, String.format("Found %s new tests", result.getNewTests().size()));
+            Map<OctaneStatus, Integer> testStatusMap = computeStatusMap(result.getAllTests());
+            for (Map.Entry<OctaneStatus, Integer> entry : testStatusMap.entrySet()) {
+                printToConsole(buildListener, String.format("Found %s tests with status %s", entry.getValue(), entry.getKey()));
             }
-            if (!result.getUpdatedTests().isEmpty()) {
-                printToConsole(buildListener, String.format("Found %s updated tests", result.getUpdatedTests().size()));
-            }
-            if (!result.getDeletedTests().isEmpty()) {
-                printToConsole(buildListener, String.format("Found %s deleted tests", result.getDeletedTests().size()));
-            }
-            if (!result.getNewScmResourceFiles().isEmpty()) {
-                printToConsole(buildListener, String.format("Found %s new data tables", result.getNewScmResourceFiles().size()));
-            }
-            if (!result.getDeletedScmResourceFiles().isEmpty()) {
-                printToConsole(buildListener, String.format("Found %s deleted data tables", result.getDeletedScmResourceFiles().size()));
+
+            Map<OctaneStatus, Integer> resourceFilesStatusMap = computeStatusMap(result.getAllScmResourceFiles());
+            for (Map.Entry<OctaneStatus, Integer> entry : resourceFilesStatusMap.entrySet()) {
+                printToConsole(buildListener, String.format("Found %s data tables with status %s", entry.getValue(), entry.getKey()));
             }
 
             if (!result.getDeletedFolders().isEmpty()) {
@@ -146,11 +141,8 @@ public class UFTTestDetectionService {
             result.setScmRepositoryId(scmRepositoryId);
             result.setWorkspaceId(workspaceId);
             result.setFullScan(fullScan);
-            sortTests(result.getNewTests());
-            sortTests(result.getUpdatedTests());
-            sortTests(result.getDeletedTests());
-            sortDataTables(result.getNewScmResourceFiles());
-            sortDataTables(result.getDeletedScmResourceFiles());
+            sortTests(result.getAllTests());
+            sortDataTables(result.getAllScmResourceFiles());
             publishDetectionResults(getReportXmlFile(build), buildListener, result);
 
             if (result.hasChanges()) {
@@ -166,31 +158,43 @@ public class UFTTestDetectionService {
         return result;
     }
 
+    private static Map<OctaneStatus, Integer> computeStatusMap(List<? extends SupportsOctaneStatus> entities) {
+        Map<OctaneStatus, Integer> statusMap = new HashMap<>();
+        for (SupportsOctaneStatus item : entities) {
+            if (!statusMap.containsKey(item.getOctaneStatus())) {
+                statusMap.put(item.getOctaneStatus(), 0);
+            }
+            statusMap.put(item.getOctaneStatus(), statusMap.get(item.getOctaneStatus()) + 1);
+        }
+        return statusMap;
+    }
+
     /**
      * Deleted data table might be part of deleted test. During discovery its very hard to know.
      * Here we pass through all deleted data tables, if we found data table parent is test folder - we know that the delete was part of test delete
      *
-     * @param deletedTests
-     * @param deletedScmResourceFiles
+     * @param tests
+     * @param scmResourceFiles
      */
-    private static void removeFalsePositiveDeletedDataTables(List<AutomatedTest> deletedTests, List<ScmResourceFile> deletedScmResourceFiles) {
-        if (!deletedScmResourceFiles.isEmpty() && !deletedTests.isEmpty()) {
+    private static void removeFalsePositiveDataTables(UFTTestDetectionResult result, List<AutomatedTest> tests, List<ScmResourceFile> scmResourceFiles) {
+        if (!scmResourceFiles.isEmpty() && !tests.isEmpty()) {
 
             List<ScmResourceFile> falsePositive = new ArrayList<>();
-            for (ScmResourceFile item : deletedScmResourceFiles) {
+            for (ScmResourceFile item : scmResourceFiles) {
                 int parentSplitterIndex = item.getRelativePath().lastIndexOf(windowsPathSplitter);
                 if (parentSplitterIndex != -1) {
                     String parentName = item.getRelativePath().substring(0, parentSplitterIndex);
-                    for (AutomatedTest test : deletedTests) {
+                    for (AutomatedTest test : tests) {
                         String testPath = StringUtils.isEmpty(test.getPackage()) ? test.getName() : test.getPackage() + windowsPathSplitter + test.getName();
-                        if (testPath.equals(parentName)) {
+                        if (parentName.contains(testPath)) {
                             falsePositive.add(item);
                             break;
                         }
                     }
                 }
             }
-            deletedScmResourceFiles.removeAll(falsePositive);
+
+            result.getAllScmResourceFiles().removeAll(falsePositive);
         }
     }
 
@@ -233,10 +237,10 @@ public class UFTTestDetectionService {
         return items.get(0);
     }
 
-    private static void removeTestDuplicated(List<AutomatedTest> tests) {
+    private static void removeTestDuplicatedForUpdateTests(UFTTestDetectionResult result) {
         Set<String> keys = new HashSet<>();
         List<AutomatedTest> testsToRemove = new ArrayList<>();
-        for (AutomatedTest test : tests) {
+        for (AutomatedTest test : result.getUpdatedTests()) {
             String key = test.getPackage() + "_" + test.getName();
             if (keys.contains(key)) {
                 testsToRemove.add(test);
@@ -244,7 +248,7 @@ public class UFTTestDetectionService {
             keys.add(key);
 
         }
-        tests.removeAll(testsToRemove);
+        result.getAllTests().removeAll(testsToRemove);
     }
 
     private static void printToConsole(BuildListener buildListener, String msg) {
@@ -261,58 +265,58 @@ public class UFTTestDetectionService {
 
         for (int i = 0; i < changeSetItems.length; i++) {
             ChangeLogSet.Entry changeSet = (ChangeLogSet.Entry) changeSetItems[i];
-            for (ChangeLogSet.AffectedFile path : changeSet.getAffectedFiles()) {
-                if (path.getPath().startsWith("\"")) {
+            for (ChangeLogSet.AffectedFile affectedFile : changeSet.getAffectedFiles()) {
+                if (affectedFile.getPath().startsWith("\"")) {
                     result.setHasQuotedPaths(true);
                 }
-                boolean isDir = isDir(path);
-                String fileFullPath = workspace + File.separator + path.getPath();
+                boolean isDir = isDir(affectedFile);
+                String fileFullPath = workspace + File.separator + affectedFile.getPath();
                 if (!isDir) {
-                    if (isTestMainFilePath(path.getPath())) {
+                    if (isTestMainFilePath(affectedFile.getPath())) {
                         FilePath filePath = new FilePath(new File(fileFullPath));
                         boolean fileExist = filePath.exists();
 
-                        if (EditType.ADD.equals(path.getEditType())) {
+                        if (EditType.ADD.equals(affectedFile.getEditType())) {
                             if (fileExist) {
                                 FilePath testFolder = getTestFolderForTestMainFile(fileFullPath);
-                                scanFileSystemRecursively(workspace, testFolder, result.getNewTests(), result.getNewScmResourceFiles());
+                                scanFileSystemRecursively(workspace, testFolder, affectedFile, result, OctaneStatus.NEW);
                             } else {
                                 logger.error("doChangeSetDetection : file not exist " + fileFullPath);
                             }
-                        } else if (EditType.DELETE.equals(path.getEditType())) {
+                        } else if (EditType.DELETE.equals(affectedFile.getEditType())) {
                             if (!fileExist) {
                                 FilePath testFolder = getTestFolderForTestMainFile(fileFullPath);
-                                AutomatedTest test = createAutomatedTest(workspace, testFolder, null, false);
-                                result.getDeletedTests().add(test);
+                                AutomatedTest test = createAutomatedTest(workspace, testFolder, affectedFile, null, false, OctaneStatus.DELETED);
+                                result.getAllTests().add(test);
                             }
-                        } else if (EditType.EDIT.equals(path.getEditType())) {
+                        } else if (EditType.EDIT.equals(affectedFile.getEditType())) {
                             if (fileExist) {
                                 FilePath testFolder = getTestFolderForTestMainFile(fileFullPath);
-                                scanFileSystemRecursively(workspace, testFolder, result.getUpdatedTests(), result.getUpdatedScmResourceFiles());
+                                scanFileSystemRecursively(workspace, testFolder, affectedFile, result, OctaneStatus.MODIFIED);
                             }
                         }
-                    } else if (isUftDataTableFile(path.getPath())) {
+                    } else if (isUftDataTableFile(affectedFile.getPath())) {
                         FilePath filePath = new FilePath(new File(fileFullPath));
-                        if (EditType.ADD.equals(path.getEditType())) {
+                        if (EditType.ADD.equals(affectedFile.getEditType())) {
                             UftTestType testType = isUftTestFolder(filePath.getParent().list());
                             if (testType.isNone()) {
                                 if (filePath.exists()) {
-                                    ScmResourceFile resourceFile = createDataTable(workspace, filePath);
-                                    result.getNewScmResourceFiles().add(resourceFile);
+                                    ScmResourceFile resourceFile = createDataTable(workspace, filePath, affectedFile, OctaneStatus.NEW);
+                                    result.getAllScmResourceFiles().add(resourceFile);
                                 }
                             }
-                        } else if (EditType.DELETE.equals(path.getEditType())) {
+                        } else if (EditType.DELETE.equals(affectedFile.getEditType())) {
                             if (!filePath.exists()) {
-                                ScmResourceFile resourceFile = createDataTable(workspace, filePath);
-                                result.getDeletedScmResourceFiles().add(resourceFile);
+                                ScmResourceFile resourceFile = createDataTable(workspace, filePath, affectedFile, OctaneStatus.DELETED);
+                                result.getAllScmResourceFiles().add(resourceFile);
                             }
                         }
                     }
                 } else //isDir
                 {
-                    if (EditType.DELETE.equals(path.getEditType())) {
+                    if (EditType.DELETE.equals(affectedFile.getEditType())) {
 
-                        FilePath filePath = new FilePath(new File(path.getPath()));
+                        FilePath filePath = new FilePath(new File(affectedFile.getPath()));
                         String deletedFolder = filePath.getRemote().replace(linuxPathSplitter, windowsPathSplitter);
                         result.getDeletedFolders().add(deletedFolder);
                     }
@@ -336,7 +340,7 @@ public class UFTTestDetectionService {
         return false;
     }
 
-    private static AutomatedTest createAutomatedTest(FilePath root, FilePath dirPath, UftTestType testType, boolean executable) {
+    private static AutomatedTest createAutomatedTest(FilePath root, FilePath dirPath, ChangeLogSet.AffectedFile affectedFile, UftTestType testType, boolean executable, OctaneStatus status) {
         AutomatedTest test = new AutomatedTest();
         test.setName(dirPath.getName());
 
@@ -351,8 +355,20 @@ public class UFTTestDetectionService {
 
         String description = UFTTestUtil.getTestDescription(dirPath);
         test.setDescription(description);
+        test.setOctaneStatus(status);
+        addChangeSetSrcAndDst(test, affectedFile);
 
         return test;
+    }
+
+    private static void addChangeSetSrcAndDst(SupportsMoveDetection entity, ChangeLogSet.AffectedFile affectedFile) {
+        if (affectedFile != null) {
+            ScmPluginHandler handler = ScmPluginFactory.getScmHandlerByChangePathClass(affectedFile.getClass().getName());
+            if (handler != null) {
+                entity.setChangeSetSrc(handler.getChangeSetSrc(affectedFile));
+                entity.setChangeSetDst(handler.getChangeSetDst(affectedFile));
+            }
+        }
     }
 
     private static String getRelativePath(FilePath root, FilePath path) {
@@ -389,35 +405,37 @@ public class UFTTestDetectionService {
 
     private static UFTTestDetectionResult doInitialDetection(FilePath workspace) throws IOException, InterruptedException {
         UFTTestDetectionResult result = new UFTTestDetectionResult();
-        scanFileSystemRecursively(workspace, workspace, result.getNewTests(), result.getNewScmResourceFiles());
+        scanFileSystemRecursively(workspace, workspace, null, result, OctaneStatus.NEW);
         return result;
     }
 
-    private static void scanFileSystemRecursively(FilePath root, FilePath dirPath, List<AutomatedTest> foundTests, List<ScmResourceFile> foundResources) throws IOException, InterruptedException {
+    private static void scanFileSystemRecursively(FilePath root, FilePath dirPath, ChangeLogSet.AffectedFile affectedFile, UFTTestDetectionResult detectionResult, OctaneStatus status) throws IOException, InterruptedException {
         List<FilePath> paths = dirPath.isDirectory() ? dirPath.list() : Arrays.asList(dirPath);
 
         //if it test folder - create new test, else drill down to subFolders
         UftTestType testType = isUftTestFolder(paths);
         if (!testType.isNone()) {
-            AutomatedTest test = createAutomatedTest(root, dirPath, testType, true);
-            foundTests.add(test);
+            AutomatedTest test = createAutomatedTest(root, dirPath, affectedFile, testType, true, status);
+            detectionResult.getAllTests().add(test);
 
         } else {
             for (FilePath path : paths) {
                 if (path.isDirectory()) {
-                    scanFileSystemRecursively(root, path, foundTests, foundResources);
+                    scanFileSystemRecursively(root, path, null, detectionResult, status);
                 } else if (isUftDataTableFile(path.getName())) {
-                    ScmResourceFile dataTable = createDataTable(root, path);
-                    foundResources.add(dataTable);
+                    ScmResourceFile dataTable = createDataTable(root, path, null, status);
+                    detectionResult.getAllScmResourceFiles().add(dataTable);
                 }
             }
         }
     }
 
-    private static ScmResourceFile createDataTable(FilePath root, FilePath path) {
+    private static ScmResourceFile createDataTable(FilePath root, FilePath path, ChangeLogSet.AffectedFile affectedFile, OctaneStatus status) {
         ScmResourceFile resourceFile = new ScmResourceFile();
         resourceFile.setName(path.getName());
         resourceFile.setRelativePath(getRelativePath(root, path));
+        resourceFile.setOctaneStatus(status);
+        addChangeSetSrcAndDst(resourceFile, affectedFile);
         return resourceFile;
 
     }
@@ -496,7 +514,7 @@ public class UFTTestDetectionService {
         }
     }
 
-    private static File getReportXmlFile(Run run) {
+    public static File getReportXmlFile(Run run) {
         return new File(run.getRootDir(), DETECTION_RESULT_FILE);
     }
 }

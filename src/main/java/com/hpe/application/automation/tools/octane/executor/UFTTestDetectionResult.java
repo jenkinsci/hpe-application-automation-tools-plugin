@@ -34,10 +34,13 @@
 package com.hpe.application.automation.tools.octane.executor;
 
 import com.hpe.application.automation.tools.octane.actions.dto.AutomatedTest;
+import com.hpe.application.automation.tools.octane.actions.dto.OctaneStatus;
 import com.hpe.application.automation.tools.octane.actions.dto.ScmResourceFile;
+import com.hpe.application.automation.tools.octane.actions.dto.SupportsOctaneStatus;
 
 import javax.xml.bind.annotation.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -48,29 +51,13 @@ import java.util.List;
 public class UFTTestDetectionResult {
 
 
-    @XmlElementWrapper(name = "newTests")
+    @XmlElementWrapper(name = "tests")
     @XmlElement(name = "test")
-    private List<AutomatedTest> newTests = new ArrayList<>();
+    private List<AutomatedTest> tests = new ArrayList<>();
 
-    @XmlElementWrapper(name = "deletedTests")
-    @XmlElement(name = "test")
-    private List<AutomatedTest> deletedTests = new ArrayList<>();
-
-    @XmlElementWrapper(name = "updatedTests")
-    @XmlElement(name = "test")
-    private List<AutomatedTest> updatedTests = new ArrayList<>();
-
-    @XmlElementWrapper(name = "newDataTables")
+    @XmlElementWrapper(name = "dataTables")
     @XmlElement(name = "dataTable")
-    private List<ScmResourceFile> newScmResourceFiles = new ArrayList<>();
-
-    @XmlElementWrapper(name = "deletedDataTables")
-    @XmlElement(name = "dataTable")
-    private List<ScmResourceFile> deletedScmResourceFiles = new ArrayList<>();
-
-    @XmlElementWrapper(name = "updatedDataTables")
-    @XmlElement(name = "dataTable")
-    private List<ScmResourceFile> updatedScmResourceFiles = new ArrayList<>();
+    private List<ScmResourceFile> scmResourceFiles = new ArrayList<>();
 
     @XmlElementWrapper(name = "deletedFolders")
     @XmlElement(name = "folder")
@@ -88,16 +75,36 @@ public class UFTTestDetectionResult {
     @XmlAttribute
     private boolean hasQuotedPaths;
 
+    private List<AutomatedTest> getTestByOctaneStatus(OctaneStatus status) {
+        List<AutomatedTest> filtered = new ArrayList<>();
+        for (AutomatedTest test : tests) {
+            if (test.getOctaneStatus().equals(status)) {
+                filtered.add(test);
+            }
+        }
+        return Collections.unmodifiableList(filtered);
+    }
+
+    private List<ScmResourceFile> getResourceFilesByOctaneStatus(OctaneStatus status) {
+        List<ScmResourceFile> filtered = new ArrayList<>();
+        for (ScmResourceFile file : scmResourceFiles) {
+            if (file.getOctaneStatus().equals(status)) {
+                filtered.add(file);
+            }
+        }
+        return Collections.unmodifiableList(filtered);
+    }
+
     public List<AutomatedTest> getNewTests() {
-        return newTests;
+        return getTestByOctaneStatus(OctaneStatus.NEW);
     }
 
     public List<AutomatedTest> getDeletedTests() {
-        return deletedTests;
+        return getTestByOctaneStatus(OctaneStatus.DELETED);
     }
 
     public List<AutomatedTest> getUpdatedTests() {
-        return updatedTests;
+        return getTestByOctaneStatus(OctaneStatus.MODIFIED);
     }
 
     public String getScmRepositoryId() {
@@ -125,20 +132,19 @@ public class UFTTestDetectionResult {
     }
 
     public boolean hasChanges() {
-        return !getNewTests().isEmpty() || !getUpdatedTests().isEmpty() || !getDeletedTests().isEmpty()
-                || !getNewScmResourceFiles().isEmpty() || !getDeletedScmResourceFiles().isEmpty();
+        return !getAllScmResourceFiles().isEmpty() || !getAllTests().isEmpty() || !getDeletedFolders().isEmpty();
     }
 
     public List<ScmResourceFile> getNewScmResourceFiles() {
-        return newScmResourceFiles;
+        return getResourceFilesByOctaneStatus(OctaneStatus.NEW);
     }
 
     public List<ScmResourceFile> getDeletedScmResourceFiles() {
-        return deletedScmResourceFiles;
+        return getResourceFilesByOctaneStatus(OctaneStatus.DELETED);
     }
 
     public List<ScmResourceFile> getUpdatedScmResourceFiles() {
-        return updatedScmResourceFiles;
+        return getResourceFilesByOctaneStatus(OctaneStatus.MODIFIED);
     }
 
     public boolean isHasQuotedPaths() {
@@ -155,5 +161,24 @@ public class UFTTestDetectionResult {
 
     public void setDeletedFolders(List<String> deletedFolders) {
         this.deletedFolders = deletedFolders;
+    }
+
+    public List<AutomatedTest> getAllTests() {
+        return tests;
+    }
+
+    public List<ScmResourceFile> getAllScmResourceFiles() {
+        return scmResourceFiles;
+    }
+
+    public static int countItemsWithStatus(OctaneStatus status, List<? extends SupportsOctaneStatus> items) {
+
+        int count = 0;
+        for (SupportsOctaneStatus item : items) {
+            if (item.getOctaneStatus().equals(status)) {
+                count++;
+            }
+        }
+        return count;
     }
 }

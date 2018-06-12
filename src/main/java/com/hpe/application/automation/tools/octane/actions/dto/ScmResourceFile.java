@@ -38,9 +38,9 @@ import javax.xml.bind.annotation.*;
 /**
  * This file represents scm resource for sending to Octane
  */
-@XmlRootElement(name="dataTable")
+@XmlRootElement(name = "dataTable")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ScmResourceFile {
+public class ScmResourceFile implements SupportsMoveDetection, SupportsOctaneStatus {
 
     @XmlTransient
     private Long id;
@@ -48,6 +48,22 @@ public class ScmResourceFile {
     private String type = "scm_resource_file";
     @XmlTransient
     private BaseRefEntity scmRepository;
+
+    //PROPERTIES FOR MOVED ENTITY
+    @XmlAttribute
+    private String changeSetSrc;
+    @XmlAttribute
+    private String changeSetDst;
+    @XmlAttribute
+    private String oldRelativePath;
+    @XmlAttribute
+    private String oldName;
+    @XmlAttribute
+    private Boolean isMoved;
+
+    //don't serialized to server
+    @XmlAttribute
+    private OctaneStatus octaneStatus;
 
     private String name;
 
@@ -91,5 +107,57 @@ public class ScmResourceFile {
 
     public void setScmRepository(BaseRefEntity scmRepository) {
         this.scmRepository = scmRepository;
+    }
+
+    @Override
+    public String getChangeSetSrc() {
+        return changeSetSrc;
+    }
+    @Override
+    public void setChangeSetSrc(String changeSetSrc) {
+        this.changeSetSrc = changeSetSrc;
+    }
+
+    @Override
+    public String getChangeSetDst() {
+        return changeSetDst;
+    }
+
+    @Override
+    public void setChangeSetDst(String changeSetDst) {
+        this.changeSetDst = changeSetDst;
+    }
+
+    public String getOldRelativePath() {
+        return oldRelativePath;
+    }
+
+    public void setOldRelativePath(String oldRelativePath) {
+        this.oldRelativePath = oldRelativePath;
+    }
+
+    public String getOldName() {
+        return oldName;
+    }
+
+    public void setOldName(String oldName) {
+        this.oldName = oldName;
+    }
+
+    public Boolean getIsMoved() {
+        return isMoved == null ? false : isMoved;
+    }
+
+    public void setIsMoved(Boolean moved) {
+        isMoved = moved;
+    }
+
+    @Override
+    public OctaneStatus getOctaneStatus() {
+        return octaneStatus;
+    }
+
+    public void setOctaneStatus(OctaneStatus octaneStatus) {
+        this.octaneStatus = octaneStatus;
     }
 }

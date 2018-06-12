@@ -30,27 +30,14 @@
  * ___________________________________________________________________
  *
  */
-package com.hpe.application.automation.tools.octane.executor.scmmanager;
 
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
-import com.hp.octane.integrations.dto.executor.TestConnectivityInfo;
-import com.hp.octane.integrations.dto.scm.SCMRepository;
-import hudson.model.FreeStyleProject;
-import hudson.model.Job;
-import hudson.scm.ChangeLogSet;
+package com.hpe.application.automation.tools.octane.actions.dto;
 
-import java.io.IOException;
+/**
+ * Interface for entities that support octane status
+ */
+public interface SupportsOctaneStatus {
 
-public interface ScmPluginHandler {
+    OctaneStatus getOctaneStatus();
 
-    void setScmRepositoryInJob(SCMRepository scmRepository, String scmRepositoryCredentialsId, FreeStyleProject proj, boolean executorJob) throws IOException;
-
-    String getSharedCheckOutDirectory(Job j);
-
-    void checkRepositoryConnectivity(TestConnectivityInfo testConnectivityInfo, StandardCredentials credentials, OctaneResponse result);
-
-    String getChangeSetSrc(ChangeLogSet.AffectedFile affectedFile);
-
-    String getChangeSetDst(ChangeLogSet.AffectedFile affectedFile);
 }

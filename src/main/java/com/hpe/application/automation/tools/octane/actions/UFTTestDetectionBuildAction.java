@@ -33,6 +33,7 @@
 
 package com.hpe.application.automation.tools.octane.actions;
 
+import com.hpe.application.automation.tools.octane.actions.dto.OctaneStatus;
 import com.hpe.application.automation.tools.octane.executor.UFTTestDetectionResult;
 import com.hpe.application.automation.tools.octane.executor.UFTTestDetectionService;
 import hudson.model.AbstractBuild;
@@ -55,7 +56,7 @@ public class UFTTestDetectionBuildAction implements Action {
 
     @Override
     public String getDisplayName() {
-        return "HPE ALM Octane UFT Tests Discovery Report";
+        return "ALM Octane UFT Tests Discovery Report";
     }
 
     @Override
@@ -83,7 +84,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasNewTests() {
-        return results.getNewTests().size() > 0;
+        return UFTTestDetectionResult.countItemsWithStatus(OctaneStatus.NEW, results.getAllTests()) > 0;
     }
 
     /**
@@ -92,7 +93,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasDeletedTests() {
-        return results.getDeletedTests().size() > 0;
+        return UFTTestDetectionResult.countItemsWithStatus(OctaneStatus.DELETED, results.getAllTests()) > 0;
     }
 
     /**
@@ -101,7 +102,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasUpdatedTests() {
-        return results.getUpdatedTests().size() > 0;
+        return UFTTestDetectionResult.countItemsWithStatus(OctaneStatus.MODIFIED, results.getAllTests()) > 0;
     }
 
     public boolean getHasQuotedPaths() {
@@ -114,7 +115,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasNewScmResources() {
-        return results.getNewScmResourceFiles().size() > 0;
+        return UFTTestDetectionResult.countItemsWithStatus(OctaneStatus.NEW, results.getAllScmResourceFiles()) > 0;
     }
 
     /**
@@ -123,8 +124,27 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasDeletedScmResources() {
-        return results.getDeletedScmResourceFiles().size() > 0;
+        return UFTTestDetectionResult.countItemsWithStatus(OctaneStatus.DELETED, results.getAllScmResourceFiles()) > 0;
     }
+
+    /**
+     * used by ~\src\main\resources\com\hp\application\automation\tools\octane\actions\UFTTestDetectionBuildAction\index.jelly
+     *
+     * @return
+     */
+    public boolean getHasUpdatedScmResources() {
+        return UFTTestDetectionResult.countItemsWithStatus(OctaneStatus.MODIFIED, results.getAllScmResourceFiles()) > 0;
+    }
+
+    /**
+     * used by ~\src\main\resources\com\hp\application\automation\tools\octane\actions\UFTTestDetectionBuildAction\index.jelly
+     *
+     * @return
+     */
+    public boolean getHasDeletedFolders() {
+        return results.getDeletedFolders().size() > 0;
+    }
+
 
     public void setResults(UFTTestDetectionResult results) {
         this.results = results;

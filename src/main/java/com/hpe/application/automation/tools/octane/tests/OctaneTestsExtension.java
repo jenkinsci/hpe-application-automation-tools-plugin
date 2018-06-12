@@ -35,19 +35,27 @@ package com.hpe.application.automation.tools.octane.tests;
 
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
-import hudson.model.Hudson;
 import hudson.model.Run;
+import jenkins.model.Jenkins;
 
 import java.io.IOException;
 
-public abstract class MqmTestsExtension implements ExtensionPoint {
+/**
+ * General provider of Octane's tests processing extensions
+ */
 
-    public abstract boolean supports(Run<?, ?> build) throws IOException, InterruptedException;
+public abstract class OctaneTestsExtension implements ExtensionPoint {
+
+	public abstract boolean supports(Run<?, ?> build) throws IOException, InterruptedException;
 
 
-    public abstract TestResultContainer getTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, String jenkinsRootUrl) throws IOException, InterruptedException, TestProcessingException;
+	public abstract TestResultContainer getTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, String jenkinsRootUrl) throws IOException, InterruptedException, TestProcessingException;
 
-    public static ExtensionList<MqmTestsExtension> all() {
-        return Hudson.getInstance().getExtensionList(MqmTestsExtension.class);
-    }
+	public static ExtensionList<OctaneTestsExtension> all() {
+		if (Jenkins.getInstance() != null) {
+			return Jenkins.getInstance().getExtensionList(OctaneTestsExtension.class);
+		} else {
+			throw new IllegalStateException("failed to obtain Jenkins' instance");
+		}
+	}
 }

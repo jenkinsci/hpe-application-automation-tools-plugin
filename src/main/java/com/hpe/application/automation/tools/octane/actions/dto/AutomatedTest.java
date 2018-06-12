@@ -42,9 +42,9 @@ import javax.xml.bind.annotation.*;
  */
 @XmlRootElement(name = "test")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class AutomatedTest {
+public class AutomatedTest implements SupportsMoveDetection, SupportsOctaneStatus {
 
-    @XmlTransient
+    @XmlAttribute
     private Long id;
     @XmlTransient
     private String type = "test_automated";
@@ -55,9 +55,26 @@ public class AutomatedTest {
     @XmlTransient
     private ListNodeEntityCollection testTypes;
 
+    //PROPERTIES FOR MOVED ENTITY, don't serialized to server, used to set testType property
+    @XmlAttribute
+    private String changeSetSrc;
+    @XmlAttribute
+    private String changeSetDst;
+    @XmlAttribute
+    private String oldName;
+    @XmlAttribute
+    private String oldPackageName;
+    @XmlAttribute
+    private Boolean isMoved;
+
     //don't serialized to server, used to set testType property
     @XmlAttribute
     private UftTestType uftTestType;
+
+    //don't serialized to server
+    @XmlAttribute
+    private OctaneStatus octaneStatus;
+
 
     @XmlAttribute
     private String name;
@@ -162,5 +179,58 @@ public class AutomatedTest {
     @Override
     public String toString() {
         return "#" + getId() == null ? "0" : getId() + " - " + getPackage() + "@" + getName();
+    }
+
+    @Override
+    public String getChangeSetSrc() {
+        return changeSetSrc;
+    }
+
+    @Override
+    public void setChangeSetSrc(String changeSetSrc) {
+        this.changeSetSrc = changeSetSrc;
+    }
+
+    @Override
+    public String getChangeSetDst() {
+        return changeSetDst;
+    }
+
+    @Override
+    public void setChangeSetDst(String changeSetDst) {
+        this.changeSetDst = changeSetDst;
+    }
+
+    public String getOldName() {
+        return oldName;
+    }
+
+    public void setOldName(String oldName) {
+        this.oldName = oldName;
+    }
+
+    public String getOldPackage() {
+        return oldPackageName;
+    }
+
+    public void setOldPackage(String oldPackageName) {
+        this.oldPackageName = oldPackageName;
+    }
+
+    public Boolean getIsMoved() {
+        return isMoved == null ? false : isMoved;
+    }
+
+    public void setIsMoved(Boolean moved) {
+        isMoved = moved;
+    }
+
+    @Override
+    public OctaneStatus getOctaneStatus() {
+        return octaneStatus;
+    }
+
+    public void setOctaneStatus(OctaneStatus octaneStatus) {
+        this.octaneStatus = octaneStatus;
     }
 }
