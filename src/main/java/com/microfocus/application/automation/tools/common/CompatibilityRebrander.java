@@ -38,16 +38,16 @@ public class CompatibilityRebrander {
         String oldHpeClassName = newClassName.replaceFirst(afterBrand, beforeHpeBrand);
         String oldHpClassName = newClassName.replaceFirst(afterBrand, beforeHpBrand);
 
-        addAliasesForSingleClass(newClass, oldHpClassName);
-        addAliasesForSingleClass(newClass, oldHpeClassName);
+        addAliasesForSingleClass(newClass, oldHpClassName, beforeHpBrand);
+        addAliasesForSingleClass(newClass, oldHpeClassName, beforeHpeBrand);
     }
 
     /**
      * addAliasesForSingleClass responsible for handling the rebranding for a single class
      */
-    private static void addAliasesForSingleClass(@Nonnull Class newClass, String oldHpClassName) {
-        handleReceivedWrongParameters(newClass, oldHpClassName);
-        invokeXstreamCompatibilityAlias(newClass, oldHpClassName);
+    private static void addAliasesForSingleClass(@Nonnull Class newClass, String oldClassName, String beforeBrand) {
+        handleReceivedWrongParameters(newClass, oldClassName, beforeBrand);
+        invokeXstreamCompatibilityAlias(newClass, oldClassName);
     }
 
     /**
@@ -64,8 +64,8 @@ public class CompatibilityRebrander {
      *
      * @throws IllegalArgumentException
      */
-    private static void handleReceivedWrongParameters(@Nonnull Class newClass, String oldClassName) throws IllegalArgumentException {
-        if (!oldClassName.contains(beforeHpeBrand))
-            throw new IllegalArgumentException(String.format("The %s doesn't contain: %s", newClass.toString(), beforeHpeBrand));
+    private static void handleReceivedWrongParameters(@Nonnull Class newClass, String oldClassName, String beforeBrand) throws IllegalArgumentException {
+        if (!oldClassName.contains(beforeBrand))
+            throw new IllegalArgumentException(String.format("The %s doesn't contain: %s", newClass.toString(), beforeBrand));
     }
 }
