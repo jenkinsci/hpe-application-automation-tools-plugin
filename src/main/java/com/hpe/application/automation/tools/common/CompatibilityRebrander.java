@@ -13,31 +13,59 @@ import javax.annotation.Nonnull;
  * <p>
  * Important note to mention is this interface will only work after:
  * <ul>
- *     <li> Package path is renamed from the old brand to the new one
- *     <li> Only the various Descriptors (e.g. BuildStepDescriptor) should extended this interface
+ * <li> Package path is renamed from the old brand to the new one
+ * <li> Only the various Descriptors (e.g. BuildStepDescriptor) should extended this interface
  * </ul>
  */
 public class CompatibilityRebrander {
-    static String beforeBrand = "com.hpe";
+    static String beforeHpeBrand = "com.hpe";
+    static String beforeHpBrand = "com.hp";
     static String afterBrand = "com.microfocus";
 
     /**
-     * addAliases is the actual function who does the rebranding part.
+     * addAliases is the actual function who does the rebranding part for all the old package names
      * <p>
      * Items.XSTREAM2.addCompatibilityAlias is for serializing project configurations.
      * Run.XSTREAM2.addCompatibilityAlias is for serializing builds and its associated Actions.
-     * @param newClass      the Descriptor class we want to add alias for
-     * @since 5.5
+     *
+     * @param newClass the Descriptor class we want to add alias for
      * @see hudson.model.Items#XSTREAM2
+     * @see hudson.model.Run#XSTREAM2
+     * @since 5.5
      */
     public static void addAliases(@Nonnull Class newClass) throws IllegalArgumentException {
         String newClassName = newClass.toString().replaceFirst("class ", "");
-        String oldClassName = newClassName.replaceFirst(afterBrand, beforeBrand);
+        String oldHpeClassName = newClassName.replaceFirst(afterBrand, beforeHpeBrand);
+        String oldHpClassName = newClassName.replaceFirst(afterBrand, beforeHpBrand);
 
-        if (!oldClassName.contains(beforeBrand))
-            throw new IllegalArgumentException(String.format("The %s doesn't contain: %s", newClass.toString(), beforeBrand));
+        addAliasesForSingleClass(newClass, oldHpClassName);
+        addAliasesForSingleClass(newClass, oldHpeClassName);
+    }
 
-        Items.XSTREAM2.addCompatibilityAlias(oldClassName, newClass);
-        Run.XSTREAM2.addCompatibilityAlias(oldClassName, newClass);
+    /**
+     * addAliasesForSingleClass responsible for handling the rebranding for a single class
+     */
+    private static void addAliasesForSingleClass(@Nonnull Class newClass, String oldHpClassName) {
+        handleReceivedWrongParameters(newClass, oldHpClassName);
+        invokeXstreamCompatibilityAlias(newClass, oldHpClassName);
+    }
+
+    /**
+     * invokeXstreamCompatibilityAlias invokes the XSTREAM2 functions required for the rebranding
+     */
+    private static void invokeXstreamCompatibilityAlias(@Nonnull Class newClass, String oldHpeClassName) {
+        Items.XSTREAM2.addCompatibilityAlias(oldHpeClassName, newClass);
+        Run.XSTREAM2.addCompatibilityAlias(oldHpeClassName, newClass);
+    }
+
+    /**
+     * handleReceivedWrongParameters throws exception when the passed newClass doesn't contain any of the package names
+     * we trying to add alias to
+     *
+     * @throws IllegalArgumentException
+     */
+    private static void handleReceivedWrongParameters(@Nonnull Class newClass, String oldClassName) throws IllegalArgumentException {
+        if (!oldClassName.contains(beforeHpeBrand))
+            throw new IllegalArgumentException(String.format("The %s doesn't contain: %s", newClass.toString(), beforeHpeBrand));
     }
 }
