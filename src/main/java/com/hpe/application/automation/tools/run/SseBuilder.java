@@ -44,6 +44,7 @@ import java.util.List;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
 
+import com.hpe.application.automation.tools.common.CompatibilityRebrander;
 import com.hpe.application.automation.tools.model.AlmServerSettingsModel;
 import com.hpe.application.automation.tools.model.CdaDetails;
 import com.hpe.application.automation.tools.model.EnumDescription;
@@ -53,6 +54,8 @@ import com.hpe.application.automation.tools.sse.result.model.junit.Testcase;
 import com.hpe.application.automation.tools.sse.result.model.junit.Testsuite;
 import com.hpe.application.automation.tools.sse.result.model.junit.Testsuites;
 import com.hpe.application.automation.tools.sse.sdk.Logger;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
@@ -527,5 +530,10 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
 			// no credentials available, can't check
 			return FormValidation.warning("Cannot find any credentials with id " + value);
 		}
+
+        @Initializer(before = InitMilestone.PLUGINS_STARTED)
+        public static void addAliases() {
+            CompatibilityRebrander.addAliases(SseBuilder.class);
+        }
     }
 }
