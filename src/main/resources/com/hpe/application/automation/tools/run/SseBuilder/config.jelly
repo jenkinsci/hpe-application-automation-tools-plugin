@@ -84,19 +84,6 @@
         <f:entry title="Client type" field="clientType">
             <f:textbox name="sse.clientType" value="${instance.sseModel.clientType}"/>
         </f:entry>
-        
-        <f:entry>
-	        <f:optionalBlock title="Use proxy settings" name = "proxySettings" checked="${instance.useProxy}">
-	            <f:entry title="Address" field="fsProxyAddress">
-	              <f:textbox name="sse.fsProxyAddress" value="${instance.proxySettings.fsProxyAddress}"/>
-	            </f:entry>
-	            
-	            <f:entry name="sse.fsProxyCredentialsId" field="fsProxyCredentialsId" title="Proxy Credentials">
-			        <c:select value="${instance.proxySettings.fsProxyCredentialsId}"/>
-			    </f:entry>
-				
-	        </f:optionalBlock>
-	    </f:entry>
 	    
         <f:entry title="Project" field="almProject">
             <f:textbox name="sse.almProject" value="${instance.sseModel.almProject}"/>
