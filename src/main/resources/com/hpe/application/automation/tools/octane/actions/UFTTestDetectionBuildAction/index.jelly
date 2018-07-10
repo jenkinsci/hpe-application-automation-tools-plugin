@@ -71,10 +71,6 @@
         background-color: #fff9e6;
     }
 
-    .firstColumn{
-        min-width:400px;
-    }
-
 
     </style>
 
@@ -110,17 +106,9 @@
                 <br/>
                 <br/>
             </j:if>
-            <j:if test="${it.hasUpdatedScmResources}">
-                Moved data tables : ${it.results.updatedScmResourceFiles.size()}
-                <br/>
-                <br/>
-            </j:if>
-            <j:if test="${it.hasDeletedFolders}">
                 Deleted folders : ${it.results.deletedFolders.size()}
                 <br/>
                 <br/>
-            </j:if>
-
          </p>
        <p>
        <table class = "myTable" frame="vsides above bottom" >
@@ -128,20 +116,32 @@
         <thead>
 
          <tr>
-             <th class = "firstColumn">Test package</th>
+             <th>Test package</th>
              <th>Test name</th>
              <th>Status</th>
-             <th>Description</th>
          </tr>
          </thead>
 
          <tbody>
-          <j:forEach var="s" items="${it.results.allTests}">
+           <j:forEach var="s" items="${it.results.newTests}">
+               <tr>
+                   <td >${s.package}</td>
+                   <td >${s.name}</td>
+                   <td >new</td>
+               </tr>
+           </j:forEach>
+           <j:forEach var="s" items="${it.results.deletedTests}">
+              <tr>
+                  <td >${s.package}</td>
+                  <td >${s.name}</td>
+                  <td >deleted</td>
+              </tr>
+          </j:forEach>
+          <j:forEach var="s" items="${it.results.updatedTests}">
                 <tr>
                     <td >${s.package}</td>
                     <td >${s.name}</td>
-                    <td >${s.octaneStatus}</td>
-                    <td ><j:if test="${s.isMoved}">moved from ${s.oldPackage}\${s.oldName} </j:if></td>
+                    <td >updated</td>
                 </tr>
           </j:forEach>
 
@@ -155,20 +155,26 @@
                <caption>Data tables</caption>
                <thead>
                 <tr>
-                    <th class = "firstColumn">Path</th>
+                    <th>Path</th>
                     <th>Status</th>
-                    <th>Description</th>
                 </tr>
                 </thead>
 
                 <tbody>
-                    <j:forEach var="s" items="${it.results.allScmResourceFiles}">
+                  <j:forEach var="s" items="${it.results.newScmResourceFiles}">
+                      <tr>
+                          <td >${s.relativePath}</td>
+                          <td >new</td>
+                      </tr>
+                  </j:forEach>
+                  <j:forEach var="s" items="${it.results.deletedScmResourceFiles}">
                         <tr>
                             <td >${s.relativePath}</td>
-                            <td >${s.octaneStatus}</td>
-                            <td ><j:if test="${s.isMoved}">moved from ${s.oldRelativePath}</j:if> </td>
+                            <td >deleted</td>
                         </tr>
                     </j:forEach>
+
+
                  </tbody>
               </table>
               </p>
@@ -181,7 +187,7 @@
                <caption>Deleted Folders</caption>
                <thead>
                 <tr>
-                    <th class = "firstColumn">Path</th>
+                    <th>Path</th>
                 </tr>
                 </thead>
 
@@ -204,12 +210,6 @@
                         <br/>To make sure Git can properly list such file names, configure Git as follows : git config --global core.quotepath false
                         <br/>To discover the updated tests that were missed in this run and send them to ALM Octane, run this job manually with the "Full sync" parameter selected.
                     </j:if>
-
-        <br/><br/><br/>
-
-        This report contains items that were discovered in SCM repository. Final list of  dispatched items can be found <a href="../../ws/_Final_Detection_Results/final_detection_result_build_${it.build.id}.xml">here</a> after dispatching.
-
-
     </l:main-panel>
 
   </l:layout>

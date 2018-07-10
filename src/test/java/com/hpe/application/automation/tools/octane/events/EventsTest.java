@@ -33,9 +33,6 @@
 
 package com.hpe.application.automation.tools.octane.events;
 
-import com.hp.octane.integrations.dto.DTOFactory;
-import com.hp.octane.integrations.dto.events.CIEvent;
-import com.hp.octane.integrations.dto.events.CIEventsList;
 import com.hpe.application.automation.tools.model.OctaneServerSettingsModel;
 import com.hp.octane.integrations.dto.events.CIEventType;
 import com.hpe.application.automation.tools.octane.OctaneServerMock;
@@ -43,6 +40,9 @@ import com.hpe.application.automation.tools.octane.configuration.ConfigurationSe
 import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
 import org.eclipse.jetty.server.Request;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 
@@ -67,7 +67,6 @@ import static org.junit.Assert.*;
 @SuppressWarnings({"squid:S2699", "squid:S3658", "squid:S2259", "squid:S1872", "squid:S2925", "squid:S109", "squid:S1607", "squid:S2701", "squid:S2698"})
 public class EventsTest {
 	private static final Logger logger = Logger.getLogger(EventsTest.class.getName());
-	private static final DTOFactory dtoFactory = DTOFactory.getInstance();
 
 	private static final String projectName = "root-job-events-case";
 	private static final String sharedSpaceId = "1007";
@@ -107,30 +106,35 @@ public class EventsTest {
 		Thread.sleep(5000);
 
 		List<CIEventType> eventsOrder = new ArrayList<>(Arrays.asList(CIEventType.STARTED, CIEventType.FINISHED));
-		CIEventsList eventsLists = eventsTestHandler.eventsLists;
+		List<JSONObject> eventsLists = eventsTestHandler.eventsLists;
+		JSONObject tmp;
+		JSONArray events;
 		logger.info(eventsLists.toString());
-		logger.info("EVENTS TEST: server mock received " + eventsLists.getEvents().size() + " list/s of events");
+		logger.info("EVENTS TEST: server mock received " + eventsLists.size() + " list/s of events");
+		for (JSONObject l : eventsLists) {
+			assertEquals(2, l.length());
 
-		assertNotNull(eventsLists.getServer());
-		assertTrue(rule.getInstance().getRootUrl() != null && rule.getInstance().getRootUrl().startsWith(eventsLists.getServer().getUrl()));
-		assertEquals("jenkins", eventsLists.getServer().getType());
-		assertEquals(ConfigurationService.getModel().getIdentity(), eventsLists.getServer().getInstanceId());
+			assertFalse(l.isNull("server"));
+			tmp = l.getJSONObject("server");
+			assertTrue(rule.getInstance().getRootUrl() != null && rule.getInstance().getRootUrl().startsWith(tmp.getString("url")));
+			assertEquals("jenkins", tmp.getString("type"));
+			assertEquals(ConfigurationService.getModel().getIdentity(), tmp.getString("instanceId"));
 
-		assertNotNull(eventsLists.getEvents());
-		assertFalse(eventsLists.getEvents().isEmpty());
-		for (CIEvent event : eventsLists.getEvents()) {
-			System.out.println(event.getEventType() + "-" + event.getProject() + "-" + event.getBuildCiId());
-			if (projectName.equals(event.getProject())) {
-				assertEquals(eventsOrder.get(0), event.getEventType());
-				eventsOrder.remove(0);
+			assertFalse(l.isNull("events"));
+			events = l.getJSONArray("events");
+			for (int i = 0; i < events.length(); i++) {
+				tmp = events.getJSONObject(i);
+				if (tmp.getString("project").equals(projectName)) {
+					assertEquals(eventsOrder.get(0), CIEventType.fromValue(tmp.getString("eventType")));
+					eventsOrder.remove(0);
+				}
 			}
 		}
 		assertEquals(0, eventsOrder.size());
 	}
 
 	private static final class EventsTestHandler extends OctaneServerMock.TestSpecificHandler {
-		private final CIEventsList eventsLists = dtoFactory.newDTO(CIEventsList.class)
-				.setEvents(new LinkedList<CIEvent>());
+		private final List<JSONObject> eventsLists = new LinkedList<>();
 
 		@Override
 		public boolean ownsUrlToProcess(String url) {
@@ -140,10 +144,13 @@ public class EventsTest {
 		@Override
 		public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
 			String requestBody = getBodyAsString(baseRequest);
-			CIEventsList tmp = dtoFactory.dtoFromJson(requestBody, CIEventsList.class);
-			eventsLists.setServer(tmp.getServer());
-			eventsLists.getEvents().addAll(tmp.getEvents());
-			logger.info("EVENTS TEST: server mock events list length " + eventsLists.getEvents().size());
+
+			try {
+				eventsLists.add(new JSONObject(requestBody));
+			} catch (JSONException e) {
+				logger.warning("EVENTS TEST: response wasn't JSON compatible");
+			}
+			logger.info("EVENTS TEST: server mock events list length " + eventsLists.size());
 			response.setStatus(HttpServletResponse.SC_OK);
 		}
 	}

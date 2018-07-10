@@ -39,6 +39,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.cloudbees.plugins.credentials.matchers.IdMatcher;
+import com.hpe.application.automation.tools.model.*;
 import com.hpe.application.automation.tools.model.AlmServerSettingsModel;
 import com.hpe.application.automation.tools.results.RunResultRecorder;
 import com.hpe.application.automation.tools.run.SseBuilder;
@@ -47,6 +48,7 @@ import com.hpe.application.automation.tools.model.CdaDetails;
 import com.hpe.application.automation.tools.model.EnumDescription;
 import com.hpe.application.automation.tools.model.ResultsPublisherModel;
 import com.hpe.application.automation.tools.model.SseModel;
+import com.hpe.application.automation.tools.model.SseProxySettings;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Hudson;
@@ -92,6 +94,7 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
                       String almProject,
                       String credentialsId,
                       String almDomain,
+                      String clientType,
                       String runType,
                       String almEntityId,
                       String timeslotDuration,
@@ -101,6 +104,7 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
                 almProject,
                 credentialsId,
                 almDomain,
+                clientType,
                 runType,
                 almEntityId,
                 timeslotDuration);
@@ -123,6 +127,8 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
     public String getAlmDomain() {
         return sseBuilder.getAlmDomain();
     }
+
+    public String getClientType() { return sseBuilder.getClientType(); }
 
     public String getRunType() {
         return sseBuilder.getRunType();
@@ -176,6 +182,15 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
         return sseBuilder.getCdaDetails();
     }
 
+    @DataBoundSetter
+    public void setProxySettings(SseProxySettings proxySettings) {
+        sseBuilder.setProxySettings(proxySettings);
+    }
+
+    public SseProxySettings getProxySettings() {
+        return sseBuilder.getProxySettings();
+    }
+
     // This indicates to Jenkins that this is an implementation of an extension point
     @Extension
     public static final class DescriptorImpl extends AbstractStepDescriptorImpl {
@@ -195,7 +210,7 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
 
         @Override
         public String getDisplayName() {
-            return "Execute tests using ALM Lab Management and Publish tests result";
+            return "Execute Micro Focus tests using Micro Focus ALM Lab Management and Publish Micro Focus tests result";
         }
 
         public boolean hasAlmServers() {
@@ -295,6 +310,14 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
                             StandardUsernamePasswordCredentials.class,
                             URIRequirementBuilder.create().build())
                     .includeCurrentValue(credentialsId);
+        }
+
+        /**
+         * To fill in the credentials drop down list which's field is 'FsProxyCredentialsId'.
+         */
+        public ListBoxModel doFillFsProxyCredentialsIdItems(@AncestorInPath Item project,
+                                                            @QueryParameter String credentialsId) {
+            return doFillCredentialsIdItems(project, credentialsId);
         }
 
         public FormValidation doCheckCredentialsId(@AncestorInPath Item project,

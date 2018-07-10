@@ -62,12 +62,7 @@ public class ModelFactory {
 	private static final DTOFactory dtoFactory = DTOFactory.getInstance();
 
 	public static PipelineNode createStructureItem(Job job) {
-		return createStructureItem(job, new HashSet<Job>());
-	}
-
-
-	public static PipelineNode createStructureItem(Job job, Set<Job> processedJobs) {
-		AbstractProjectProcessor projectProcessor = JobProcessorFactory.getFlowProcessor(job, processedJobs);
+		AbstractProjectProcessor projectProcessor = JobProcessorFactory.getFlowProcessor(job);
 		PipelineNode pipelineNode = dtoFactory.newDTO(PipelineNode.class);
 		pipelineNode.setJobCiId(projectProcessor.getTranslateJobName());
 		pipelineNode.setName(job.getName());
@@ -78,7 +73,7 @@ public class ModelFactory {
 		return pipelineNode;
 	}
 
-	public static PipelinePhase createStructurePhase(String name, boolean blocking, List<AbstractProject> items, Set<Job> processedJobs) {
+	public static PipelinePhase createStructurePhase(String name, boolean blocking, List<AbstractProject> items) {
 		PipelinePhase pipelinePhase = dtoFactory.newDTO(PipelinePhase.class);
 		pipelinePhase.setName(name);
 		pipelinePhase.setBlocking(blocking);
@@ -86,7 +81,7 @@ public class ModelFactory {
 		PipelineNode[] tmp = new PipelineNode[items.size()];
 		for (int i = 0; i < tmp.length; i++) {
 			if (items.get(i) != null) {
-				tmp[i] = ModelFactory.createStructureItem(items.get(i), processedJobs);
+				tmp[i] = ModelFactory.createStructureItem(items.get(i));
 
 			} else {
 				logger.warn("One of referenced jobs is null, your Jenkins config probably broken, skipping this job...");
@@ -144,7 +139,7 @@ public class ModelFactory {
 		snapshotNode.setDuration(build.getDuration());
 		snapshotNode.setEstimatedDuration(build.getEstimatedDuration());
 		if (build instanceof AbstractBuild) {
-			snapshotNode.setScmData(scmProcessor == null ? null : scmProcessor.getSCMData((AbstractBuild) build, ((AbstractBuild) build).getProject().getScm()));
+			snapshotNode.setScmData(scmProcessor == null ? null : scmProcessor.getSCMData((AbstractBuild) build));
 		}
 		snapshotNode.setStartTime(build.getStartTimeInMillis());
 		snapshotNode.setParameters(ParameterProcessors.getInstances(build));

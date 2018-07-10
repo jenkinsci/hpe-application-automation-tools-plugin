@@ -37,6 +37,7 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
 import com.hp.octane.integrations.dto.executor.TestConnectivityInfo;
 import com.hp.octane.integrations.dto.scm.SCMRepository;
+import com.hpe.application.automation.tools.common.HttpStatus;
 import hudson.EnvVars;
 import hudson.model.FreeStyleProject;
 import hudson.model.Job;
@@ -44,92 +45,81 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.plugins.git.extensions.GitSCMExtension;
 import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
-import hudson.scm.ChangeLogSet;
 import hudson.scm.SCM;
-import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class GitPluginHandler implements ScmPluginHandler {
 
-	private static final Logger logger = LogManager.getLogger(GitPluginHandler.class);
+    private static final Logger logger = LogManager.getLogger(GitPluginHandler.class);
 
-	@Override
-	public void setScmRepositoryInJob(SCMRepository scmRepository, String scmRepositoryCredentialsId, FreeStyleProject proj, boolean executorJob) throws IOException {
+    @Override
+    public void setScmRepositoryInJob(SCMRepository scmRepository, String scmRepositoryCredentialsId, FreeStyleProject proj, boolean executorJob) throws IOException {
 
-		List<UserRemoteConfig> repoLists = Collections.singletonList(new UserRemoteConfig(scmRepository.getUrl(), null, null, scmRepositoryCredentialsId));
-		List<GitSCMExtension> extensions = null;
+        List<UserRemoteConfig> repoLists = Arrays.asList(new UserRemoteConfig(scmRepository.getUrl(), null, null, scmRepositoryCredentialsId));
+        List<GitSCMExtension> extensions = null;
 
-		if (executorJob) {
-			String relativeCheckOut = "..\\..\\_test_sources\\" + scmRepository.getUrl().replaceAll("[<>:\"/\\|?*]", "_");
-			RelativeTargetDirectory targetDirectory = new RelativeTargetDirectory(relativeCheckOut);
-			extensions = Collections.<GitSCMExtension>singletonList(targetDirectory);
-		}
+        if (executorJob) {
+            String relativeCheckOut = "..\\..\\_test_sources\\" + scmRepository.getUrl().replaceAll("[<>:\"/\\|?*]", "_");
+            RelativeTargetDirectory targetDirectory = new RelativeTargetDirectory(relativeCheckOut);
+            extensions = Arrays.<GitSCMExtension>asList(targetDirectory);
+        }
 
-		String branch = "*/master";
-		if (proj.getScm() != null && proj.getScm() instanceof GitSCM) {
-			List<BranchSpec> branches = ((GitSCM) proj.getScm()).getBranches();
-			if (branches.size() > 0) {
-				String existingBrName = branches.get(0).getName();
-				boolean emptyBrName = (existingBrName == null || existingBrName.isEmpty() || existingBrName.equals("**"));
-				if (!emptyBrName) {
-					branch = existingBrName;
-				}
-			}
-		}
+        String branch = "*/master";
+        if (proj.getScm() != null && proj.getScm() instanceof GitSCM) {
+            List<BranchSpec> branches = ((GitSCM) proj.getScm()).getBranches();
+            if (branches.size() > 0) {
+                String existingBrName = branches.get(0).getName();
+                boolean emptyBrName = (existingBrName == null || existingBrName.isEmpty() || existingBrName.equals("**"));
+                if (!emptyBrName) {
+                    branch = existingBrName;
+                }
+            }
+        }
 
-		GitSCM scm = new GitSCM(repoLists, Collections.singletonList(new BranchSpec(branch)), false, Collections.<SubmoduleConfig>emptyList(), null, null, extensions);
-		proj.setScm(scm);
-	}
+        GitSCM scm = new GitSCM(repoLists, Collections.singletonList(new BranchSpec(branch)), false, Collections.<SubmoduleConfig>emptyList(), null, null, extensions);
+        proj.setScm(scm);
+    }
 
-	@Override
-	public String getSharedCheckOutDirectory(Job j) {
-		SCM scm = ((FreeStyleProject) j).getScm();
+    @Override
+    public String getSharedCheckOutDirectory(Job j) {
+        SCM scm = ((FreeStyleProject) j).getScm();
 
-		GitSCM gitScm = (GitSCM) scm;
-		RelativeTargetDirectory sharedCheckOutDirectory = gitScm.getExtensions().get(RelativeTargetDirectory.class);
-		if (sharedCheckOutDirectory != null) {
-			return sharedCheckOutDirectory.getRelativeTargetDir();
-		}
-		return null;
-	}
+        GitSCM gitScm = (GitSCM) scm;
+        RelativeTargetDirectory sharedCheckOutDirectory = gitScm.getExtensions().get(RelativeTargetDirectory.class);
+        if (sharedCheckOutDirectory != null) {
+            return sharedCheckOutDirectory.getRelativeTargetDir();
+        }
+        return null;
+    }
 
-	@Override
-	public void checkRepositoryConnectivity(TestConnectivityInfo testConnectivityInfo, StandardCredentials credentials, OctaneResponse result) {
+    @Override
+    public void checkRepositoryConnectivity(TestConnectivityInfo testConnectivityInfo, StandardCredentials credentials, OctaneResponse result) {
 
-		try {
-			EnvVars environment = new EnvVars(System.getenv());
-			GitClient git = Git.with(TaskListener.NULL, environment).using(GitTool.getDefaultInstallation().getGitExe()).getClient();
-			git.addDefaultCredentials(credentials);
-			git.getHeadRev(testConnectivityInfo.getScmRepository().getUrl(), "HEAD");
+        try {
+            EnvVars environment = new EnvVars(System.getenv());
+            GitClient git = Git.with(TaskListener.NULL, environment).using(GitTool.getDefaultInstallation().getGitExe()).getClient();
+            git.addDefaultCredentials(credentials);
+            git.getHeadRev(testConnectivityInfo.getScmRepository().getUrl(), "HEAD");
 
-			result.setStatus(HttpStatus.SC_OK);
+            result.setStatus(HttpStatus.OK.getCode());
 
-		} catch (IOException | InterruptedException e) {
-			logger.error("Failed to connect to git : " + e.getMessage());
-			result.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-			result.setBody(e.getMessage());
-		} catch (GitException e) {
-			logger.error("Failed to execute getHeadRev : " + e.getMessage());
-			result.setStatus(HttpStatus.SC_NOT_FOUND);
-			result.setBody(e.getMessage());
-		}
+        } catch (IOException | InterruptedException e) {
+            logger.error("Failed to connect to git : " + e.getMessage());
+            result.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.getCode());
+            result.setBody(e.getMessage());
+        } catch (GitException e) {
+            logger.error("Failed to execute getHeadRev : " + e.getMessage());
+            result.setStatus(HttpStatus.NOT_FOUND.getCode());
+            result.setBody(e.getMessage());
+        }
 
-	}
-
-	@Override
-	public String getChangeSetSrc(ChangeLogSet.AffectedFile affectedFile) {
-		return ((GitChangeSet.Path) affectedFile).getSrc();
-	}
-
-	@Override
-	public String getChangeSetDst(ChangeLogSet.AffectedFile affectedFile) {
-		return ((GitChangeSet.Path) affectedFile).getDst();
-	}
+    }
 }

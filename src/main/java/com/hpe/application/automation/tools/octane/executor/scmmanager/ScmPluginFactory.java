@@ -76,19 +76,6 @@ public class ScmPluginFactory {
         return getScmHandler(scmType);
     }
 
-    public static ScmPluginHandler getScmHandlerByChangePathClass(String  changePathClass) {
-        SCMType scmType = null;
-
-        if ("hudson.plugins.git.GitChangeSet$Path".equals(changePathClass)) {
-            scmType = scmType.GIT;
-        } else {
-            return null;
-        }
-
-        return getScmHandler(scmType);
-    }
-
-
 
     public static boolean isPluginInstalled(SCMType scmType) {
         String shortName;

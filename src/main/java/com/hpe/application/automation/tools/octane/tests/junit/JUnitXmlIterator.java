@@ -36,7 +36,7 @@ package com.hpe.application.automation.tools.octane.tests.junit;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.tests.Property;
 import com.hp.octane.integrations.dto.tests.TestSuite;
-import com.hp.octane.integrations.util.SdkConstants;
+import com.hpe.application.automation.tools.octane.executor.OctaneConstants;
 import com.hpe.application.automation.tools.octane.tests.HPRunnerType;
 import com.hpe.application.automation.tools.octane.tests.xml.AbstractXmlIterator;
 import hudson.FilePath;
@@ -148,7 +148,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 					}
 				}
 				if (hpRunnerType.equals(HPRunnerType.StormRunnerLoad)) {
-					logger.error("ALM Octane Runner: " + hpRunnerType);
+					logger.error("HPE Runner: " + hpRunnerType);
 					externalURL = getStormRunnerURL(path);
 				}
 			} else if ("id".equals(localName)) {
@@ -186,12 +186,12 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 						// currently this handling is needed for UFT tests
 						int testStartIndex = workspace.getRemote().length() + (sharedCheckOutDirectory == null ? 0 : (sharedCheckOutDirectory.length() + 1));
 						String path = testName.substring(testStartIndex);
-						path = path.replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);
-						path = StringUtils.strip(path, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);
+						path = path.replace(OctaneConstants.General.LINUX_PATH_SPLITTER, OctaneConstants.General.WINDOWS_PATH_SPLITTER);
+						path = StringUtils.strip(path, OctaneConstants.General.WINDOWS_PATH_SPLITTER);
 
 						//split path to package and and name fields
-						if (path.contains(SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER)) {
-							int testNameStartIndex = path.lastIndexOf(SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);
+						if (path.contains(OctaneConstants.General.WINDOWS_PATH_SPLITTER)) {
+							int testNameStartIndex = path.lastIndexOf(OctaneConstants.General.WINDOWS_PATH_SPLITTER);
 
 							testName = path.substring(testNameStartIndex + 1);
 							packageName = path.substring(0, testNameStartIndex);

@@ -72,21 +72,9 @@ namespace HpToolsLauncher
             ConsoleWriter.ActiveTestRun = runDesc;
             ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Running: " + testinf.TestPath);
 
-            runDesc.TestPath = testinf.TestPath;
-
-            // default report location is the test path
             runDesc.ReportLocation = testinf.TestPath;
-
-            // check if the report path has been defined
-            if (!String.IsNullOrEmpty(testinf.ReportPath))
-            {
-                if(!Helper.TrySetTestReportPath(runDesc, testinf,ref errorReason))
-                {
-                    return runDesc;
-                }
-            }
-
             runDesc.ErrorDesc = errorReason;
+            runDesc.TestPath = testinf.TestPath;
             runDesc.TestState = TestState.Unknown;
             if (!Helper.IsServiceTestInstalled())
             {

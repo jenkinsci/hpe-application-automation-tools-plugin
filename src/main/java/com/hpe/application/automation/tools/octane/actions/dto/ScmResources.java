@@ -31,31 +31,30 @@
  *
  */
 
-package com.hpe.application.automation.tools.octane.tests;
+package com.hpe.application.automation.tools.octane.actions.dto;
 
-import hudson.ExtensionList;
-import hudson.ExtensionPoint;
-import hudson.model.Run;
-import jenkins.model.Jenkins;
-
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
- * General provider of Octane's tests processing extensions
+ * This file represents collection of scm resources for sending to Octane
  */
+public class ScmResources {
 
-public abstract class OctaneTestsExtension implements ExtensionPoint {
+    private List<ScmResourceFile> data = new ArrayList<>();
 
-	public abstract boolean supports(Run<?, ?> build) throws IOException, InterruptedException;
+    public static ScmResources createWithItems(Collection<ScmResourceFile> resources) {
+        ScmResources result = new ScmResources();
+        result.setData(new ArrayList<>(resources));
+        return result;
+    }
 
+    public List<ScmResourceFile> getData() {
+        return data;
+    }
 
-	public abstract TestResultContainer getTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, String jenkinsRootUrl) throws IOException, InterruptedException, TestProcessingException;
-
-	public static ExtensionList<OctaneTestsExtension> all() {
-		if (Jenkins.getInstance() != null) {
-			return Jenkins.getInstance().getExtensionList(OctaneTestsExtension.class);
-		} else {
-			throw new IllegalStateException("failed to obtain Jenkins' instance");
-		}
-	}
+    public void setData(List<ScmResourceFile> data) {
+        this.data = data;
+    }
 }

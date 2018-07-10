@@ -59,6 +59,7 @@ public class SseModel {
     private final String _almUserName;
     private final SecretContainer _almPassword;
     private final String _almDomain;
+    private final String _clientType;
     private final String _almProject;
     private final String _timeslotDuration;
     private final String _description;
@@ -67,6 +68,7 @@ public class SseModel {
     private final String _postRunAction;
     private final String _environmentConfigurationId;
     private final CdaDetails _cdaDetails;
+    private final SseProxySettings _proxySettings;
     
     private final static EnumDescription _runTypeTestSet =
             new EnumDescription(TEST_SET, "Test Set");
@@ -97,6 +99,7 @@ public class SseModel {
             String almUserName,
             String almPassword,
             String almDomain,
+            String clientType,
             String almProject,
             String runType,
             String almEntityId,
@@ -104,10 +107,12 @@ public class SseModel {
             String description,
             String postRunAction,
             String environmentConfigurationId,
-            CdaDetails cdaDetails) {
+            CdaDetails cdaDetails,
+            SseProxySettings proxySettings) {
         
         _almServerName = almServerName;
         _almDomain = almDomain;
+        _clientType = clientType;
         _almProject = almProject;
         _timeslotDuration = timeslotDuration;
         _almEntityId = almEntityId;
@@ -118,6 +123,7 @@ public class SseModel {
         _postRunAction = postRunAction;
         _environmentConfigurationId = environmentConfigurationId;
         _cdaDetails = cdaDetails;
+        _proxySettings = proxySettings;
         
     }
     
@@ -157,6 +163,10 @@ public class SseModel {
     public String getAlmDomain() {
         
         return _almDomain;
+    }
+
+    public String getClientType() {
+        return _clientType;
     }
     
     public String getAlmProject() {
@@ -206,5 +216,9 @@ public class SseModel {
     public String getPostRunAction() {
         
         return _postRunAction;
+    }
+    
+    public SseProxySettings getProxySettings() {
+        return _proxySettings;
     }
 }

@@ -174,7 +174,6 @@ public abstract class AbstractProjectProcessor<T extends Job> {
                     logger.debug("not yet supported publisher (post build) action: " + publisher.getClass().getName());
                 }
             }
-            processedJobs.remove(job);
         }
     }
 
@@ -200,6 +199,5 @@ public abstract class AbstractProjectProcessor<T extends Job> {
         } else {
             logger.debug("not yet supported build (internal) action: " + builder.getClass().getName());
         }
-        processedJobs.remove(job);
     }
 }

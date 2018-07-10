@@ -33,15 +33,11 @@
 
 package com.hpe.application.automation.tools.octane.actions;
 
-import com.hp.octane.integrations.uft.items.OctaneStatus;
-import com.hp.octane.integrations.uft.items.SupportsOctaneStatus;
-import com.hp.octane.integrations.uft.items.UftTestDiscoveryResult;
+import com.hpe.application.automation.tools.octane.executor.UFTTestDetectionResult;
 import com.hpe.application.automation.tools.octane.executor.UFTTestDetectionService;
 import hudson.model.AbstractBuild;
 import hudson.model.Action;
 import hudson.model.Run;
-
-import java.util.List;
 
 /**
  * Class responsible to show report of  {@link UFTTestDetectionService}
@@ -50,7 +46,7 @@ public class UFTTestDetectionBuildAction implements Action {
     private AbstractBuild<?, ?> build;
 
 
-    private UftTestDiscoveryResult results;
+    private UFTTestDetectionResult results;
 
     @Override
     public String getIconFileName() {
@@ -59,7 +55,7 @@ public class UFTTestDetectionBuildAction implements Action {
 
     @Override
     public String getDisplayName() {
-        return "ALM Octane UFT Tests Discovery Report";
+        return "HPE ALM Octane UFT Tests Discovery Report";
     }
 
     @Override
@@ -72,12 +68,12 @@ public class UFTTestDetectionBuildAction implements Action {
         return build;
     }
 
-    public UFTTestDetectionBuildAction(final AbstractBuild<?, ?> build, UftTestDiscoveryResult results) {
+    public UFTTestDetectionBuildAction(final AbstractBuild<?, ?> build, UFTTestDetectionResult results) {
         this.build = build;
-        this.results = results == null ? new UftTestDiscoveryResult() : results;
+        this.results = results == null ? new UFTTestDetectionResult() : results;
     }
 
-    public UftTestDiscoveryResult getResults() {
+    public UFTTestDetectionResult getResults() {
         return results;
     }
 
@@ -87,7 +83,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasNewTests() {
-        return countItemsWithStatus(OctaneStatus.NEW, results.getAllTests()) > 0;
+        return results.getNewTests().size() > 0;
     }
 
     /**
@@ -96,7 +92,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasDeletedTests() {
-        return countItemsWithStatus(OctaneStatus.DELETED, results.getAllTests()) > 0;
+        return results.getDeletedTests().size() > 0;
     }
 
     /**
@@ -105,7 +101,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasUpdatedTests() {
-        return countItemsWithStatus(OctaneStatus.MODIFIED, results.getAllTests()) > 0;
+        return results.getUpdatedTests().size() > 0;
     }
 
     public boolean getHasQuotedPaths() {
@@ -118,7 +114,7 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasNewScmResources() {
-        return countItemsWithStatus(OctaneStatus.NEW, results.getAllScmResourceFiles()) > 0;
+        return results.getNewScmResourceFiles().size() > 0;
     }
 
     /**
@@ -127,40 +123,10 @@ public class UFTTestDetectionBuildAction implements Action {
      * @return
      */
     public boolean getHasDeletedScmResources() {
-        return countItemsWithStatus(OctaneStatus.DELETED, results.getAllScmResourceFiles()) > 0;
+        return results.getDeletedScmResourceFiles().size() > 0;
     }
 
-    /**
-     * used by ~\src\main\resources\com\hp\application\automation\tools\octane\actions\UFTTestDetectionBuildAction\index.jelly
-     *
-     * @return
-     */
-    public boolean getHasUpdatedScmResources() {
-        return countItemsWithStatus(OctaneStatus.MODIFIED, results.getAllScmResourceFiles()) > 0;
-    }
-
-    /**
-     * used by ~\src\main\resources\com\hp\application\automation\tools\octane\actions\UFTTestDetectionBuildAction\index.jelly
-     *
-     * @return
-     */
-    public boolean getHasDeletedFolders() {
-        return results.getDeletedFolders().size() > 0;
-    }
-
-
-    public void setResults(UftTestDiscoveryResult results) {
+    public void setResults(UFTTestDetectionResult results) {
         this.results = results;
-    }
-
-    private static int countItemsWithStatus(OctaneStatus status, List<? extends SupportsOctaneStatus> items) {
-
-        int count = 0;
-        for (SupportsOctaneStatus item : items) {
-            if (item.getOctaneStatus().equals(status)) {
-                count++;
-            }
-        }
-        return count;
     }
 }

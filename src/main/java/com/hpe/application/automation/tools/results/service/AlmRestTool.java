@@ -80,7 +80,7 @@ public class AlmRestTool {
 		boolean ret;
         try {
 			ret = AuthenticationTool.authenticate(restClient, almLoginInfo.getUserName(),
-					almLoginInfo.getPassword(), almLoginInfo.getServerUrl(), _logger);
+					almLoginInfo.getPassword(), almLoginInfo.getServerUrl(), almLoginInfo.getClientType(), _logger);
         } catch (Exception cause) {
             ret = false;
             throw new AlmRestException (cause);

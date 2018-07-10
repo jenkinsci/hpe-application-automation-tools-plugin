@@ -39,17 +39,18 @@ public class AlmRestInfo {
 	private String userName;
 	private String password;
 	private String domain;
+	private String clientType;
 	private String project;
 	private String timeout;
 	
-	public AlmRestInfo(String serverUrl, String domain, String project,  String userName, String password, String timeout) {
+	public AlmRestInfo(String serverUrl, String domain, String clientType, String project,  String userName, String password, String timeout) {
 		this.serverUrl = serverUrl;
 		this.userName = userName;
 		this.password = password;
 		this.domain = domain;
+		this.clientType = clientType;
 		this.project = project;
 		this.timeout = timeout;
-		
 	}
 	
 	public String getServerUrl(){
@@ -83,7 +84,15 @@ public class AlmRestInfo {
 	public void setDomain(String domain) {
 		this.domain = domain;
 	}
-	
+
+	public String getClientType() {
+		return clientType;
+	}
+
+	public void setClientType(String clientType) {
+		this.clientType = clientType;
+	}
+
 	public String getProject(){
 		return project;
 	}

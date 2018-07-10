@@ -33,12 +33,12 @@
 
 package com.hpe.application.automation.tools.octane.executor;
 
-import com.hp.octane.integrations.OctaneSDK;
-import com.hp.octane.integrations.api.EntitiesService;
-import com.hp.octane.integrations.dto.entities.Entity;
-import com.hp.octane.integrations.dto.entities.EntityConstants;
 import com.hpe.application.automation.tools.octane.actions.UFTTestDetectionPublisher;
+import com.hpe.application.automation.tools.octane.configuration.ConfigurationService;
+import com.hpe.application.automation.tools.octane.configuration.ServerConfiguration;
 import com.hpe.application.automation.tools.octane.tests.AbstractSafeLoggingAsyncPeriodWork;
+import com.hp.mqm.client.MqmRestClient;
+import com.hp.mqm.client.model.Entity;
 import hudson.Extension;
 import hudson.model.*;
 import jenkins.model.Jenkins;
@@ -142,13 +142,14 @@ public class UftJobCleaner extends AbstractSafeLoggingAsyncPeriodWork {
         }
 
         if (!workspace2executorLogical2DiscoveryJobMap.isEmpty()) {
-            if (OctaneSDK.getInstance().getConfigurationService().isConfigurationValid()) {
-                EntitiesService entitiesService = OctaneSDK.getInstance().getEntitiesService();
+            ServerConfiguration serverConfiguration = ConfigurationService.getServerConfiguration();
+            MqmRestClient client = ConfigurationService.createClient(serverConfiguration);
+            if (client != null) {
                 int deleteCounter = 0;
                 for (Long workspaceId : workspace2executorLogical2DiscoveryJobMap.keySet()) {
                     try {
                         Map<String, FreeStyleProject> discoveryJobs = workspace2executorLogical2DiscoveryJobMap.get(workspaceId);
-                        Set<String> octaneExecutorsLogicalNames = getOctaneExecutorsLogicalNames(entitiesService, workspaceId);
+                        Set<String> octaneExecutorsLogicalNames = getOctaneExecutorsLogicalNames(client, workspaceId);
                         for (String jobExecutorLogical : discoveryJobs.keySet()) {
                             boolean isExistInOctane = octaneExecutorsLogicalNames.contains(jobExecutorLogical);
                             if (!isExistInOctane) {
@@ -175,12 +176,12 @@ public class UftJobCleaner extends AbstractSafeLoggingAsyncPeriodWork {
         }
     }
 
-    private Set<String> getOctaneExecutorsLogicalNames( EntitiesService entitiesService, Long workspaceId) {
-        List<Entity> entities = entitiesService.getEntities(workspaceId, EntityConstants.Executors.COLLECTION_NAME, null,
-                Arrays.asList(EntityConstants.Executors.ID_FIELD, EntityConstants.Executors.LOGICAL_NAME_FIELD));
+    private Set<String> getOctaneExecutorsLogicalNames(MqmRestClient client, Long workspaceId) {
+        List<Entity> entities = client.getEntities(workspaceId, OctaneConstants.Executors.COLLECTION_NAME, null,
+                Arrays.asList(OctaneConstants.Base.ID_FIELD, OctaneConstants.Base.LOGICAL_NAME_FIELD));
         Set<String> octaneExecutorIds = new HashSet<>();
         for (Entity executor : entities) {
-            octaneExecutorIds.add(executor.getStringValue(EntityConstants.Executors.LOGICAL_NAME_FIELD));
+            octaneExecutorIds.add(executor.getStringValue(OctaneConstants.Base.LOGICAL_NAME_FIELD));
         }
         return octaneExecutorIds;
     }

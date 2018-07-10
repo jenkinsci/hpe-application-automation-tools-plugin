@@ -553,62 +553,6 @@ namespace HpToolsLauncher
 
         #region Report Related
 
-        /// <summary>
-        /// Set the error for a test when the report path is invalid.
-        /// </summary>
-        /// <param name="runResults"> The test run results </param>
-        /// <param name="errorReason"> The error reason </param>
-        /// <param name="testInfo"> The test informatio </param>
-        public static void SetTestReportPathError(TestRunResults runResults, ref string errorReason, TestInfo testInfo)
-        {
-            // Invalid path was provided, return useful description
-            errorReason = string.Format(Resources.InvalidReportPath, runResults.ReportLocation);
-
-            // since the report path is invalid, the test should fail
-            runResults.TestState = TestState.Error;
-            runResults.ErrorDesc = errorReason;
-
-            // output the error for the current test run
-            ConsoleWriter.WriteErrLine(runResults.ErrorDesc);
-
-            // include the error in the summary
-            ConsoleWriter.ErrorSummaryLines.Add(runResults.ErrorDesc);
-
-            // provide the appropriate exit code for the launcher
-            Environment.ExitCode = (int)Launcher.ExitCodeEnum.Failed;
-        }
-
-        /// <summary>
-        /// Try to set the custom report path for a given test.
-        /// </summary>
-        /// <param name="runResults"> The test run results </param>
-        /// <param name="testInfo"> The test information </param>
-        /// <param name="errorReason"> The error reason </param>
-        /// <returns> True if the report path was set, false otherwise </returns>
-        public static bool TrySetTestReportPath(TestRunResults runResults, TestInfo testInfo, ref string errorReason)
-        {
-            // set the report location for the run results
-            runResults.ReportLocation = testInfo.ReportPath;
-
-            // no need to create it
-            if (Directory.Exists(runResults.ReportLocation))
-            {
-                return true;
-            }
-
-            try
-            {
-                Directory.CreateDirectory(runResults.ReportLocation);
-            }
-            catch (Exception)
-            {
-                SetTestReportPathError(runResults, ref errorReason, testInfo);
-                return false;
-            }
-
-            return true;
-        }
-
         public static string GetUftViewerInstallPath()
         {
             string ret = String.Empty;

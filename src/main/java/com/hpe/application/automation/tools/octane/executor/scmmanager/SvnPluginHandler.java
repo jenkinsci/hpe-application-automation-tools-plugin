@@ -37,14 +37,13 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
 import com.hp.octane.integrations.dto.executor.TestConnectivityInfo;
 import com.hp.octane.integrations.dto.scm.SCMRepository;
+import com.hpe.application.automation.tools.common.HttpStatus;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
 import hudson.model.Job;
-import hudson.scm.ChangeLogSet;
 import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpStatus;
 import org.tmatesoft.svn.core.SVNException;
 
 import java.io.File;
@@ -52,61 +51,51 @@ import java.io.IOException;
 
 public class SvnPluginHandler implements ScmPluginHandler {
 
-	@Override
-	public void setScmRepositoryInJob(SCMRepository scmRepository, String scmRepositoryCredentialsId, FreeStyleProject proj, boolean executorJob) throws IOException {
+    @Override
+    public void setScmRepositoryInJob(SCMRepository scmRepository, String scmRepositoryCredentialsId, FreeStyleProject proj, boolean executorJob) throws IOException {
 
-		String relativeCheckOut;
-		if (executorJob) {
-			String url = StringUtils.stripEnd(scmRepository.getUrl(), "/").replaceAll("[<>:\"/\\|?*]", "_");
-			relativeCheckOut = "a\\..\\..\\..\\_test_sources\\" + url;
-		} else {
-			relativeCheckOut = "a" + File.separator + "..";//it doesn't has any affect on checkout folder. Without it, svn do checkout to folder of svn repository name
-			//for example for URL https://myd-vm00812.hpeswlab.net/svn/uft_tests/ - tests will be cloned to "uft_tests" subfolder
-			//adding a\.. will clone as is - Why we need it - subfolder is part of "package" reported to Octane
-		}
+        String relativeCheckOut = null;
+        if (executorJob) {
+            String url = StringUtils.stripEnd(scmRepository.getUrl(), "/").replaceAll("[<>:\"/\\|?*]", "_");
+            relativeCheckOut = "a\\..\\..\\..\\_test_sources\\" + url;
+        }else{
+            relativeCheckOut = "a" + File.separator + "..";//it doesn't has any affect on checkout folder. Without it, svn do checkout to folder of svn repository name
+            //for example for URL https://myd-vm00812.hpeswlab.net/svn/uft_tests/ - tests will be cloned to "uft_tests" subfolder
+            //adding a\.. will clone as is - Why we need it - subfolder is part of "package" reported to Octane
+        }
 
-		SubversionSCM svn = new SubversionSCM(scmRepository.getUrl(), scmRepositoryCredentialsId, relativeCheckOut);
-		proj.setScm(svn);
-	}
+        SubversionSCM svn = new SubversionSCM(scmRepository.getUrl(), scmRepositoryCredentialsId, relativeCheckOut);
+        proj.setScm(svn);
+    }
 
-	@Override
-	public String getSharedCheckOutDirectory(Job j) {
-		SCM scm = ((FreeStyleProject) j).getScm();
+    @Override
+    public String getSharedCheckOutDirectory(Job j) {
+        SCM scm = ((FreeStyleProject) j).getScm();
 
-		SubversionSCM svnScm = (SubversionSCM) scm;
-		for (SubversionSCM.ModuleLocation location : svnScm.getLocations()) {
-			if (StringUtils.isNotEmpty(location.getLocalDir())) {
-				return location.getLocalDir();
-			}
-		}
+        SubversionSCM svnScm = (SubversionSCM) scm;
+        for (SubversionSCM.ModuleLocation location : svnScm.getLocations()) {
+            if (StringUtils.isNotEmpty(location.getLocalDir())) {
+                return location.getLocalDir();
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	@Override
-	public void checkRepositoryConnectivity(TestConnectivityInfo testConnectivityInfo, StandardCredentials credentials, OctaneResponse result) {
+    @Override
+    public void checkRepositoryConnectivity(TestConnectivityInfo testConnectivityInfo, StandardCredentials credentials, OctaneResponse result) {
 
-		String credentialsId = (credentials != null ? credentials.getId() : null);
-		SubversionSCM svn = new SubversionSCM(testConnectivityInfo.getScmRepository().getUrl(), credentialsId);
-		try {
-			svn.getDescriptor().checkRepositoryPath((Item) null, svn.getLocations()[0].getSVNURL(), credentials);
-			result.setStatus(HttpStatus.SC_OK);
-		} catch (SVNException e) {
-			result.setStatus(HttpStatus.SC_NOT_FOUND);
-			result.setBody(e.getMessage());
-		} catch (Exception e) {
-			result.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-			result.setBody(e.getMessage());
-		}
-	}
-
-	@Override
-	public String getChangeSetSrc(ChangeLogSet.AffectedFile affectedFile) {
-		return null;
-	}
-
-	@Override
-	public String getChangeSetDst(ChangeLogSet.AffectedFile affectedFile) {
-		return null;
-	}
+        String credentialsId = (credentials != null ? credentials.getId() : null);
+        SubversionSCM svn = new SubversionSCM(testConnectivityInfo.getScmRepository().getUrl(), credentialsId);
+        try {
+            svn.getDescriptor().checkRepositoryPath((Item) null, svn.getLocations()[0].getSVNURL(), credentials);
+            result.setStatus(HttpStatus.OK.getCode());
+        } catch (SVNException e) {
+            result.setStatus(HttpStatus.NOT_FOUND.getCode());
+            result.setBody(e.getMessage());
+        } catch (Exception e) {
+            result.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.getCode());
+            result.setBody(e.getMessage());
+        }
+    }
 }

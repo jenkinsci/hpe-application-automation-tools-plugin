@@ -45,6 +45,7 @@ public class Args {
     
     private final String _url;
     private final String _domain;
+    private final String clientType;
     private final String _project;
     private final String _username;
     private final String _password;
@@ -60,6 +61,7 @@ public class Args {
     public Args(
             String url,
             String domain,
+            String clientType,
             String project,
             String username,
             String password,
@@ -73,6 +75,7 @@ public class Args {
         
         _url = url;
         _domain = domain;
+        this.clientType = clientType;
         _project = project;
         _username = username;
         _password = password;
@@ -84,6 +87,8 @@ public class Args {
         _environmentConfigurationId = environmentConfigurationId;
         _cdaDetails = cdaDetails;
     }
+
+    public String getClientType() { return clientType; }
     
     public String getUrl() {
         

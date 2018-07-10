@@ -61,6 +61,7 @@ public class MockSseModel extends SseModel {
                 almUserName,
                 almPassword,
                 almDomain,
+                null,
                 almProject,
                 runType,
                 almEntityId,
@@ -68,7 +69,8 @@ public class MockSseModel extends SseModel {
                 description,
                 postRunAction,
                 environmentConfigurationId,
-                cdaDetails);
+                cdaDetails,
+                null);
     }
     
     @Override

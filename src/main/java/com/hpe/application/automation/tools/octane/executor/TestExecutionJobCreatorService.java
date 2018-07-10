@@ -39,15 +39,13 @@ import com.hp.octane.integrations.dto.executor.TestExecutionInfo;
 import com.hp.octane.integrations.dto.executor.TestSuiteExecutionInfo;
 import com.hp.octane.integrations.dto.executor.impl.TestingToolType;
 import com.hp.octane.integrations.dto.scm.SCMRepository;
-import com.hp.octane.integrations.util.SdkConstants;
 import com.hpe.application.automation.tools.model.ResultsPublisherModel;
 import com.hpe.application.automation.tools.octane.actions.UFTTestDetectionPublisher;
-import com.hpe.application.automation.tools.octane.executor.scmmanager.ScmPluginFactory;
 import com.hpe.application.automation.tools.octane.executor.scmmanager.ScmPluginHandler;
+import com.hpe.application.automation.tools.octane.executor.scmmanager.ScmPluginFactory;
 import com.hpe.application.automation.tools.results.RunResultRecorder;
 import com.hpe.application.automation.tools.run.RunFromFileBuilder;
 import hudson.model.*;
-import hudson.tasks.BuildWrapper;
 import hudson.tasks.LogRotator;
 import hudson.triggers.SCMTrigger;
 import jenkins.model.BuildDiscarder;
@@ -130,7 +128,7 @@ public class TestExecutionJobCreatorService {
             FreeStyleProject proj = (FreeStyleProject) Jenkins.getInstance().getItem(projectName);
             if (proj == null) {
                 proj = Jenkins.getInstance().createProject(FreeStyleProject.class, projectName);
-                proj.setDescription(String.format("This job was created by the Micro Focus Application Automation Tools plugin for running %s tests. It is associated with ALM Octane test suite #%s.",
+                proj.setDescription(String.format("This job was created by the HPE Application Automation Tools plugin for running %s tests. It is associated with ALM Octane test suite #%s.",
                         suiteExecutionInfo.getTestingToolType().toString(), suiteExecutionInfo.getSuiteId()));
             }
 
@@ -139,7 +137,6 @@ public class TestExecutionJobCreatorService {
             addConstantParameter(proj, UftConstants.SUITE_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteId(), "ALM Octane test suite ID");
             addStringParameter(proj, UftConstants.SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the ALM Octane test suite run to associate with the test run results. Provided by ALM Octane when running a planned suite run.\nOtherwise, leave this parameter empty. ALM Octane creates a new  test suite run for the new results.");
             addAssignedNode(proj);
-            addTimestamper(proj);
 
             //add build action
             String fsTestsData = prepareMtbxData(suiteExecutionInfo.getTests());
@@ -204,13 +201,12 @@ public class TestExecutionJobCreatorService {
                 Element testElement = doc.createElement("Test");
                 String packageAndTestName = (StringUtils.isNotEmpty(test.getPackageName()) ? test.getPackageName() + "\\" : "") + test.getTestName();
                 testElement.setAttribute("name", packageAndTestName);
-                String path = "${WORKSPACE}\\${CHECKOUT_SUBDIR}" + (StringUtils.isEmpty(test.getPackageName()) ? "" : SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER + test.getPackageName()) +
-                        SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER + test.getTestName();
+                String path = "${WORKSPACE}\\${CHECKOUT_SUBDIR}" + (StringUtils.isEmpty(test.getPackageName()) ? "" : OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getPackageName()) + OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getTestName();
                 testElement.setAttribute("path", path);
 
                 if (StringUtils.isNotEmpty(test.getDataTable())) {
                     Element dataTableElement = doc.createElement("DataTable");
-                    dataTableElement.setAttribute("path", "${WORKSPACE}\\${CHECKOUT_SUBDIR}" + SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER + test.getDataTable());
+                    dataTableElement.setAttribute("path", "${WORKSPACE}\\${CHECKOUT_SUBDIR}" + OctaneConstants.General.WINDOWS_PATH_SPLITTER + test.getDataTable());
                     testElement.appendChild(dataTableElement);
                 }
 
@@ -276,7 +272,7 @@ public class TestExecutionJobCreatorService {
             if (proj == null) {
 
                 proj = Jenkins.getInstance().createProject(FreeStyleProject.class, discoveryJobName);
-                proj.setDescription(String.format("This job was created by the Micro Focus Application Automation Tools plugin for discovery of %s tests. It is associated with ALM Octane testing tool connection #%s.",
+                proj.setDescription(String.format("This job was created by the HPE Application Automation Tools plugin for discovery of %s tests. It is associated with ALM Octane testing tool connection #%s.",
                         discoveryInfo.getTestingToolType().toString(), discoveryInfo.getExecutorId()));
             }
 
@@ -290,7 +286,7 @@ public class TestExecutionJobCreatorService {
             SCMTrigger scmTrigger = new SCMTrigger("H/2 * * * *");//H/2 * * * * : once in two minutes
             proj.addTrigger(scmTrigger);
             delayPollingStart(proj, scmTrigger);
-            addTimestamper(proj);
+
 
             //add post-build action - publisher
             UFTTestDetectionPublisher uftTestDetectionPublisher = null;
@@ -311,22 +307,6 @@ public class TestExecutionJobCreatorService {
         } catch (IOException | ANTLRException e) {
             logger.error("Failed to  create DiscoveryJob : " + e.getMessage());
             return null;
-        }
-    }
-
-    private static void addTimestamper(FreeStyleProject proj) {
-        try {
-            Descriptor<BuildWrapper> wrapperDescriptor = Jenkins.getInstance().getBuildWrapper("TimestamperBuildWrapper");
-            if (wrapperDescriptor != null) {
-                BuildWrapper wrapper = proj.getBuildWrappersList().get(wrapperDescriptor);
-                if (wrapper == null) {
-                    wrapper = wrapperDescriptor.newInstance(null, null);
-                    proj.getBuildWrappersList().add(wrapper);
-                }
-
-            }
-        } catch (Descriptor.FormException e) {
-            logger.error("Failed to  addTimestamper : " + e.getMessage());
         }
     }
 

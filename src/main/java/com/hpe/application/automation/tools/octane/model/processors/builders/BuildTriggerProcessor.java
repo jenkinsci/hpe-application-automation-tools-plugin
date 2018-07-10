@@ -63,6 +63,6 @@ public class BuildTriggerProcessor extends AbstractBuilderProcessor {
 				logger.warn("encountered null project reference; considering it as corrupted configuration and skipping");
 			}
 		}
-		super.phases.add(ModelFactory.createStructurePhase("downstream", false, items, processedJobs));
+		super.phases.add(ModelFactory.createStructurePhase("downstream", false, items));
 	}
 }

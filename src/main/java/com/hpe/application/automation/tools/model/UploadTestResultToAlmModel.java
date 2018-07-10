@@ -64,6 +64,7 @@ public class UploadTestResultToAlmModel {
 	private String almUserName;
 	private Secret almPassword;
 	private String almDomain;
+	private String clientType;
 	private String almProject;
 	private String almTimeout;
 	private String almTestFolder;
@@ -75,13 +76,14 @@ public class UploadTestResultToAlmModel {
 
 	@DataBoundConstructor
 	public UploadTestResultToAlmModel(String almServerName, String almUserName,
-			String almPassword, String almDomain, String almProject, String testingFramework, String testingTool,
+			String almPassword, String almDomain, String clientType, String almProject, String testingFramework, String testingTool,
 			String almTestFolder , String almTestSetFolder, String almTimeout, String testingResultFile, String jenkinsServerUrl) {
 
 		this.almServerName = almServerName;
 		this.almUserName = almUserName;
 		this.almPassword = Secret.fromString(almPassword);
 		this.almDomain = almDomain;
+		this.clientType = clientType;
 		this.almProject = almProject;
 		
 		this.almTimeout=almTimeout;
@@ -101,6 +103,10 @@ public class UploadTestResultToAlmModel {
 
 	public String getAlmDomain() {
 		return almDomain;
+	}
+
+	public String getClientType() {
+		return clientType;
 	}
 
 	public String getAlmPassword() {
@@ -228,6 +234,7 @@ public class UploadTestResultToAlmModel {
 				  almUserName + "," +
 				  almPassword + "," +
 				  almDomain + "," +
+				  clientType + "," +
 				  almProject + "," +
 				  almTimeout + "," +
 				  almTestFolder + "," +

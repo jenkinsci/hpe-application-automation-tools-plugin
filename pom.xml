@@ -41,7 +41,7 @@
 	</parent>
 
 	<artifactId>hp-application-automation-tools-plugin</artifactId>
-	<version>5.4.3-beta-SNAPSHOT</version>
+	<version>5.3.5-beta-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>HPE Application Automation Tools</name>
 	<description>The plugin integrates Jenkins with the following MicroFocus products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
@@ -98,18 +98,12 @@
 	</organization>
 
 	<developers>
-        <developer>
-			<id>grount</id>
-			<name>Daniel Gront</name>
-			<roles>
-				<role>Global Owner</role>
-			</roles>
-		</developer>
 		<developer>
 			<id>YafimK</id>
 			<name>Fima (Yafim) Kazak</name>
+			<email>kazak@hpe.com</email>
 			<roles>
-				<role>Global owner and LoadRunner Dev (retired)</role>
+				<role>Global owner and LoadRunner Dev</role>
 			</roles>
 		</developer>
 		<developer>
@@ -464,14 +458,14 @@
 		<dependency>
 			<artifactId>integrations-sdk</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.5.20</version>
+			<version>1.5.6</version>
 		</dependency>
 
 		<!-- Obsolete TO BE REMOVED -->
 		<dependency>
 			<artifactId>mqm-rest-client</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.4.25</version>
+			<version>1.4.23</version>
 		</dependency>
 
 		<!-- org.jenkins-ci.main -->
@@ -510,7 +504,7 @@
 		<dependency>
 			<groupId>org.jenkins-ci.plugins.pipeline-stage-view</groupId>
 			<artifactId>pipeline-rest-api</artifactId>
-			<version>1.7</version>
+			<version>2.10</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -587,7 +581,12 @@
 			<artifactId>tape</artifactId>
 			<version>1.2.3</version>
 		</dependency>
-	
+
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>3.7</version>
+		</dependency>
 
 		<dependency>
 			<groupId>com.seitenbau.jenkins.plugins</groupId>
@@ -596,8 +595,18 @@
 			<optional>true</optional>
 		</dependency>
 
-	
-	
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20090211</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jdom</groupId>
+			<artifactId>jdom2</artifactId>
+			<version>2.0.4</version>
+		</dependency>
+
 		<!--Test-->
 
 		<dependency>

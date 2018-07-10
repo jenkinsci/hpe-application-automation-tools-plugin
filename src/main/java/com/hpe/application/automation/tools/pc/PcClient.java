@@ -48,7 +48,6 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.*;
 import java.util.*;
-import java.text.*;
 
 import hudson.console.HyperlinkNote;
 import org.apache.commons.io.IOUtils;
@@ -61,8 +60,6 @@ import com.hpe.application.automation.tools.run.PcBuilder;
 
 public class PcClient {
 
-    private SimpleDateFormat _simpleDateFormat = new SimpleDateFormat ("E MM.dd.yyyy 'at' hh:mm:ss a zzz");
-
     private PcModel model;
     private PcRestProxy restProxy;
     private boolean loggedIn;
@@ -73,12 +70,12 @@ public class PcClient {
             model = pcModel;
 
             if(model.getProxyOutURL(true) != null && !model.getProxyOutURL(true).isEmpty()){
-                logger.println(String.format("%s - Using proxy: %s", _simpleDateFormat.format(new Date()), model.getProxyOutURL(true)));
+                logger.println("Using proxy: " + model.getProxyOutURL(true));
             }
             restProxy = new PcRestProxy(model.isHTTPSProtocol(),model.getPcServerName(true), model.getAlmDomain(true), model.getAlmProject(true), model.getProxyOutURL(true),model.getProxyOutUser(true),model.getProxyOutPassword(true));
             this.logger = logger;
         }catch (PcException e){
-            logger.println(String.format("%s - %s", _simpleDateFormat.format(new Date()), e.getMessage()));
+            logger.println(e.getMessage());
         }
 
     }
@@ -92,18 +89,27 @@ public class PcClient {
     public boolean login() {
         try {
             String user = model.getAlmUserName(true);
-            logger.println(String.format("%s - Trying to login\n[PCServer='%s://%s', User='%s']", _simpleDateFormat.format(new Date()), model.isHTTPSProtocol(), model.getPcServerName(true), user));
+            logger.println(String.format("Trying to login\n[PCServer='%s://%s', User='%s']",model.isHTTPSProtocol(), model.getPcServerName(true), user));
             loggedIn = restProxy.authenticate(user, model.getAlmPassword(true).toString());
         } catch (PcException e) {
-            logger.println(String.format("%s - %s", _simpleDateFormat.format(new Date()), e.getMessage()));
+            logger.println(e.getMessage());
           //  stackTraceToString(e);
         } catch (Exception e) {
-            logger.println(String.format("%s - %s", _simpleDateFormat.format(new Date()), e));
+            logger.println(e);
            // stackTraceToString(e);
         }
-        logger.println(String.format("%s - Login %s",_simpleDateFormat.format(new Date()), loggedIn ? "succeeded" : "failed"));
+        logger.println(String.format("Login %s", loggedIn ? "succeeded" : "failed"));
         return loggedIn;
     }
+
+//    public void stackTraceToString(Throwable e) {
+//        StringBuilder sb = new StringBuilder();
+//        logger.println("DEBUGMSG - STACKTRACE");
+//        for (StackTraceElement element : e.getStackTrace()) {
+//            logger.println("DEBUGMSG - " + element.toString());
+//        }
+//    }
+
 
     public boolean isLoggedIn() {
 
@@ -119,14 +125,14 @@ public class PcClient {
         int testInstance = getCorrectTestInstanceID(testID);
         setCorrectTrendReportID();
 
-        logger.println(String.format("%s - \nExecuting Load Test: \n====================\nTest ID: %s \nTest Instance ID: %s \nTimeslot Duration: %s \nPost Run Action: %s \nUse VUDS: %s\n====================\n", _simpleDateFormat.format(new Date()), Integer.parseInt(model.getTestId(true)), testInstance, model.getTimeslotDuration() ,model.getPostRunAction().getValue(),model.isVudsMode()));
+        logger.println(String.format("\nExecuting Load Test: \n====================\nTest ID: %s \nTest Instance ID: %s \nTimeslot Duration: %s \nPost Run Action: %s \nUse VUDS: %s\n====================\n", Integer.parseInt(model.getTestId(true)), testInstance, model.getTimeslotDuration() ,model.getPostRunAction().getValue(),model.isVudsMode()));
 //        logger.println("Sending run request:\n" + model.runParamsToString());
         PcRunResponse response = restProxy.startRun(testID,
                 testInstance,
                 model.getTimeslotDuration(),
                 model.getPostRunAction().getValue(),
                 model.isVudsMode());
-        logger.println(String.format("%s - \nRun started (TestID: %s, RunID: %s, TimeslotID: %s)\n",_simpleDateFormat.format(new Date()),
+        logger.println(String.format("\nRun started (TestID: %s, RunID: %s, TimeslotID: %s)\n",
                 response.getTestID(), response.getID(), response.getTimeslotID()));
         return response.getID();
     }
@@ -136,33 +142,33 @@ public class PcClient {
             try {
 
 
-            logger.println(String.format("%s - Searching for available Test Instance", _simpleDateFormat.format(new Date())));
+            logger.println("Searching for available Test Instance");
             PcTestInstances pcTestInstances = restProxy.getTestInstancesByTestId(testID);
-            int testInstanceID;
+            int testInstanceID = 0;
             if (pcTestInstances != null && pcTestInstances.getTestInstancesList() != null){
                 PcTestInstance pcTestInstance = pcTestInstances.getTestInstancesList().get(pcTestInstances.getTestInstancesList().size()-1);
                 testInstanceID = pcTestInstance.getInstanceId();
-                logger.println(String.format("%s - Found testInstanceId: %s", _simpleDateFormat.format(new Date()), testInstanceID));
+                logger.println("Found testInstanceId: " + testInstanceID);
             }else{
-                logger.println(String.format("%s - Could not find available TestInstanceID, Creating Test Instance.", _simpleDateFormat.format(new Date())));
-                logger.println(String.format("%s - Searching for available TestSet", _simpleDateFormat.format(new Date())));
+                logger.println("Could not find available TestInstanceID, Creating Test Instance.");
+                logger.println("Searching for available TestSet");
                 // Get a random TestSet
                 PcTestSets pcTestSets = restProxy.GetAllTestSets();
                 if (pcTestSets !=null && pcTestSets.getPcTestSetsList() !=null){
                     PcTestSet pcTestSet = pcTestSets.getPcTestSetsList().get(pcTestSets.getPcTestSetsList().size()-1);
                     int testSetID = pcTestSet.getTestSetID();
-                    logger.println(String.format("%s - Creating Test Instance with testID: %s and TestSetID: %s",_simpleDateFormat.format(new Date()), testID,testSetID));
+                    logger.println(String.format("Creating Test Instance with testID: %s and TestSetID: %s", testID,testSetID));
                     testInstanceID = restProxy.createTestInstance(testID,testSetID);
-                    logger.println(String.format("%s - Test Instance with ID : %s has been created successfully.", _simpleDateFormat.format(new Date()), testInstanceID));
+                    logger.println(String.format("Test Instance with ID : %s has been created successfully.", testInstanceID));
                 }else{
                     String msg = "No TestSetID available in project, please create a testset from Performance Center UI";
-                    logger.println(String.format("%s - %s", _simpleDateFormat.format(new Date()), msg));
+                    logger.println(msg);
                     throw new PcException(msg);
                 }
             }
             return testInstanceID;
             } catch (Exception e){
-                logger.println(String.format("%s - getCorrectTestInstanceID failed, reason: %s",_simpleDateFormat.format(new Date()), e));
+                logger.println(String.format("getCorrectTestInstanceID failed, reason: %s",e));
                 return Integer.parseInt(null);
             }
         }
@@ -233,43 +239,26 @@ public class PcClient {
         RunState[] states = {RunState.BEFORE_COLLATING_RESULTS,RunState.BEFORE_CREATING_ANALYSIS_DATA};
         PcRunResponse response = null;
         RunState lastState = RunState.UNDEFINED;
-        int threeStrikes = 3;
         do {
-            try {
-
-                if (threeStrikes < 3) {
-                    logger.println(String.format("%s - Cannot get response from PC about the state of RunID: %s %s time(s) consecutively",_simpleDateFormat.format(new Date()), runId, (3 - threeStrikes)));
-                    if(threeStrikes==0) {
-                        logger.println(String.format("%s - stopping monitoring on RunID: %s", _simpleDateFormat.format(new Date()), runId));
-                        break;
-                    }
-                    Thread.sleep(2000);
-                }
-                response = restProxy.getRunData(runId);
-                RunState currentState = RunState.get(response.getRunState());
-                if (lastState.ordinal() < currentState.ordinal()) {
-                    lastState = currentState;
-                    logger.println(String.format("%s - RunID: %s - State = %s",_simpleDateFormat.format(new Date()), runId, currentState.value()));
-                }
-
-                // In case we are in state before collate or before analyze, we will wait 1 minute for the state to change otherwise we exit
-                // because the user probably stopped the run from PC or timeslot has reached the end.
-                if (Arrays.asList(states).contains(currentState)) {
-                    counter++;
-                    Thread.sleep(1000);
-                    if (counter > 60) {
-                        logger.println(String.format("%s - RunID: %s  - Stopped from Performance Center side with state = %s",_simpleDateFormat.format(new Date()), runId, currentState.value()));
-                        break;
-                    }
-                } else {
-                    counter = 0;
-                    Thread.sleep(interval);
-                }
-                threeStrikes = 3;
+            response = restProxy.getRunData(runId);
+            RunState currentState = RunState.get(response.getRunState());
+            if (lastState.ordinal() < currentState.ordinal()) {
+                lastState = currentState;
+                logger.println(String.format("RunID: %s - State = %s", runId, currentState.value()));
             }
-            catch(Exception e)
-            {
-                threeStrikes--;
+
+            // In case we are in state before collate or before analyze, we will wait 1 minute for the state to change otherwise we exit
+            // because the user probably stopped the run from PC or timeslot has reached the end.
+            if (Arrays.asList(states).contains(currentState)){
+                counter++;
+                Thread.sleep(1000);
+                if(counter > 60 ){
+                    logger.println(String.format("RunID: %s  - Stopped from Performance Center side with state = %s", runId, currentState.value()));
+                    break;
+                }
+            }else{
+                counter = 0;
+                Thread.sleep(interval);
             }
         } while (lastState.ordinal() < completionState.ordinal());
         return response;
@@ -283,7 +272,7 @@ public class PcClient {
                     File dir = new File(reportDirectory);
                     dir.mkdirs();
                     String reportArchiveFullPath = dir.getCanonicalPath() + IOUtils.DIR_SEPARATOR + PcBuilder.pcReportArchiveName;
-                    logger.println(String.format("%s - Publishing analysis report", _simpleDateFormat.format(new Date())));
+                    logger.println("Publishing analysis report");
                     restProxy.GetRunResultData(runId, result.getID(), reportArchiveFullPath);
                     FilePath fp = new FilePath(new File(reportArchiveFullPath));
                     fp.unzip(fp.getParent());
@@ -294,7 +283,7 @@ public class PcClient {
                 }
             }
         }
-        logger.println(String.format("%s - Failed to get run report", _simpleDateFormat.format(new Date())));
+        logger.println("Failed to get run report");
         return null;
     }
 
@@ -307,25 +296,25 @@ public class PcClient {
             logoutSucceeded = restProxy.logout();
             loggedIn = !logoutSucceeded;
         } catch (PcException e) {
-            logger.println(String.format("%s - %s", _simpleDateFormat.format(new Date()), e.getMessage()));
+            logger.println(e.getMessage());
         } catch (Exception e) {
             logger.println(e);
         }
-        logger.println(String.format("%s - Logout %s",_simpleDateFormat.format(new Date()), logoutSucceeded ? "succeeded" : "failed"));
+        logger.println(String.format("Logout %s", logoutSucceeded ? "succeeded" : "failed"));
         return logoutSucceeded;
     }
 
     public boolean stopRun(int runId) {
         boolean stopRunSucceeded = false;
         try {
-            logger.println(String.format("%s - Stopping run", _simpleDateFormat.format(new Date())));
+            logger.println("Stopping run");
             stopRunSucceeded = restProxy.stopRun(runId, "stop");
         } catch (PcException e) {
-            logger.println(String.format("%s - %s", _simpleDateFormat.format(new Date()), e.getMessage()));
+            logger.println(e.getMessage());
         } catch (Exception e) {
-            logger.println(String.format("%s - %s", _simpleDateFormat.format(new Date()), e));
+            logger.println(e);
         }
-        logger.println(String.format("%s - Stop run %s",_simpleDateFormat.format(new Date()), stopRunSucceeded ? "succeeded" : "failed"));
+        logger.println(String.format("Stop run %s", stopRunSucceeded ? "succeeded" : "failed"));
         return stopRunSucceeded;
     }
 
@@ -333,9 +322,9 @@ public class PcClient {
         try {
             return restProxy.getRunEventLog(runId);
         } catch (PcException e) {
-            logger.println(String.format("%s - " + e.getMessage(), _simpleDateFormat.format(new Date())));
+            logger.println(e.getMessage());
         } catch (Exception e) {
-            logger.println(String.format("%s - %s",_simpleDateFormat.format(new Date()), e));
+            logger.println(e);
         }
         return null;
     }
@@ -344,16 +333,16 @@ public class PcClient {
     {
 
         TrendReportRequest trRequest = new TrendReportRequest(model.getAlmProject(true), runId, null);
-        logger.println(String.format("%s - Adding run: %s to trend report: %s", _simpleDateFormat.format(new Date()), runId, trendReportId));
+        logger.println("Adding run: " + runId + " to trend report: " + trendReportId);
         try {
             restProxy.updateTrendReport(trendReportId, trRequest);
-            logger.println(String.format("%s - Publishing run: %s on trend report: %s", _simpleDateFormat.format(new Date()), runId, trendReportId));
+            logger.println("Publishing run: " + runId + " on trend report: " + trendReportId);
         }
         catch (PcException e) {
-            logger.println(String.format("%s - Failed to add run to trend report: %s", _simpleDateFormat.format(new Date()), e.getMessage()));
+            logger.println("Failed to add run to trend report: " + e.getMessage());
         }
         catch (IOException e) {
-            logger.println(String.format("%s - Failed to add run to trend report: Problem connecting to PC Server", _simpleDateFormat.format(new Date())));
+            logger.println("Failed to add run to trend report: Problem connecting to PC Server");
         }
     }
 
@@ -374,7 +363,7 @@ public class PcClient {
 
                 if (result.getState().equals(PcBuilder.TRENDED) || result.getState().equals(PcBuilder.ERROR)){
                     publishEnded = true;
-                    logger.println(String.format("%s - Run: %s publishing status: %s", _simpleDateFormat.format(new Date()), runId, result.getState()));
+                    logger.println("Run: " + runId + " publishing status: "+ result.getState());
                     break;
                 }else{
                     Thread.sleep(5000);
@@ -393,7 +382,7 @@ public class PcClient {
 
 
         try {
-            logger.println(String.format("%s - Downloading trend report: %s in PDF format", _simpleDateFormat.format(new Date()), trendReportId));
+            logger.println("Downloading trend report: " + trendReportId + " in PDF format");
             InputStream in = restProxy.getTrendingPDF(trendReportId);
             File dir = new File(directory);
             if(!dir.exists()){
@@ -402,11 +391,11 @@ public class PcClient {
             String filePath = directory + IOUtils.DIR_SEPARATOR + "trendReport" + trendReportId + ".pdf";
             Path destination = Paths.get(filePath);
             Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
-            logger.println(String.format("%s - Trend report: %s was successfully downloaded", _simpleDateFormat.format(new Date()), trendReportId));
+            logger.println("Trend report: " + trendReportId + " was successfully downloaded");
         }
         catch (Exception e) {
 
-            logger.println(String.format("%s - Failed to download trend report: %s", _simpleDateFormat.format(new Date()), e.getMessage()));
+            logger.println("Failed to download trend report: " + e.getMessage());
             throw new PcException(e.getMessage());
         }
 
@@ -418,7 +407,7 @@ public class PcClient {
 
         if (filePath == null){return;}
    //     return String.format( HyperlinkNote.encodeTo(filePath, "View trend report " + trendReportId));
-        logger.println(String.format("%s - %s",_simpleDateFormat.format(new Date()), HyperlinkNote.encodeTo(filePath, "View trend report " + trendReportId)));
+        logger.println( HyperlinkNote.encodeTo(filePath, "View trend report " + trendReportId));
 
     }
 
@@ -462,7 +451,7 @@ public class PcClient {
                   //  logger.println("No such method exception: " + e);
                 }
                 catch (Exception e){
-                    logger.println(String.format("%s - Error on getTrendReportByXML: %s ", _simpleDateFormat.format(new Date()), e));
+                    logger.println("Error on getTrendReportByXML: " + e);
                 }
             }
 

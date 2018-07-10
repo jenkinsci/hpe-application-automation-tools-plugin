@@ -333,7 +333,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         
         @Override
         public String getDisplayName() {
-            return "Execute functional tests from HPE ALM";
+            return "Execute HPE functional tests from HPE ALM";
         }
         
         public boolean hasAlmServers() {

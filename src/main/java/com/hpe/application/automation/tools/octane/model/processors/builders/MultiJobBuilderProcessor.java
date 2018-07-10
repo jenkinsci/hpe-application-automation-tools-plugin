@@ -68,6 +68,6 @@ public class MultiJobBuilderProcessor extends AbstractBuilderProcessor {
 				items.add(tmpProject);
 			}
 		}
-		super.phases.add(ModelFactory.createStructurePhase(b.getPhaseName(), true, items, processedJobs));
+		super.phases.add(ModelFactory.createStructurePhase(b.getPhaseName(), true, items));
 	}
 }

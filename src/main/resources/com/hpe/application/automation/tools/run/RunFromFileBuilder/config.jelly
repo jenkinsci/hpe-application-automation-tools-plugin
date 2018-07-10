@@ -88,9 +88,6 @@
 			<f:entry title="Errors to Ignore" field="ignoreErrorStrings">
 				<f:textarea name="runfromfs.ignoreErrorStrings" value="${instance.runFromFileModel.ignoreErrorStrings}"  />
 			</f:entry>
-			<f:entry title="Display Controller" field="displayController">
-                <f:checkbox name="runfromfs.displayController" checked="${instance.runFromFileModel.displayController}"/>
-            </f:entry>
     	</f:section>
     </f:advanced>
 

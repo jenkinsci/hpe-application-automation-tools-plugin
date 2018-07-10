@@ -41,6 +41,7 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 		AlmRestInfo loginInfo = new AlmRestInfo(
 				"http://localhost:8085/qcbin",
 				"DEFAULT",
+				null,
 				"testexternal1",
 				"sa",
 				"",
@@ -66,6 +67,7 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 		AlmRestInfo loginInfo = new AlmRestInfo(
 				"http://localhost:8085/qcbin",
 				"DEFAULT",
+				null,
 				"testexternal1",
 				"sa",
 				"",
@@ -91,6 +93,7 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 		AlmRestInfo loginInfo = new AlmRestInfo(
 				"http://localhost:8085/qcbin",
 				"DEFAULT",
+				null,
 				"testexternal1",
 				"sa",
 				"",

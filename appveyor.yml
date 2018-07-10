@@ -1,0 +1,91 @@
+version: '{branch}.{build}'
+
+pull_requests:
+
+  do_not_increment_build_number: true
+
+skip_branch_with_pr: true
+
+image: Visual Studio 2015
+
+init:
+
+- cmd: >-
+
+    SET PATH=C:\maven\apache-maven-3.3.9\bin;%JAVA_HOME%\bin;%PATH%;C:\maven\bin
+
+
+
+    SET MAVEN_OPTS=-XX:MaxPermSize=2g -Xmx4g
+
+
+
+    SET JAVA_OPTS=-XX:MaxPermSize=2g -Xmx4g
+
+install:
+
+- ps: >-
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          if (!(Test-Path -Path "C:\maven" )) {
+
+            (new-object System.Net.WebClient).DownloadFile(
+
+              'http://www.us.apache.org/dist/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.zip',
+
+              'C:\apache-maven-3.3.9-bin.zip'
+
+            )
+
+            [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\apache-maven-3.3.9-bin.zip", "C:\maven")
+
+          }
+
+cache:
+
+- C:\maven\
+
+- C:\Users\appveyor\.m2
+
+build_script:
+
+- cmd: >-
+
+    set MAVEN_HOME="C:\maven\apache-maven-3.3.9"
+
+
+
+    mvn clean package -U -Dmaven.javadoc.skip=true
+
+test: off
+
+artifacts:
+
+- path: '\target\hp-application-automation-tools-plugin.hpi'
+
+  name: hp-application-automation-tools-plugin.hpi
+
+deploy: off
+
+notifications:
+
+- provider: GitHubPullRequest
+
+  on_build_success: true
+
+  on_build_failure: true
+
+  on_build_status_changed: true
+
+- provider: Slack
+
+  incoming_webhook: https://hooks.slack.com/services/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
+
+  channel: plugin_automation
+
+  on_build_success: true
+
+  on_build_failure: true
+
+  on_build_status_changed: true

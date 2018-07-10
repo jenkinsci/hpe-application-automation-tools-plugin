@@ -76,9 +76,13 @@
         <f:entry name="sse.credentialsId" field="credentialsId" title="ALM Credentials">
 	        <c:select/>
 	    </f:entry>
-	    
+
         <f:entry title="Domain" field="almDomain">
             <f:textbox name="sse.almDomain" value="${instance.sseModel.almDomain}"/>
+        </f:entry>
+
+        <f:entry title="Client type" field="clientType">
+            <f:textbox name="sse.clientType" value="${instance.sseModel.clientType}"/>
         </f:entry>
 	    
         <f:entry title="Project" field="almProject">

@@ -54,6 +54,7 @@ public class ArgsFactory {
                 
                 model.getAlmServerUrl(),
                 model.getAlmDomain(),
+                model.getClientType(),
                 model.getAlmProject(),
                 model.getAlmUserName(),
                 model.getAlmPassword(),
@@ -72,6 +73,7 @@ public class ArgsFactory {
                 
                 model.getAlmServerUrl(),
                 Util.replaceMacro(model.getAlmDomain(), buildResolver),
+                model.getClientType(),
                 Util.replaceMacro(model.getAlmProject(), buildResolver),
                 Util.replaceMacro(model.getAlmUserName(), buildResolver),
                 model.getAlmPassword(),

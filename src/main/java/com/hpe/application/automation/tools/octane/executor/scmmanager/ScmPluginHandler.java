@@ -38,7 +38,6 @@ import com.hp.octane.integrations.dto.executor.TestConnectivityInfo;
 import com.hp.octane.integrations.dto.scm.SCMRepository;
 import hudson.model.FreeStyleProject;
 import hudson.model.Job;
-import hudson.scm.ChangeLogSet;
 
 import java.io.IOException;
 
@@ -49,8 +48,4 @@ public interface ScmPluginHandler {
     String getSharedCheckOutDirectory(Job j);
 
     void checkRepositoryConnectivity(TestConnectivityInfo testConnectivityInfo, StandardCredentials credentials, OctaneResponse result);
-
-    String getChangeSetSrc(ChangeLogSet.AffectedFile affectedFile);
-
-    String getChangeSetDst(ChangeLogSet.AffectedFile affectedFile);
 }

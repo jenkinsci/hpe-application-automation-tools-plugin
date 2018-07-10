@@ -36,5 +36,5 @@
 -->
 <?jelly escape-by-default='true'?>
 <div>
-  This plugin enables integration with ALM, ALM Octane, Unified Functional Testing, LoadRunner, and Performance Center.
+  This plugin enables integration with HPE products, such as: ALM, ALM Octane, Unified Functional Testing, LoadRunner, and Performance Center.
 </div>

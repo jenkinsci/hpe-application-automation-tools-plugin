@@ -34,6 +34,7 @@
 package com.hpe.application.automation.tools.sse.sdk.authenticator;
 
 import com.hpe.application.automation.tools.common.SSEException;
+import com.hpe.application.automation.tools.sse.sdk.Args;
 import com.hpe.application.automation.tools.sse.sdk.Client;
 import com.hpe.application.automation.tools.sse.sdk.Logger;
 import com.hpe.application.automation.tools.sse.sdk.ResourceAccessLevel;
@@ -58,18 +59,14 @@ public final class AuthenticationTool {
     static {
         authenticators = new ArrayList<>();
         authenticators.add(new RestAuthenticator());
-        /**
-         * Mute RestAuthenticatorSaas for it's redundant after the improvement of RestAuthenticator.
-         * authenticators.add(new RestAuthenticatorSaas());
-         */
     }
 
     /**
      * Try authenticate use a list of authenticators and then create session.
      */
-    public static boolean authenticate(Client client, String username, String password, String url, Logger logger) {
+    public static boolean authenticate(Client client, String username, String password, String url, String clientType, Logger logger) {
         if (login(client, username, password, url, logger)) {
-            appendQCSessionCookies(client, logger);
+            appendQCSessionCookies(client, clientType, logger);
             return true;
         }
         return false;
@@ -93,17 +90,27 @@ public final class AuthenticationTool {
         return result;
     }
 
-    private static void appendQCSessionCookies(Client client, Logger logger) {
+    private static void appendQCSessionCookies(Client client, String clientType, Logger logger) {
         logger.log("Creating session...");
         // issue a post request so that cookies relevant to the QC Session will be added to the RestClient
         Response response =
                 client.httpPost(
                         client.build("rest/site-session"),
-                        new byte[1],    // For some server would require post request has a Content-Length.
+                        generateClientTypeData(clientType),
                         null,
                         ResourceAccessLevel.PUBLIC);
         if (!response.isOk()) {
             throw new SSEException("Cannot append QCSession cookies", response.getFailure());
+        }
+    }
+
+    private static byte[] generateClientTypeData(String clientType) {
+        if (clientType !=null && !clientType.isEmpty()) {
+            String data = String.format("<session-parameters><client-type>%s</client-type></session-parameters>", clientType);
+            return data.getBytes();
+        }
+        else {
+            return new byte[1]; // For some server requires post request has a Content-Length.
         }
     }
 }

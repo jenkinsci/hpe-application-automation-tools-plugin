@@ -48,6 +48,7 @@ import com.hpe.application.automation.tools.model.AlmServerSettingsModel;
 import com.hpe.application.automation.tools.model.CdaDetails;
 import com.hpe.application.automation.tools.model.EnumDescription;
 import com.hpe.application.automation.tools.model.SseModel;
+import com.hpe.application.automation.tools.model.SseProxySettings;
 import com.hpe.application.automation.tools.settings.AlmServerSettingsBuilder;
 import com.hpe.application.automation.tools.sse.result.model.junit.Testcase;
 import com.hpe.application.automation.tools.sse.result.model.junit.Testsuite;
@@ -99,6 +100,7 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
     
     private String almServerName;
     private String credentialsId;
+    private String clientType;
     private String almDomain;
     private String almProject;
     private String description;
@@ -108,10 +110,12 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
     private String postRunAction;
     private String environmentConfigurationId;
     private CdaDetails cdaDetails;
+    private SseProxySettings proxySettings;
     
     //Databound setters and getters.
     public String getAlmServerName() { return almServerName; }
     public String getCredentialsId() { return credentialsId; }
+    public String getClientType() { return clientType; }
     public String getAlmDomain() { return almDomain; }
     public String getAlmProject() { return almProject; }
     public String getDescription() { return description; }
@@ -121,7 +125,11 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
     public String getPostRunAction() { return postRunAction; }
     public String getEnvironmentConfigurationId() { return environmentConfigurationId; }
     public CdaDetails getCdaDetails() { return cdaDetails; }
-
+    public SseProxySettings getProxySettings() { return proxySettings; }
+    
+    public boolean isUseProxy() {
+        return proxySettings != null;
+    }
     public boolean isCdaDetailsChecked() {
         return cdaDetails != null;
     }
@@ -140,6 +148,9 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setCdaDetails(CdaDetails cdaDetails) { this.cdaDetails = cdaDetails; }
     
+    @DataBoundSetter
+    public void setProxySettings(SseProxySettings proxySettings) { this.proxySettings = proxySettings; }
+    
     /**
      * Should only contains mandatory properties.
      */
@@ -147,6 +158,7 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
     public SseBuilder(String almServerName,
     		String almProject,
     		String credentialsId,
+    		String clientType,
     		String almDomain,
     		String runType,
     		String almEntityId,
@@ -159,6 +171,7 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
 		this.timeslotDuration = timeslotDuration;
 		this.runType = runType;
 		this.almEntityId = almEntityId;
+		this.clientType = clientType;
 	}
     
     @Override
@@ -168,12 +181,14 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
         PrintStream logger = listener.getLogger();
     	
         UsernamePasswordCredentials credentials = getCredentialsById(credentialsId, build, logger);
+        setProxyCredentials(build);
     	
     	_sseModel = new SseModel(
                 almServerName,
                 credentials.getUsername(),
                 credentials.getPassword().getPlainText(),
                 almDomain,
+                clientType,
                 almProject,
                 runType,
                 almEntityId,
@@ -181,7 +196,8 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
                 description,
                 postRunAction,
                 environmentConfigurationId,
-                cdaDetails);
+                cdaDetails,
+                proxySettings);
     	
         _sseModel.setAlmServerUrl(getServerUrl(_sseModel.getAlmServerName()));
         
@@ -191,6 +207,24 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
         FilePath resultsFilePath = workspace.child(getFileName());
         Result resultStatus = createRunResults(resultsFilePath, testsuites, logger);
         provideStepResultStatus(resultStatus, build, logger);
+    }
+    
+    /**
+     * Get credentials by the credentials id. Then set the user name and password into the SsePoxySetting.
+     */
+    private void setProxyCredentials(Run<?, ?> run) {
+    	if (proxySettings != null && proxySettings.getFsProxyCredentialsId() != null) {
+    		UsernamePasswordCredentials up = CredentialsProvider.findCredentialById(
+    				proxySettings.getFsProxyCredentialsId(),
+            		StandardUsernamePasswordCredentials.class,
+            		run,
+        			URIRequirementBuilder.create().build());
+			
+    		if (up != null) {
+    			proxySettings.setFsProxyUserName(up.getUsername());
+        		proxySettings.setFsProxyPassword(up.getPassword());
+    		}
+    	}
     }
     
     /**
@@ -386,7 +420,7 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
         @Override
         public String getDisplayName() {
             
-            return "Execute tests using ALM Lab Management";
+            return "Execute HPE tests using HPE ALM Lab Management";
         }
         
         public boolean hasAlmServers() {
@@ -487,6 +521,14 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
                             URIRequirementBuilder.create().build())
                     .includeCurrentValue(credentialsId);
 		}
+        
+        /**
+         * To fill in the credentials drop down list which's field is 'FsProxyCredentialsId'.
+         */
+        public ListBoxModel doFillFsProxyCredentialsIdItems(@AncestorInPath Item project,
+                @QueryParameter String credentialsId) {
+        	return doFillCredentialsIdItems(project, credentialsId);
+        }
         
         public FormValidation doCheckCredentialsId(@AncestorInPath Item project,
                 @QueryParameter String url,

@@ -150,16 +150,7 @@ namespace HpToolsLauncher
                     if (xname != null)
                         name = xname.Value;
 
-                    // optional report path attribute
-                    XAttribute xReportPath = GetAttribute(test, "reportPath");
-                    string reportPath = null;
-
-                    if (xReportPath != null)
-                    {
-                        reportPath = xReportPath.Value;
-                    }
-
-                    TestInfo col = new TestInfo(path, name, testGroupName,reportPath);
+                    TestInfo col = new TestInfo(path, name, testGroupName);
                     HashSet<string> paramNames = new HashSet<string>();
 
                     foreach (var param in GetElements(test, "Parameter"))

@@ -100,6 +100,7 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
     private String almServerName;
     private String credentialsId;
     private String almDomain;
+    private String clientType;
     private String almProject;
     private String testingFramework;
     private String testingTool;
@@ -140,6 +141,14 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
 
     public void setAlmDomain(String almDomain) {
         this.almDomain = almDomain;
+    }
+
+    public String getClientType() {
+        return clientType;
+    }
+
+    public void setClientType(String clientType) {
+        this.clientType = clientType;
     }
 
     public String getAlmProject() {
@@ -211,6 +220,7 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
             String almServerName,
             String credentialsId,
             String almDomain,
+            String clientType,
             String almProject,
             String testingFramework,
             String testingTool,
@@ -223,6 +233,7 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
         this.almServerName = almServerName;
         this.credentialsId = credentialsId;
         this.almDomain = almDomain;
+        this.clientType = clientType;
         this.almProject = almProject;
         this.testingFramework = testingFramework;
         this.testingTool = testingTool;
@@ -255,6 +266,7 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
                 credentials.getUsername(),
                 credentials.getPassword().getPlainText(),
                 almDomain,
+                clientType,
                 almProject,
                 testingFramework,
                 testingTool,
@@ -293,6 +305,7 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
     			AlmRestInfo loginInfo = new AlmRestInfo(
     					serverUrl,
     					Util.replaceMacro(uploadTestResultToAlmModel.getAlmDomain(), varResolver),
+                        clientType,
     					Util.replaceMacro(uploadTestResultToAlmModel.getAlmProject(), varResolver),
     					uploadTestResultToAlmModel.getAlmUserName(),
     					uploadTestResultToAlmModel.getAlmPassword(),

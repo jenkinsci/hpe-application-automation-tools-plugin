@@ -33,12 +33,16 @@
 
 package com.hpe.application.automation.tools.octane.actions;
 
-import com.hp.octane.integrations.OctaneSDK;
-import com.hp.octane.integrations.api.EntitiesService;
-import com.hp.octane.integrations.dto.entities.Entity;
-import com.hp.octane.integrations.uft.items.UftTestDiscoveryResult;
+import com.hpe.application.automation.tools.octane.executor.UFTTestDetectionResult;
 import com.hpe.application.automation.tools.octane.executor.UFTTestDetectionService;
+import com.hp.mqm.client.MqmRestClient;
+import com.hp.mqm.client.model.PagedList;
+import com.hp.mqm.client.model.Workspace;
+import com.hpe.application.automation.tools.octane.client.JenkinsMqmRestClientFactory;
+import com.hpe.application.automation.tools.octane.configuration.ConfigurationService;
+import com.hpe.application.automation.tools.octane.configuration.ServerConfiguration;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -50,6 +54,7 @@ import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -64,95 +69,109 @@ import java.util.List;
  */
 public class UFTTestDetectionPublisher extends Recorder {
 
-    private final String workspaceName;
-    private final String scmRepositoryId;
+	private final String workspaceName;
+	private final String scmRepositoryId;
 
-    public String getWorkspaceName() {
-        return workspaceName;
-    }
+	public String getWorkspaceName() {
+		return workspaceName;
+	}
 
-    public String getScmRepositoryId() {
-        return scmRepositoryId;
-    }
+	public String getScmRepositoryId() {
+		return scmRepositoryId;
+	}
 
-    // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
-    @DataBoundConstructor
-    public UFTTestDetectionPublisher(String workspaceName, String scmRepositoryId) {
+	// Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
+	@DataBoundConstructor
+	public UFTTestDetectionPublisher(String workspaceName, String scmRepositoryId) {
 
-        this.workspaceName = workspaceName;
-        this.scmRepositoryId = scmRepositoryId;
-    }
+		this.workspaceName = workspaceName;
+		this.scmRepositoryId = scmRepositoryId;
+	}
 
-    @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        UftTestDiscoveryResult results = UFTTestDetectionService.startScanning(build, getWorkspaceName(), getScmRepositoryId(), listener);
-        UFTTestDetectionBuildAction buildAction = new UFTTestDetectionBuildAction(build, results);
-        build.addAction(buildAction);
+	@Override
+	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+		UFTTestDetectionResult results = UFTTestDetectionService.startScanning(build, getWorkspaceName(), getScmRepositoryId(), listener);
+		UFTTestDetectionBuildAction buildAction = new UFTTestDetectionBuildAction(build, results);
+		build.addAction(buildAction);
 
-        return true;
-    }
+		return true;
+	}
 
-    @Override
-    public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) super.getDescriptor();
-    }
+	@Override
+	public DescriptorImpl getDescriptor() {
+		return (DescriptorImpl) super.getDescriptor();
+	}
 
-    @Override
-    public BuildStepMonitor getRequiredMonitorService() {
-        return BuildStepMonitor.NONE;
-    }
+	@Override
+	public BuildStepMonitor getRequiredMonitorService() {
+		return BuildStepMonitor.NONE;
+	}
 
-    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
-    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+	private static <T> T getExtension(Class<T> clazz) {
+		ExtensionList<T> items = Jenkins.getInstance().getExtensionList(clazz);
+		return items.get(0);
+	}
 
-        private String workspace;
+	@Extension // This indicates to Jenkins that this is an implementation of an extension point.
+	public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+		private MqmRestClient createClient() {
+			ServerConfiguration configuration = ConfigurationService.getServerConfiguration();
+			JenkinsMqmRestClientFactory clientFactory = getExtension(JenkinsMqmRestClientFactory.class);
+			return clientFactory.obtain(
+					configuration.location,
+					configuration.sharedSpace,
+					configuration.username,
+					configuration.password);
+		}
 
-        public DescriptorImpl() {
-            load();
-        }
+		private String workspace;
 
-        public ListBoxModel doFillWorkspaceNameItems() {
-            ListBoxModel m = new ListBoxModel();
-            EntitiesService entitiesService = OctaneSDK.getInstance().getEntitiesService();
-            List<Entity> workspaces = entitiesService.getEntities(null, "workspaces", null, null);
-            for (Entity workspace : workspaces) {
-                m.add(workspace.getName(), String.valueOf(workspace.getId()));
-            }
-            return m;
-        }
+		public DescriptorImpl() {
+			load();
+		}
 
-        public FormValidation doCheckWorkspaceName(@QueryParameter String value) throws IOException, ServletException {
-            if (value == null || value.length() == 0) {
-                return FormValidation.error("Please select workspace");
-            } else {
-                return FormValidation.ok();
-            }
-        }
+		public ListBoxModel doFillWorkspaceNameItems() {
+			ListBoxModel m = new ListBoxModel();
+			PagedList<Workspace> workspacePagedList = createClient().queryWorkspaces("", 0, 200);
+			List<Workspace> items = workspacePagedList.getItems();
+			for (Workspace workspace : items) {
+				m.add(workspace.getName(), String.valueOf(workspace.getId()));
+			}
+			return m;
+		}
 
-        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            // Indicates that this builder can be used with all kinds of project types
+		public FormValidation doCheckWorkspaceName(@QueryParameter String value) throws IOException, ServletException {
+			if (value == null || value.length() == 0) {
+				return FormValidation.error("Please select workspace");
+			} else {
+				return FormValidation.ok();
+			}
+		}
 
-            return aClass.equals(FreeStyleProject.class);
-        }
+		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+			// Indicates that this builder can be used with all kinds of project types
 
-        public String getDisplayName() {
-            return "ALM Octane UFT Tests Scanner";
-        }
+			return aClass.equals(FreeStyleProject.class);
+		}
 
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            // To persist global configuration information,
-            // set that to properties and call save().
-            workspace = formData.getString("useFrench");
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
-            save();
-            return super.configure(req, formData);
-        }
+		public String getDisplayName() {
+			return "HPE Octane UFT Tests Scanner";
+		}
 
-        public String getWorkspace() {
-            return workspace;
-        }
+		@Override
+		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+			// To persist global configuration information,
+			// set that to properties and call save().
+			workspace = formData.getString("useFrench");
+			// ^Can also use req.bindJSON(this, formData);
+			//  (easier when there are many fields; need set* methods for this, like setUseFrench)
+			save();
+			return super.configure(req, formData);
+		}
 
-    }
+		public String getWorkspace() {
+			return workspace;
+		}
+
+	}
 }

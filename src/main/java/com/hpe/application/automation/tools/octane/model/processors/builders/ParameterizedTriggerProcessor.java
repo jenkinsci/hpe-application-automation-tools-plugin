@@ -69,7 +69,7 @@ public class ParameterizedTriggerProcessor extends AbstractBuilderProcessor {
 					logger.warn("encountered null project reference; considering it as corrupted configuration and skipping");
 				}
 			}
-			super.phases.add(ModelFactory.createStructurePhase(phasesName, config.getBlock() != null, items, processedJobs));
+			super.phases.add(ModelFactory.createStructurePhase(phasesName, config.getBlock() != null, items));
 		}
 	}
 
@@ -86,7 +86,7 @@ public class ParameterizedTriggerProcessor extends AbstractBuilderProcessor {
 					logger.warn("encountered null project reference; considering it as corrupted configuration and skipping");
 				}
 			}
-			super.phases.add(ModelFactory.createStructurePhase(phasesName, false, items, processedJobs));
+			super.phases.add(ModelFactory.createStructurePhase(phasesName, false, items));
 		}
 	}
 }
