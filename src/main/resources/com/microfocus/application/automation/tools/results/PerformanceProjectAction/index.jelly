@@ -1,0 +1,75 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ © Copyright 2013 EntIT Software LLC
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout title="${it.DisplayName}" norefresh="true">
+        <l:side-panel>
+            <st:include it="${it.currentProject}" page="sidepanel.jelly"/>
+        </l:side-panel>
+
+
+        <l:main-panel>
+            <link rel="stylesheet" type="text/css"
+                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/chartist.css"></link>
+            <link rel="stylesheet" type="text/css"
+                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/chartistLegend.css"></link>
+            <link rel="stylesheet" type="text/css"
+                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/chartist-plugin-tooltip.css"></link>
+            <link rel="stylesheet" type="text/css"
+                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/ColorPlate.css"></link>
+            <link rel="stylesheet" type="text/css"
+                  href="${resURL}/plugin/hp-application-automation-tools-plugin/css/projectReport.css"></link>
+            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist.js"/>
+            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-legend.js"/>
+            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-tooltip.min.js"/>
+            <script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/chartist/chartist-plugin-axistitle.min.js"/>
+            <!--<script src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/react/react-with-addons.min.js"></script>-->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.3.2/react-with-addons.js"></script>
+            <script
+                    src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/libaries/react/react-dom.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.38/browser.js"></script>
+            <st:bind var="graphData" value="${it.GraphData}"/>
+
+
+            <j:set var="builds" value="${it.builds}"/>
+
+            <st:bind var="instance" value="${it}"/>
+            <st:bind var="projectName" value="${it.DisplayName}"/>
+            <st:bind var="" value="${it.UpdatedData}"/>
+            <div>
+                <span class="pageTitle">PERFORMANCE TESTS SUMMARY REPORT</span>
+                    <!-- This element's contents will be replaced with your component. -->
+                </div>
+            <div id="scenarioDropDown">
+
+            </div>
+            <div class="scenarioSummary"></div>
+            <div class="graphCon"></div>
+
+            <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/jslib.js"/>
+            <script type="text/babel"
+                    src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/dropdown.jsx"></script>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

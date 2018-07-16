@@ -934,6 +934,15 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        internal static string ParallelRunnerExecutableNotFound {
+            get {
+                return ResourceManager.GetString("ParallelRunnerExecutableNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to QTPActivity.TestCleanup - exception {0}.
         /// </summary>
         internal static string QtpCleanupError {

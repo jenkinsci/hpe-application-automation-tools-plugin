@@ -1,0 +1,49 @@
+<!--
+  ~ © Copyright 2013 EntIT Software LLC
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+
+    <td colspan="2"/>
+    <td colspan="2">
+        <table style="width:100%">
+            <f:radioBlock name="${instance.hashCode()}dm.selectionType" value="BY_NAME"
+                          checked="true"
+                          title="Specific" inline="true">
+                <f:nested>
+                    <f:entry title="Name or id" field="dataModel">
+                        <f:textbox value="${instance.dataModel}"/>
+                    </f:entry>
+                </f:nested>
+            </f:radioBlock>
+            <f:radioBlock name="${instance.hashCode()}dm.selectionType" value="NONE"
+                          checked="${instance.isSelected('NONE')}"
+                          title="None (real service in simulation mode)" inline="true">
+            </f:radioBlock>
+            <f:radioBlock name="${instance.hashCode()}dm.selectionType" value="DEFAULT"
+                          checked="${instance.isSelected('DEFAULT')}"
+                          title="Default (first data model in alphabetical order)" inline="true">
+            </f:radioBlock>
+        </table>
+    </td>
+
+</j:jelly>

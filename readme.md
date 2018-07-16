@@ -1,6 +1,5 @@
-![HPE LOGO](https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Hewlett_Packard_Enterprise_logo.svg/200px-Hewlett_Packard_Enterprise_logo.svg.png)
-
-# HPE automation plugin for Jenkins CI                        
+![Micro Focus Logo](https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Micro_Focus_logo.svg/220px-Micro_Focus_logo.svg.png)
+# Micro Focus automation plugin for Jenkins CI                        
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/8ec4415bffe94fda8ae40415388c063e)](https://www.codacy.com/app/HPEbot/hp-application-automation-tools-plugin?utm_source=github.com&utm_medium=referral&utm_content=hpsa/hp-application-automation-tools-plugin&utm_campaign=badger)
 
@@ -11,12 +10,12 @@ Latest release branch status:
 [![Build status](https://ci.appveyor.com/api/projects/status/gqd0x8ov1ebqjjcu/branch/latest?svg=true)](https://ci.appveyor.com/project/HPEbot/hp-application-automation-tools-plugin/branch/latest)
 
 
-##### The plugin provides the ability to run HPE products with Jenkins during builds.
+##### The plugin provides the ability to run Micro Focus products with Jenkins during builds.
 
-## Relevent links
--	**Download the most recent LTS version of the plugin** at [offical plugin Wiki page](https://wiki.jenkins-ci.org/display/JENKINS/HPE+Application+Automation+Tools)
--	**Check the open issues (and add new issues)** at [Jenkins plugin jira](https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20hp-application-automation-tools-plugin)
--	**View the plugin’s usage statistics** at [Jenkins.io plugin stats](http://stats.jenkins.io/plugin-installation-trend/hp-application-automation-tools-plugin.stats.json).
+## Relevant links
+-	**Download the most recent LTS version of the plugin** at [Official plugin Wiki page](https://wiki.jenkins.io/display/JENKINS/Micro+Focus+Application+Automation+Tools)
+-	**Check the open issues (and add new issues)** at [Jenkins plugin Jira](https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20component%20%3D%20hp-application-automation-tools-plugin)
+-	**View the plugin’s usage statistics** at [Jenkins.io plugin statistics](http://stats.jenkins.io/pluginversions/hp-application-automation-tools-plugin.html)
 
 ## Development & release timeline 
 #### LTS release branch
@@ -25,7 +24,7 @@ Latest release branch status:
 - Each release will have feature freeze and code freeze dates that will be published at our Jira. After this dates, We will accept only fixes to issues discovered during the QA to the current release.
 
 #### Current release branches
--	Each pull request merge that will pass module owner QA cycle will trigger a stable release to Jenkins exprimental update center.
+-	Each pull request merge that will pass module owner QA cycle will trigger a stable release to Jenkins experimental update center.
 - Additional releases handled by the standard pull request process followed by a basic QA cycle of the related module.
 -	Release to the Jenkins experimental update center (More information below).
   
@@ -49,7 +48,7 @@ Latest release branch status:
 
 #### Guidelines
 - Document your code – it enables others to continue the great work you did on the code and update it.
-- SonarLint your code – we use sonarQube with its basic built-in rule set. In the future, we will provide direct online access to test with a custom rule set.
+- SonarLint your code – we use SonarQube with its basic built-in rule set. In the future, we will provide direct online access to test with a custom rule set.
 
 ### Feel free to contact us on any question related to contributions - hpsauth-[at]-gmail-dot-com
 

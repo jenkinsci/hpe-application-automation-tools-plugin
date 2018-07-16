@@ -1,0 +1,75 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ © Copyright 2013 EntIT Software LLC
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
+    <!--
+      This Jelly script is used to produce the global configuration option.
+
+      Jenkins uses a set of tag libraries to provide uniformity in forms.
+      To determine where this tag is defined, first check the namespace URI,
+      and then look under $JENKINS/views/. For example, <f:section> is defined
+      in $JENKINS/views/lib/form/section.jelly.
+
+      It's also often useful to just check other similar scripts to see what
+      tags they use. Views are always organized according to its owner class,
+      so it should be straightforward to find them.
+    -->
+    <f:section title="Service Virtualization">
+        <f:entry title="Servers" description="List of Service Virtualization servers">
+            <f:repeatable add="Add SV server" var="srv" items="${descriptor.servers}">
+                <table width="100%">
+
+                    <f:entry title="${%Name}" field="name">
+                        <f:textbox value="${srv.name}"/>
+                    </f:entry>
+
+                    <f:entry title="${%URL}" field="url">
+                        <f:textbox value="${srv.url}"/>
+                    </f:entry>
+
+                    <f:entry title="${%User name}" field="username">
+                        <f:textbox value="${srv.username}"/>
+                    </f:entry>
+
+                    <f:entry title="${%Password}" field="password">
+                        <f:password value="${srv.password}"/>
+                    </f:entry>
+
+                    <f:validateButton
+                            title="${%Test Connection}" progress="${%Testing...}"
+                            method="testConnection" with="url,username,password"/>
+
+                    <f:entry title="">
+                        <div align="right">
+                            <f:repeatableDeleteButton value="Delete SV server"/>
+                        </div>
+                    </f:entry>
+                </table>
+            </f:repeatable>
+        </f:entry>
+    </f:section>
+</j:jelly>
+
+
+

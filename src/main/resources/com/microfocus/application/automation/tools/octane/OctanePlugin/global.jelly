@@ -1,0 +1,49 @@
+<!--
+  ~ © Copyright 2013 EntIT Software LLC
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+                 xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:section title="${%global.config.description}" name="mqm">
+        <f:entry title="${%global.config.server.title}">
+            <f:nested>
+                <table width="100%">
+                    <f:entry title="${%global.config.location.title}"
+                             description="${%global.config.location.description}" help="/plugin/hp-lifecycle-management-ci-plugin/help/uiLocation.html">
+                        <f:textbox field="uiLocation" />
+                    </f:entry>
+                    <f:entry title="${%global.config.username.title}" description="${%global.config.username.description}" help="/plugin/hp-lifecycle-management-ci-plugin/help/accessKey.html">
+                        <f:textbox field="username" />
+                    </f:entry>
+                    <f:entry title="${%global.config.password.title}" description="${%global.config.password.description}">
+                        <f:password field="secretPassword" />
+                    </f:entry>
+                    <f:entry title="${%global.config.impersonatedUser.title}" description="${%global.config.impersonatedUser.description}" help="/plugin/hp-lifecycle-management-ci-plugin/help/impersonatedUser.html">
+                        <f:textbox field="impersonatedUser" />
+                    </f:entry>
+                    <f:validateButton title="${%global.config.test.connection}" progress="${%global.config.test.connection.progress}"
+                        method="testGlobalConnection" with="uiLocation,username,secretPassword,impersonatedUser" />
+                </table>
+            </f:nested>
+        </f:entry>
+    </f:section>
+</j:jelly>

@@ -8,25 +8,14 @@
   ~ __________________________________________________________________
   ~ MIT License
   ~
-  ~ Copyright (c) 2018 Micro Focus Company, L.P.
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
   ~
-  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
-  ~ of this software and associated documentation files (the "Software"), to deal
-  ~ in the Software without restriction, including without limitation the rights
-  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  ~ copies of the Software, and to permit persons to whom the Software is
-  ~ furnished to do so, subject to the following conditions:
-  ~
-  ~ The above copyright notice and this permission notice shall be included in all
-  ~ copies or substantial portions of the Software.
-  ~
-  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  ~ THE SOFTWARE.
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
   ~ ___________________________________________________________________
   ~
   -->
@@ -37,15 +26,14 @@
 		<groupId>org.jenkins-ci.plugins</groupId>
 		<artifactId>plugin</artifactId>
 		<version>2.14</version>
-		<!-- which version of Jenkins is this plugin built against? -->
 	</parent>
 
 	<artifactId>hp-application-automation-tools-plugin</artifactId>
 	<version>5.4.3-beta-SNAPSHOT</version>
 	<packaging>hpi</packaging>
-	<name>HPE Application Automation Tools</name>
-	<description>The plugin integrates Jenkins with the following MicroFocus products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
-	<url>https://wiki.jenkins-ci.org/display/JENKINS/HPE+Application+Automation+Tools</url>
+	<name>Micro Focus Application Automation Tools</name>
+	<description>The plugin integrates Jenkins with the following Micro Focus products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
+    <url>https://wiki.jenkins.io/display/JENKINS/Micro+Focus+Application+Automation+Tools</url>
 
 	<licenses>
 		<license>
@@ -59,11 +47,12 @@
 		<concurrency>1</concurrency>
 		<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
 		<msbuild.configuration>Release</msbuild.configuration>
-		<jenkins.version>1.642.4</jenkins.version>
+		<jenkins.version>2.60.3</jenkins.version>
 		<workflow.version>2.2</workflow.version>
 		<maven.exec.skip>false</maven.exec.skip>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+        <java.level>8</java.level>
 	</properties>
 
 	<distributionManagement>
@@ -99,23 +88,17 @@
 
 	<developers>
         <developer>
-			<id>grount</id>
+			<id>gront</id>
 			<name>Daniel Gront</name>
+			<email>daniel.gront@microfocus.com</email>
 			<roles>
 				<role>Global Owner</role>
 			</roles>
 		</developer>
 		<developer>
-			<id>YafimK</id>
-			<name>Fima (Yafim) Kazak</name>
-			<roles>
-				<role>Global owner and LoadRunner Dev (retired)</role>
-			</roles>
-		</developer>
-		<developer>
 			<id>mseldin</id>
 			<name>Michael Seldin</name>
-			<email>michael.seldin@hpe.com</email>
+			<email>michael.seldin@microfocus.com</email>
 			<roles>
 				<role>ALM Octane</role>
 			</roles>
@@ -123,57 +106,49 @@
 		<developer>
 			<id>Rlu</id>
 			<name>Roy Lu</name>
-			<email>li.lu@hpe.com</email>
+			<email>li.lu@microfocus.com</email>
 			<roles>
-				<role>ALM Lab managment</role>
+				<role>ALM Lab management</role>
 			</roles>
 		</developer>
 		<developer>
 			<id>pavelchuchma</id>
 			<name>Pavel Chuchma</name>
-			<email>pavel.chuchma@hpe.com</email>
+			<email>pavel.chuchma@microfocus.com</email>
 			<roles>
 				<role>Service Virtualization</role>
 			</roles>
 		</developer>
 		<developer>
-			<id>imrman</id>
-			<name>Avishai Moshka</name>
-			<email>avishai.moshka@hp.com</email>
+			<id>rolandomihaivlad</id>
+			<name>Vlad, Rolando-Mihai</name>
+			<email>rolando-mihai.vlad@microfocus.com</email>
 			<roles>
 				<role>LoadRunner</role>
 			</roles>
 		</developer>
 		<developer>
-			<id>amitb</id>
-			<name>Amit Bezalel</name>
-			<email>amit.bezalel@hpe.com</email>
+			<id>tamasflorin</id>
+			<name>Tamas, Ionut Florin</name>
+			<email>ionut-florin.tamas@hpe.com</email>
 			<roles>
 				<role>UFT</role>
 			</roles>
 		</developer>
 		<developer>
 			<id>bamh</id>
-			<name>Hanan Bem</name>
-			<email>hanan.bem@hpe.com</email>
+			<name>Daniel Danan</name>
+			<email>daniel.danan@microfocus.com</email>
 			<roles>
 				<role>Performance Center</role>
 			</roles>
 		</developer>
 		<developer>
-			<id>michaelhpe</id>
-			<name>Weimin Jing</name>
-			<email>weimin.jing@hpe.com</email>
+			<id>janezhang</id>
+			<name>Zhang, Xiao-Jing</name>
+			<email>xiao-jing.zhang2@microfocus.com</email>
 			<roles>
 				<role>Mobile Center</role>
-			</roles>
-		</developer>
-		<developer>
-			<id>JackyZhuHPE</id>
-			<name>Chunjiang Zhu (Jacky)</name>
-			<email>chun-jiang.zhu@hpe.com</email>
-			<roles>
-				<role>ALM/Upload test result to ALM (External Test)</role>
 			</roles>
 		</developer>
 		<developer>
@@ -181,6 +156,13 @@
 			<name>Yuri Guller</name>
 			<email>gullerya@gmail.com</email>
 			<organization>MicroFocus - ALM Octane</organization>
+		</developer>
+		<developer>
+			<id>YafimK</id>
+			<name>Fima (Yafim) Kazak</name>
+			<roles>
+				<role>Global owner and LoadRunner Dev (retired)</role>
+			</roles>
 		</developer>
 	</developers>
 
@@ -220,7 +202,6 @@
 				<artifactId>maven-release-plugin</artifactId>
 				<version>2.5.3</version>
 			</plugin>
-			<!--  -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -253,7 +234,6 @@
 					<skip>true</skip>
 				</configuration>
 			</plugin>
-			<!--  -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
@@ -651,6 +631,16 @@
 			</exclusions>
 		</dependency>
 
+		<!-- The dependencies were added to comply with the new jenkins base version-->
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>script-security</artifactId>
+			<version>1.18</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>scm-api</artifactId>
+			<version>1.2</version>
+		</dependency>
 	</dependencies>
-
 </project>

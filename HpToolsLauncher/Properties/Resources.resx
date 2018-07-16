@@ -439,6 +439,9 @@ Save the test in QuickTest and then run it again.</value>
   <data name="UFT_Sprinter_Running" xml:space="preserve">
     <value>UFT cannot start while HPE Sprinter is running.</value>
   </data>
+  <data name="ParallelRunnerExecutableNotFound" xml:space="preserve">
+    <value />
+  </data>
   <data name="InvalidReportPath" xml:space="preserve">
     <value>Invalid report path provided: '{0}'</value>
   </data>

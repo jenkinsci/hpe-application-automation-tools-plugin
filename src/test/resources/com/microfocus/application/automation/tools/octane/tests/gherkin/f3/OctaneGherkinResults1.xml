@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ © Copyright 2013 EntIT Software LLC
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<features version="2"><feature name="test Feature2" path="src\main\features\test3.feature" started="1467028340511" tag="@TID2002REV0.2.0"><file><![CDATA[#Auto generated NGA revision tag
+@TID2001REV0.2.0
+Feature: test Feature2
+	Scenario: test scenario4
+		Given testg
+		When testw
+		Then testth
+	Scenario: test scenario5
+		Given testg
+		When testw
+		Then testth]]></file><scenarios><scenario name="test scenario4"><steps><step duration="1" name="Given testg" status="passed"/><step duration="2" name="When testw" status="passed"/><step duration="3" name="Then testth" status="passed"/></steps></scenario><scenario name="test scenario5"><steps><step duration="4" name="Given testg" status="passed"/><step duration="5" name="When testw" status="passed"/><step duration="6" name="Then testth" status="passed"/></steps></scenario></scenarios></feature></features>

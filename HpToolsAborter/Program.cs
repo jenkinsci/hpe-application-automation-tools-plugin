@@ -1,19 +1,24 @@
-﻿//© Copyright 2013 Hewlett-Packard Development Company, L.P.
-//Permission is hereby granted, free of charge, to any person obtaining a copy of this software
-//and associated documentation files (the "Software"), to deal in the Software without restriction,
-//including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-//subject to the following conditions:
-
-//The above copyright notice and this permission notice shall be included in all copies or
-//substantial portions of the Software.
-
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-//INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-//PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
-//LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
-//TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE 
-//OR OTHER DEALINGS IN THE SOFTWARE.
+﻿/*
+ * © Copyright 2013 EntIT Software LLC
+ *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ *  marks are the property of their respective owners.
+ * __________________________________________________________________
+ * MIT License
+ *
+ * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ *
+ * The only warranties for products and services of Micro Focus and its affiliates
+ * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * accompanying such products and services. Nothing herein should be construed as
+ * constituting an additional warranty. Micro Focus shall not be liable for technical
+ * or editorial errors or omissions contained herein.
+ * The information contained herein is subject to change without notice.
+ * ___________________________________________________________________
+ *
+ */
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +28,7 @@ using System.Management;
 using System.Diagnostics;
 using System.IO;
 using HpToolsLauncher;
+using System.Runtime.InteropServices;
 
 namespace HpToolsAborter
 {
@@ -73,6 +79,7 @@ namespace HpToolsAborter
                 {
                     KillQtpAutomationProcess();
                     KillLoadRunnerAutomationProcess();
+                    KillParallelRunnerAutomationProcesses();
                 }
 
                 if (runType=="Alm")
@@ -115,6 +122,49 @@ namespace HpToolsAborter
 
             }
 
+        }
+
+        private static void KillParallelRunnerAutomationProcess(Process parallelRunner)
+        {
+            if(parallelRunner != null)
+            {
+                List<ProcessData> children = new List<ProcessData>();
+                GetProcessChildren(parallelRunner.Id, children);
+
+                foreach(var child in children)
+                {
+                    var proc = Process.GetProcessById(child.ID);
+
+                    if(proc != null)
+                    {
+                        KillProcess(proc);
+                    }
+                }
+
+                KillProcess(parallelRunner);
+            }
+        }
+
+        private static void KillParallelRunnerAutomationProcesses()
+        {
+            Process[] paralelRunnerProcesses = Process.GetProcessesByName("ParallelRunner");
+
+            // kill every parallel runner process
+            foreach(var proc in paralelRunnerProcesses)
+            {
+                // we are sending SIGINT as ParallelRunner will handle this message
+                // gracefully and will set the test status to aborted
+                bool closed = SendSigIntToProcess(proc);
+
+                // let's give SIGINT a chance to execute
+                proc.WaitForExit(500);
+
+                // if ctr-c has failed, just kill the process...
+                if (!closed || !proc.HasExited)
+                {
+                    KillParallelRunnerAutomationProcess(proc);
+                }
+            }
         }
 
 
@@ -247,6 +297,65 @@ namespace HpToolsAborter
             }
         }
 
+        private static bool SendSigIntToProcess(Process process)
+        {
+            const int waitMs = 500;
+
+            // we can only be attached to one console at a time
+            if (!FreeConsole())
+                return false;
+
+            // try to attach the console to the process
+            // that we want to send the signal to
+            if (!AttachConsole((uint)process.Id))
+                return false;
+
+            // disable the ctrl handler for our process
+            // so we do not close ourselvles
+            if (!SetConsoleCtrlHandler(null, true))
+            {
+                FreeConsole();
+                AllocConsole();
+
+                return false;
+            }
+
+            // Now generate the event and free the console 
+            // that we have attached ourselvles to
+            if (GenerateConsoleCtrlEvent(CtrlTypes.CTRL_C_EVENT, 0))
+            {
+                process.WaitForExit(waitMs);
+            }
+
+            // free the console for the process that we have attached to
+            FreeConsole();
+
+            // alloc a new console for current process
+            // as we might need to display something
+            AllocConsole();
+
+            SetConsoleCtrlHandler(null, false);
+
+            return true;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool AttachConsole(uint dwProcessId);
+
+        [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
+        static extern bool FreeConsole();
+
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GenerateConsoleCtrlEvent(CtrlTypes dwCtrlEvent, uint dwProcessGroupId);
+
+        public delegate bool HandlerRoutine(CtrlTypes CtrlType);
+
+        [DllImport("kernel32")]
+        public static extern bool SetConsoleCtrlHandler(HandlerRoutine Handler, bool Add);
+
+        [DllImport("kernel32")]
+        static extern bool AllocConsole();
     }
 
     public class ProcessData
@@ -259,6 +368,15 @@ namespace HpToolsAborter
 
         public int ID { get; private set; }
         public string Name { get; private set; }
+    }
+
+    enum CtrlTypes : uint
+    {
+        CTRL_C_EVENT = 0,
+        CTRL_BREAK_EVENT,
+        CTRL_CLOSE_EVENT,
+        CTRL_LOGOFF_EVENT = 5,
+        CTRL_SHUTDOWN_EVENT
     }
 
 }

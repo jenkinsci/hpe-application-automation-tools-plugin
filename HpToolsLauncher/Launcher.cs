@@ -1,7 +1,24 @@
-// (c) Copyright 2012 Hewlett-Packard Development Company, L.P. 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+/*
+ * © Copyright 2013 EntIT Software LLC
+ *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+ *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+ *  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+ *  marks are the property of their respective owners.
+ * __________________________________________________________________
+ * MIT License
+ *
+ * © Copyright 2012-2018 Micro Focus or one of its affiliates.
+ *
+ * The only warranties for products and services of Micro Focus and its affiliates
+ * and licensors (“Micro Focus”) are set forth in the express warranty statements
+ * accompanying such products and services. Nothing herein should be construed as
+ * constituting an additional warranty. Micro Focus shall not be liable for technical
+ * or editorial errors or omissions contained herein.
+ * The information contained herein is subject to change without notice.
+ * ___________________________________________________________________
+ *
+ */
 
 using System;
 using System.Collections.Generic;
@@ -322,10 +339,18 @@ namespace HpToolsLauncher
                             displayController = true;
                         }
                     }
+                    string analysisTemplate = (_ciParams.ContainsKey("analysisTemplate") ? _ciParams["analysisTemplate"] : "");
 
+                    Dictionary<string, string> testsKeyValue = GetKeyValuesWithPrefix("Test");
+                    List<TestData> tests = new List<TestData>();
+
+                    foreach(var item in testsKeyValue)
+                    {
+                        tests.Add(new TestData(item.Value, item.Key));
+                    }
 
                     //get the tests
-                    IEnumerable<string> tests = GetParamsWithPrefix("Test");
+                    //IEnumerable<string> tests = GetParamsWithPrefix("Test");
 
                     IEnumerable<string> jenkinsEnvVariablesWithCommas = GetParamsWithPrefix("JenkinsEnv");
                     Dictionary<string, string> jenkinsEnvVariables = new Dictionary<string,string>();
@@ -386,14 +411,19 @@ namespace HpToolsLauncher
                         WriteToConsole(Resources.LauncherNoTestsFound);
                     }
 
-                    List<string> validTests = Helper.ValidateFiles(tests);
+                    List<TestData> validTests = Helper.ValidateFiles(tests);
 
                     if (tests != null && tests.Count() > 0 && validTests.Count == 0)
                     {
                         ConsoleWriter.WriteLine(Resources.LauncherNoValidTests);
                         return null;
                     }
-
+                    
+                    //If a file path was provided and it doesn't exist stop the analysis launcher
+                    if (!analysisTemplate.Equals("") && !Helper.FileExists(analysisTemplate)) {
+                        return null;
+                    }
+                    
                     //--MC connection info
                     McConnectionInfo mcConnectionInfo = new McConnectionInfo();
                     if (_ciParams.ContainsKey("MobileHostAddress"))
@@ -481,7 +511,8 @@ namespace HpToolsLauncher
                                 {
                                     // data is something like "16.105.9.23:8080"
                                     string[] strArray4ProxyAddr = proxyAddress.Split(new Char[] { ':' });
-                                    if (strArray.Length == 2)
+
+                                    if (strArray4ProxyAddr.Length == 2)
                                     {
                                         mcConnectionInfo.MobileProxySetting_Address = strArray4ProxyAddr[0];
                                         mcConnectionInfo.MobileProxySetting_Port = int.Parse(strArray4ProxyAddr[1]);
@@ -529,15 +560,30 @@ namespace HpToolsLauncher
                         mobileinfo = _ciParams["mobileinfo"];
                     }
 
+                    Dictionary<string, List<String>> parallelRunnerEnvironments = new Dictionary<string, List<string>>();
+
+                    // retrieve the parallel runner environment for each test
+                    if(_ciParams.ContainsKey("parallelRunnerMode"))
+                    {
+                        foreach(var test in validTests)
+                        {
+                            string envKey = "Parallel" + test.Id + "Env";
+                            List<string> testEnvironments = GetParamsWithPrefix(envKey);
+
+                            // add the environments for all the valid tests
+                            parallelRunnerEnvironments.Add(test.Id, testEnvironments);
+                        }
+                    }
+
                     if (_ciParams.ContainsKey("fsUftRunMode"))
                     {
                         string uftRunMode = "Fast";
                         uftRunMode = _ciParams["fsUftRunMode"];
-                        runner = new FileSystemTestsRunner(validTests, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVariables, mcConnectionInfo, mobileinfo, displayController);
+                        runner = new FileSystemTestsRunner(validTests, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVariables, mcConnectionInfo, mobileinfo, parallelRunnerEnvironments, displayController, analysisTemplate);
                     }
                     else
                     {
-                        runner = new FileSystemTestsRunner(validTests, timeout, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVariables, mcConnectionInfo, mobileinfo, displayController);
+                        runner = new FileSystemTestsRunner(validTests, timeout, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVariables, mcConnectionInfo, mobileinfo, parallelRunnerEnvironments, displayController, analysisTemplate);
                     }
 
                     break;
@@ -563,6 +609,26 @@ namespace HpToolsLauncher
                 ++idx;
             }
             return parameters;
+        }
+
+        private Dictionary<string,string> GetKeyValuesWithPrefix(string prefix)
+        {
+            int idx = 1;
+
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+
+            while(_ciParams.ContainsKey(prefix + idx))
+            {
+                string set = _ciParams[prefix + idx];
+                if (set.StartsWith("Root\\"))
+                    set = set.Substring(5);
+                set = set.TrimEnd("\\".ToCharArray());
+                string key = prefix + idx;
+                dict[key] = set.TrimEnd();
+                ++idx;
+            }
+
+            return dict;
         }
 
         /// <summary>

@@ -1,0 +1,70 @@
+<!--
+  ~ © Copyright 2013 EntIT Software LLC
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:cv="/lib/custom">
+    <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/parallelRunnerEnvironment.js"/>
+
+    <st:bind var="pluginPath" value="${rootURL}/plugin/hp-application-automation-tools-plugin/"/>
+
+    <style>
+        div[name="parallelRunnerEnvironments"] {
+            background-color: inherit !important;
+        }
+
+        input[type=radio] { top : 0 !important; }
+    </style>
+
+    <script type="text/javascript">
+
+    </script>
+
+    <f:entry>
+        <!-- Are we running on web or mobile? -->
+        <div style="display:flex;flex-direction:row;margin-bottom: 5px;">
+            <div title="Environment " class="environment-title" style="margin-right: 5px;">Environment </div>
+
+            <f:radio field="environmentType" name="environmentType"
+                          value="Mobile" checked="${instance.environmentType == 'Mobile'}"
+                     title="Mobile" inline="true" style="margin-right: 15px;top:0;" class="customRadio"/>
+
+            <f:radio field="environmentType" name="environmentType"
+                          value="Web" checked="${instance.environmentType == 'Web' || instance.environmentType == null}"
+                     title="Web" inline="true" style="margin-left:15px;top:0;" class="customRadio"/>
+        </div>
+
+        <div class="myDiv" style="display:flex;flex-direction:row">
+            <!-- Environment input text box -->
+            <f:textbox style="flex:1;margin-right: 8px;" field="environment"/>
+
+            <!-- This wizard will open the specific window...-->
+            <input type="button" name="env-wizard" value="Environment wizard" class="yui-button"
+                   onClick="ParallelRunnerEnvironment.onEnvironmentWizardClick(this,a,'browsersModal',true,'${rootURL}/');"/>
+
+            <!-- Remove environment from the list -->
+            <input type="button" value="Remove" class="repeatable-delete danger"/>
+        </div>
+
+        <!-- Display an error message if the mobile center settings are not configured properly -->
+        <div class="error" name="mcSettingsError" style="padding-top: 10px;display:none;">MC login information or proxy is incorrect.</div>
+    </f:entry>
+</j:jelly>

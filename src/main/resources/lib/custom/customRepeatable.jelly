@@ -1,0 +1,140 @@
+<!--
+The MIT License
+
+Copyright (c) 2004-2009, Sun Microsystems, Inc., Kohsuke Kawaguchi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+-->
+
+<!--
+    tamasflorin: An easier way to provide dynamic id to the entry titles for each repeatable item.
+-->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <st:adjunct includes="lib.form.repeatable.repeatable"/>
+
+    <script>
+        function findAncestorByTag(start,tag) {
+            while((start = start.parentElement) &amp;&amp; !(start.tagName.toLowerCase() === tag.toLowerCase())) {}
+            return start;
+        }
+        // handle a single button
+        function handleOne(button,loading) {
+            // jelly represents each item as a tr
+            // with data inside
+            var parent = findAncestorByTag(button, 'tr');
+
+            if (!parent) return false;
+
+            // the containers will also contain the setting name
+            var repeatableContainer = parent.getElementsByClassName('repeated-container')[0];
+
+            if (!repeatableContainer) return false;
+
+            // find all the settings that have our custom class
+            // as we do not want to change the normal behaviour
+            var settings = repeatableContainer.getElementsByClassName("environment-title");
+
+            // add an integer number to each custom setting item
+            for (var i = 0; i &lt; settings.length; i++) {
+                settings[i].innerHTML = settings[i].title + (loading ? i : i + 1);
+            }
+        }
+
+        // handle all the custom repeatable's on the current page
+        function setNames(loading) {
+            var buttons = document.getElementsByName('customRepeatableButton');
+            for(var i = 0; i &lt; buttons.length; i++) {
+                handleOne(buttons[i],loading);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setNames(true);
+        }, false);
+
+    </script>
+
+    <!--
+      If bi-directional binding, fill in the rest of attributes automatically
+    -->
+    <j:choose>
+        <j:when test="${attrs.field!=null}">
+            <j:set var="name" value="${field}"/>
+            <j:set var="var" value="instance"/>
+            <j:set var="items" value="${instance[name] ?: attrs.default}"/>
+            <j:set var="buttonName" value="${attrs.addCount ? 'customRepeatableButton' : 'simpleRepeatableButton'}"/>
+
+            <!-- and expose update descriptor to the body of this tag -->
+            <j:set var="descriptor" value="${descriptor.getPropertyType(instance,field).itemTypeDescriptorOrDie}" />
+        </j:when>
+        <j:otherwise>
+            <j:set var="name" value="${attrs.name?:attrs.var}"/>
+            <j:set var="items" value="${attrs.items ?: attrs.default}"/>
+        </j:otherwise>
+    </j:choose>
+
+    <div class="repeated-container${!empty(header)?' with-drag-drop':''}" style="border-left: none;">
+        <!-- The first DIV is the master copy. -->
+        <div class="repeated-chunk to-be-removed" name="${name}">
+            <j:if test="${!empty(header)}"><div class="dd-handle">${header}</div></j:if>
+            <j:scope>
+                <j:set var="${var}" value="${null}"/>
+                <d:invokeBody />
+            </j:scope>
+        </div>
+        <!-- then populate them for each item -->
+        <j:forEach var="loop" varStatus="loopStatus" items="${items}">
+            <div class="repeated-chunk" name="${name}">
+                <j:set var="${var}" value="${loop}" />
+                <j:if test="${!empty(header)}"><div class="dd-handle">${header}</div></j:if>
+                <d:invokeBody />
+            </div>
+        </j:forEach>
+        <j:remove var="${var}" />
+
+        <j:if test="${minimum &gt; 0}">
+            <j:forEach begin="${h.size2(items)}" end="${minimum-1}" var="i">
+                <j:set var="${var}" value="${null}" />
+                <div class="repeated-chunk" name="${name}">
+                    <j:if test="${!empty(header)}"><div class="dd-handle">${header}</div></j:if>
+                    <d:invokeBody />
+                </div>
+            </j:forEach>
+        </j:if>
+
+
+        <div class="repeatable-insertion-point" />
+        <j:if test="${!attrs.noAddButton}">
+            <!--<div style="display:flex;flex-direction: row;margin-left: 24px;">-->
+            <j:choose>
+                <j:when test="${buttonName.equals('customRepeatableButton')}">
+                    <input type="button" value="${attrs.add?:'%Add'}" class="repeatable-add"
+                           onClick="setNames(false)" name="${buttonName}"
+                           style="color:black; background-color: rgb(229,241,252);"/>
+                </j:when>
+                <j:otherwise>
+                    <input type="button" value="${attrs.add?:'%Add'}" class="repeatable-add"
+                           onClick="setNames(false)" name="${buttonName}"/>
+                </j:otherwise>
+            </j:choose>
+            <!--</div>-->
+        </j:if>
+    </div>
+</j:jelly>

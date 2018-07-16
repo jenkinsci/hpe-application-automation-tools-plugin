@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+  ~ © Copyright 2013 EntIT Software LLC
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<result plugin="junit@1.2-beta-4">
+  <suites>
+    <suite>
+      <file>C:\QC\Jenkins\workspace\test1\prog1prj1\output\TEST-prog1prj1.TestProg1Prj1Test1.xml</file>
+      <name>prog1prj1.TestProg1Prj1Test1</name>
+      <stdout></stdout>
+      <stderr></stderr>
+      <duration>0.064</duration>
+      <timestamp>2015-05-12T12:23:27</timestamp>
+      <cases>
+        <case>
+          <duration>0.002</duration>
+          <className>prog1prj1.TestProg1Prj1Test1</className>
+          <testName>testMethod1</testName>
+          <skipped>false</skipped>
+          <failedSince>0</failedSince>
+        </case>
+        <case>
+          <duration>0.001</duration>
+          <className>prog1prj1.TestProg1Prj1Test1</className>
+          <testName>testMethod2</testName>
+          <skipped>false</skipped>
+          <failedSince>0</failedSince>
+        </case>
+        <case>
+          <duration>0.061</duration>
+          <className>prog1prj1.TestProg1Prj1Test1</className>
+          <testName>testMethod3</testName>
+          <skipped>false</skipped>
+          <errorStackTrace>junit.framework.AssertionFailedError: Not yet implemented
+	at prog1prj1.TestProg1Prj1Test1.testMethod3(Unknown Source)
+</errorStackTrace>
+          <errorDetails>Not yet implemented</errorDetails>
+          <failedSince>0</failedSince>
+        </case>
+      </cases>
+    </suite>
+  </suites>
+  <duration>0.064</duration>
+  <keepLongStdio>false</keepLongStdio>
+</result>
