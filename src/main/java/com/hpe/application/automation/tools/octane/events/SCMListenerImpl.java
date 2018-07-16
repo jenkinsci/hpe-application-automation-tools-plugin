@@ -92,7 +92,7 @@ public class SCMListenerImpl extends SCMListener {
 
 		SCMProcessor scmProcessor = SCMProcessors.getAppropriate(scm.getClass().getName());
 		if (scmProcessor == null) {
-			logger.info("no processors found for SCM provider of type '" + scm.getType() + "', SCM data won't be extracted");
+			logger.debug("no processors found for SCM provider of type '" + scm.getType() + "', SCM data won't be extracted");
 			return;
 		}
 
