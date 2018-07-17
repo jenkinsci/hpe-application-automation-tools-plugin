@@ -28,22 +28,15 @@ import hudson.model.Run;
 import hudson.scm.SCM;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import java.io.Serializable;
-
 /**
  * API definition for SCM content processor/transformer for an Octane context
  * Created by gullery on 31/03/2015.
  */
 
 public interface SCMProcessor {
-	SCMData getSCMData(AbstractBuild build, SCM scm);
+    SCMData getSCMData(AbstractBuild build, SCM scm);
 
-	SCMData getSCMData(WorkflowRun run, SCM scm);
+    SCMData getSCMData(WorkflowRun run, SCM scm);
 
-	CommonOriginRevision getCommonOriginRevision(Run run);
-
-	class CommonOriginRevision implements Serializable {
-		public String branch;
-		public String revision;
-	}
+    CommonOriginRevision getCommonOriginRevision(Run run);
 }
