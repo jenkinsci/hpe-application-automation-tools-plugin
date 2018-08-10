@@ -42,6 +42,7 @@ import com.microfocus.application.automation.tools.results.service.almentities.A
 import com.microfocus.application.automation.tools.results.service.almentities.EntityRelation;
 import com.microfocus.application.automation.tools.results.service.almentities.IAlmConsts;
 import com.microfocus.application.automation.tools.sse.sdk.Base64Encoder;
+import org.apache.commons.io.IOUtils;
 
 public class AntJUnitReportParserImpl implements ReportParser {
 
@@ -52,6 +53,8 @@ public class AntJUnitReportParserImpl implements ReportParser {
 			return parseTestSetsFromAntJUnitReport(reportInputStream, testingFramework, testingTool);
 		} catch (Exception e) {
 			throw new ReportParseException(e);
+		} finally {
+			IOUtils.closeQuietly(reportInputStream);
 		}
 	}	
 	

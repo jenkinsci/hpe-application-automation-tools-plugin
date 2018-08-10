@@ -27,6 +27,7 @@ import com.microfocus.application.automation.tools.results.parser.ReportParser;
 import com.microfocus.application.automation.tools.results.parser.antjunit.AntJUnitReportParserImpl;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmTestSet;
 import hudson.FilePath;
+import org.apache.commons.io.IOUtils;
 
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -35,7 +36,6 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -55,6 +55,10 @@ public class NUnit3ReportParserImpl implements ReportParser {
     public List<AlmTestSet> parseTestSets(InputStream reportInputStream, String testingFramework, String testingTool)
             throws ReportParseException {
 
+        // Use the xsl to convert the nunit3 and nunit to junit and then parse with junit logic.
+        // This can be extended to cover all kinds of result format.
+        // When new format comes, only need to provide a xsl, no need to change any code.
+
         FileOutputStream fileOutputStream = null;
         try {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -71,15 +75,8 @@ public class NUnit3ReportParserImpl implements ReportParser {
             throw new ReportParseException(e);
 
         } finally {
-            if (fileOutputStream != null) {
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    throw new ReportParseException(e);
-                }
-            }
+            IOUtils.closeQuietly(reportInputStream);
+            IOUtils.closeQuietly(fileOutputStream);
         }
     }
-
-
 }
