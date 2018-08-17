@@ -51,9 +51,7 @@ public class AntJUnitReportParserImpl implements ReportParser {
 		try {
 			return parseTestSetsFromAntJUnitReport(reportInputStream, testingFramework, testingTool);
 		} catch (Exception e) {
-		
-			e.printStackTrace();
-			throw new ReportParseException();
+			throw new ReportParseException(e);
 		}
 	}	
 	

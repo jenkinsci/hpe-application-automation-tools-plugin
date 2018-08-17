@@ -49,20 +49,20 @@ import com.microfocus.application.automation.tools.results.service.almentities.A
 import com.microfocus.application.automation.tools.results.service.almentities.EntityRelation;
 import com.microfocus.application.automation.tools.results.service.almentities.IAlmConsts;
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
+import hudson.FilePath;
 
 public class DefaultExternalEntityUploadServiceImpl implements
 		IExternalEntityUploadService {
 
 	Logger logger;
-	
-
 	private AlmRestTool restTool;
+	private FilePath workspace;
 	
-	public DefaultExternalEntityUploadServiceImpl(AlmRestTool restTool, Logger logger) {
+	public DefaultExternalEntityUploadServiceImpl(AlmRestTool restTool, FilePath workspace, Logger logger) {
 		this.restTool = restTool;
 		this.logger = logger;
+		this.workspace = workspace;
 	}
-
 
 	private String [] getTestCreationFields() {
 		
@@ -353,7 +353,7 @@ public class DefaultExternalEntityUploadServiceImpl implements
 	}	
 	
 	@Override
-	public void UploadExternalTestSet(AlmRestInfo loginInfo, 
+	public void UploadExternalTestSet(AlmRestInfo loginInfo,
 							String reportFilePath, 
 							String testsetFolderPath, 
 							String testFolderPath, 
@@ -364,10 +364,11 @@ public class DefaultExternalEntityUploadServiceImpl implements
 							String buildUrl) throws ExternalEntityUploadException{
 		
 		logger.log("INFO: Start to parse file: " +reportFilePath);
-		
-		List<AlmTestSet> testsets = ReportParserManager
-                .getInstance().parseTestSets( reportFilePath, testingFramework,  testingTool);
-		
+
+		ReportParserManager reportParserManager = ReportParserManager.getInstance(workspace, logger);
+
+		List<AlmTestSet> testsets = reportParserManager.parseTestSets(reportFilePath, testingFramework,  testingTool);
+
 		if(testsets == null) {
 			logger.log("Failed to parse file: " + reportFilePath);
 			throw new ExternalEntityUploadException("Failed to parse file: " + reportFilePath);

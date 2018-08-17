@@ -301,7 +301,7 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
                 );
     			AlmRestTool u = new AlmRestTool(loginInfo, logger);
     			logger.log("INFO: Start to upload "+fullpath);
-    			IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, logger );
+    			IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, build.getWorkspace(), logger);
     			try {
 	    			service.UploadExternalTestSet(loginInfo,
 	    					fullpath,
