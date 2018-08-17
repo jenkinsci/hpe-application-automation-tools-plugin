@@ -1,5 +1,5 @@
 /*
- * © Copyright 2013 EntIT Software LLC
+ *
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -22,6 +22,7 @@
 
 package com.microfocus.application.automation.tools.sse.sdk.authenticator;
 
+import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
 import com.microfocus.application.automation.tools.common.SSEException;
 import com.microfocus.application.automation.tools.sse.sdk.Client;
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
@@ -29,7 +30,9 @@ import com.microfocus.application.automation.tools.sse.sdk.ResourceAccessLevel;
 import com.microfocus.application.automation.tools.sse.sdk.Response;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Unify the rest authentication process here from separated part, ALMRestTool and RunManager.
@@ -80,12 +83,17 @@ public final class AuthenticationTool {
 
     private static void appendQCSessionCookies(Client client, String clientType, Logger logger) {
         logger.log("Creating session...");
+
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put(RESTConstants.CONTENT_TYPE, RESTConstants.APP_XML);
+        headers.put(RESTConstants.ACCEPT, RESTConstants.APP_XML);
+
         // issue a post request so that cookies relevant to the QC Session will be added to the RestClient
         Response response =
                 client.httpPost(
                         client.build("rest/site-session"),
                         generateClientTypeData(clientType),
-                        null,
+                        headers,
                         ResourceAccessLevel.PUBLIC);
         if (!response.isOk()) {
             throw new SSEException("Cannot append QCSession cookies", response.getFailure());

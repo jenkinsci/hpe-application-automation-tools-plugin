@@ -1,5 +1,5 @@
 ﻿/*
- * © Copyright 2013 EntIT Software LLC
+ *
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -102,8 +102,8 @@ namespace HpToolsLauncher.ParallelRunner
             // or "manufacturerAndModel: Samsung S6, osVersion: > 6"
             // or for web: "browser: Chrome"
 
-            // the environment string is case-insensitive
-            environment = environment.Trim().ToLower();
+            // the environment string is case-sensitive
+            environment = environment.Trim();
 
             // we get the key value pairs by splitting them
             string[] tokens = environment.Split(EnvironmentTokenSeparator);
@@ -115,7 +115,7 @@ namespace HpToolsLauncher.ParallelRunner
                 // invalid setting, there should be at least two values
                 if (keyValuePair.Length <= 1) continue;
 
-                string key = keyValuePair[0].Trim();
+                string key = keyValuePair[0].Trim().ToLower();
 
                 if (string.IsNullOrEmpty(key)) continue;
 
