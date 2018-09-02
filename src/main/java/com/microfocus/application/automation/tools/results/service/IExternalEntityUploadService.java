@@ -1,5 +1,5 @@
 /*
- *
+ * © Copyright 2013 EntIT Software LLC
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -22,8 +22,17 @@
 
 package com.microfocus.application.automation.tools.results.service;
 
+import java.util.Map;
+
 public interface IExternalEntityUploadService {
 
-	public void UploadExternalTestSet(AlmRestInfo loginInfo, String reportFilePath, String testsetFolderPath, String testFolderPath, String testingFramework, String testingTool, String subversion, String jobName, String buildUrl) throws ExternalEntityUploadException;	
+	public void UploadExternalTestSet(AlmRestInfo loginInfo, String reportFilePath, String testsetFolderPath,
+			String testFolderPath, String testingFramework, String testingTool, String subversion, String jobName,
+			String buildUrl) throws ExternalEntityUploadException;
+
+	public void UploadExternalTestSet(AlmRestInfo loginInfo, String reportFilePath, String testsetFolderPath,
+			String testFolderPath, String testingFramework, String testingTool, String subversion, String jobName, String buildUrl, Map<String, String> testSetFields,
+			Map<String, String> testCaseFields)
+			throws ExternalEntityUploadException;
 
 }

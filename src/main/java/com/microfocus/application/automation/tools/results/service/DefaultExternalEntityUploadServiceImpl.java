@@ -1,5 +1,5 @@
 /*
- *
+ * © Copyright 2013 EntIT Software LLC
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -50,146 +50,197 @@ import com.microfocus.application.automation.tools.results.service.almentities.E
 import com.microfocus.application.automation.tools.results.service.almentities.IAlmConsts;
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
 
-public class DefaultExternalEntityUploadServiceImpl implements
-		IExternalEntityUploadService {
+public class DefaultExternalEntityUploadServiceImpl implements IExternalEntityUploadService {
 
 	Logger logger;
-	
 
 	private AlmRestTool restTool;
-	
+
 	public DefaultExternalEntityUploadServiceImpl(AlmRestTool restTool, Logger logger) {
 		this.restTool = restTool;
 		this.logger = logger;
 	}
 
+	private String[] getTestCreationFields() {
 
-	private String [] getTestCreationFields() {
-		
-		return new String [] {	AlmTest.TEST_NAME,
-								AlmTest.TEST_TYPE,
-								AlmTest.TS_TESTING_FRAMEWORK,
-								AlmTest.TS_TESTING_TOOL,
-								AlmTest.TS_UT_PACKAGE_NAME,
-								AlmTest.TS_UT_CLASS_NAME,
-								AlmTest.TS_UT_METHOD_NAME,
-								AlmCommonProperties.PARENT_ID,
-								AlmTest.TEST_RESPONSIBLE
-							};
+		return new String[] { AlmTest.TEST_NAME, AlmTest.TEST_TYPE, AlmTest.TS_TESTING_FRAMEWORK,
+				AlmTest.TS_TESTING_TOOL, AlmTest.TS_UT_PACKAGE_NAME, AlmTest.TS_UT_CLASS_NAME,
+				AlmTest.TS_UT_METHOD_NAME, AlmCommonProperties.PARENT_ID, AlmTest.TEST_RESPONSIBLE };
 	}
-	
-	private AlmTest importTest(AlmTest test , int testFolderId, String testingTool, String testdesigner) throws ExternalEntityUploadException{
+
+	private String[] getTestCreationFields(String[] userFields) {
+		List<String> result = new ArrayList<String>();
+		result.add(AlmTest.TEST_NAME);
+		result.add(AlmTest.TEST_TYPE);
+		result.add(AlmTest.TS_TESTING_FRAMEWORK);
+		result.add(AlmTest.TS_TESTING_TOOL);
+		result.add(AlmTest.TS_UT_PACKAGE_NAME);
+		result.add(AlmTest.TS_UT_CLASS_NAME);
+		result.add(AlmTest.TS_UT_METHOD_NAME);
+		result.add(AlmCommonProperties.PARENT_ID);
+		result.add(AlmTest.TEST_RESPONSIBLE);
+		for (String aField : userFields) {
+			result.add(aField);
+		}
+		return result.toArray(new String[result.size()]);
+	}
+
+	private AlmTest importTest(AlmTest test, int testFolderId, String testingTool, String testdesigner,
+			Map<String, String> testCaseFields) throws ExternalEntityUploadException {
 
 		String className = (String) test.getFieldValue(AlmTest.TS_UT_CLASS_NAME);
 		String methodName = (String) test.getFieldValue(AlmTest.TS_UT_METHOD_NAME);
 		String packageName = (String) test.getFieldValue(AlmTest.TS_UT_PACKAGE_NAME);
 		String testingFramework = (String) test.getFieldValue(AlmTest.TS_TESTING_FRAMEWORK);
-		
-		String queryString = String.format("query={parent-id[%s];subtype-id[EXTERNAL-TEST];ut-class-name[%s];ut-method-name[%s]}&fields=id,name,ut-package-name,ut-class-name,ut-method-name,testing-framework&page-size=2000", 
-											String.valueOf(testFolderId),
-											AlmRestTool.getEncodedString(className),
-											AlmRestTool.getEncodedString(methodName));		
+
+		String queryString = String.format(
+				"query={parent-id[%s];subtype-id[EXTERNAL-TEST];ut-class-name[%s];ut-method-name[%s]}&fields=id,name,ut-package-name,ut-class-name,ut-method-name,testing-framework&page-size=2000",
+				String.valueOf(testFolderId), AlmRestTool.getEncodedString(className),
+				AlmRestTool.getEncodedString(methodName));
 		List<AlmTestImpl> existingTests = restTool.getAlmEntity(new AlmTestImpl(), queryString);
-		
-		AlmTestImpl importedTest = null;//restTool.getEntityUnderParentFolder(AlmTestImpl.class, testFolderId, test.getName());
-		
-		if(existingTests != null && existingTests.size() >0) {
+
+		AlmTestImpl importedTest = null;// restTool.getEntityUnderParentFolder(AlmTestImpl.class, testFolderId,
+										// test.getName());
+
+		if (existingTests != null && existingTests.size() > 0) {
 			boolean exists = false;
-			Map<String, AlmTestImpl> existingTestMap = new HashMap<String, AlmTestImpl> ();
-			
-			for(AlmTestImpl existingTest : existingTests) {
-				if(existingTest.getKey().endsWith(test.getKey())) {
+			Map<String, AlmTestImpl> existingTestMap = new HashMap<String, AlmTestImpl>();
+
+			for (AlmTestImpl existingTest : existingTests) {
+				if (existingTest.getKey().endsWith(test.getKey())) {
 					exists = true;
+					logger.log("Recuperado el Test: \n" + existingTest.toString());
 					importedTest = existingTest;
 					break;
 				}
 				existingTestMap.put(existingTest.getName(), existingTest);
 			}
-			
-			if(!exists) {
+
+			if (!exists) {
 				String tempName = className + "_" + methodName;
-				if(!existingTestMap.containsKey(tempName)) {
+				if (!existingTestMap.containsKey(tempName)) {
 					test.setFieldValue(AlmTest.TEST_NAME, tempName);
-				} else { 
-					tempName = packageName + "_" +tempName;
-					if(!existingTestMap.containsKey(tempName)) {
+				} else {
+					tempName = packageName + "_" + tempName;
+					if (!existingTestMap.containsKey(tempName)) {
 						test.setFieldValue(AlmTest.TEST_NAME, tempName);
 					} else {
-						tempName = tempName +"_" +testingFramework;
-						if(!existingTestMap.containsKey(tempName)) {
+						tempName = tempName + "_" + testingFramework;
+						if (!existingTestMap.containsKey(tempName)) {
 							test.setFieldValue(AlmTest.TEST_NAME, tempName);
 						}
 					}
 				}
-				
+
 			}
 		}
-		
-		if(importedTest	== null) {
-			test.setFieldValue(AlmCommonProperties.PARENT_ID, String.valueOf(testFolderId));	
+		String[] keys = (testCaseFields == null || testCaseFields.isEmpty()) ? new String[] {}:testCaseFields.keySet().toArray(new String[testCaseFields.size()]);
+		if (importedTest == null) {
+			logger.log("Create ALM Entity:\n" + test.toString());
+			test.setFieldValue(AlmCommonProperties.PARENT_ID, String.valueOf(testFolderId));
 			test.setFieldValue(AlmTest.TS_TESTING_TOOL, testingTool);
 			test.setFieldValue(AlmTest.TEST_RESPONSIBLE, testdesigner);
-			return restTool.createAlmEntity(test, getTestCreationFields());
+			for (String aKey : keys) {
+				test.setFieldValue(aKey, testCaseFields.get(aKey));
+			}
+			return restTool.createAlmEntity(test, getTestCreationFields(keys));
+		} 
+		else {
+			// Update pipelines`s user Fields
+			logger.log("Update Fields for Test: " + importedTest.toString());
+			importedTest.setFieldValue(AlmTestImpl.TEST_TYPE, "EXTERNAL-TEST");
+			for (String aKey : keys) {
+				importedTest.setFieldValue(aKey, testCaseFields.get(aKey));
+			}
+			if (keys.length>0) 
+				restTool.updateAlmEntity(importedTest,getTestUpdateFields(keys));
 		}
-
-
 		return importedTest;
 	}
-	
-	private String [] getTestSetCreationFields() {
-		return new String [] {	AlmCommonProperties.PARENT_ID,
-								AlmTestSet.TESTSET_NAME,
-								AlmTestSet.TESTSET_SUB_TYPE_ID};
+
+	private String[] getTestSetCreationFields() {
+		return new String[] { AlmCommonProperties.PARENT_ID, AlmTestSet.TESTSET_NAME, AlmTestSet.TESTSET_SUB_TYPE_ID };
+	}
+
+	private String[] getTestSetCreationFields(String[] fields) {
+		List<String> result = new ArrayList<String>();
+		result.add(AlmCommonProperties.PARENT_ID);
+		result.add(AlmTestSet.TESTSET_NAME);
+		result.add(AlmTestSet.TESTSET_SUB_TYPE_ID);
+		for (String aField : fields) {
+			result.add(aField);
+		}
+		return result.toArray(new String[result.size()]);
+	}
+
+	private String[] getTestSetUpdateFields(String[] fields) {
+		List<String> result = new ArrayList<String>();
+		for (String aField : fields) {
+			result.add(aField);
+		}
+		return (result.size()>0)?result.toArray(new String[result.size()]):getTestSetCreationFields();
 	}
 	
-	private AlmTestSet importTestSet(AlmTestSet testset, int testsetFolderId) throws ExternalEntityUploadException{
+	private String[] getTestUpdateFields(String[] fields) {
+		List<String> result = new ArrayList<String>();
+		for (String aField : fields) {
+			result.add(aField);
+		}
+		return (result.size()>0)?result.toArray(new String[result.size()]):getTestSetCreationFields();
+	}
 
-		
-		AlmTestSetImpl
-                importedTestset = restTool.getEntityUnderParentFolder(AlmTestSetImpl.class, testsetFolderId, testset.getName());
-		
-		if(importedTestset == null) {
-			
+	private AlmTestSet importTestSet(AlmTestSet testset, int testsetFolderId, String[] fields)
+			throws ExternalEntityUploadException {
+		logger.log("Import TestSet " + testset.toString());
+		AlmTestSetImpl importedTestset = restTool.getEntityUnderParentFolder(AlmTestSetImpl.class, testsetFolderId,
+				testset.getName());
+		if (importedTestset != null) {
+			logger.log("TestSet Already exist. Update TestSet");
+			AlmTestSetImpl aux = new AlmTestSetImpl();
+			aux.setId(importedTestset.getId());
+			for (String aKey : fields) {
+				aux.setFieldValue(aKey, (String) testset.getFieldValue(aKey));
+			}
+			logger.log("Update Testset exists.\n " + aux.toString());
+			if (fields.length>0) 
+				restTool.updateAlmEntity(aux, getTestSetUpdateFields(fields));
+		} else {
 			testset.setFieldValue(AlmCommonProperties.PARENT_ID, String.valueOf(testsetFolderId));
-			return restTool.createAlmEntity(testset, getTestSetCreationFields());
-	        
+			return restTool.createAlmEntity(testset, getTestSetCreationFields(fields));
 		}
 
-		
 		return importedTestset;
 	}
-	
-	private AlmTestConfig getMainTestConfig(AlmTest test){
-	
-        AlmTestConfigImpl testConfigImpl = new AlmTestConfigImpl();
-        String queryString = String.format("query={parent-id[%s]}&fields=id,name", String.valueOf(test.getId()) );
-        List<AlmTestConfigImpl> testconfigs = restTool.getAlmEntity(testConfigImpl, queryString);
-		if(testconfigs != null && testconfigs.size() >0) {
+
+	private AlmTestConfig getMainTestConfig(AlmTest test) {
+
+		AlmTestConfigImpl testConfigImpl = new AlmTestConfigImpl();
+		String queryString = String.format("query={parent-id[%s]}&fields=id,name", String.valueOf(test.getId()));
+		List<AlmTestConfigImpl> testconfigs = restTool.getAlmEntity(testConfigImpl, queryString);
+		if (testconfigs != null && testconfigs.size() > 0) {
 			return testconfigs.get(0);
 		} else {
 			return null;
 		}
-		
+
 	}
-	
-	private String [] getTestInstanceCreationFields (){
-		return new String [] {	AlmTestInstance.TEST_INSTANCE_TESTSET_ID,
-								AlmTestInstance.TEST_INSTANCE_CONFIG_ID,
-								AlmTestInstance.TEST_INSTANCE_TEST_ID,
-								AlmTestInstance.TEST_INSTANCE_TESTER_NAME,
-								AlmTestInstance.TEST_INSTANCE_SUBTYPE_ID
-		};
-		
+
+	private String[] getTestInstanceCreationFields() {
+		return new String[] { AlmTestInstance.TEST_INSTANCE_TESTSET_ID, AlmTestInstance.TEST_INSTANCE_CONFIG_ID,
+				AlmTestInstance.TEST_INSTANCE_TEST_ID, AlmTestInstance.TEST_INSTANCE_TESTER_NAME,
+				AlmTestInstance.TEST_INSTANCE_SUBTYPE_ID };
+
 	}
-	
-	private AlmTestInstance importTestInstance(AlmTestInstance testinstance, String testsetId, String testId, String testconfigId, String tester) throws ExternalEntityUploadException{
-		
+
+	private AlmTestInstance importTestInstance(AlmTestInstance testinstance, String testsetId, String testId,
+			String testconfigId, String tester) throws ExternalEntityUploadException {
+
 		String queryString = String.format("query={cycle-id[%s];test-config-id[%s];test-id[%s]}&fields=id,name",
-										String.valueOf(testsetId), String.valueOf(testconfigId), String.valueOf(testId) );
+				String.valueOf(testsetId), String.valueOf(testconfigId), String.valueOf(testId));
 
-        List<AlmTestInstanceImpl> testInstances = restTool.getAlmEntity(new AlmTestInstanceImpl(), queryString);
+		List<AlmTestInstanceImpl> testInstances = restTool.getAlmEntity(new AlmTestInstanceImpl(), queryString);
 
-		if(testInstances!=null && testInstances.size() > 0){
+		if (testInstances != null && testInstances.size() > 0) {
 			return testInstances.get(0);
 		} else {
 
@@ -201,83 +252,63 @@ public class DefaultExternalEntityUploadServiceImpl implements
 			return restTool.createAlmEntity(testinstance, getTestInstanceCreationFields());
 		}
 	}
-	
-    private String generateImportRunName() {
-        Calendar cal = new GregorianCalendar();
-        cal.setTime(new java.sql.Date(System.currentTimeMillis()));
-        return String.format(
-                IAlmConsts.IMPORT_RUN_NAME_TEMPLATE,
-                cal.get(Calendar.MONTH) + 1, // java.util.Calendar represents months from 0 to 11 instead of from 1 to 12. That's why it should be incremented.
-                cal.get(Calendar.DAY_OF_MONTH),
-                cal.get(Calendar.HOUR_OF_DAY),
-                cal.get(Calendar.MINUTE),
-                cal.get(Calendar.SECOND));
-    }
-    
 
-    private String[] getRunCreationFields() {
-    	return new String[]{
-    			AlmRun.RUN_CONFIG_ID,
-    			AlmRun.RUN_CYCLE_ID,
-    			AlmRun.RUN_TEST_ID,
-    			AlmRun.RUN_TESTCYCL_UNIQUE_ID,
-    			AlmRun.RUN_BUILD_REVISION,
-    			AlmCommonProperties.NAME,
-    			AlmCommonProperties.OWNER,
-    			AlmRun.RUN_STATUS,
-    			AlmRun.RUN_SUBTYPE_ID,
-    			AlmRun.RUN_DETAIL,
-    			AlmRun.RUN_DURATION,
-    			AlmRun.RUN_JENKINS_JOB_NAME,
-    			AlmRun.RUN_JENKINS_URL,
-    			AlmRun.RUN_EXECUTION_DATE,
-    			AlmRun.RUN_EXECUTION_TIME,
-    			AlmRun.RUN_STATUS
-    	};
-    }
-    
-	private AlmRun generateRun(String tester, 
-								AlmRun run, 
-								String testsetId, 
-								String testId, 
-								String testInstanceId, 
-								String testconfigId, 
-								String subversion,
-								String jobName,
-								String buildUrl) throws ExternalEntityUploadException{
-		
+	private String generateImportRunName() {
+		Calendar cal = new GregorianCalendar();
+		cal.setTime(new java.sql.Date(System.currentTimeMillis()));
+		return String.format(IAlmConsts.IMPORT_RUN_NAME_TEMPLATE, cal.get(Calendar.MONTH) + 1, // java.util.Calendar
+																								// represents months
+																								// from 0 to 11 instead
+																								// of from 1 to 12.
+																								// That's why it should
+																								// be incremented.
+				cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE),
+				cal.get(Calendar.SECOND));
+	}
+
+	private String[] getRunCreationFields() {
+		return new String[] { AlmRun.RUN_CONFIG_ID, AlmRun.RUN_CYCLE_ID, AlmRun.RUN_TEST_ID,
+				AlmRun.RUN_TESTCYCL_UNIQUE_ID, AlmRun.RUN_BUILD_REVISION, AlmCommonProperties.NAME,
+				AlmCommonProperties.OWNER, AlmRun.RUN_STATUS, AlmRun.RUN_SUBTYPE_ID, AlmRun.RUN_DETAIL,
+				AlmRun.RUN_DURATION, AlmRun.RUN_JENKINS_JOB_NAME, AlmRun.RUN_JENKINS_URL, AlmRun.RUN_EXECUTION_DATE,
+				AlmRun.RUN_EXECUTION_TIME, AlmRun.RUN_STATUS };
+	}
+
+	private AlmRun generateRun(String tester, AlmRun run, String testsetId, String testId, String testInstanceId,
+			String testconfigId, String subversion, String jobName, String buildUrl)
+			throws ExternalEntityUploadException {
+
 		run.setFieldValue(AlmRun.RUN_CONFIG_ID, String.valueOf(testconfigId));
 		run.setFieldValue(AlmRun.RUN_CYCLE_ID, String.valueOf(testsetId));
 		run.setFieldValue(AlmRun.RUN_TEST_ID, String.valueOf(testId));
 		run.setFieldValue(AlmRun.RUN_TESTCYCL_UNIQUE_ID, String.valueOf(testInstanceId));
 		run.setFieldValue(AlmRun.RUN_JENKINS_JOB_NAME, jobName);
 		run.setFieldValue(AlmRun.RUN_JENKINS_URL, buildUrl);
-		
-		
-		if(subversion != null && subversion.length() >0 ) {
+
+		if (subversion != null && subversion.length() > 0) {
 			run.setFieldValue(AlmRun.RUN_BUILD_REVISION, subversion);
 		} else {
 			run.setFieldValue(AlmRun.RUN_BUILD_REVISION, "");
 		}
-		
+
 		run.setFieldValue(AlmCommonProperties.NAME, generateImportRunName());
 		run.setFieldValue(AlmCommonProperties.OWNER, tester);
-		
-		return restTool.createAlmEntity(run, getRunCreationFields());
 
+		return restTool.createAlmEntity(run, getRunCreationFields());
 
 	}
 
 	private String[] getCreationFieldsForTestFolder() {
-		return new String[] {AlmCommonProperties.NAME, AlmCommonProperties.PARENT_ID};
+		return new String[] { AlmCommonProperties.NAME, AlmCommonProperties.PARENT_ID };
 	}
-	
+
 	private AlmTestFolder createTestFolder(int parentId, String folderName) throws ExternalEntityUploadException {
-		
-		AlmTestFolderImpl testFolder = restTool.getEntityUnderParentFolder(AlmTestFolderImpl.class, parentId, folderName);
+
+		AlmTestFolderImpl testFolder = restTool.getEntityUnderParentFolder(AlmTestFolderImpl.class, parentId,
+				folderName);
 		String encodedFolderName = folderName;
 
-		if(testFolder == null) {
+		if (testFolder == null) {
 			testFolder = new AlmTestFolderImpl();
 			testFolder.setFieldValue(AlmCommonProperties.PARENT_ID, String.valueOf(parentId));
 			testFolder.setFieldValue(AlmCommonProperties.NAME, encodedFolderName);
@@ -286,42 +317,42 @@ public class DefaultExternalEntityUploadServiceImpl implements
 			return testFolder;
 		}
 	}
+
 	String FOLDER_SEPERATOR = "\\";
-	
-	
+
 	private AlmTestFolder createTestFolderPath(int parentId, String path) throws ExternalEntityUploadException {
 		List<AlmTestFolder> folders = new ArrayList<AlmTestFolder>();
-		
+
 		StringTokenizer tokenizer = new StringTokenizer(path, FOLDER_SEPERATOR);
-        
-        while (tokenizer.hasMoreTokens()) {
-            String itemString = tokenizer.nextToken();
+
+		while (tokenizer.hasMoreTokens()) {
+			String itemString = tokenizer.nextToken();
 			AlmTestFolder testFolder = createTestFolder(parentId, itemString);
-			if(testFolder != null) {
+			if (testFolder != null) {
 				folders.add(testFolder);
 				parentId = Integer.valueOf(testFolder.getId());
-			}            
-        }
+			}
+		}
 
-        if(folders.size() >0 ){
-			return folders.get(folders.size()-1);
-		} else  {
+		if (folders.size() > 0) {
+			return folders.get(folders.size() - 1);
+		} else {
 			return null;
 		}
 	}
-	
+
 	private String[] getCreationFieldsForTestSetFolder() {
-		return new String[] {AlmCommonProperties.NAME, AlmCommonProperties.PARENT_ID};
+		return new String[] { AlmCommonProperties.NAME, AlmCommonProperties.PARENT_ID };
 	}
-	
+
 	private AlmTestSetFolder createTestSetFolder(int parentId, String folderName) throws ExternalEntityUploadException {
-		
-		AlmTestSetFolderImpl
-                testsetFolder = restTool.getEntityUnderParentFolder(AlmTestSetFolderImpl.class, parentId, folderName);
-		
+
+		AlmTestSetFolderImpl testsetFolder = restTool.getEntityUnderParentFolder(AlmTestSetFolderImpl.class, parentId,
+				folderName);
+
 		String encodedFolderName = folderName;
 
-		if(testsetFolder == null) {
+		if (testsetFolder == null) {
 			testsetFolder = new AlmTestSetFolderImpl();
 			testsetFolder.setFieldValue(AlmCommonProperties.PARENT_ID, String.valueOf(parentId));
 			testsetFolder.setFieldValue(AlmCommonProperties.NAME, encodedFolderName);
@@ -336,65 +367,61 @@ public class DefaultExternalEntityUploadServiceImpl implements
 		List<AlmTestSetFolder> folders = new ArrayList<AlmTestSetFolder>();
 
 		StringTokenizer tokenizer = new StringTokenizer(path, FOLDER_SEPERATOR);
-        
-        while (tokenizer.hasMoreTokens()) {
-            String itemString = tokenizer.nextToken();
-            AlmTestSetFolder testsetFolder = createTestSetFolder(parentId, itemString);
-			if(testsetFolder != null) {
+
+		while (tokenizer.hasMoreTokens()) {
+			String itemString = tokenizer.nextToken();
+			AlmTestSetFolder testsetFolder = createTestSetFolder(parentId, itemString);
+			if (testsetFolder != null) {
 				folders.add(testsetFolder);
 				parentId = Integer.valueOf(testsetFolder.getId());
-			}            
-        }		
-		if(folders.size() >0 ){
-			return folders.get(folders.size()-1);
-		} else  {
+			}
+		}
+		if (folders.size() > 0) {
+			return folders.get(folders.size() - 1);
+		} else {
 			return null;
 		}
-	}	
-	
+	}
+
 	@Override
-	public void UploadExternalTestSet(AlmRestInfo loginInfo, 
-							String reportFilePath, 
-							String testsetFolderPath, 
-							String testFolderPath, 
-							String testingFramework, 
-							String testingTool, 
-							String subversion,
-							String jobName, 
-							String buildUrl) throws ExternalEntityUploadException{
-		
-		logger.log("INFO: Start to parse file: " +reportFilePath);
-		
-		List<AlmTestSet> testsets = ReportParserManager
-                .getInstance().parseTestSets( reportFilePath, testingFramework,  testingTool);
-		
-		if(testsets == null) {
+	public void UploadExternalTestSet(AlmRestInfo loginInfo, String reportFilePath, String testsetFolderPath,
+			String testFolderPath, String testingFramework, String testingTool, String subversion, String jobName,
+			String buildUrl) throws ExternalEntityUploadException {
+
+		this.UploadExternalTestSet(loginInfo, reportFilePath, testsetFolderPath, testFolderPath, testingFramework,
+				testingTool, subversion, jobName, buildUrl, null, null);
+
+	}
+
+	@Override
+	public void UploadExternalTestSet(AlmRestInfo loginInfo, String reportFilePath, String testsetFolderPath,
+			String testFolderPath, String testingFramework, String testingTool, String subversion, String jobName,
+			String buildUrl, Map<String, String> testSetFields, Map<String, String> testCaseFields)
+			throws ExternalEntityUploadException {
+		List<AlmTestSet> testsets = ReportParserManager.getInstance().parseTestSets(reportFilePath, testingFramework,
+				testingTool);
+
+		if (testsets == null) {
 			logger.log("Failed to parse file: " + reportFilePath);
 			throw new ExternalEntityUploadException("Failed to parse file: " + reportFilePath);
-		} else  {
+		} else {
 			logger.log("INFO: parse resut file succeed.");
 		}
-		
-		if(testsets != null && testsets.size() >0 ) {
+
+		if (testsets != null && testsets.size() > 0) {
 			logger.log("INFO: Start to login to ALM Server.");
 			try {
-				if( restTool.login() ) {
-				
+				if (restTool.login()) {
+
 					logger.log("INFO: Checking test folder...");
 					AlmTestFolder testFolder = createTestFolderPath(2, testFolderPath);
 					logger.log("INFO: Checking testset folder...");
-					AlmTestSetFolder testsetFolder = createTestSetFolderPath (0, testsetFolderPath);
-					if(testFolder != null && testsetFolder != null){
-						logger.log("INFO: Uploading ALM Entities...");
-						importExternalTestSet(
-								testsets, 
-								loginInfo.getUserName(), 
-								Integer.valueOf(testsetFolder.getId()), 
-								Integer.valueOf(testFolder.getId()), 
-								testingTool, 
-								subversion, 
-								jobName, 
-								buildUrl);
+					AlmTestSetFolder testsetFolder = createTestSetFolderPath(0, testsetFolderPath);
+					if (testFolder != null && testsetFolder != null) {
+						logger.log("INFO: Uploading External TestSet. ");
+						importExternalTestSet(testsets, loginInfo.getUserName(), Integer.valueOf(testsetFolder.getId()),
+								Integer.valueOf(testFolder.getId()), testingTool, subversion, jobName, buildUrl,
+								testSetFields, testCaseFields);
 					}
 				} else {
 					throw new ExternalEntityUploadException("Failed to login to ALM Server.");
@@ -404,59 +431,64 @@ public class DefaultExternalEntityUploadServiceImpl implements
 			}
 		}
 	}
-	
-	
-	private void importExternalTestSet(List<AlmTestSet> testsets, String tester, int testsetFolderId, int testFolderId, String testingTool, String subversion, String jobName, String buildUrl ) throws ExternalEntityUploadException{
 
-		
-		for (AlmTestSet testset : testsets){
-			AlmTestSet importedTestSet = importTestSet(testset, testsetFolderId);
-			if(importedTestSet == null ) {
+	private void importExternalTestSet(List<AlmTestSet> testsets, String tester, int testsetFolderId, int testFolderId,
+			String testingTool, String subversion, String jobName, String buildUrl, Map<String, String> testSetfields,
+			Map<String, String> testCasefields) throws ExternalEntityUploadException {
+		logger.log("Start import external.");
+		for (AlmTestSet impl : testsets) {
+			AlmTestSetImpl testset = (AlmTestSetImpl) impl;
+			// Add pipelines`s user Fields
+			logger.log("Add pipeline`s user fields.");
+			
+			String[] keys = (null==testSetfields || testSetfields.isEmpty()) ? new String[] {}: testSetfields.keySet().toArray(new String[testSetfields.size()]);
+			for (String aKey : keys) {
+				testset.setFieldValue(aKey, testSetfields.get(aKey));
+			}
+			AlmTestSet importedTestSet = importTestSet(testset, testsetFolderId, keys);
+			if (importedTestSet == null) {
+				logger.log("Testset imported null.");
 				continue;
 			}
-			List<AlmEntity> testinstances = testset.getRelatedEntities().get(EntityRelation.TESTSET_TO_TESTINSTANCE_CONTAINMENT_RELATION);
-			if(testinstances == null || testinstances.size() <=0) {
+			List<AlmEntity> testinstances = testset.getRelatedEntities()
+					.get(EntityRelation.TESTSET_TO_TESTINSTANCE_CONTAINMENT_RELATION);
+			if (testinstances == null || testinstances.size() <= 0) {
 				continue;
 			}
 
-			for(AlmEntity testinstanceEntity: testinstances){
+			for (AlmEntity testinstanceEntity : testinstances) {
 				AlmTestInstance testInstance = (AlmTestInstance) testinstanceEntity;
-				List<AlmEntity> tests = testInstance.getRelatedEntities().get(EntityRelation.TEST_TO_TESTINSTANCE_REALIZATION_RELATION);
-				if(tests == null || tests.size() <= 0) {
+				List<AlmEntity> tests = testInstance.getRelatedEntities()
+						.get(EntityRelation.TEST_TO_TESTINSTANCE_REALIZATION_RELATION);
+				if (tests == null || tests.size() <= 0) {
 					continue;
 				}
 
 				AlmTest test = (AlmTest) tests.get(0);
-				AlmTest importedTest = importTest(test, testFolderId, testingTool, tester);
-				if(importedTest == null) {
-					continue;
-				}
-				
-				AlmTestConfig mainTestConfig = getMainTestConfig(importedTest);
-				if(mainTestConfig == null) {
+				AlmTest importedTest = importTest(test, testFolderId, testingTool, tester, testCasefields);
+				if (importedTest == null) {
 					continue;
 				}
 
-				AlmTestInstance importedTestInstance = importTestInstance(testInstance, importedTestSet.getId(), importedTest.getId(), mainTestConfig.getId(), tester);
-				List<AlmEntity> runs = testInstance.getRelatedEntities().get(EntityRelation.TESTINSTANCE_TO_RUN_REALIZATION_RELATION);
-				if(runs == null || runs.size() <= 0) {
+				AlmTestConfig mainTestConfig = getMainTestConfig(importedTest);
+				if (mainTestConfig == null) {
 					continue;
 				}
-				
+
+				AlmTestInstance importedTestInstance = importTestInstance(testInstance, importedTestSet.getId(),
+						importedTest.getId(), mainTestConfig.getId(), tester);
+				List<AlmEntity> runs = testInstance.getRelatedEntities()
+						.get(EntityRelation.TESTINSTANCE_TO_RUN_REALIZATION_RELATION);
+				if (runs == null || runs.size() <= 0) {
+					continue;
+				}
+
 				AlmRun run = (AlmRun) runs.get(0);
-				generateRun(tester, 
-							run,  
-							importedTestSet.getId(),
-							importedTest.getId(), 
-							importedTestInstance.getId(), 
-							mainTestConfig.getId(), 
-							subversion,
-							jobName,
-							buildUrl
-							);
+				generateRun(tester, run, importedTestSet.getId(), importedTest.getId(), importedTestInstance.getId(),
+						mainTestConfig.getId(), subversion, jobName, buildUrl);
 			}
 		}
-		
+
 	}
-	
+
 }
