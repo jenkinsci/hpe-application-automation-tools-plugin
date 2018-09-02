@@ -36,20 +36,13 @@ import com.microfocus.application.automation.tools.results.service.ExternalEntit
 import com.microfocus.application.automation.tools.results.service.IExternalEntityUploadService;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsBuilder;
 import hudson.Extension;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.matrix.MatrixAggregatable;
 import hudson.matrix.MatrixAggregator;
 import hudson.matrix.MatrixBuild;
-import hudson.model.Action;
-import hudson.model.BuildListener;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Hudson;
-import hudson.model.Item;
-import hudson.model.Queue;
-import hudson.model.Result;
-import hudson.model.Run;
+import hudson.model.*;
 import hudson.model.queue.Tasks;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
@@ -67,6 +60,7 @@ import java.util.List;
 
 import hudson.util.ListBoxModel;
 import hudson.util.VariableResolver;
+import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tools.ant.DirectoryScanner;
 import org.kohsuke.stapler.AncestorInPath;
@@ -76,12 +70,14 @@ import org.kohsuke.stapler.QueryParameter;
 import com.microfocus.application.automation.tools.model.UploadTestResultToAlmModel;
 import com.microfocus.application.automation.tools.results.service.DefaultExternalEntityUploadServiceImpl;
 
+import javax.annotation.Nonnull;
+
 /**
 
  * 
  * @author Jacky Zhu
  */
-public class TestResultToALMUploader extends Recorder implements Serializable, MatrixAggregatable {
+public class TestResultToALMUploader extends Recorder implements Serializable, MatrixAggregatable, SimpleBuildStep {
     
     private static final long serialVersionUID = 1L;
     private UploadTestResultToAlmModel uploadTestResultToAlmModel;
@@ -235,92 +231,8 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
-    	ExternalEntityUploadLogger logger = new ExternalEntityUploadLogger(listener.getLogger());
-
-    	// Credentials id maybe can't be blank
-        if (StringUtils.isBlank(credentialsId)) {
-            logger.log("INFO: credentials is not configured.");
-            build.setResult(Result.UNSTABLE);
-            return true;
-        }
-        UsernamePasswordCredentials credentials = getCredentialsById(credentialsId, build, logger);
-
-
-    	logger.log(String.format("INFO: 'Upload test result to ALM' Post Build Step is being invoked by %s.",
-                credentials.getUsername()));
-
-        uploadTestResultToAlmModel = new UploadTestResultToAlmModel(
-                almServerName,
-                credentials.getUsername(),
-                credentials.getPassword().getPlainText(),
-                almDomain,
-                clientType,
-                almProject,
-                testingFramework,
-                testingTool,
-                almTestFolder,
-                almTestSetFolder,
-                almTimeout,
-                testingResultFile,
-                jenkinsServerUrl);
-
-        VariableResolver<String> varResolver = new VariableResolver.ByMap<String>(build.getEnvironment(listener));
-
-        String serverUrl = getAlmServerUrl(uploadTestResultToAlmModel.getAlmServerName());
-        String runUrl = "";
-        String tempUrl = Util.replaceMacro(uploadTestResultToAlmModel.getJenkinsServerUrl(), varResolver);
-        if(tempUrl != null && tempUrl.length() >0 ) {
-        	if(tempUrl.charAt(tempUrl.length() -1) != '/') {
-        		runUrl= tempUrl + "/" + build.getUrl();
-        	} else  {
-        		runUrl = tempUrl + build.getUrl();
-        	}
-        }
-
-        File root = build.getRootDir();
-        DirectoryScanner ds = new DirectoryScanner();
-        ds.setBasedir(root);
-        ds.setIncludes( new String[] {uploadTestResultToAlmModel.getTestingResultFile()});
-        ds.scan();
-        if (ds.getIncludedFilesCount() == 0) {
-        	logger.log("INFO: No Test Report found.");
-            build.setResult(Result.UNSTABLE);
-        } else {
-        	logger.log("INFO: "+ ds.getIncludedFilesCount() +" test result file found.");
-        	String[] files = ds.getIncludedFiles();
-        	for(String fileName : files) {
-        		String fullpath = root.getAbsolutePath() + File.separator + fileName;
-    			AlmRestInfo loginInfo = new AlmRestInfo(
-    					serverUrl,
-    					Util.replaceMacro(uploadTestResultToAlmModel.getAlmDomain(), varResolver),
-                        clientType,
-    					Util.replaceMacro(uploadTestResultToAlmModel.getAlmProject(), varResolver),
-    					uploadTestResultToAlmModel.getAlmUserName(),
-    					uploadTestResultToAlmModel.getAlmPassword(),
-                        Util.replaceMacro(uploadTestResultToAlmModel.getAlmTestSetFolder(), varResolver)
-                );
-    			AlmRestTool u = new AlmRestTool(loginInfo, logger);
-    			logger.log("INFO: Start to upload "+fullpath);
-    			IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, logger );
-    			try {
-	    			service.UploadExternalTestSet(loginInfo,
-	    					fullpath,
-                            Util.replaceMacro(uploadTestResultToAlmModel.getAlmTestSetFolder(), varResolver),
-                            Util.replaceMacro(uploadTestResultToAlmModel.getAlmTestFolder(), varResolver),
-                            uploadTestResultToAlmModel.getTestingFramework(),
-                            uploadTestResultToAlmModel.getTestingTool(),
-                            String.valueOf(build.getNumber()),
-                            build.getParent().getDisplayName(),
-                            runUrl
-                    );
-	    			logger.log("INFO: Uploaded "+fullpath + ".");
-    			} catch (Exception e) {
-    				logger.log("WARN: there's exception while uploading "+fullpath + ".");
-    				build.setResult(Result.UNSTABLE);
-    			}
-        	}
-        }
-        logger.log("INFO: 'Upload test result to ALM' Completed.");
+        // Filepath not used
+        perform(build, null, launcher, listener);
         return true;
     }
 
@@ -390,6 +302,95 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
     public BuildStepMonitor getRequiredMonitorService() {
         
         return BuildStepMonitor.BUILD;
+    }
+
+    @Override
+    public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher, @Nonnull TaskListener taskListener) throws InterruptedException, IOException {
+        ExternalEntityUploadLogger logger = new ExternalEntityUploadLogger(taskListener.getLogger());
+        // Credentials id maybe can't be blank
+        if (StringUtils.isBlank(credentialsId)) {
+            logger.log("INFO: credentials is not configured.");
+            run.setResult(Result.UNSTABLE);
+            return;
+        }
+        UsernamePasswordCredentials credentials = getCredentialsById(credentialsId, run, logger);
+
+
+        logger.log(String.format("INFO: 'Upload test result to ALM' Post Build Step is being invoked by %s.",
+                credentials.getUsername()));
+
+        uploadTestResultToAlmModel = new UploadTestResultToAlmModel(
+                almServerName,
+                credentials.getUsername(),
+                credentials.getPassword().getPlainText(),
+                almDomain,
+                clientType,
+                almProject,
+                testingFramework,
+                testingTool,
+                almTestFolder,
+                almTestSetFolder,
+                almTimeout,
+                testingResultFile,
+                jenkinsServerUrl);
+
+        VariableResolver<String> varResolver = new VariableResolver.ByMap<String>(run.getEnvironment(taskListener));
+
+        String serverUrl = getAlmServerUrl(uploadTestResultToAlmModel.getAlmServerName());
+        String runUrl = "";
+        String tempUrl = Util.replaceMacro(uploadTestResultToAlmModel.getJenkinsServerUrl(), varResolver);
+        if(tempUrl != null && tempUrl.length() >0 ) {
+            if(tempUrl.charAt(tempUrl.length() -1) != '/') {
+                runUrl= tempUrl + "/" + run.getUrl();
+            } else  {
+                runUrl = tempUrl + run.getUrl();
+            }
+        }
+
+        File root = run.getRootDir();
+        DirectoryScanner ds = new DirectoryScanner();
+        ds.setBasedir(root);
+        ds.setIncludes( new String[] {uploadTestResultToAlmModel.getTestingResultFile()});
+        ds.scan();
+        if (ds.getIncludedFilesCount() == 0) {
+            logger.log("INFO: No Test Report found.");
+            run.setResult(Result.UNSTABLE);
+        } else {
+            logger.log("INFO: "+ ds.getIncludedFilesCount() +" test result file found.");
+            String[] files = ds.getIncludedFiles();
+            for(String fileName : files) {
+                String fullpath = root.getAbsolutePath() + File.separator + fileName;
+                AlmRestInfo loginInfo = new AlmRestInfo(
+                        serverUrl,
+                        Util.replaceMacro(uploadTestResultToAlmModel.getAlmDomain(), varResolver),
+                        clientType,
+                        Util.replaceMacro(uploadTestResultToAlmModel.getAlmProject(), varResolver),
+                        uploadTestResultToAlmModel.getAlmUserName(),
+                        uploadTestResultToAlmModel.getAlmPassword(),
+                        Util.replaceMacro(uploadTestResultToAlmModel.getAlmTestSetFolder(), varResolver)
+                );
+                AlmRestTool u = new AlmRestTool(loginInfo, logger);
+                logger.log("INFO: Start to upload "+fullpath);
+                IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, logger );
+                try {
+                    service.UploadExternalTestSet(loginInfo,
+                            fullpath,
+                            Util.replaceMacro(uploadTestResultToAlmModel.getAlmTestSetFolder(), varResolver),
+                            Util.replaceMacro(uploadTestResultToAlmModel.getAlmTestFolder(), varResolver),
+                            uploadTestResultToAlmModel.getTestingFramework(),
+                            uploadTestResultToAlmModel.getTestingTool(),
+                            String.valueOf(run.getNumber()),
+                            run.getParent().getDisplayName(),
+                            runUrl
+                    );
+                    logger.log("INFO: Uploaded "+fullpath + ".");
+                } catch (Exception e) {
+                    logger.log("WARN: there's exception while uploading "+fullpath + ".");
+                    run.setResult(Result.UNSTABLE);
+                }
+            }
+        }
+        logger.log("INFO: 'Upload test result to ALM' Completed.");
     }
 
     @Extension
