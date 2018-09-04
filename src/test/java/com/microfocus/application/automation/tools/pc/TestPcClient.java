@@ -50,12 +50,6 @@ public class TestPcClient {
             e.printStackTrace(System.out);
         }
     }
-    
-    @Test
-    public void testLogin(){
-        System.out.println("Testing Login to PC server");
-        Assert.assertTrue("Failed to login with pcClient", pcClient.login());  
-    }
 
     @Test
     public void testStartRun(){

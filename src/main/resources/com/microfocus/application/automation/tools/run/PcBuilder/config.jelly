@@ -21,7 +21,7 @@
   -->
 <?jelly escape-by-default='true'?>
 <j:jelly  xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
-	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials" >
 	<f:block>
 	<style>
 	.disabledLine {
@@ -171,12 +171,9 @@
 	<f:entry title="&#160;">
         <f:checkbox title="Use HTTPS Protocol" field="HTTPSProtocol" name="pc.HTTPSProtocol" checked="${instance.pcModel.HTTPSProtocol}" />
     </f:entry>
-	<f:entry title="User name" field="almUserName">
-		<f:textbox name="pc.almUserName" value="${instance.pcModel.almUserName}" />
-	</f:entry>
-	<f:entry title="Password" field="almPassword">
-		<f:password name="pc.almPassword" value="${instance.pcModel.almPassword}" />
-	</f:entry>
+    <f:entry name="pc.credentialsId" field="credentialsId" title="PC Credentials">
+        <c:select expressionAllowed="true" />
+    </f:entry>
 	<f:entry title="Domain" field="almDomain">
 		<f:textbox name="pc.almDomain" value="${instance.pcModel.almDomain}" />
 	</f:entry>
@@ -207,7 +204,6 @@
         <table style="width:100%">
         <f:radioBlock field="autoTestInstanceID" name="pc.autoTestInstanceID" value="AUTO" checked="${instance.pcModel.autoTestInstanceID=='AUTO' || instance.pcModel.autoTestInstanceID== null}" title="Automatically select existing or create new if none exists (Performance Center 12.55 or later)" inline="true">
        </f:radioBlock>
-
          <f:radioBlock  field="autoTestInstanceID" name="pc.autoTestInstanceID" value="MANUAL"  checked="${instance.pcModel.autoTestInstanceID=='MANUAL'}" title="Manual selection" inline="true">
              <f:nested>
                 <f:entry title="" field="testInstanceId">
@@ -218,56 +214,21 @@
         </table>
     </td>
 
-
-	<f:block>
-		<br />
-
-	</f:block>
-	<f:block>
-
-
-            <tr>
-                <td colspan="5">
-                    <table>
-
-                        <tr>
-                            <td class="setting-leftspace"></td>
-                            <td class="setting-name">
-                                <span>Local Proxy<div class="tooltip">(?) <span class="tooltiptext"> Add your local proxy as following: <br/><b>http(s)://host:port</b><br/> or
-                                                                                                        Leave empty if not using a local proxy.<br/>
-                                                                                                        PAC (proxy auto-config) or Automatic configuration script are not supported.</span></div></span>
-                            </td>
-                            <td class="setting-main" style="width:30%;padding-right:3em;" >
-                                <f:textbox name="pc.proxyOutURL" value="${instance.pcModel.proxyOutURL}"  />
-
-
-                            </td>
-                            <td style="vertical-align:middle;">
-                                <span>User:&#160;</span>
-                            </td>
-                            <td>
-                                <f:textbox name="pc.proxyOutUser" value="${instance.pcModel.proxyOutUser}" />
-                            </td>
-                            <td style="vertical-align:middle;">
-                                <span>Password:&#160;</span>
-                            </td>
-                            <td>
-
-                                <f:password name="pc.proxyOutPassword" value="${instance.pcModel.proxyOutPassword}" />
-
-                            </td>
-                        </tr>
-
-                    </table>
-                </td>
-
-            </tr>
-
-
-	</f:block>
 	<f:block>
 		<br />
 	</f:block>
+
+    <f:entry title="Local Proxy" field="proxyOutURL">
+        <f:textbox name="pc.proxyOutURL" value="${instance.pcModel.proxyOutURL}" />
+    </f:entry>
+    <f:entry name="pc.credentialsProxyId" field="credentialsProxyId" title="Proxy Credentials">
+        <c:select expressionAllowed="true" />
+    </f:entry>
+
+	<f:block>
+		<br />
+	</f:block>
+
 	<f:entry title="Post Run Action" field="postRunAction">
 		<select id="postRunAction" name="pc.postRunAction" onchange="isAddRunToTrendReportEnabled(this)">
 			<j:forEach var="action" items="${descriptor.postRunActions}">
@@ -402,6 +363,25 @@
 	<f:optionalBlock title="Set step status according to SLA"
 		field="statusBySLA" name="pc.statusBySLA" checked="${instance.statusBySLA}"
 		inline="true" />
+
+	<f:block>
+		<br />
+	</f:block>
+	<td class="setting-leftspace">&#160;</td>
+    <td>On Timeslot creation failure</td>
+    <td colspan="2">
+        <table style="width:100%" id="retryTable">
+        <f:radioBlock field="retry" name="retry" value="NO_RETRY" checked="${instance.pcModel.retry =='NO_RETRY'}" title="Do Not Repeat" inline="true" />
+        <f:radioBlock field="retry" name="retry" value="RETRY" checked="${instance.pcModel.retry=='RETRY'}" title="Repeat with the following parameters" inline="true">
+            <f:entry title="Delay between attempts (in minutes):" field="retry">
+                <f:textbox  name="retryDelay" style="width:40px;height:24px;text-align:center;margin:0px" value="${instance.pcModel.retryDelay}" inline="true"/>
+            </f:entry>
+            <f:entry title="Number of attempts:" field="retry">
+                <f:textbox  name="retryOccurrences" style="width:40px;height:24px;text-align:center;margin:0px" value="${instance.pcModel.retryOccurrences}" inline="true"/>
+            </f:entry>
+        </f:radioBlock>
+        </table>
+    </td>
 
   
 </j:jelly>

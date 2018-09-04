@@ -30,11 +30,11 @@ import com.microfocus.application.automation.tools.model.SecretContainerTest;
 public class MockPcModel extends PcModel {
 
 
-    public MockPcModel(String serverAndPort, String pcServerName, String almUserName, String almPassword, String almDomain,
+    public MockPcModel(String serverAndPort, String pcServerName, String credential, String almDomain,
                        String almProject, String testId, String autoTestInstanceID, String testInstanceId, String timeslotDurationHours,
-                       String timeslotDurationMinutes, PostRunAction postRunAction, boolean vudsMode, String description, boolean webProtocol) {
-        super(serverAndPort, pcServerName, almUserName, almPassword, almDomain, almProject, testId, autoTestInstanceID, testInstanceId, timeslotDurationHours,
-            timeslotDurationMinutes, postRunAction, vudsMode, description, "NO_TREND", null,false,null,null,null
+                       String timeslotDurationMinutes, PostRunAction postRunAction, boolean vudsMode, String description, boolean webProtocol, String retry, String retryDelay, String retryOccurrences) {
+        super(serverAndPort, pcServerName, credential, almDomain, almProject, testId, autoTestInstanceID, testInstanceId, timeslotDurationHours,
+            timeslotDurationMinutes, postRunAction, vudsMode, description, "NO_TREND", null,false,null,null, retry, retryDelay, retryOccurrences
         );
     }
 
