@@ -322,7 +322,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         
         @Override
         public String getDisplayName() {
-            return "Execute functional tests from Micro Focus ALM";
+            return "Execute Micro Focus functional tests from Micro Focus ALM";
         }
         
         public boolean hasAlmServers() {

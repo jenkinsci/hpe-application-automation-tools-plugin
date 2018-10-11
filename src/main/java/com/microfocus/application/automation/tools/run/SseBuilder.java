@@ -380,7 +380,7 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
         @Override
         public String getDisplayName() {
             
-            return "Execute tests using ALM Lab Management";
+            return "Execute Micro Focus tests using Micro Focus ALM Lab Management";
         }
         
         public boolean hasAlmServers() {
