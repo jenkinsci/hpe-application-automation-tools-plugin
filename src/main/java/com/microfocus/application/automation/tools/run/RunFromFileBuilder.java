@@ -24,6 +24,7 @@ package com.microfocus.application.automation.tools.run;
 
 import com.microfocus.application.automation.tools.AlmToolsUtils;
 import com.microfocus.application.automation.tools.EncryptionUtils;
+import com.microfocus.application.automation.tools.Messages;
 import com.microfocus.application.automation.tools.mc.JobConfigurationProxy;
 import com.microfocus.application.automation.tools.model.*;
 import com.microfocus.application.automation.tools.settings.MCServerSettingsBuilder;
@@ -874,7 +875,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 
 		@Override
 		public String getDisplayName() {
-			return "Execute Micro Focus tests from file system";
+			return Messages.RunFromFileBuilderStepName(Messages.CompanyName());
 		}
 
 		/**

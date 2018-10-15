@@ -22,6 +22,7 @@
 
 package com.microfocus.application.automation.tools.run;
 
+import com.microfocus.application.automation.tools.Messages;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsBuilder;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -322,7 +323,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         
         @Override
         public String getDisplayName() {
-            return "Execute Micro Focus functional tests from Micro Focus ALM";
+            return Messages.RunFromAlmBuilderStepName(Messages.CompanyName(), Messages.CompanyName());
         }
         
         public boolean hasAlmServers() {

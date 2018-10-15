@@ -33,6 +33,7 @@ import java.util.List;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
 
+import com.microfocus.application.automation.tools.Messages;
 import com.microfocus.application.automation.tools.model.AlmServerSettingsModel;
 import com.microfocus.application.automation.tools.model.CdaDetails;
 import com.microfocus.application.automation.tools.model.EnumDescription;
@@ -379,8 +380,7 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
         
         @Override
         public String getDisplayName() {
-            
-            return "Execute Micro Focus tests using Micro Focus ALM Lab Management";
+            return Messages.SseBuilderStepName(Messages.CompanyName(), Messages.CompanyName());
         }
         
         public boolean hasAlmServers() {

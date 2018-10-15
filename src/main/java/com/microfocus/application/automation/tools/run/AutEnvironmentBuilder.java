@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.microfocus.application.automation.tools.Messages;
 import com.microfocus.application.automation.tools.model.AUTEnvironmentResolvedModel;
 import com.microfocus.application.automation.tools.model.AlmServerSettingsModel;
 import com.microfocus.application.automation.tools.model.AutEnvironmentModel;
@@ -192,8 +193,7 @@ public class AutEnvironmentBuilder extends Builder {
         
         @Override
         public String getDisplayName() {
-
-            return "Execute AUT Environment preparation using Micro Focus ALM Lab Management";
+            return Messages.AutEnvironmentBuilderStepName(Messages.CompanyName());
         }
         
         public AlmServerSettingsModel[] getAlmServers() {
