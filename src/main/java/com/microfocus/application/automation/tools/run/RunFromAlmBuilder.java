@@ -323,7 +323,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         
         @Override
         public String getDisplayName() {
-            return Messages.RunFromAlmBuilderStepName(Messages.CompanyName(), Messages.CompanyName());
+            return Messages.RunFromAlmBuilderStepName(Messages.CompanyName());
         }
         
         public boolean hasAlmServers() {

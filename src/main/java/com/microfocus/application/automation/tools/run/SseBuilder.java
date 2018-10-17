@@ -380,7 +380,7 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
         
         @Override
         public String getDisplayName() {
-            return Messages.SseBuilderStepName(Messages.CompanyName(), Messages.CompanyName());
+            return Messages.SseBuilderStepName(Messages.CompanyName());
         }
         
         public boolean hasAlmServers() {
