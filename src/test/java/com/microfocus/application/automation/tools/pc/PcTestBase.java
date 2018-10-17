@@ -22,7 +22,7 @@
 
 package com.microfocus.application.automation.tools.pc;
 
-import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
+import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 
 import java.io.PrintStream;
 
@@ -30,8 +30,7 @@ public interface PcTestBase {
 
 	public static final String        SERVER_AND_PORT                 = "jenkins.server:8082";
 	public static final String        PC_SERVER_NAME                  = "pcServer.hp.com";
-    public static final String        ALM_USER_NAME                   = "sa";
-    public static final String        ALM_PASSWORD                    = "pwd";
+	public static final String        CREDENTIALSID                   = "123456789";
     public static final String        ALM_DOMAIN                      = "ALMDOM";
     public static final String        ALM_PROJECT                     = "ALMPROJ";
     public static final String        TEST_ID                         = "1";
@@ -50,13 +49,15 @@ public interface PcTestBase {
 	public static final Boolean		  IS_HTTPS					  	  = false;
 	public static final String 	  TESTINSTANCEID				= "MANUAL";
 	public static final PrintStream LOGGER					  	  = null;
+	public static final String 	  RETRY				= "NO_RETRY";
+	public static final String 	  RETRYDELAY				= "5";
+	public static final String 	  RETRYOCCURRENCES				= "3";
 
-    public static final MockPcModel   pcModel                         = new MockPcModel(SERVER_AND_PORT,PC_SERVER_NAME, ALM_USER_NAME,
-                                                                          ALM_PASSWORD, ALM_DOMAIN, ALM_PROJECT,
+    public static final MockPcModel   pcModel                         = new MockPcModel(SERVER_AND_PORT,PC_SERVER_NAME, CREDENTIALSID, ALM_DOMAIN, ALM_PROJECT,
                                                                           TEST_ID,TESTINSTANCEID, TEST_INSTANCE_ID,
                                                                           TIMESLOT_DURATION_HOURS,
                                                                           TIMESLOT_DURATION_MINUTES, POST_RUN_ACTION,
-                                                                          VUDS_MODE, DESCRIPTION,IS_HTTPS);
+                                                                          VUDS_MODE, DESCRIPTION,IS_HTTPS, RETRY, RETRYDELAY, RETRYOCCURRENCES);
     
     public static final String          runResponseEntity  = "<Run xmlns=\"http://www.hp.com/PC/REST/API\">" +
     		                                                    "<TestID>" + TEST_ID + "</TestID>" +

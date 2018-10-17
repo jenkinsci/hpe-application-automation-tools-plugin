@@ -1,0 +1,36 @@
+<!--
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<div>
+    This build step is intended to support execution of automated tests from Micro Focus ALM Octane.</br>
+    The builder searches for the "testsToRun" parameter which is sent from ALM Octane as part of the execution framework.</br>
+    Once it is found, its value is converted to the format of the selected testing framework, and injected to the "testsToRunConverted" environment parameter.</br>
+    Later, the new parameter can be used in the appropriate execution builder.
+    <ul>
+        <li> To use in other parameter textboxes, use the following syntax: <b>${testsToRunConverted}</b></li>
+        <li> To use in the scripts, use the following syntax: (Windows) <b>%testsToRunConverted%</b>, and (Linux) <b>$testsToRunConverted</b>. For example : mvn clean -Dtest=%testsToRunConverted% test</li>
+    </ul>
+    </br>
+    </br>
+    For <b>UFT</b> only: In order to build a UFT MTBX file, this builder needs to know the test check-out directory. By default this is the job workspace directory.
+    If tests are checked out in another directory, define in the job a String parameter "testsToRunCheckoutDirectory" with the correct directory.
+
+</div>

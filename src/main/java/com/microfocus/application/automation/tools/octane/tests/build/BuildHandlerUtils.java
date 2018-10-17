@@ -22,24 +22,36 @@
 
 package com.microfocus.application.automation.tools.octane.tests.build;
 
+import com.hp.octane.integrations.dto.snapshots.CIBuildResult;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
-import com.microfocus.application.automation.tools.octane.workflow.WorkflowBuildAdapter;
-import com.microfocus.application.automation.tools.octane.workflow.WorkflowGraphListener;
 import hudson.FilePath;
 import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixRun;
 import hudson.model.AbstractBuild;
+import hudson.model.Result;
 import hudson.model.Run;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
+import org.jenkinsci.plugins.workflow.actions.WorkspaceAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
+import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
+import org.jenkinsci.plugins.workflow.graph.FlowGraphWalker;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graph.FlowStartNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
 
 /**
  * Generic utilities handling Job/Run metadata extraction/transformation/processing
  */
 
 public class BuildHandlerUtils {
+	private static final Logger logger = LogManager.getLogger(BuildHandlerUtils.class);
 
 	public static BuildDescriptor getBuildType(Run<?, ?> run) {
 		for (BuildHandlerExtension ext : BuildHandlerExtension.all()) {
@@ -71,25 +83,26 @@ public class BuildHandlerUtils {
 		if (run instanceof AbstractBuild) {
 			return ((AbstractBuild) run).getWorkspace();
 		}
-		if (run instanceof WorkflowBuildAdapter) {
-			return ((WorkflowBuildAdapter) run).getWorkspace();
+		if (run instanceof WorkflowRun) {
+			FlowExecution fe = ((WorkflowRun) run).getExecution();
+			if (fe != null) {
+				FlowGraphWalker w = new FlowGraphWalker(fe);
+				for (FlowNode n : w) {
+					if (n instanceof StepStartNode) {
+						WorkspaceAction action = n.getAction(WorkspaceAction.class);
+						if (action != null) {
+							return action.getWorkspace();
+						}
+					}
+				}
+			}
 		}
 		return null;
 	}
 
-	public static List<Run> getBuildPerWorkspaces(Run run) {
-		if (run instanceof WorkflowRun) {
-			return WorkflowGraphListener.FlowNodeContainer.getFlowNode(run);
-		} else {
-			List<Run> runsList = new ArrayList<>();
-			runsList.add(run);
-			return runsList;
-		}
-	}
-
 	public static String getBuildCiId(Run run) {
 		return String.valueOf(run.getNumber());
-		//  YG  temportarty disabling the support for fluid build number until Octane supports it
+		//  YG  temporary disabling the support for fluid build number until Octane supports it
 		//return run.getNumber() + "_" + run.getStartTimeInMillis();
 	}
 
@@ -103,13 +116,50 @@ public class BuildHandlerUtils {
 		return JobProcessorFactory.getFlowProcessor(((AbstractBuild) run).getProject()).getTranslateJobName();
 	}
 
-	/**
-	 * Retrieve Job's CI ID
-	 *
-	 * @return Job's CI ID
-	 */
 	public static String translateFolderJobName(String jobPlainName) {
 		String newSplitterCharacters = "/job/";
 		return jobPlainName.replaceAll("/", newSplitterCharacters);
+	}
+
+	public static CIBuildResult translateRunResult(Run run) {
+		CIBuildResult result;
+		if (run.getResult() == Result.SUCCESS) {
+			result = CIBuildResult.SUCCESS;
+		} else if (run.getResult() == Result.ABORTED) {
+			result = CIBuildResult.ABORTED;
+		} else if (run.getResult() == Result.FAILURE) {
+			result = CIBuildResult.FAILURE;
+		} else if (run.getResult() == Result.UNSTABLE) {
+			result = CIBuildResult.UNSTABLE;
+		} else {
+			result = CIBuildResult.UNAVAILABLE;
+		}
+		return result;
+	}
+
+	public static boolean isWorkflowStartNode(FlowNode node) {
+		return node.getParents().isEmpty() ||
+				node.getParents().stream().anyMatch(fn -> fn instanceof FlowStartNode);
+	}
+
+	public static boolean isWorkflowEndNode(FlowNode node) {
+		return node instanceof FlowEndNode;
+	}
+
+	public static boolean isStageStartNode(FlowNode node) {
+		return node instanceof StepStartNode && node.getAction(LabelAction.class) != null && node.getAction(ThreadNameAction.class) == null;
+	}
+
+	public static boolean isStageEndNode(FlowNode node) {
+		return node instanceof StepEndNode && isStageStartNode(((StepEndNode) node).getStartNode());
+	}
+
+	public static WorkflowRun extractParentRun(FlowNode flowNode) {
+		try {
+			return (WorkflowRun) flowNode.getExecution().getOwner().getExecutable();
+		} catch (IOException ioe) {
+			logger.error("failed to extract parent workflow run from " + flowNode, ioe);
+			throw new IllegalStateException("failed to extract parent workflow run from " + flowNode);
+		}
 	}
 }

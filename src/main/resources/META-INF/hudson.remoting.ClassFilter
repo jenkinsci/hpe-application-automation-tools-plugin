@@ -1,5 +1,5 @@
-# TimeslotDuration class from com.microfocus.adm.performancecenter.plugins.common.pcEntities package is safe to be used.
-com.microfocus.adm.performancecenter.plugins.common.pcEntities.TimeslotDuration
+# TimeslotDuration class from com.microfocus.adm.performancecenter.plugins.common.pcentities package is safe to be used.
+com.microfocus.adm.performancecenter.plugins.common.pcentities.TimeslotDuration
 # SimpleDateFormat, DecimalFormat, DateFormatSymbols and DecimalFormatSymbols are native and safe.
 java.text.SimpleDateFormat
 java.text.DecimalFormat

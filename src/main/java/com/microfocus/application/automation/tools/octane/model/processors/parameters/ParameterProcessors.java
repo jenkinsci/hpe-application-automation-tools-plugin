@@ -32,8 +32,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by gullery on 26/03/2015.
@@ -42,7 +45,6 @@ import java.util.Map;
  */
 
 public enum ParameterProcessors {
-	//	DYNAMIC("com.seitenbau.jenkins.plugins.dynamicparameter", DynamicParameterProcessor.class),
 	EXTENDED("com.cwctravel.hudson.plugins.extended_choice_parameter.ExtendedChoiceParameterDefinition", ExtendedChoiceParameterProcessor.class),
 	INHERENT("hudson.model", InherentParameterProcessor.class),
 	NODE_LABEL("org.jvnet.jenkins.plugins.nodelabelparameter", NodeLabelParameterProcessor.class),
@@ -77,7 +79,7 @@ public enum ParameterProcessors {
 		if (job instanceof MatrixProject) {
 			AxisList axisList = ((MatrixProject) job).getAxes();
 			for (Axis axis : axisList) {
-				result.add(ModelFactory.createParameterConfig(axis.getName(), CIParameterType.AXIS, new ArrayList<Object>(axis.getValues())));
+				result.add(ModelFactory.createParameterConfig(axis.getName(), CIParameterType.AXIS, new ArrayList<>(axis.getValues())));
 			}
 		}
 
@@ -92,13 +94,14 @@ public enum ParameterProcessors {
 		List<ParameterDefinition> paramDefinitions;
 		String className;
 
-		AbstractParametersProcessor processor;
-		List<ParameterValue> parametersValues;
+
+		Map<String, ParameterValue> parametersValues;
 		ParametersAction parametersAction = run.getAction(ParametersAction.class);
 		if (parametersAction != null) {
-			parametersValues = new ArrayList<>(parametersAction.getParameters());
+			parametersValues = parametersAction.getAllParameters().stream().collect(
+					Collectors.toMap(ParameterValue::getName, Function.identity()));
 		} else {
-			parametersValues = new ArrayList<>();
+			parametersValues = new HashMap<>();
 		}
 		ParameterValue pv;
 
@@ -118,21 +121,24 @@ public enum ParameterProcessors {
 			paramDefinitions = ((ParametersDefinitionProperty) job.getProperty(ParametersDefinitionProperty.class)).getParameterDefinitions();
 			for (ParameterDefinition pd : paramDefinitions) {
 				className = pd.getClass().getName();
-				pv = null;
+				pv = parametersValues.remove(pd.getName());
 
 				try {
-					for (int j = 0; j < parametersValues.size(); j++) {
-						if (parametersValues.get(j) != null && parametersValues.get(j).getName().equals(pd.getName())) {
-							pv = parametersValues.get(j);
-							parametersValues.remove(j);
-							break;
-						}
-					}
-					processor = getAppropriate(className);
+					AbstractParametersProcessor processor = getAppropriate(className);
 					result.add(processor.createParameterInstance(pd, pv));
 				} catch (Exception e) {
 					logger.error("failed to process instance of parameter or type '" + className + "', adding as unsupported", e);
 					result.add(new UnsupportedParameterProcessor().createParameterInstance(pd, pv));
+				}
+			}
+			//go over parameters that are not defined in definitions
+			for (ParameterValue notDefinedParameter : parametersValues.values()) {
+				if (notDefinedParameter.getValue() != null) {
+					CIParameter param = dtoFactory.newDTO(CIParameter.class)
+							.setType(CIParameterType.STRING)
+							.setName(notDefinedParameter.getName())
+							.setValue(notDefinedParameter.getValue());
+					result.add(param);
 				}
 			}
 		}
@@ -146,10 +152,8 @@ public enum ParameterProcessors {
 			if (className.startsWith(p.targetPluginClassName)) {
 				try {
 					return p.processorClass.newInstance();
-				} catch (InstantiationException ie) {
+				} catch (InstantiationException | IllegalAccessException ie) {
 					logger.error("failed to instantiate instance of parameters processor of type " + className, ie);
-				} catch (IllegalAccessException iae) {
-					logger.error("failed to instantiate instance of parameters processor of type " + className, iae);
 				}
 			}
 		}

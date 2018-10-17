@@ -25,6 +25,7 @@ package com.microfocus.application.automation.tools.srf.utilities;
 import com.microfocus.application.automation.tools.srf.model.SrfException;
 
 import net.sf.json.JSONArray;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 import org.apache.http.HttpHost;
 
@@ -56,6 +57,11 @@ public class SrfClient {
         this.sslSocketFactory = sslSocketFactory;
         this.proxyHost = proxyUrl != null ? new HttpHost(proxyUrl.getHost(), proxyUrl.getPort()) : null;
 
+        // Normalize SRF server URL string if needed
+        if (this.srfServerAddress.substring(this.srfServerAddress.length() - 1).equals("/")) {
+            this.srfServerAddress = this.srfServerAddress.substring(0, this.srfServerAddress.length() - 1);
+        }
+
         if (proxyHost != null) {
             Properties systemProperties = System.getProperties();
             systemProperties.setProperty("https.proxyHost", proxyHost.getHostName());
@@ -78,7 +84,7 @@ public class SrfClient {
      * @throws IOException
      * @throws SrfException
      */
-    public void login(String clientId, String clientSecret) throws AuthorizationException, IOException, SrfException {
+    public void login(String clientId, String clientSecret) throws AuthorizationException, IOException, SrfException, JSONException {
         systemLogger.info(String.format("Logging with client's id: %s  into %s", clientId, srfServerAddress));
         String authorizationsAddress = srfServerAddress.concat("/rest/security/public/v2/authorizations/access-tokens");
 

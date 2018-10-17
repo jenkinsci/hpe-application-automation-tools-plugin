@@ -38,10 +38,10 @@ import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 
-import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
+import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 import com.microfocus.application.automation.tools.run.PcBuilder;
 
-import static com.microfocus.adm.performancecenter.plugins.common.pcEntities.RunState.*;
+import static com.microfocus.adm.performancecenter.plugins.common.pcentities.RunState.*;
 import com.microfocus.adm.performancecenter.plugins.common.rest.PcRestProxy;
 
 public class MockPcRestProxy extends PcRestProxy {

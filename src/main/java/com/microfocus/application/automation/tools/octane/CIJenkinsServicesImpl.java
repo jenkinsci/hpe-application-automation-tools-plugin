@@ -1,5 +1,4 @@
 /*
- *
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -17,7 +16,6 @@
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.octane;
@@ -35,7 +33,8 @@ import com.hp.octane.integrations.dto.general.CIJobsList;
 import com.hp.octane.integrations.dto.general.CIPluginInfo;
 import com.hp.octane.integrations.dto.general.CIServerInfo;
 import com.hp.octane.integrations.dto.general.CIServerTypes;
-import com.hp.octane.integrations.dto.parameters.CIParameterType;
+import com.hp.octane.integrations.dto.parameters.CIParameter;
+import com.hp.octane.integrations.dto.parameters.CIParameters;
 import com.hp.octane.integrations.dto.pipelines.PipelineNode;
 import com.hp.octane.integrations.dto.snapshots.SnapshotNode;
 import com.hp.octane.integrations.dto.tests.TestsResult;
@@ -58,8 +57,6 @@ import hudson.model.*;
 import hudson.security.ACL;
 import jenkins.branch.OrganizationFolder;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 import org.acegisecurity.AccessDeniedException;
 import org.acegisecurity.context.SecurityContext;
 import org.apache.commons.fileupload.FileItem;
@@ -70,19 +67,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Base implementation of SPI(service provider interface) of Octane CI SDK for Jenkins
@@ -95,7 +86,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 	@Override
 	public CIServerInfo getServerInfo() {
 		CIServerInfo result = dtoFactory.newDTO(CIServerInfo.class);
-		String serverUrl = getJenkins().getRootUrl();
+		String serverUrl = Jenkins.getInstance().getRootUrl();
 		if (serverUrl != null && serverUrl.endsWith("/")) {
 			serverUrl = serverUrl.substring(0, serverUrl.length() - 1);
 		}
@@ -129,7 +120,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 
 	@Override
 	public File getAllowedOctaneStorage() {
-		return new File(getJenkins().getRootDir(), "userContent");
+		return new File(Jenkins.getInstance().getRootDir(), "userContent");
 	}
 
 	@Override
@@ -150,7 +141,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 	@Override
 	public CIProxyConfiguration getProxyConfiguration(URL targetUrl) {
 		CIProxyConfiguration result = null;
-		ProxyConfiguration proxy = getJenkins().proxy;
+		ProxyConfiguration proxy = Jenkins.getInstance().proxy;
 		if (proxy != null) {
 			boolean noProxyHost = false;
 			for (Pattern pattern : proxy.getNoProxyHostPatterns()) {
@@ -178,14 +169,14 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		TopLevelItem tmpItem;
 		List<PipelineNode> list = new ArrayList<>();
 		try {
-			boolean hasReadPermission = getJenkins().hasPermission(Item.READ);
+			boolean hasReadPermission = Jenkins.getInstance().hasPermission(Item.READ);
 			if (!hasReadPermission) {
 				stopImpersonation(securityContext);
 				throw new PermissionException(403);
 			}
-			List<String> itemNames = (List<String>) getJenkins().getTopLevelItemNames();
+			List<String> itemNames = (List<String>) Jenkins.getInstance().getTopLevelItemNames();
 			for (String name : itemNames) {
-				tmpItem = getJenkins().getItem(name);
+				tmpItem = Jenkins.getInstance().getItem(name);
 
 				if (tmpItem == null) {
 					continue;
@@ -255,13 +246,12 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 				.setName(folderName + "/" + name);
 	}
 
-
 	@Override
 	public PipelineNode getPipeline(String rootJobCiId) {
 		SecurityContext securityContext = startImpersonation();
 		try {
 			PipelineNode result;
-			boolean hasRead = getJenkins().hasPermission(Item.READ);
+			boolean hasRead = Jenkins.getInstance().hasPermission(Item.READ);
 			if (!hasRead) {
 				throw new PermissionException(403);
 			}
@@ -310,7 +300,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 
 	private void stopImpersonation(SecurityContext originalContext) {
 		if (originalContext != null) {
-			ACL.impersonate(originalContext.getAuthentication());
+			ACL.as(originalContext.getAuthentication());
 		} else {
 			logger.warn("Could not roll back impersonation, originalContext is null ");
 		}
@@ -415,10 +405,6 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 
 	private Run getBuildFromQueueItem(String jobId, String buildId) {
 		Run result = null;
-		Jenkins jenkins = Jenkins.getInstance();
-		if (jenkins == null) {
-			throw new IllegalStateException("failed to obtain Jenkins' instance");
-		}
 		Job project = getJobByRefId(jobId);
 		if (project != null) {
 			result = project.getBuildByNumber(Integer.parseInt(buildId));
@@ -433,19 +419,9 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 			int delay = project.getQuietPeriod();
 			ParametersAction parametersAction = new ParametersAction();
 
-			if (originalBody != null && !originalBody.isEmpty()) {
-				JSONObject bodyJSON = JSONObject.fromObject(originalBody);
-
-				//  delay
-				if (bodyJSON.has("delay") && bodyJSON.get("delay") != null) {
-					delay = bodyJSON.getInt("delay");
-				}
-
-				//  parameters
-				if (bodyJSON.has("parameters") && bodyJSON.get("parameters") != null) {
-					JSONArray paramsJSON = bodyJSON.getJSONArray("parameters");
-					parametersAction = new ParametersAction(createParameters(project, paramsJSON));
-				}
+			if (originalBody != null && !originalBody.isEmpty() && originalBody.contains("parameters")) {
+				CIParameters ciParameters = DTOFactory.getInstance().dtoFromJson(originalBody, CIParameters.class);
+				parametersAction = new ParametersAction(createParameters(project, ciParameters));
 			}
 
 			project.scheduleBuild(delay, new Cause.RemoteCause(getOctaneConfiguration() == null ? "non available URL" : getOctaneConfiguration().getUrl(), "octane driven execution"), parametersAction);
@@ -455,49 +431,47 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 		}
 	}
 
-	private List<ParameterValue> createParameters(AbstractProject project, JSONArray paramsJSON) {
+	private List<ParameterValue> createParameters(AbstractProject project, CIParameters ciParameters) {
 		List<ParameterValue> result = new ArrayList<>();
 		boolean parameterHandled;
 		ParameterValue tmpValue;
 		ParametersDefinitionProperty paramsDefProperty = (ParametersDefinitionProperty) project.getProperty(ParametersDefinitionProperty.class);
 		if (paramsDefProperty != null) {
+			Map<String, CIParameter> ciParametersMap = ciParameters.getParameters().stream().collect(Collectors.toMap(CIParameter::getName, Function.identity()));
 			for (ParameterDefinition paramDef : paramsDefProperty.getParameterDefinitions()) {
 				parameterHandled = false;
-				for (int i = 0; i < paramsJSON.size(); i++) {
-					JSONObject paramJSON = paramsJSON.getJSONObject(i);
-					if (paramJSON.has("name") && paramJSON.get("name") != null && paramJSON.get("name").equals(paramDef.getName())) {
-						tmpValue = null;
-						switch (CIParameterType.fromValue(paramJSON.getString("type"))) {
-							case FILE:
-								try {
-									FileItemFactory fif = new DiskFileItemFactory();
-									FileItem fi = fif.createItem(paramJSON.getString("name"), "text/plain", false, paramJSON.getString("file"));
-									fi.getOutputStream().write(DatatypeConverter.parseBase64Binary(paramJSON.getString("value")));
-									tmpValue = new FileParameterValue(paramJSON.getString("name"), fi);
-								} catch (IOException ioe) {
-									logger.warn("failed to process file parameter", ioe);
-								}
-								break;
-							case NUMBER:
-								tmpValue = new StringParameterValue(paramJSON.getString("name"), paramJSON.get("value").toString());
-								break;
-							case STRING:
-								tmpValue = new StringParameterValue(paramJSON.getString("name"), paramJSON.getString("value"));
-								break;
-							case BOOLEAN:
-								tmpValue = new BooleanParameterValue(paramJSON.getString("name"), paramJSON.getBoolean("value"));
-								break;
-							case PASSWORD:
-								tmpValue = new PasswordParameterValue(paramJSON.getString("name"), paramJSON.getString("value"));
-								break;
-							default:
-								break;
-						}
-						if (tmpValue != null) {
-							result.add(tmpValue);
-							parameterHandled = true;
-						}
-						break;
+				CIParameter ciParameter = ciParametersMap.remove(paramDef.getName());
+				if (ciParameter != null) {
+					tmpValue = null;
+					switch (ciParameter.getType()) {
+						case FILE:
+							try {
+								FileItemFactory fif = new DiskFileItemFactory();
+								FileItem fi = fif.createItem(ciParameter.getName(), "text/plain", false, UUID.randomUUID().toString());
+								fi.getOutputStream().write(DatatypeConverter.parseBase64Binary(ciParameter.getValue().toString()));
+								tmpValue = new FileParameterValue(ciParameter.getName(), fi);
+							} catch (IOException ioe) {
+								logger.warn("failed to process file parameter", ioe);
+							}
+							break;
+						case NUMBER:
+							tmpValue = new StringParameterValue(ciParameter.getName(), ciParameter.getValue().toString());
+							break;
+						case STRING:
+							tmpValue = new StringParameterValue(ciParameter.getName(), ciParameter.getValue().toString());
+							break;
+						case BOOLEAN:
+							tmpValue = new BooleanParameterValue(ciParameter.getName(), Boolean.parseBoolean(ciParameter.getValue().toString()));
+							break;
+						case PASSWORD:
+							tmpValue = new PasswordParameterValue(ciParameter.getName(), ciParameter.getValue().toString());
+							break;
+						default:
+							break;
+					}
+					if (tmpValue != null) {
+						result.add(tmpValue);
+						parameterHandled = true;
 					}
 				}
 				if (!parameterHandled) {
@@ -515,6 +489,12 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 						result.add(paramDef.getDefaultParameterValue());
 					}
 				}
+			}
+
+			//add parameters that are not defined in job
+			for (CIParameter notDefinedParameter : ciParametersMap.values()) {
+				tmpValue = new StringParameterValue(notDefinedParameter.getName(), notDefinedParameter.getValue().toString());
+				result.add(tmpValue);
 			}
 		}
 		return result;
@@ -576,7 +556,7 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 	private TopLevelItem getTopLevelItem(String jobRefId) {
 		TopLevelItem item;
 		try {
-			item = getJenkins().getItem(jobRefId);
+			item = Jenkins.getInstance().getItem(jobRefId);
 		} catch (AccessDeniedException e) {
 			String user = ConfigurationService.getModel().getImpersonatedUser();
 			if (user != null && !user.isEmpty()) {
@@ -638,13 +618,4 @@ public class CIJenkinsServicesImpl extends CIPluginServicesBase {
 			stopImpersonation(securityContext);
 		}
 	}
-
-	private Jenkins getJenkins() {
-		Jenkins result = Jenkins.getInstance();
-		if (result == null) {
-			throw new IllegalStateException("Jenkins instance is not available");
-		}
-		return result;
-	}
-
 }

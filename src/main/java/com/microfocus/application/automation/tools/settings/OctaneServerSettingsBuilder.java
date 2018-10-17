@@ -123,7 +123,11 @@ public class OctaneServerSettingsBuilder extends Builder {
 				save();
 			}
 
-			OctaneSDK.init(new CIJenkinsServicesImpl());
+			try {
+				OctaneSDK.init(new CIJenkinsServicesImpl());
+			} catch (IllegalStateException ise) {
+				logger.warn("Octane SDK already initialized");
+			}
 		}
 
 		private static ServerConfiguration convertToServerConfiguration(OctaneServerSettingsModel model) {

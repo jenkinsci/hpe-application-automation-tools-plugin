@@ -32,7 +32,6 @@ import com.microfocus.application.automation.tools.octane.tests.build.BuildHandl
 import com.microfocus.application.automation.tools.octane.tests.detection.ResultFields;
 import com.microfocus.application.automation.tools.octane.tests.detection.ResultFieldsDetectionService;
 import com.microfocus.application.automation.tools.octane.tests.impl.ObjectStreamIterator;
-import com.microfocus.application.automation.tools.octane.tests.testResult.TestResult;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.maven.MavenBuild;
@@ -75,7 +74,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 	@Inject
 	private ResultFieldsDetectionService resultFieldsDetectionService;
 
-	public boolean supports(Run<?, ?> build) throws IOException, InterruptedException {
+	public boolean supports(Run<?, ?> build) {
 		if (build.getAction(CucumberTestResultsAction.class) != null) {
 			logger.debug("CucumberTestResultsAction found. Will not process JUnit results.");
 			return false;
@@ -97,8 +96,8 @@ public class JUnitExtension extends OctaneTestsExtension {
 		if (resultFile.exists()) {
 			logger.debug("JUnit result report found");
 			ResultFields detectedFields = getResultFields(run, hpRunnerType, isLoadRunnerProject);
-			FilePath filePath = BuildHandlerUtils.getWorkspace(run).act(new GetJUnitTestResults(run, Arrays.asList(resultFile), false, hpRunnerType, jenkinsRootUrl));
-			return new TestResultContainer(new ObjectStreamIterator<TestResult>(filePath, false), detectedFields);
+			FilePath filePath = BuildHandlerUtils.getWorkspace(run).act(new GetJUnitTestResults(run, Collections.singletonList(resultFile), false, hpRunnerType, jenkinsRootUrl));
+			return new TestResultContainer(new ObjectStreamIterator<>(filePath), detectedFields);
 		} else {
 			//avoid java.lang.NoClassDefFoundError when maven plugin is not present
 			if ("hudson.maven.MavenModuleSetBuild".equals(run.getClass().getName())) {
@@ -119,7 +118,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 				if (!resultFiles.isEmpty()) {
 					ResultFields detectedFields = getResultFields(run, hpRunnerType, isLoadRunnerProject);
 					FilePath filePath = BuildHandlerUtils.getWorkspace(run).act(new GetJUnitTestResults(run, resultFiles, false, hpRunnerType, jenkinsRootUrl));
-					return new TestResultContainer(new ObjectStreamIterator<TestResult>(filePath, false), detectedFields);
+					return new TestResultContainer(new ObjectStreamIterator<>(filePath), detectedFields);
 				}
 			}
 			logger.debug("No JUnit result report found");
@@ -131,9 +130,9 @@ public class JUnitExtension extends OctaneTestsExtension {
 		ResultFields detectedFields;
 		if (hpRunnerType.equals(HPRunnerType.StormRunnerLoad)) {
 			detectedFields = new ResultFields(null, STORMRUNNER_LOAD, null);
-		}else if (hpRunnerType.equals(HPRunnerType.StormRunnerFunctional)) {
+		} else if (hpRunnerType.equals(HPRunnerType.StormRunnerFunctional)) {
 			detectedFields = new ResultFields(null, STORMRUNNER_FUNCTIONAL, null);
-		}else if (isLoadRunnerProject) {
+		} else if (isLoadRunnerProject) {
 			detectedFields = new ResultFields(null, LOAD_RUNNER, null);
 		} else if (hpRunnerType.equals(HPRunnerType.PerformanceCenter)) {
 			detectedFields = new ResultFields(null, PERFORMANCE_CENTER_RUNNER, null, PERFORMANCE_TEST_TYPE);

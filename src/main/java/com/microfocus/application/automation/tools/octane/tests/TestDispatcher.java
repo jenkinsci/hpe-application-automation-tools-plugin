@@ -31,7 +31,6 @@ import com.hp.octane.integrations.api.TestsService;
 import com.hp.octane.integrations.dto.configuration.OctaneConfiguration;
 import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
-import com.hp.mqm.client.exception.FileNotFoundException;
 import com.microfocus.application.automation.tools.octane.ResultQueue;
 import com.microfocus.application.automation.tools.octane.client.RetryModel;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
@@ -78,10 +77,6 @@ public class TestDispatcher extends AbstractSafeLoggingAsyncPeriodWork {
 			return;
 		}
 		Jenkins jenkinsInstance = Jenkins.getInstance();
-		if (jenkinsInstance == null) {
-			logger.error("can't obtain Jenkins instance - major failure, test dispatching won't run");
-			return;
-		}
 
 		TestsService testsService = OctaneSDK.getInstance().getTestsService();
 		OctaneConfiguration configuration = OctaneSDK.getInstance().getPluginServices().getOctaneConfiguration();
@@ -103,11 +98,11 @@ public class TestDispatcher extends AbstractSafeLoggingAsyncPeriodWork {
 				continue;
 			}
 
-			File resultFile;
+			FileInputStream testResultsData;
 			try {
-				resultFile = new File(run.getRootDir(), TestListener.TEST_RESULT_FILE);
-			} catch (FileNotFoundException e) {
-				logger.error("'" + TestListener.TEST_RESULT_FILE + "' file no longer exists, test results of '" + item.getProjectName() + " #" + item.getBuildNumber() + "' won't be pushed to Octane");
+				testResultsData = new FileInputStream(run.getRootDir() + File.separator + TestListener.TEST_RESULT_FILE);
+			} catch (FileNotFoundException fnfe) {
+				logger.error("'" + TestListener.TEST_RESULT_FILE + "' file no longer exists, test results of '" + item.getProjectName() + " #" + item.getBuildNumber() + "' won't be pushed to Octane", fnfe);
 				queue.remove();
 				continue;
 			}
@@ -128,7 +123,7 @@ public class TestDispatcher extends AbstractSafeLoggingAsyncPeriodWork {
 			try {
 				String testsPushResponse;
 				String testsPushId = null;
-				OctaneResponse response = testsService.pushTestsResult(new FileInputStream(resultFile));
+				OctaneResponse response = testsService.pushTestsResult(testResultsData);
 				testsPushResponse = response.getBody();
 				if (response.getStatus() == 202 && testsPushResponse != null && !testsPushResponse.isEmpty()) {
 					logger.info("successfully pushed test results of '" + item.getProjectName() + " #" + item.getBuildNumber() + "'");

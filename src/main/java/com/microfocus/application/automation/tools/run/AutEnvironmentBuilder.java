@@ -104,16 +104,17 @@ public class AutEnvironmentBuilder extends Builder {
             AbstractBuild<?, ?> build,
             EnvVars envVars,
             AutEnvironmentModel autEnvironmentModel,
-            final PrintStream printStreamLogger) throws InterruptedException {
+            final PrintStream printStreamLogger) {
         
         AUTEnvironmentBuilderPerformer performer;
+
+        Logger logger = new Logger() {
+            public void log(String message) {
+                printStreamLogger.println(message);
+            }
+        };
+
         try {
-            Logger logger = new Logger() {
-                
-                public void log(String message) {
-                    printStreamLogger.println(message);
-                }
-            };
             VariableResolver.ByMap<String> variableResolver =
                     new VariableResolver.ByMap<String>(envVars);
             
@@ -122,13 +123,11 @@ public class AutEnvironmentBuilder extends Builder {
             performer = new AUTEnvironmentBuilderPerformer(autEnvModel, variableResolver, logger);
             performer.start();
             assignOutputValue(build, performer, autEnvModel.getOutputParameter(), logger);
-        } catch (InterruptedException e) {
-            build.setResult(Result.ABORTED);
-            throw e;
-        } catch (Throwable cause) {
+
+        } catch (Exception e) {
+            logger.log(String.format("Build failed: %s", e.getMessage()));
             build.setResult(Result.FAILURE);
         }
-        
     }
     
     private void assignOutputValue(

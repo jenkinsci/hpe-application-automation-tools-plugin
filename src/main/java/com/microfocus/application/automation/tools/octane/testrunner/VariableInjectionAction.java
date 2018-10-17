@@ -1,5 +1,4 @@
 /*
- *
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -20,62 +19,54 @@
  *
  */
 
-package com.microfocus.application.automation.tools.octane.workflow;
 
-import com.hp.octane.integrations.dto.causes.CIEventCause;
+package com.microfocus.application.automation.tools.octane.testrunner;
 
+import hudson.EnvVars;
+import hudson.model.AbstractBuild;
+import hudson.model.EnvironmentContributingAction;
+
+import javax.annotation.CheckForNull;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /*
- * Created by gadiel on 21/06/2016.
+    Handle variable injection for tests of converter builder.
  */
-public class BuildRelations {
-    private static BuildRelations instance;
-    private static Map<String,CIEventCause> map;
 
-    private BuildRelations()
-    {
-        map = new ConcurrentHashMap<String,CIEventCause>();
+public class VariableInjectionAction implements EnvironmentContributingAction {
+
+    private Map<String, String> variables;
+
+    public VariableInjectionAction(String key, String value) {
+        variables = new HashMap<>();
+        variables.put(key, value);
     }
 
-    public static BuildRelations getInstance()
-    {
-        if(instance == null)
-            instance = new BuildRelations();
-        return instance;
-    }
-
-    public void removePairByKey(String key)
-    {
-        if(map.containsKey(key))
-        {
-            map.remove(key);
+    @Override
+    public void buildEnvVars(AbstractBuild<?, ?> abstractBuild, EnvVars envVars) {
+        if (envVars != null && variables != null) {
+            for (Map.Entry<String, String> entry : variables.entrySet()) {
+                envVars.put(entry.getKey(), entry.getValue());
+            }
         }
     }
-    public void addBuildRelation(String projectName, CIEventCause ciEventCause)
-    {
-        map.put(projectName,ciEventCause);
+
+    @CheckForNull
+    @Override
+    public String getIconFileName() {
+        return null;
     }
 
-    public boolean containKey(String key)
-    {
-        return map.containsKey(key);
+    @CheckForNull
+    @Override
+    public String getDisplayName() {
+        return "VariableInjectionAction";
     }
 
-    public CIEventCause getValue(String key)
-    {
-        return (CIEventCause)map.get(key);
+    @CheckForNull
+    @Override
+    public String getUrlName() {
+        return null;
     }
-
-    public String print()
-    {
-        String totalMap="";
-        for(String s : map.keySet())
-        {
-            totalMap = totalMap.concat(s+"_");
-        }
-        return totalMap;
-    }
-
 }

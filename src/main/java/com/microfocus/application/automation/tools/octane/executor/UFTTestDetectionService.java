@@ -324,6 +324,7 @@ public class UFTTestDetectionService {
         try {
             File rootFile = new File(workspace.toURI());
             File file = new File(rootFile, INITIAL_DETECTION_FILE);
+            logger.info("Initial detection file path : " + file.getPath());
             file.createNewFile();
         } catch (IOException | InterruptedException e) {
             logger.error("Failed to createInitialDetectionFile : " + e.getMessage());
@@ -342,10 +343,11 @@ public class UFTTestDetectionService {
         try {
             detectionResult.writeToFile(fileToWriteTo);
         } catch (JAXBException e) {
+            String msg = "Failed to persist detection results because of JAXBException : " + e.getMessage();
             if (taskListenerLog != null) {
-                taskListenerLog.error("Failed to persist detection results: " + e.getMessage());
+                taskListenerLog.error(msg);
             }
-            logger.error("Failed to persist detection results: " + e.getMessage());
+            logger.error(msg);
         }
     }
 

@@ -149,13 +149,13 @@ Save the test in QuickTest and then run it again.</value>
     <value>Could not find results file '{0}'.</value>
   </data>
   <data name="STExecuterNotFound" xml:space="preserve">
-    <value>HPE Testing Tool is missing : HPE Service Test/HPE Unified Function Testing</value>
+    <value>Micro Focus Testing Tool is missing : Micro Focus Service Test/Micro Focus Unified Function Testing</value>
   </data>
   <data name="XmlNodeNotExistError" xml:space="preserve">
     <value>XML node '{0}' could not be found.</value>
   </data>
   <data name="FileSystemTestsRunner_No_HP_testing_tool_is_installed_on" xml:space="preserve">
-    <value>No HPE testing tool is installed on {0}</value>
+    <value>No Micro Focus testing tool is installed on {0}</value>
   </data>
   <data name="AlmRunnerCantFindTest" xml:space="preserve">
     <value>Could not find TestSet {0}</value>
@@ -191,7 +191,7 @@ Save the test in QuickTest and then run it again.</value>
     <value>"Number of tests in set: "</value>
   </data>
   <data name="AlmRunnerProblemWithHost" xml:space="preserve">
-    <value>problem while setting remote host: {0}</value>
+    <value>Problem while setting remote host: {0}</value>
   </data>
   <data name="AlmRunnerRunError" xml:space="preserve">
     <value>Problem while running TestSet: </value>
@@ -290,7 +290,7 @@ Save the test in QuickTest and then run it again.</value>
     <value>The parameter '{0}' is required to run a test from QC.</value>
   </data>
   <data name="LauncherRunnerDisposeError" xml:space="preserve">
-    <value>An error occured while disposing runner: {0}.</value>
+    <value>An error occurred while disposing runner: {0}.</value>
   </data>
   <data name="LauncherStNotInstalled" xml:space="preserve">
     <value>Service Test is not installed on {0}</value>
@@ -362,10 +362,10 @@ Save the test in QuickTest and then run it again.</value>
     <value>Scenario {0} ended after {1}:{2}:{3}.</value>
   </data>
   <data name="LrScenarioEndedTimeOut" xml:space="preserve">
-    <value>Timeout passed. Stopping sceario by force.</value>
+    <value>Timeout passed. Stopping scenario by force.</value>
   </data>
   <data name="LrScenarioEndedWithErrors" xml:space="preserve">
-    <value>Errors occured during scenario execution. Stopping the scenario run.</value>
+    <value>Errors occurred during scenario execution. Stopping the scenario run.</value>
   </data>
   <data name="LrScenarioTimeOut" xml:space="preserve">
     <value>Scenario Execution timeout ({0} seconds) passed.</value>
@@ -398,13 +398,13 @@ Save the test in QuickTest and then run it again.</value>
     <value>Stop scenario failed. Return code = {0}</value>
   </data>
   <data name="LRTestFailDueToFatalErrors" xml:space="preserve">
-    <value>Test FAILED. {0} errors occured during scenario execution.</value>
+    <value>Test FAILED. {0} errors occurred during scenario execution.</value>
   </data>
   <data name="LRTestPassed" xml:space="preserve">
     <value>Test PASSED</value>
   </data>
   <data name="LRTestWarningDueToIgnoredErrors" xml:space="preserve">
-    <value>Setting test state to WARNING. {0} Ignored errors occured during scenario execution.</value>
+    <value>Setting test state to WARNING. {0} Ignored errors occurred during scenario execution.</value>
   </data>
   <data name="LrSLARuleFailed" xml:space="preserve">
     <value>SLA rule {0} failed: GoalValue = {1} ActualValue = {2}</value>
@@ -416,7 +416,7 @@ Save the test in QuickTest and then run it again.</value>
     <value>Timeout for Analysis passed.</value>
   </data>
   <data name="LrAnlysisInitFail" xml:space="preserve">
-    <value>Failed to initilize Analysis launcher.</value>
+    <value>Failed to initialize Analysis launcher.</value>
   </data>
   <data name="LrAnlysisResults" xml:space="preserve">
     <value>Analysis Results:</value>
@@ -437,7 +437,7 @@ Save the test in QuickTest and then run it again.</value>
     <value>UFT cannot start while the LeanFT engine is running.</value>
   </data>
   <data name="UFT_Sprinter_Running" xml:space="preserve">
-    <value>UFT cannot start while HPE Sprinter is running.</value>
+    <value>UFT cannot start while Micro Focus Sprinter is running.</value>
   </data>
   <data name="ParallelRunnerExecutableNotFound" xml:space="preserve">
     <value />

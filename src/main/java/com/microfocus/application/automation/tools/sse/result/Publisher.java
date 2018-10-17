@@ -54,7 +54,7 @@ public abstract class Publisher extends Handler {
         Response response = testSetRunsRequest.execute();
         List<Map<String, String>> testInstanceRun = getTestInstanceRun(response, logger);
         String entityName = getEntityName(nameSuffix, logger);
-        if (testInstanceRun != null) {
+        if (testInstanceRun != null && testInstanceRun.size() > 0) {
             ret =
                     new JUnitParser().toModel(
                             testInstanceRun,
@@ -80,6 +80,12 @@ public abstract class Publisher extends Handler {
         try {
             if (!StringUtils.isNullOrEmpty(response.toString())) {
                 ret = XPathUtils.toEntities(response.toString());
+            }
+
+            if (ret ==null || ret.size() == 0) {
+                logger.log(String.format(
+                        "Parse TestInstanceRuns from response XML got no result. Response: %s",
+                        response.toString()));
             }
         } catch (Throwable cause) {
             logger.log(String.format(

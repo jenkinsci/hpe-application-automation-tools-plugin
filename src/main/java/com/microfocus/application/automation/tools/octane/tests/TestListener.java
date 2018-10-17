@@ -1,5 +1,4 @@
 /*
- *
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -17,7 +16,6 @@
  * or editorial errors or omissions contained herein.
  * The information contained herein is subject to change without notice.
  * ___________________________________________________________________
- *
  */
 
 package com.microfocus.application.automation.tools.octane.tests;
@@ -47,15 +45,14 @@ import java.util.List;
 public class TestListener {
 	private static Logger logger = LogManager.getLogger(TestListener.class);
 
-	private static final String JENKINS_STORMRUNNER_LOAD_TEST_RUNNER_CLASS = "com.hpe.sr.plugins.jenkins.StormTestRunner";
-	private static final String JENKINS_STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS = "com.hpe.application.automation.tools.srf.run.RunFromSrfBuilder";
-	private static final String JENKINS_PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "com.hpe.application.automation.tools.run.PcBuilder";
+	private static final String STORMRUNNER_LOAD_TEST_RUNNER_CLASS = "StormTestRunner";
+	private static final String STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS = "RunFromSrfBuilder";
+	private static final String PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "PcBuilder";
 	public static final String TEST_RESULT_FILE = "mqmTests.xml";
 
 	private ResultQueue queue;
 
 	public boolean processBuild(Run run) {
-
 		FilePath resultPath = new FilePath(new FilePath(run.getRootDir()), TEST_RESULT_FILE);
 		TestResultXmlWriter resultWriter = new TestResultXmlWriter(resultPath, run);
 		boolean success = true;
@@ -65,19 +62,19 @@ public class TestListener {
 		List<Builder> builders = JobProcessorFactory.getFlowProcessor(run.getParent()).tryGetBuilders();
 		if (builders != null) {
 			for (Builder builder : builders) {
-				if (builder.getClass().getName().equals(JENKINS_STORMRUNNER_LOAD_TEST_RUNNER_CLASS)) {
+				if (STORMRUNNER_LOAD_TEST_RUNNER_CLASS.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.StormRunnerLoad;
 					break;
 				}
-				if (builder.getClass().getName().equals(JENKINS_STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS)) {
+				if (STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.StormRunnerFunctional;
 					break;
 				}
-				if (builder.getClass().getName().equals(UFTExtension.RUN_FROM_FILE_BUILDER) || builder.getClass().getName().equals(UFTExtension.RUN_FROM_ALM_BUILDER)) {
+				if (UFTExtension.RUN_FROM_FILE_BUILDER.equals(builder.getClass().getSimpleName()) || UFTExtension.RUN_FROM_ALM_BUILDER.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.UFT;
 					break;
 				}
-				if (builder.getClass().getName().equals(JENKINS_PERFORMANCE_CENTER_TEST_RUNNER_CLASS)) {
+				if (PERFORMANCE_CENTER_TEST_RUNNER_CLASS.equals(builder.getClass().getSimpleName())) {
 					hpRunnerType = HPRunnerType.PerformanceCenter;
 					break;
 				}
@@ -87,13 +84,10 @@ public class TestListener {
 		try {
 			for (OctaneTestsExtension ext : OctaneTestsExtension.all()) {
 				if (ext.supports(run)) {
-					List<Run> buildsList = BuildHandlerUtils.getBuildPerWorkspaces(run);
-					for (Run buildX : buildsList) {
-						TestResultContainer testResultContainer = ext.getTestResults(buildX, hpRunnerType, jenkinsRootUrl);
-						if (testResultContainer != null && testResultContainer.getIterator().hasNext()) {
-							resultWriter.writeResults(testResultContainer);
-							hasTests = true;
-						}
+					TestResultContainer testResultContainer = ext.getTestResults(run, hpRunnerType, jenkinsRootUrl);
+					if (testResultContainer != null && testResultContainer.getIterator().hasNext()) {
+						resultWriter.writeResults(testResultContainer);
+						hasTests = true;
 					}
 				}
 			}

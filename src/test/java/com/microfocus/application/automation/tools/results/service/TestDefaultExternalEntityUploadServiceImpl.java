@@ -22,11 +22,26 @@
 
 package com.microfocus.application.automation.tools.results.service;
 
+import hudson.model.AbstractBuild;
+import hudson.model.FreeStyleProject;
+//import org.junit.Before;
+//import org.junit.ClassRule;
+//import org.junit.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+
+import java.io.IOException;
 
 public class TestDefaultExternalEntityUploadServiceImpl {
 
-	
-	private static void testJunit(int i) throws Exception{
+	FreeStyleProject project;
+
+	public static final JenkinsRule jenkins = new JenkinsRule();
+
+	public void initialize() throws IOException {
+		project = jenkins.createFreeStyleProject("freestyle-project");
+	}
+
+	public void testJunit() throws Exception{
 		AlmRestInfo loginInfo = new AlmRestInfo(
 				"http://localhost:8085/qcbin",
 				"DEFAULT",
@@ -36,10 +51,13 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 				"",
 				""
 				);
+		int i = 107;
 		AlmRestTool u = new AlmRestTool(loginInfo, new SystemOutLogger());
-		
-		IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u,new SystemOutLogger());
-		String reportFilePath = TestDefaultExternalEntityUploadServiceImpl.class.getResource("junitResult.xml").getPath();
+
+		AbstractBuild build = project.scheduleBuild2(0).get();
+
+		IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, build.getWorkspace(), new SystemOutLogger());
+		String reportFilePath = this.getClass().getResource("junitResult.xml").getPath();
 		String testingFramework = "JUnit";
 		String testingTool = "Jenkins";
 		String subversion = "1";
@@ -48,11 +66,10 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 		long start = System.currentTimeMillis();
 		service.UploadExternalTestSet(loginInfo,reportFilePath, testsetFolderPath, testFolderPath, testingFramework, testingTool, subversion, "local","http://localhost:8085/");
 		long end = System.currentTimeMillis();
-		System.out.println("total time:" + (end -start));		
-		
+		System.out.println("total time:" + (end -start));
 	}
-	
-	private static void testtestNG(int i) throws Exception{
+
+	public void testtestNG() throws Exception{
 		AlmRestInfo loginInfo = new AlmRestInfo(
 				"http://localhost:8085/qcbin",
 				"DEFAULT",
@@ -62,11 +79,14 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 				"",
 				""
 				);
+
+		int i = 108;
 		AlmRestTool u = new AlmRestTool(loginInfo, new SystemOutLogger());
-		
-		IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, new SystemOutLogger());
-		
-		String reportFilePath = TestDefaultExternalEntityUploadServiceImpl.class.getResource("testng-results.xml").getPath();
+
+		AbstractBuild build = project.scheduleBuild2(0).get();
+		IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, build.getWorkspace(), new SystemOutLogger());
+
+		String reportFilePath = this.getClass().getResource("testng-results.xml").getPath();
 		String testingFramework = "TestNG";
 		String testingTool = "Jenkins testng";
 		String subversion = "1";
@@ -75,10 +95,11 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 		long start = System.currentTimeMillis();
 		service.UploadExternalTestSet(loginInfo,reportFilePath, testsetFolderPath, testFolderPath, testingFramework, testingTool, subversion, "local","http://localhost:8085/");
 		long end = System.currentTimeMillis();
-		System.out.println("total time:" + (end -start));		
+		System.out.println("total time:" + (end -start));
 	}
-	
-	private static void testnunit(int i) throws Exception{
+
+	public void testnunit() throws Exception{
+		int i = 109;
 		AlmRestInfo loginInfo = new AlmRestInfo(
 				"http://localhost:8085/qcbin",
 				"DEFAULT",
@@ -89,10 +110,11 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 				""
 				);
 		AlmRestTool u = new AlmRestTool(loginInfo, new SystemOutLogger());
+
+		AbstractBuild build = project.scheduleBuild2(0).get();
+		IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, build.getWorkspace(), new SystemOutLogger());
 		
-		IExternalEntityUploadService service = new DefaultExternalEntityUploadServiceImpl(u, new SystemOutLogger());
-		
-		String reportFilePath = TestDefaultExternalEntityUploadServiceImpl.class.getResource("NUnitReport.xml").getPath();
+		String reportFilePath = this.getClass().getResource("NUnitReport.xml").getPath();
 
 		String testingFramework = "NUNit";
 		String testingTool = "Jenkins nunit";
@@ -104,10 +126,5 @@ public class TestDefaultExternalEntityUploadServiceImpl {
 		long end = System.currentTimeMillis();
 		System.out.println("total time:" + (end -start));	
 	}
-	
-	public static void main(String[] argc) throws Exception{
-		testJunit(109);
-		//testtestNG(107);
-		//testnunit(108);
-	}
+
 }

@@ -35,11 +35,11 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 
-import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
+import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 
 import com.microfocus.adm.performancecenter.plugins.common.rest.PcRestProxy;
 
-import static com.microfocus.adm.performancecenter.plugins.common.pcEntities.RunState.*;
+import static com.microfocus.adm.performancecenter.plugins.common.pcentities.RunState.*;
 
 public class MockPcRestProxyBadResponses extends PcRestProxy {
     

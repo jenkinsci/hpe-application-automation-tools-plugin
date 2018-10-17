@@ -1,5 +1,4 @@
 /*
- *
  *  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
  *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
  *  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
@@ -20,27 +19,49 @@
  *
  */
 
-package com.microfocus.application.automation.tools.octane.workflow;
+package com.microfocus.application.automation.tools.octane.testrunner;
 
-import com.cloudbees.workflow.rest.external.StatusExt;
-import com.hp.octane.integrations.dto.snapshots.CIBuildResult;
+import com.hp.octane.integrations.executor.TestsToRunFramework;
+import com.microfocus.application.automation.tools.model.EnumDescription;
+import org.kohsuke.stapler.DataBoundConstructor;
 
-public class WorkFlowUtils {
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-    public static CIBuildResult convertStatus(StatusExt status) {
+/*
+ * Test model for storing of available frameworks for converting
+ */
+public class TestsToRunConverterModel implements Serializable {
 
-        switch (status) {
-            case FAILED:
-                return CIBuildResult.FAILURE;
-            case SUCCESS:
-                return CIBuildResult.SUCCESS;
-            case UNSTABLE:
-                return CIBuildResult.UNSTABLE;
-            case ABORTED:
-                return CIBuildResult.ABORTED;
-            default:
-                return CIBuildResult.UNAVAILABLE;
+    private static final long serialVersionUID = 1L;
+
+    public final static EnumDescription none = new EnumDescription("", "");
+
+    public final static List<EnumDescription> Frameworks;
+
+    private String framework;
+
+    static {
+        List<EnumDescription> temp = new ArrayList<>();
+        temp.add(none);
+        for (TestsToRunFramework fr : TestsToRunFramework.values()) {
+            temp.add(new EnumDescription(fr.value(), fr.getDesc()));
         }
-
+        Frameworks = temp;
     }
+
+    @DataBoundConstructor
+    public TestsToRunConverterModel(String framework) {
+
+        this.framework = framework;
+    }
+
+    public String getFramework() {
+        return framework;
+    }
+
 }
+
+
+

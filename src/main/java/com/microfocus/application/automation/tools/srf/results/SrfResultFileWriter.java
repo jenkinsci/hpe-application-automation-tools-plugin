@@ -192,8 +192,9 @@ public class SrfResultFileWriter {
             String testRunYac = test.getString("yac");
             testSuite.setAttribute("yac", testRunYac);
             String name = test.getString("name");
-            testSuite.setAttribute("id", String.format("%s_%s", name, testRunYac));
-            testSuite.setAttribute("name", SrfScriptRunModel.normalizeName(name));
+            String uniqueName = String.format("%s_%s", name, testRunYac);
+            testSuite.setAttribute("id", uniqueName);
+            testSuite.setAttribute("name", SrfScriptRunModel.normalizeName(uniqueName));
 
             JSONArray scriptRuns = (JSONArray) (test.get("scriptRuns"));
             int scriptCnt = scriptRuns.size();

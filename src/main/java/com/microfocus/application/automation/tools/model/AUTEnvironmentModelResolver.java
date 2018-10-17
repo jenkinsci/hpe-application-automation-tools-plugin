@@ -56,6 +56,7 @@ public class AUTEnvironmentModelResolver {
                 autEnvironmentModel.getAlmPassword(),
                 resolvedAlmDomain,
                 resolvedAlmProject,
+                autEnvironmentModel.getClientType(),
                 resolvedAutEnvironmentId,
                 autEnvironmentModel.isUseExistingAutEnvConf(),
                 resolvedAutEnvConfId,

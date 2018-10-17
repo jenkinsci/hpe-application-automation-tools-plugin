@@ -36,6 +36,7 @@ import com.microfocus.application.automation.tools.octane.model.processors.param
 import com.microfocus.application.automation.tools.octane.model.processors.projects.AbstractProjectProcessor;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
 import com.microfocus.application.automation.tools.octane.model.processors.scm.SCMProcessors;
+import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.model.*;
 import jenkins.model.Jenkins;
 import org.apache.logging.log4j.LogManager;
@@ -51,20 +52,7 @@ public class ModelFactory {
 	private static final DTOFactory dtoFactory = DTOFactory.getInstance();
 
 	public static PipelineNode createStructureItem(Job job) {
-		return createStructureItem(job, new HashSet<Job>());
-	}
-
-
-	public static PipelineNode createStructureItem(Job job, Set<Job> processedJobs) {
-		AbstractProjectProcessor projectProcessor = JobProcessorFactory.getFlowProcessor(job, processedJobs);
-		PipelineNode pipelineNode = dtoFactory.newDTO(PipelineNode.class);
-		pipelineNode.setJobCiId(projectProcessor.getTranslateJobName());
-		pipelineNode.setName(job.getName());
-		pipelineNode.setParameters(ParameterProcessors.getConfigs(job));
-		pipelineNode.setPhasesInternal(projectProcessor.getInternals());
-		pipelineNode.setPhasesPostBuild(projectProcessor.getPostBuilds());
-
-		return pipelineNode;
+		return createStructureItem(job, new HashSet<>());
 	}
 
 	public static PipelinePhase createStructurePhase(String name, boolean blocking, List<AbstractProject> items, Set<Job> processedJobs) {
@@ -87,7 +75,6 @@ public class ModelFactory {
 		return pipelinePhase;
 	}
 
-
 	public static SnapshotNode createSnapshotItem(Run build, boolean metaOnly) {
 		SnapshotNode snapshotNode = dtoFactory.newDTO(SnapshotNode.class);
 		SCMProcessor scmProcessor = null;
@@ -102,16 +89,7 @@ public class ModelFactory {
 			status = CIBuildStatus.RUNNING;
 		}
 
-		CIBuildResult result = CIBuildResult.UNAVAILABLE;
-		if (build.getResult() == Result.SUCCESS) {
-			result = CIBuildResult.SUCCESS;
-		} else if (build.getResult() == Result.ABORTED) {
-			result = CIBuildResult.ABORTED;
-		} else if (build.getResult() == Result.FAILURE) {
-			result = CIBuildResult.FAILURE;
-		} else if (build.getResult() == Result.UNSTABLE) {
-			result = CIBuildResult.UNSTABLE;
-		}
+		CIBuildResult result = BuildHandlerUtils.translateRunResult(build);
 
 		if (!metaOnly) {
 			AbstractProjectProcessor flowProcessor = JobProcessorFactory.getFlowProcessor(build.getParent());
@@ -129,7 +107,7 @@ public class ModelFactory {
 		snapshotNode.setName(build.getParent().getName());
 		snapshotNode.setBuildCiId(String.valueOf(build.getNumber()));
 		snapshotNode.setNumber(String.valueOf(build.getNumber()));
-		snapshotNode.setCauses(CIEventCausesFactory.processCauses(build.getCauses()));
+		snapshotNode.setCauses(CIEventCausesFactory.processCauses(build));
 		snapshotNode.setDuration(build.getDuration());
 		snapshotNode.setEstimatedDuration(build.getEstimatedDuration());
 		if (build instanceof AbstractBuild) {
@@ -141,6 +119,18 @@ public class ModelFactory {
 		snapshotNode.setStatus(status);
 
 		return snapshotNode;
+	}
+
+	private static PipelineNode createStructureItem(Job job, Set<Job> processedJobs) {
+		AbstractProjectProcessor projectProcessor = JobProcessorFactory.getFlowProcessor(job, processedJobs);
+		PipelineNode pipelineNode = dtoFactory.newDTO(PipelineNode.class);
+		pipelineNode.setJobCiId(projectProcessor.getTranslateJobName());
+		pipelineNode.setName(job.getName());
+		pipelineNode.setParameters(ParameterProcessors.getConfigs(job));
+		pipelineNode.setPhasesInternal(projectProcessor.getInternals());
+		pipelineNode.setPhasesPostBuild(projectProcessor.getPostBuilds());
+
+		return pipelineNode;
 	}
 
 	private static SnapshotNode createSnapshotItem(Job project, boolean metaOnly) {
@@ -299,12 +289,7 @@ public class ModelFactory {
 			}
 		}
 
-		Collections.sort(sortedList, new Comparator<CIParameter>() {
-			@Override
-			public int compare(CIParameter p1, CIParameter p2) {
-				return p1.getName().compareTo(p2.getName());
-			}
-		});
+		sortedList.sort(Comparator.comparing(CIParameter::getName));
 
 		StringBuilder subBuildName = new StringBuilder();
 		if (sortedList.size() > 0) {

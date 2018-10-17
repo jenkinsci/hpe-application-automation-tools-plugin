@@ -82,7 +82,7 @@
                         <td class="pane">
                             <a href="(root)/${p.safeName}/" class="model-link inside">
                                 <span style="${prev==null?'font-weight:bold':''}">
-                                    <st:out value="${jvar_actionType.getSuiteId(it, jvar_i)}" />
+                                    <st:out value="${jvar_actionType.getSuiteName(p)}" />
                                 </span>
                             </a>
 

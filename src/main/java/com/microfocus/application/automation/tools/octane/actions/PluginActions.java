@@ -31,12 +31,9 @@ import com.hp.octane.integrations.dto.connectivity.OctaneTaskAbridged;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigApi;
 import hudson.Extension;
 import hudson.model.RootAction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
-import javax.servlet.ServletException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Map;
@@ -52,7 +49,6 @@ import java.util.UUID;
 
 @Extension
 public class PluginActions implements RootAction {
-	private static final Logger logger = LogManager.getLogger(PluginActions.class);
 	private static final DTOFactory dtoFactory = DTOFactory.getInstance();
 
 	public String getIconFileName() {
@@ -71,7 +67,7 @@ public class PluginActions implements RootAction {
 		return new ConfigApi();
 	}
 
-	public void doDynamic(StaplerRequest req, StaplerResponse res) throws IOException, ServletException {
+	public void doDynamic(StaplerRequest req, StaplerResponse res) throws IOException {
 		HttpMethod method = null;
 		if ("post".equals(req.getMethod().toLowerCase())) {
 			method = HttpMethod.POST;
@@ -105,14 +101,12 @@ public class PluginActions implements RootAction {
 		}
 	}
 
-	public static String getBody(BufferedReader reader) throws IOException {
-
+	private static String getBody(BufferedReader reader) throws IOException {
 		StringBuilder buffer = new StringBuilder();
 		String line;
 		while ((line = reader.readLine()) != null) {
 			buffer.append(line);
 		}
-		String body = buffer.toString();
-		return body;
+		return buffer.toString();
 	}
 }

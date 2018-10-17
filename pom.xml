@@ -29,11 +29,14 @@
 	</parent>
 
 	<artifactId>hp-application-automation-tools-plugin</artifactId>
-	<version>5.5.1-beta-SNAPSHOT</version>
+	<version>5.5.3-beta-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>Micro Focus Application Automation Tools</name>
-	<description>The plugin integrates Jenkins with the following Micro Focus products - Service Virtualization, LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center, Application Lifecycle Management and Application Lifecycle Management Octane.</description>
-    <url>https://wiki.jenkins.io/display/JENKINS/Micro+Focus+Application+Automation+Tools</url>
+	<description>The plugin integrates Jenkins with the following Micro Focus products - Service Virtualization,
+		LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Mobile Center,
+		Application Lifecycle Management and Application Lifecycle Management Octane.
+	</description>
+	<url>https://wiki.jenkins.io/display/JENKINS/Micro+Focus+Application+Automation+Tools</url>
 
 	<licenses>
 		<license>
@@ -48,11 +51,10 @@
 		<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
 		<msbuild.configuration>Release</msbuild.configuration>
 		<jenkins.version>2.60.3</jenkins.version>
-		<workflow.version>2.2</workflow.version>
 		<maven.exec.skip>false</maven.exec.skip>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-        <java.level>8</java.level>
+		<java.level>8</java.level>
 	</properties>
 
 	<distributionManagement>
@@ -87,7 +89,7 @@
 	</organization>
 
 	<developers>
-        <developer>
+		<developer>
 			<id>gront</id>
 			<name>Daniel Gront</name>
 			<email>daniel.gront@microfocus.com</email>
@@ -255,12 +257,13 @@
 							<skip>true</skip>
 							<executable>java</executable>
 							<arguments>
-								<argument> -jar</argument>
+								<argument>-jar</argument>
 								<argument>${env.JENKINS_HOME}war\WEB-INF\jenkins-cli.jar</argument>
 								<argument>-s</argument>
 								<argument>http://localhost:8080</argument>
 								<argumnet>install-plugin</argumnet>
-								<argumnet>${project.build.directory}\${project.build.finalName}.${project.packaging}</argumnet>
+								<argumnet>${project.build.directory}\${project.build.finalName}.${project.packaging}
+								</argumnet>
 								<argument>-name</argument>
 								<argument>"${project.artifactId}"</argument>
 								<!-- <argument>-deploy</argument> -->
@@ -305,6 +308,7 @@
 					<excludes>
 						<exclude>**/GherkinResultsTest.java</exclude>
 						<exclude>**/JUnitResultsTest.java</exclude>
+
 					</excludes>
 				</configuration>
 			</plugin>
@@ -324,7 +328,6 @@
 		</plugins>
 
 	</build>
-
 
 	<!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
 	<repositories>
@@ -352,11 +355,6 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-aggregator</artifactId>
-			<version>${workflow.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.5.2</version>
@@ -371,50 +369,59 @@
 			<artifactId>json-path</artifactId>
 			<version>1.1.0</version>
 		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>matrix-project</artifactId>
-			<version>1.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-step-api</artifactId>
-			<version>${workflow.version}</version>
-		</dependency>
-		<dependency> <!-- Test framework -->
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-step-api</artifactId>
-			<version>${workflow.version}</version>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
 
+		<!--WORKFLOW (PIPELINE-AS-A-CODE) integration-->
 		<dependency>
+			<artifactId>workflow-aggregator</artifactId>
 			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<version>2.5</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>workflow-api</artifactId>
+					<groupId>org.jenkins-ci.plugins.workflow</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>workflow-step-api</artifactId>
+					<groupId>org.jenkins-ci.plugins.workflow</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>workflow-scm-step</artifactId>
+					<groupId>org.jenkins-ci.plugins.workflow</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>workflow-support</artifactId>
+					<groupId>org.jenkins-ci.plugins.workflow</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>*</artifactId>
+					<groupId>com.fasterxml.jackson.core</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>*</artifactId>
+					<groupId>com.fasterxml.jackson.datatype</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
 			<artifactId>workflow-cps</artifactId>
-			<version>2.6</version>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<version>2.42</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>pipeline-build-step</artifactId>
-			<version>2.2</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>structs</artifactId>
-			<version>1.4</version>
-		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci</groupId>
 			<artifactId>symbol-annotation</artifactId>
 			<version>1.4</version>
 		</dependency>
 		<dependency>
+			<artifactId>ssh-credentials</artifactId>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<version>1.13</version>
+		</dependency>
+		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>credentials</artifactId>
-			<version>2.1.4</version>
+			<version>2.1.8</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hp.sv</groupId>
@@ -435,7 +442,6 @@
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>junit</artifactId>
 			<version>1.19</version>
-			<!--version>1.6</version-->
 		</dependency>
 
 
@@ -444,7 +450,7 @@
 		<dependency>
 			<artifactId>integrations-sdk</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>1.5.25</version>
+			<version>1.5.33</version>
 		</dependency>
 
 		<!-- Obsolete TO BE REMOVED -->
@@ -454,111 +460,84 @@
 			<version>1.4.25</version>
 		</dependency>
 
-		<!-- org.jenkins-ci.main -->
-		<dependency>
-			<groupId>org.jenkins-ci.main</groupId>
-			<artifactId>maven-plugin</artifactId>
-			<version>2.6</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>branch-api</artifactId>
-			<version>1.10</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>ssh-credentials</artifactId>
-			<version>1.13</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>git-server</artifactId>
-			<version>1.7</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>git-client</artifactId>
-			<version>1.19.6</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.pipeline-stage-view</groupId>
-			<artifactId>pipeline-rest-api</artifactId>
-			<version>1.7</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>git</artifactId>
-			<version>2.4.4</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>token-macro</artifactId>
-			<version>1.12</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>mailer</artifactId>
-			<version>1.16</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>jenkins-multijob-plugin</artifactId>
-			<version>1.15</version>
-			<optional>true</optional>
-		</dependency>
+		<!--BUILDER providers integration-->
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>parameterized-trigger</artifactId>
 			<version>2.25</version>
 			<optional>true</optional>
 		</dependency>
-
 		<dependency>
+			<artifactId>maven-plugin</artifactId>
+			<groupId>org.jenkins-ci.main</groupId>
+			<version>2.15.1</version>
+			<optional>true</optional>
+			<exclusions>
+				<exclusion>
+					<artifactId>mailer</artifactId>
+					<groupId>org.jenkins-ci.plugins</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<artifactId>matrix-project</artifactId>
 			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>extended-choice-parameter</artifactId>
-			<version>0.34</version>
+			<version>1.7.1</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<artifactId>jenkins-multijob-plugin</artifactId>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<version>1.15</version>
 			<optional>true</optional>
 		</dependency>
 
+		<!--SCM providers integration-->
+		<dependency>
+			<artifactId>git</artifactId>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<version>3.1.0</version>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>subversion</artifactId>
+			<version>2.7.1</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!--PARAMETERS providers integration-->
+		<dependency>
+			<artifactId>extended-choice-parameter</artifactId>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<version>0.64</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
 			<artifactId>random-string-parameter</artifactId>
+			<groupId>org.jenkins-ci.plugins</groupId>
 			<version>1.0</version>
 			<optional>true</optional>
 		</dependency>
-
 		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>nodelabelparameter</artifactId>
+			<groupId>org.jenkins-ci.plugins</groupId>
 			<version>1.5.0</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!--COMPATIBILITY issues of plugins' inter-dependencies-->
+		<dependency>
+			<artifactId>token-macro</artifactId>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<version>1.12.1</version>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>jquery</artifactId>
-			<version>1.7.2-1</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>subversion</artifactId>
-			<version>2.5</version>
+			<version>1.11.2-0</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -568,38 +547,14 @@
 			<version>1.2.3</version>
 		</dependency>
 
-
+		<!--sonar plugin for compile phase only-->
 		<dependency>
-			<groupId>com.seitenbau.jenkins.plugins</groupId>
-			<artifactId>dynamicparameter</artifactId>
-			<version>0.2.0</version>
-			<optional>true</optional>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>sonar</artifactId>
+			<version>2.6.1</version>
+			<scope>compile</scope>
 		</dependency>
 
-
-
-		<!--Test-->
-
-		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-server</artifactId>
-			<version>9.2.6.v20141205</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-all</artifactId>
-			<version>1.10.19</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.jenkins-ci.main</groupId>
-			<artifactId>jenkins-test-harness-tools</artifactId>
-			<version>2.0</version>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
 			<artifactId>jersey-common</artifactId>
@@ -609,12 +564,18 @@
 			<groupId>org.glassfish.jersey.media</groupId>
 			<artifactId>jersey-media-sse</artifactId>
 			<version>2.9</version>
+			<exclusions>
+				<exclusion>
+					<groupId>javax.validation</groupId>
+					<artifactId>validation-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>com.microfocus.adm.performancecenter</groupId>
 			<artifactId>plugins-common</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.2</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.thoughtworks.xstream</groupId>
@@ -631,16 +592,26 @@
 			</exclusions>
 		</dependency>
 
-		<!-- The dependencies were added to comply with the new jenkins base version-->
+		<!--Test-->
+
 		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>script-security</artifactId>
-			<version>1.18</version>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-server</artifactId>
+			<version>9.2.6.v20141205</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<artifactId>scm-api</artifactId>
-			<version>1.2</version>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.10.19</version>
+			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.main</groupId>
+			<artifactId>jenkins-test-harness-tools</artifactId>
+			<version>2.0</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 </project>

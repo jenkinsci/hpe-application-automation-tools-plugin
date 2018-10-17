@@ -97,16 +97,13 @@ public final class AuthenticationTool {
                         ResourceAccessLevel.PUBLIC);
         if (!response.isOk()) {
             throw new SSEException("Cannot append QCSession cookies", response.getFailure());
+        } else {
+            logger.log("Session created.");
         }
     }
 
     private static byte[] generateClientTypeData(String clientType) {
-        if (clientType !=null && !clientType.isEmpty()) {
-            String data = String.format("<session-parameters><client-type>%s</client-type></session-parameters>", clientType);
-            return data.getBytes();
-        }
-        else {
-            return new byte[1]; // For some server requires post request has a Content-Length.
-        }
+        String data = String.format("<session-parameters><client-type>%s</client-type></session-parameters>", clientType);
+        return data.getBytes();
     }
 }

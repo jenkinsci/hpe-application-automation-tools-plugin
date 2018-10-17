@@ -22,7 +22,10 @@
 
 package com.microfocus.application.automation.tools.sse.sdk.request;
 
+import com.microfocus.application.automation.tools.sse.common.RestXmlUtils;
 import com.microfocus.application.automation.tools.sse.sdk.Client;
+
+import java.util.Map;
 
 /***
  * 
@@ -46,6 +49,13 @@ public class GetLabRunEntityTestSetRunsRequest extends GetRequest {
     protected String getQueryString() {
         
         return String.format("query={procedure-run[%s]}&page-size=2000", _runId);
+    }
+
+    @Override
+    protected Map<String, String> getHeaders() {
+        // It's pretty weird that in 1260 p1 the xml header should be provided.
+        // Otherwise the server would generate wrong query sql.
+        return RestXmlUtils.getAppXmlHeaders();
     }
     
 }

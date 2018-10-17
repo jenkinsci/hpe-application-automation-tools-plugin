@@ -30,19 +30,17 @@ import java.util.List;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
+import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 
 public class PcModel {
 
     public static final String    COLLATE         = "Collate Results";
     public static final String    COLLATE_ANALYZE = "Collate and Analyze";
     public static final String    DO_NOTHING      = "Do Not Collate";
-    private static final String EXPECTED_ALMPASSWORD_PARAMETER_NAME = "PCPASSWORD";
 
     private final String           serverAndPort;
     private final String                 pcServerName;
-    private final String                 almUserName;
-    private final SecretContainer        almPassword;
+    private final String                 credentialsId;
     private final String                 almDomain;
     private final String                 almProject;
     private final String                 testId;
@@ -56,20 +54,22 @@ public class PcModel {
     private String trendReportId;
     private final boolean HTTPSProtocol;
     private final String proxyOutURL;
-    private final String proxyOutUser;
-    private final String proxyOutPassword;
+    private final String credentialsProxyId;
     private String buildParameters;
+    private String retry;
+    private int retryDelay;
+    private int retryOccurrences;
 
 
     @DataBoundConstructor
-    public PcModel(String serverAndPort, String pcServerName, String almUserName, String almPassword, String almDomain, String almProject,
+    public PcModel(String serverAndPort, String pcServerName, String credentialsId, String almDomain, String almProject,
                    String testId,String autoTestInstanceID, String testInstanceId, String timeslotDurationHours, String timeslotDurationMinutes,
-                   PostRunAction postRunAction, boolean vudsMode, String description, String addRunToTrendReport, String trendReportId, boolean HTTPSProtocol, String proxyOutURL, String proxyOutUser, String proxyOutPassword) {
+                   PostRunAction postRunAction, boolean vudsMode, String description, String addRunToTrendReport, String trendReportId, boolean HTTPSProtocol,
+                   String proxyOutURL, String credentialsProxyId, String retry, String retryDelay, String retryOccurrences ) {
 
         this.serverAndPort = serverAndPort;
         this.pcServerName = pcServerName;
-        this.almUserName = almUserName;
-        this.almPassword = setPassword(almPassword);
+        this.credentialsId = credentialsId;
         this.almDomain = almDomain;
         this.almProject = almProject;
         this.testId = testId;
@@ -83,10 +83,53 @@ public class PcModel {
         this.HTTPSProtocol = HTTPSProtocol;
         this.trendReportId = trendReportId;
         this.proxyOutURL = proxyOutURL;
-        this.proxyOutUser = proxyOutUser;
-        this.proxyOutPassword = proxyOutPassword;
+        this.credentialsProxyId = credentialsProxyId;
         this.buildParameters="";
+        this.retry = retry;
+        this.retryDelay = verifyStringValueIsIntAndPositive(retryDelay, 5);
+        this.retryOccurrences = verifyStringValueIsIntAndPositive(retryOccurrences, 3);
 
+    }
+
+    private int verifyStringValueIsIntAndPositive (String supplied, int defaultValue)
+    {
+        if(supplied != null && isInteger(supplied)) {
+            int suppliedInt = Integer.parseInt(supplied);
+            if (suppliedInt > 0)
+                return suppliedInt;
+        }
+        return defaultValue;
+    }
+
+
+    private static boolean isInteger(String s, int radix) {
+        if(s.isEmpty()) return false;
+        for(int i = 0; i < s.length(); i++) {
+            if(i == 0 && s.charAt(i) == '-') {
+                if(s.length() == 1) return false;
+                else continue;
+            }
+            if(Character.digit(s.charAt(i),radix) < 0) return false;
+        }
+        return true;
+    }
+
+    private static boolean isInteger(String s) {
+        return isInteger(s, 10);
+    }
+
+    public String getRetry() {
+
+        return this.retry;
+    }
+
+    public int getRetryDelay () {
+        return this.retryDelay;
+    }
+
+    public int getRetryOccurrences() {
+
+        return this.retryOccurrences;
     }
 
     protected SecretContainer setPassword(String almPassword) {
@@ -110,24 +153,24 @@ public class PcModel {
         return fromPcClient?useParameterIfNeeded(buildParameters,this.pcServerName):getPcServerName();
     }
 
-    public String getAlmUserName() {
+    public String getCredentialsId() {
 
-        return this.almUserName;
+        return this.credentialsId;
     }
 
-    public String getAlmUserName(boolean fromPcClient) {
+    public String getCredentialsId(boolean fromPcClient) {
 
-        return fromPcClient?useParameterIfNeeded(buildParameters,this.almUserName):getAlmUserName();
+        return fromPcClient?useParameterIfNeeded(buildParameters,this.credentialsId):getCredentialsId();
     }
 
-    public SecretContainer getAlmPassword() {
+    public String getCredentialsProxyId() {
 
-        return this.almPassword;
+        return this.credentialsProxyId;
     }
 
-    public SecretContainer getAlmPassword(boolean fromPcClient) {
+    public String getCredentialsProxyId(boolean fromPcClient) {
 
-        return fromPcClient?useParameterForAlmPasswordIfNeeded(buildParameters,this.almPassword, EXPECTED_ALMPASSWORD_PARAMETER_NAME):getAlmPassword();
+        return fromPcClient?useParameterIfNeeded(buildParameters,this.credentialsProxyId):getCredentialsProxyId();
     }
 
     public String getAlmDomain() {
@@ -206,22 +249,6 @@ public class PcModel {
         return fromPcClient?useParameterIfNeeded(buildParameters,this.proxyOutURL):getProxyOutURL();
     }
 
-    public String getProxyOutUser(){
-        return this.proxyOutUser;
-    }
-
-    public String getProxyOutUser(boolean fromPcClient){
-        return fromPcClient?useParameterIfNeeded(buildParameters,this.proxyOutUser):getProxyOutUser();
-    }
-
-    public String getProxyOutPassword(){
-        return this.proxyOutPassword;
-    }
-
-    public String getProxyOutPassword(boolean fromPcClient){
-        return fromPcClient?useParameterIfNeeded(buildParameters,this.proxyOutPassword):getProxyOutPassword();
-    }
-
     public static List<PostRunAction> getPostRunActions() {
         return Arrays.asList(PostRunAction.values());
     }
@@ -242,11 +269,11 @@ public class PcModel {
         String vudsModeString = (vudsMode) ? "true" : "false";
         String trendString = ("USE_ID").equals(addRunToTrendReport) ? String.format(", TrendReportID = '%s'",trendReportId) : "";
 
-        return String.format("[PCServer='%s', User='%s', Domain='%s', Project='%s', TestID='%s', " +
+        return String.format("[PCServer='%s', CredentialsId='%s', Domain='%s', Project='%s', TestID='%s', " +
                         "TestInstanceID='%s', TimeslotDuration='%s', PostRunAction='%s', " +
                         "VUDsMode='%s'%s, HTTPSProtocol='%s']",
 
-                pcServerName, almUserName, almDomain, almProject, testId,
+                pcServerName, credentialsId, almDomain, almProject, testId,
                 testInstanceId, timeslotDuration, postRunAction.getValue(),
                 vudsModeString, trendString, HTTPSProtocol);
     }
@@ -293,15 +320,5 @@ public class PcModel {
         return attribute;
     }
 
-    private SecretContainer useParameterForAlmPasswordIfNeeded (String buildParameters, SecretContainer almPassword, String expectedAlmPasswordParameterName ){
-        if (buildParameters!=null) {
-            String[] buildParametersArray = buildParameters.replace("{", "").replace("}", "").split(",");
-            for (String buildParameter : buildParametersArray) {
-                if (buildParameter.trim().startsWith(expectedAlmPasswordParameterName + "=")) {
-                    return setPassword(buildParameter.trim().replace(expectedAlmPasswordParameterName + "=", ""));
-                }
-            }
-        }
-        return almPassword;
-    }
+
 }

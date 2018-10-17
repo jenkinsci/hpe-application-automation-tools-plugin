@@ -1089,10 +1089,17 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
             }
 
             FilePath dstReportPath = new FilePath(testDirectory);
-            FilePath transSummaryReport;
+            FilePath transSummaryReport,
+		     transSummaryReportExcel;
             if ((transSummaryReport = getTransactionSummaryReport(htmlReportPath)) != null) {
                 FilePath dstFilePath = new FilePath(dstReportPath, TRANSACTION_REPORT_NAME + ".html");
                 transSummaryReport.copyTo(dstFilePath);
+
+                //Copy the .xls which is being referenced by the report
+                if ((transSummaryReportExcel = getTransactionSummaryReportExcel(htmlReportPath, transSummaryReport.getName())) != null) {
+                    dstFilePath = new FilePath(dstReportPath, transSummaryReportExcel.getName());
+                    transSummaryReportExcel.copyTo(dstFilePath);
+                }
             } else {
                 File htmlIndexFile = new File(testDirectory, TRANSACTION_REPORT_NAME + ".html");
                 createErrorHtml(htmlIndexFile, NO_TRANSACTION_SUMMARY_REPORT_ERROR);
@@ -1151,6 +1158,17 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
                     }
                 }
             }
+        }
+
+        return null;
+    }
+
+    private FilePath getTransactionSummaryReportExcel(FilePath htmlReportPath, String reportName) throws IOException, InterruptedException {
+        FileFilter reportFileFilter = new WildcardFileFilter(reportName.replace("html", "xls"));
+        List<FilePath> reportFiles = htmlReportPath.list(reportFileFilter);
+
+        if (!reportFiles.isEmpty()) {
+            return reportFiles.get(0);            
         }
 
         return null;

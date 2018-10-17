@@ -31,6 +31,7 @@ import com.microfocus.application.automation.tools.model.AutEnvironmentParameter
 import com.microfocus.application.automation.tools.rest.RestClient;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
 import com.microfocus.application.automation.tools.sse.sdk.Response;
+import com.microfocus.application.automation.tools.sse.sdk.authenticator.AuthenticationTool;
 import com.microfocus.application.automation.tools.sse.sdk.authenticator.RestAuthenticator;
 import com.microfocus.application.automation.tools.sse.sdk.Client;
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
@@ -58,14 +59,15 @@ public class AUTEnvironmentBuilderPerformer {
         this.buildVariableResolver = buildVariableResolver;
     }
     
-    public void start() throws Throwable {
-        
+    public void start() {
         try {
-            if (login(getClient())) {
-                appendQCSessionCookies(getClient());
+            if (AuthenticationTool.authenticate(getClient(),
+                    model.getAlmUserName(),
+                    model.getAlmPassword(),
+                    model.getAlmServerUrl(),
+                    model.getClientType(),
+                    logger)) {
                 performAutOperations();
-            } else {
-                throw new SSEException("Failed to login to ALM");
             }
         } catch (Throwable cause) {
             logger.log(String.format(
@@ -118,40 +120,6 @@ public class AUTEnvironmentBuilderPerformer {
         Collection<AUTEnvironmnentParameter> parametersToUpdate =
                 parametersManager.getParametersToUpdate();
         parametersManager.updateParametersValues(parametersToUpdate);
-    }
-    
-    private boolean login(Client client) {
-        
-        boolean ret;
-        try {
-            ret =
-                    new RestAuthenticator().login(
-                            client,
-                            model.getAlmUserName(),
-                            model.getAlmPassword(),
-                            logger);
-        } catch (Throwable cause) {
-            ret = false;
-            logger.log(String.format(
-                    "Failed login to ALM Server URL: %s. Exception: %s",
-                    model.getAlmServerUrl(),
-                    cause.getMessage()));
-        }
-        
-        return ret;
-    }
-    
-    private void appendQCSessionCookies(RestClient client) {
-        
-        Response response =
-                client.httpPost(
-                        client.build("rest/site-session"),
-                        null,
-                        null,
-                        ResourceAccessLevel.PUBLIC);
-        if (!response.isOk()) {
-            throw new SSEException("Cannot append QCSession cookies", response.getFailure());
-        }
     }
     
     private String getAutEnvironmentConfigurationId(

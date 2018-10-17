@@ -22,6 +22,7 @@
 
 package com.microfocus.application.automation.tools.results.parser.antjunit;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,10 +51,18 @@ public class AntJUnitReportParserImpl implements ReportParser {
 		
 		try {
 			return parseTestSetsFromAntJUnitReport(reportInputStream, testingFramework, testingTool);
+
 		} catch (Exception e) {
-		
-			e.printStackTrace();
-			throw new ReportParseException();
+			throw new ReportParseException(e);
+
+		} finally {
+			try {
+				if (reportInputStream != null) {
+					reportInputStream.close();
+				}
+			} catch (IOException e) {
+				throw new ReportParseException(e);
+			}
 		}
 	}	
 	

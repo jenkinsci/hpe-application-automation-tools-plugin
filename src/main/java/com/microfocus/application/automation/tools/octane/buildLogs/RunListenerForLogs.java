@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Created by benmeior on 11/16/2016
- * Jenkins events listener to dispatch build logs to BDI server via Octane server as its proxy
+ * Jenkins events listener to dispatch build logs to Octane server
  */
 
 @Extension
@@ -42,17 +42,19 @@ public class RunListenerForLogs extends RunListener<Run> {
 
 	@Override
 	public void onFinalized(Run run) {
-		if (ConfigurationService.getModel().isSuspend()) {
+		if (ConfigurationService.getServerConfiguration() == null ||
+				!ConfigurationService.getServerConfiguration().isValid() ||
+				ConfigurationService.getModel().isSuspend()) {
 			return;
 		}
 
-		if (ConfigurationService.getServerConfiguration() != null && ConfigurationService.getServerConfiguration().isValid()) {
+		try {
 			String jobCiId = BuildHandlerUtils.getJobCiId(run);
 			String buildCiId = BuildHandlerUtils.getBuildCiId(run);
 			logger.info("enqueued build '" + jobCiId + " #" + buildCiId + "' for log submission");
 			OctaneSDK.getInstance().getLogsService().enqueuePushBuildLog(jobCiId, buildCiId);
-		} else {
-			logger.warn("Octane configuration is not valid");
+		} catch (Throwable t) {
+			logger.error("failed to enqueue " + run + " for logs push to Octane", t);
 		}
 	}
 }

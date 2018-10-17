@@ -1,0 +1,49 @@
+<!--
+  ~
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:s="/lib/samples">
+
+  <!--
+    Creates a text field that shows the value of the "name" property.
+    When submitted, it will be passed to the corresponding constructor parameter.
+  -->
+  <!--
+    <f:entry field="sonarServerUrl" title="SonarQube server URL"
+                description="Leaving this field empty will result extracting server URL from Sonarqube scanner configuration">
+            <f:textbox />
+    </f:entry>
+
+    <f:entry field="sonarToken" title="SonarQube Token"
+                description="Leaving this field empty will result extracting server token from Sonarqube scanner configuration">
+            <f:password />
+    </f:entry>
+    <f:entry field="sonarProjectKey" title="SonarQube project key"
+                description="Leaving this field empty will result extracting key from Sonarqube scanner configuration">
+            <f:textbox />
+    </f:entry>
+    <f:validateButton
+        title="Test sonar connection" progress="${%Testing...}"
+        method="testConnection" with="sonarServerUrl,sonarToken,sonarProjectKey"/>
+
+    -->
+</j:jelly>

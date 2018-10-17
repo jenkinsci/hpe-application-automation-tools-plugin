@@ -48,130 +48,123 @@ import java.util.Map;
 import java.util.Set;
 
 @Extension(optional = true)
-public class TestNGExtension  extends ResultFieldsDetectionExtension {
+public class TestNGExtension extends ResultFieldsDetectionExtension {
 
-    private static String TESTNG = "TestNG";
+	private static String TESTNG = "TestNG";
 
-    private static String TESTNG_RESULT_FILE = "testng-results.xml";
+	private static String TESTNG_RESULT_FILE = "testng-results.xml";
 
-    private static final List<String> supportedReportFileLocations = Arrays.asList(
-            "target/surefire-reports/" + TESTNG_RESULT_FILE,
-            "target/failsafe-reports/" + TESTNG_RESULT_FILE
-    );
+	private static final List<String> supportedReportFileLocations = Arrays.asList(
+			"target/surefire-reports/" + TESTNG_RESULT_FILE,
+			"target/failsafe-reports/" + TESTNG_RESULT_FILE
+	);
 
 
-    @Override
-    public ResultFields detect(final Run build) throws IOException, InterruptedException {
-        if(!(build instanceof AbstractBuild)){
-            return new ResultFields(null, null, null);
-        }
-//        if(build instanceof WorkflowBuildAdapter){
-//            FilePath workspace = BuildHandlerUtils.getWorkspace(build);
-//            ((TestResultAction)((WorkflowBuildAdapter)build).getAction(TestResultAction.class)).getResult().getSuites();
-//            if (BuildHandlerUtils.getWorkspace(build).act(new TestNgPipelineResultsFileFinder(testResultsPattern))) {
-//                return new ResultFields(TESTNG, null, null);
-//            }
-//        }
+	@Override
+	public ResultFields detect(final Run build) throws IOException, InterruptedException {
+		if (!(build instanceof AbstractBuild)) {
+			return new ResultFields(null, null, null);
+		}
 
-        final List<Object> publishers = ((AbstractBuild) build).getProject().getPublishersList().toList();
-        for (Object publisher : publishers) {
-            if ("hudson.tasks.junit.JUnitResultArchiver".equals(publisher.getClass().getName())) {
-                JUnitResultArchiver junit = (JUnitResultArchiver) publisher;
-                String testResultsPattern = junit.getTestResults();
-                if (BuildHandlerUtils.getWorkspace(build).act(new TestNgResultsFileFinder(testResultsPattern))) {
-                    return new ResultFields(TESTNG, null, null);
-                }
-            }
-        }
+		final List<Object> publishers = ((AbstractBuild) build).getProject().getPublishersList().toList();
+		for (Object publisher : publishers) {
+			if ("hudson.tasks.junit.JUnitResultArchiver".equals(publisher.getClass().getName())) {
+				JUnitResultArchiver junit = (JUnitResultArchiver) publisher;
+				String testResultsPattern = junit.getTestResults();
+				if (BuildHandlerUtils.getWorkspace(build).act(new TestNgResultsFileFinder(testResultsPattern))) {
+					return new ResultFields(TESTNG, null, null);
+				}
+			}
+		}
 
-        if ("hudson.maven.MavenBuild".equals(build.getClass().getName())) {
-            MavenBuild mavenBuild = (MavenBuild) build;
-            if (findTestNgResultsFile(mavenBuild)) {
-                return new ResultFields(TESTNG, null, null);
-            }
-        }
+		if ("hudson.maven.MavenBuild".equals(build.getClass().getName())) {
+			MavenBuild mavenBuild = (MavenBuild) build;
+			if (findTestNgResultsFile(mavenBuild)) {
+				return new ResultFields(TESTNG, null, null);
+			}
+		}
 
-        if ("hudson.maven.MavenModuleSetBuild".equals(build.getClass().getName())) {
-            Map<MavenModule, MavenBuild> moduleLastBuilds = ((MavenModuleSetBuild) build).getModuleLastBuilds();
-            for (MavenBuild mavenBuild: moduleLastBuilds.values()) {
-                if (findTestNgResultsFile(mavenBuild)) {
-                    return new ResultFields(TESTNG, null, null);
-                }
-            }
-        }
-        return null;
-    }
+		if ("hudson.maven.MavenModuleSetBuild".equals(build.getClass().getName())) {
+			Map<MavenModule, MavenBuild> moduleLastBuilds = ((MavenModuleSetBuild) build).getModuleLastBuilds();
+			for (MavenBuild mavenBuild : moduleLastBuilds.values()) {
+				if (findTestNgResultsFile(mavenBuild)) {
+					return new ResultFields(TESTNG, null, null);
+				}
+			}
+		}
+		return null;
+	}
 
-    boolean findTestNgResultsFile(MavenBuild mavenBuild) throws IOException, InterruptedException {
-        AbstractTestResultAction action = mavenBuild.getAction(AbstractTestResultAction.class);
-        //try finding only if the maven build includes tests
-        if (action != null && mavenBuild.getWorkspace().act(new TestNgResultsFileMavenFinder())) {
-            return true;
-        }
-        return false;
-    }
+	boolean findTestNgResultsFile(MavenBuild mavenBuild) throws IOException, InterruptedException {
+		AbstractTestResultAction action = mavenBuild.getAction(AbstractTestResultAction.class);
+		//try finding only if the maven build includes tests
+		if (action != null && mavenBuild.getWorkspace().act(new TestNgResultsFileMavenFinder())) {
+			return true;
+		}
+		return false;
+	}
 
-    public static class TestNgResultsFileFinder implements FilePath.FileCallable<Boolean> {
+	public static class TestNgResultsFileFinder implements FilePath.FileCallable<Boolean> {
 
-        private String testResultsPattern;
+		private String testResultsPattern;
 
-        public TestNgResultsFileFinder(String testResultsPattern) {
-            this.testResultsPattern = testResultsPattern;
-        }
+		public TestNgResultsFileFinder(String testResultsPattern) {
+			this.testResultsPattern = testResultsPattern;
+		}
 
-        @Override
-        public Boolean invoke(File workspace, VirtualChannel virtualChannel) throws IOException, InterruptedException {
-            FileSet fs = Util.createFileSet(workspace, testResultsPattern);
-            DirectoryScanner ds = fs.getDirectoryScanner();
-            String[] includedFiles = ds.getIncludedFiles();
-            File baseDir = ds.getBasedir();
+		@Override
+		public Boolean invoke(File workspace, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+			FileSet fs = Util.createFileSet(workspace, testResultsPattern);
+			DirectoryScanner ds = fs.getDirectoryScanner();
+			String[] includedFiles = ds.getIncludedFiles();
+			File baseDir = ds.getBasedir();
 
-            if (includedFiles.length > 0) {
-                if (findTestNgResultsFile(baseDir, includedFiles)) {
-                    return true;
-                }
-            }
-            return false;
-        }
+			if (includedFiles.length > 0) {
+				if (findTestNgResultsFile(baseDir, includedFiles)) {
+					return true;
+				}
+			}
+			return false;
+		}
 
-        @Override
-        public void checkRoles(RoleChecker roleChecker) throws SecurityException {
-            roleChecker.check(this, Role.UNKNOWN);
-        }
+		@Override
+		public void checkRoles(RoleChecker roleChecker) throws SecurityException {
+			roleChecker.check(this, Role.UNKNOWN);
+		}
 
-        boolean findTestNgResultsFile(File baseDir, String[] includedFiles) throws IOException, InterruptedException {
-            Set<FilePath> directoryCache = new LinkedHashSet<FilePath>();
+		boolean findTestNgResultsFile(File baseDir, String[] includedFiles) throws IOException, InterruptedException {
+			Set<FilePath> directoryCache = new LinkedHashSet<FilePath>();
 
-            for (String path : includedFiles) {
-                FilePath file = new FilePath(baseDir).child(path);
-                if (file.exists() && !directoryCache.contains(file.getParent())) {
-                    directoryCache.add(file.getParent());
-                    FilePath testNgResulsFile = new FilePath(file.getParent(), TESTNG_RESULT_FILE);
-                    if (testNgResulsFile.exists()) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-    }
+			for (String path : includedFiles) {
+				FilePath file = new FilePath(baseDir).child(path);
+				if (file.exists() && !directoryCache.contains(file.getParent())) {
+					directoryCache.add(file.getParent());
+					FilePath testNgResulsFile = new FilePath(file.getParent(), TESTNG_RESULT_FILE);
+					if (testNgResulsFile.exists()) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+	}
 
-    public static class TestNgResultsFileMavenFinder implements FilePath.FileCallable<Boolean> {
+	public static class TestNgResultsFileMavenFinder implements FilePath.FileCallable<Boolean> {
 
-        @Override
-        public Boolean invoke(File workspace, VirtualChannel virtualChannel) throws IOException, InterruptedException {
-            for (String locationInWorkspace : supportedReportFileLocations) {
-                File reportFile = new File(workspace, locationInWorkspace);
-                if (reportFile.exists()) {
-                    return true;
-                }
-            }
-            return false;
-        }
+		@Override
+		public Boolean invoke(File workspace, VirtualChannel virtualChannel) throws IOException, InterruptedException {
+			for (String locationInWorkspace : supportedReportFileLocations) {
+				File reportFile = new File(workspace, locationInWorkspace);
+				if (reportFile.exists()) {
+					return true;
+				}
+			}
+			return false;
+		}
 
-        @Override
-        public void checkRoles(RoleChecker roleChecker) throws SecurityException {
-            roleChecker.check(this, Role.UNKNOWN);
-        }
-    }
+		@Override
+		public void checkRoles(RoleChecker roleChecker) throws SecurityException {
+			roleChecker.check(this, Role.UNKNOWN);
+		}
+	}
 }

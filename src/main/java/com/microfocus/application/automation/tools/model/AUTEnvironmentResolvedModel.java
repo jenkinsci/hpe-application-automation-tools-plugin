@@ -35,7 +35,7 @@ public class AUTEnvironmentResolvedModel {
     private String almPassword;
     private String almDomain;
     private String almProject;
-    
+    private String clientType;
     private String autEnvironmentId;
     private boolean useExistingAutEnvConf;
     private String existingAutEnvConfId;
@@ -54,6 +54,7 @@ public class AUTEnvironmentResolvedModel {
             String almPassword,
             String almDomain,
             String almProject,
+            String clientType,
             String autEnvironmentId,
             boolean useExistingAutEnvConf,
             String existingAutEnvConfId,
@@ -69,6 +70,7 @@ public class AUTEnvironmentResolvedModel {
         this.almPassword = almPassword;
         this.almDomain = almDomain;
         this.almProject = almProject;
+        this.clientType = clientType;
         this.autEnvironmentId = autEnvironmentId;
         this.useExistingAutEnvConf = useExistingAutEnvConf;
         this.existingAutEnvConfId = existingAutEnvConfId;
@@ -102,7 +104,11 @@ public class AUTEnvironmentResolvedModel {
     public String getAlmProject() {
         return almProject;
     }
-    
+
+    public String getClientType() {
+        return clientType;
+    }
+
     public String getAutEnvironmentId() {
         return autEnvironmentId;
     }

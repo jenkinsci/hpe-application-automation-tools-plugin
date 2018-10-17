@@ -49,6 +49,7 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created with IntelliJ IDEA.
@@ -69,14 +70,15 @@ public class PluginActionsTest {
 	@Test
 	public void testPluginActionsMethods() {
 		PluginActions pluginActions = new PluginActions();
-		assertEquals(pluginActions.getIconFileName(), null);
-		assertEquals(pluginActions.getDisplayName(), null);
+		assertNull(pluginActions.getIconFileName());
+		assertNull(pluginActions.getDisplayName());
 		assertEquals("nga", pluginActions.getUrlName());
 	}
 
 	@Test
 	public void testPluginActions_REST_Status() throws IOException, SAXException {
 		Page page = client.goTo("nga/api/v1/status", "application/json");
+		System.out.println(page.getWebResponse().getContentAsString());
 		CIProviderSummaryInfo status = dtoFactory.dtoFromJson(page.getWebResponse().getContentAsString(), CIProviderSummaryInfo.class);
 
 		assertNotNull(status);
@@ -97,6 +99,7 @@ public class PluginActionsTest {
 	public void testPluginActions_REST_Jobs_NoParams() throws IOException, SAXException {
 		String projectName = "root-job-" + UUID.randomUUID().toString();
 		Page page = client.goTo("nga/api/v1/jobs", "application/json");
+		System.out.println(page.getWebResponse().getContentAsString());
 		CIJobsList response = dtoFactory.dtoFromJson(page.getWebResponse().getContentAsString(), CIJobsList.class);
 
 		assertNotNull(response);
@@ -122,6 +125,7 @@ public class PluginActionsTest {
 		String projectName = "root-job-" + UUID.randomUUID().toString();
 		FreeStyleProject fsp;
 		Page page = client.goTo("nga/api/v1/jobs", "application/json");
+		System.out.println(page.getWebResponse().getContentAsString());
 		CIJobsList response = dtoFactory.dtoFromJson(page.getWebResponse().getContentAsString(), CIJobsList.class);
 
 		assertNotNull(response);

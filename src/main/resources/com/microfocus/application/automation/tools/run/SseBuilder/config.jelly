@@ -70,13 +70,14 @@
             <f:textbox name="sse.almDomain" value="${instance.sseModel.almDomain}"/>
         </f:entry>
 
+        <f:entry title="Project" field="almProject">
+            <f:textbox name="sse.almProject" value="${instance.sseModel.almProject}"/>
+        </f:entry>
+
         <f:entry title="Client type" field="clientType">
             <f:textbox name="sse.clientType" value="${instance.sseModel.clientType}"/>
         </f:entry>
-	    
-        <f:entry title="Project" field="almProject">
-            <f:textbox name="sse.almProject" value="${instance.sseModel.almProject}"/>
-        </f:entry>      
+
    		<f:entry title="Run type" field="runType">
                 <select name="sse.runType" >
                     <j:forEach var="runType" items="${descriptor.runTypes}">

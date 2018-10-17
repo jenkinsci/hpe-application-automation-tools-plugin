@@ -119,7 +119,7 @@ public class EventsTest {
 
 	private static final class EventsTestHandler extends OctaneServerMock.TestSpecificHandler {
 		private final CIEventsList eventsLists = dtoFactory.newDTO(CIEventsList.class)
-				.setEvents(new LinkedList<CIEvent>());
+				.setEvents(new LinkedList<>());
 
 		@Override
 		public boolean ownsUrlToProcess(String url) {

@@ -38,7 +38,7 @@ import org.junit.rules.ExpectedException;
 import com.microfocus.application.automation.tools.run.PcBuilder;
 
 import com.microfocus.adm.performancecenter.plugins.common.rest.PcRestProxy;
-import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
+import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 
 @SuppressWarnings({"squid:S2699","squid:S3658"})
 public class TestPcClientNegativeScenrios {

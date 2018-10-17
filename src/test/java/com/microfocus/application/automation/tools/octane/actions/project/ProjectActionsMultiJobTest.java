@@ -44,6 +44,7 @@ import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -194,7 +195,7 @@ public class ProjectActionsMultiJobTest {
 				MultiJobBuilder.ContinuationCondition.SUCCESSFUL
 		));
 		p.getPublishersList().add(new BuildTrigger("jobA, jobB", Result.SUCCESS));
-		p.getPublishersList().add(new hudson.plugins.parameterizedtrigger.BuildTrigger(Arrays.asList(
+		p.getPublishersList().add(new hudson.plugins.parameterizedtrigger.BuildTrigger(Collections.singletonList(
 				new BuildTriggerConfig("jobC,jobD", ResultCondition.ALWAYS, false, null)
 		)));
 		p.getPublishersList().add(new Fingerprinter(""));
@@ -233,7 +234,7 @@ public class ProjectActionsMultiJobTest {
 
 		//  Phase 0
 		assertEquals("", tmpPhases.get(0).getName());
-		assertEquals(true, tmpPhases.get(0).isBlocking());
+		assertTrue(tmpPhases.get(0).isBlocking());
 		assertEquals(2, tmpPhases.get(0).getJobs().size());
 
 		tmpNode = tmpPhases.get(0).getJobs().get(0);
@@ -251,7 +252,7 @@ public class ProjectActionsMultiJobTest {
 
 		//  Phase 1
 		assertEquals("", tmpPhases.get(1).getName());
-		assertEquals(false, tmpPhases.get(1).isBlocking());
+		assertFalse(tmpPhases.get(1).isBlocking());
 		assertEquals(2, tmpPhases.get(1).getJobs().size());
 
 		tmpNode = tmpPhases.get(1).getJobs().get(0);
@@ -269,7 +270,7 @@ public class ProjectActionsMultiJobTest {
 
 		//  Phase 2
 		assertEquals("Build", tmpPhases.get(2).getName());
-		assertEquals(true, tmpPhases.get(2).isBlocking());
+		assertTrue(tmpPhases.get(2).isBlocking());
 		assertEquals(3, tmpPhases.get(2).getJobs().size());
 
 		tmpNode = tmpPhases.get(2).getJobs().get(0);
@@ -293,7 +294,7 @@ public class ProjectActionsMultiJobTest {
 
 		//  Phase 3
 		assertEquals("Test", tmpPhases.get(3).getName());
-		assertEquals(true, tmpPhases.get(3).isBlocking());
+		assertTrue(tmpPhases.get(3).isBlocking());
 		assertEquals(2, tmpPhases.get(3).getJobs().size());
 
 		tmpNode = tmpPhases.get(3).getJobs().get(0);
@@ -316,7 +317,7 @@ public class ProjectActionsMultiJobTest {
 
 		//  Phase 0
 		assertEquals("downstream", tmpPhases.get(0).getName());
-		assertEquals(false, tmpPhases.get(0).isBlocking());
+		assertFalse(tmpPhases.get(0).isBlocking());
 		assertEquals(2, tmpPhases.get(0).getJobs().size());
 
 		tmpNode = tmpPhases.get(0).getJobs().get(0);
@@ -334,7 +335,7 @@ public class ProjectActionsMultiJobTest {
 
 		//  Phase 1
 		assertEquals("", tmpPhases.get(1).getName());
-		assertEquals(false, tmpPhases.get(1).isBlocking());
+		assertFalse(tmpPhases.get(1).isBlocking());
 		assertEquals(2, tmpPhases.get(1).getJobs().size());
 
 		tmpNode = tmpPhases.get(1).getJobs().get(0);

@@ -127,7 +127,7 @@ public class TestExecutionJobCreatorService {
             setBuildDiscarder(proj, 40);
             addConstantParameter(proj, UftConstants.SUITE_ID_PARAMETER_NAME, suiteExecutionInfo.getSuiteId(), "ALM Octane test suite ID");
             addStringParameter(proj, UftConstants.SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the ALM Octane test suite run to associate with the test run results. Provided by ALM Octane when running a planned suite run.\nOtherwise, leave this parameter empty. ALM Octane creates a new  test suite run for the new results.");
-            addAssignedNode(proj);
+            addExecutionAssignedNode(proj);
             addTimestamper(proj);
 
             //add build action
@@ -279,6 +279,7 @@ public class TestExecutionJobCreatorService {
             SCMTrigger scmTrigger = new SCMTrigger("H/2 * * * *");//H/2 * * * * : once in two minutes
             proj.addTrigger(scmTrigger);
             delayPollingStart(proj, scmTrigger);
+            addDiscoveryAssignedNode(proj);
             addTimestamper(proj);
 
             //add post-build action - publisher
@@ -380,7 +381,17 @@ public class TestExecutionJobCreatorService {
         }
     }
 
-    private static void addAssignedNode(FreeStyleProject proj) {
+    private static void addDiscoveryAssignedNode(FreeStyleProject proj)  {
+        try {
+            Label joinedLabel = Label.parseExpression(Jenkins.getInstance().getSelfLabel() +"||" + Jenkins.getInstance().getSelfLabel());
+            //why twice Jenkins.getInstance().getSelfLabel()==master? because only one master is not saved in method proj.setAssignedLabel as it is label of Jenkins.getInstance().getSelfLabel()
+            proj.setAssignedLabel(joinedLabel);
+        } catch (ANTLRException|IOException e) {
+            logger.error("Failed to  set add DiscoveryAssignedNode : " + e.getMessage());
+        }
+    }
+
+    private static void addExecutionAssignedNode(FreeStyleProject proj) {
         Computer[] computers = Jenkins.getInstance().getComputers();
         Set<String> labels = new HashSet();
 
@@ -416,7 +427,7 @@ public class TestExecutionJobCreatorService {
             }
 
         } catch (IOException | ANTLRException e) {
-            logger.error("Failed to  set addAssignedNode : " + e.getMessage());
+            logger.error("Failed to  set addExecutionAssignedNode : " + e.getMessage());
         }
     }
 }

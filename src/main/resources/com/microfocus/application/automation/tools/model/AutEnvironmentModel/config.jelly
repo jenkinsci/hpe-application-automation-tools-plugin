@@ -66,6 +66,11 @@
     <f:entry title="Project" field="almProject">
         <f:textbox/>
     </f:entry>
+
+    <f:entry title="Client type" field="clientType">
+        <f:textbox/>
+    </f:entry>
+
     <f:entry title="AUT Environment ID" field="autEnvironmentId">
         <f:textbox/>
     </f:entry>

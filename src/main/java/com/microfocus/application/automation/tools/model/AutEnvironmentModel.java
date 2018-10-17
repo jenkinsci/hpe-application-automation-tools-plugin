@@ -46,6 +46,7 @@ public class AutEnvironmentModel extends AbstractDescribableImpl<AutEnvironmentM
     private final SecretContainer almPassword;
     private final String almDomain;
     private final String almProject;
+    private final String clientType;
     
     private final String autEnvironmentId;
     private final boolean useExistingAutEnvConf;
@@ -65,6 +66,7 @@ public class AutEnvironmentModel extends AbstractDescribableImpl<AutEnvironmentM
             String almPassword,
             String almDomain,
             String almProject,
+            String clientType,
             String autEnvironmentId,
             boolean useExistingAutEnvConf,
             String existingAutEnvConfId,
@@ -79,6 +81,7 @@ public class AutEnvironmentModel extends AbstractDescribableImpl<AutEnvironmentM
         this.almPassword = setPassword(almPassword);
         this.almDomain = almDomain;
         this.almProject = almProject;
+        this.clientType = clientType;
         this.autEnvironmentId = autEnvironmentId;
         this.useExistingAutEnvConf = useExistingAutEnvConf;
         this.existingAutEnvConfId = existingAutEnvConfId;
@@ -144,7 +147,11 @@ public class AutEnvironmentModel extends AbstractDescribableImpl<AutEnvironmentM
         
         return almProject;
     }
-    
+
+    public String getClientType() {
+        return clientType;
+    }
+
     public String getOutputParameter() {
         return outputParameter;
     }

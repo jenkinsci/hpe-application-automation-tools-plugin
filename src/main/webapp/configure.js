@@ -49,6 +49,8 @@ function load(a,path){
                 buttonStatus = false;
                 return;
             }
+            //hide the error message after success login
+            document.getElementById("errorMessage").style.display = "none";
             var openedWindow = window.open('/','test parameters','height=820,width=1130');
             openedWindow.location.href = 'about:blank';
             openedWindow.location.href = baseUrl+path+jobResponse+'&displayUFTMode=true';
