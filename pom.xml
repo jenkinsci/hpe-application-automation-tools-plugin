@@ -308,7 +308,9 @@
 					<excludes>
 						<exclude>**/GherkinResultsTest.java</exclude>
 						<exclude>**/JUnitResultsTest.java</exclude>
-
+						<exclude>**/octane/configuration/ConfigApiTest.java</exclude>
+						<exclude>**/octane/configuration/ConfigurationServiceTest.java</exclude>
+						<exclude>**/octane/configuration/ConfigurationListenerTest.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
