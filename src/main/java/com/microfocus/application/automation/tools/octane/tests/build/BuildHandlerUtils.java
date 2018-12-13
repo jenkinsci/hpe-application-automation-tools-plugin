@@ -67,6 +67,7 @@ public class BuildHandlerUtils {
 				"");
 	}
 
+	@Deprecated
 	public static String getProjectFullName(Run<?, ?> run) {
 		for (BuildHandlerExtension ext : BuildHandlerExtension.all()) {
 			if (ext.supports(run)) {
