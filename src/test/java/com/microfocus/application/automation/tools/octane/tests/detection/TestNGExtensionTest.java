@@ -69,7 +69,6 @@ public class TestNGExtensionTest extends OctanePluginTestBase {
 
 	@Test
 	public void testFreestyleProject() throws Exception {
-
 		String projectName = "testNG-job-" + UUID.randomUUID().toString();
 		FreeStyleProject project = rule.createFreeStyleProject(projectName);
 		project.setScm(new CopyResourceSCM("/helloWorldTestNGRoot"));

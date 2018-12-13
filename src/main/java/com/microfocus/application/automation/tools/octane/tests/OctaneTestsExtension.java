@@ -41,10 +41,6 @@ public abstract class OctaneTestsExtension implements ExtensionPoint {
 	public abstract TestResultContainer getTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, String jenkinsRootUrl) throws IOException, InterruptedException, TestProcessingException;
 
 	public static ExtensionList<OctaneTestsExtension> all() {
-		if (Jenkins.getInstance() != null) {
-			return Jenkins.getInstance().getExtensionList(OctaneTestsExtension.class);
-		} else {
-			throw new IllegalStateException("failed to obtain Jenkins' instance");
-		}
+		return Jenkins.getInstance().getExtensionList(OctaneTestsExtension.class);
 	}
 }

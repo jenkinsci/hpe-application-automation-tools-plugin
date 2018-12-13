@@ -94,11 +94,15 @@ public class TestListener {
 		} finally {
 			try {
 				resultWriter.close();
-				if (success && hasTests) {
-					String projectFullName = BuildHandlerUtils.getJobCiId(run);
-					if (projectFullName != null) {
-						OctaneSDK.getClients().forEach(octaneClient ->
-								octaneClient.getTestsService().enqueuePushTestsResult(projectFullName, String.valueOf(run.getNumber())));
+
+				// we don't push individual maven module results (although we create the file for future use)
+				if (!"hudson.maven.MavenBuild".equals(run.getClass().getName())) {
+					if (success && hasTests) {
+						String projectFullName = BuildHandlerUtils.getJobCiId(run);
+						if (projectFullName != null) {
+							OctaneSDK.getClients().forEach(octaneClient ->
+									octaneClient.getTestsService().enqueuePushTestsResult(projectFullName, String.valueOf(run.getNumber())));
+						}
 					}
 				}
 			} catch (XMLStreamException xmlse) {

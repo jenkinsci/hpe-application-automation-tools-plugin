@@ -37,32 +37,32 @@ import java.io.IOException;
 import java.util.List;
 
 @Extension
-public class GherkinTestExtention extends OctaneTestsExtension {
-    private static Logger logger = LogManager.getLogger(GherkinTestExtention.class);
+public class GherkinTestExtension extends OctaneTestsExtension {
+	private static Logger logger = LogManager.getLogger(GherkinTestExtension.class);
 
-    @Override
-    public boolean supports(Run<?, ?> build) throws IOException, InterruptedException {
-        if (build.getAction(CucumberTestResultsAction.class) != null) {
-            logger.debug("CucumberTestResultsAction found, gherkin results expected");
-            return true;
-        } else {
-            logger.debug("CucumberTestResultsAction not found, no gherkin results expected");
-            return false;
-        }
-    }
+	@Override
+	public boolean supports(Run<?, ?> build) {
+		if (build.getAction(CucumberTestResultsAction.class) != null) {
+			logger.debug("CucumberTestResultsAction found, gherkin results expected");
+			return true;
+		} else {
+			logger.debug("CucumberTestResultsAction not found, no gherkin results expected");
+			return false;
+		}
+	}
 
-    @Override
-    public TestResultContainer getTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, String jenkinsRootUrl) throws
-            TestProcessingException, IOException, InterruptedException {
-        try {
-            List<TestResult> testResults = GherkinTestResultsCollector.collectGherkinTestsResults(build.getRootDir());
-            return new TestResultContainer(testResults.iterator(), null);
-        } catch (IOException e) {
-            throw e;
-        } catch (InterruptedException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new TestProcessingException("Error while processing gherkin test results", e);
-        }
-    }
+	@Override
+	public TestResultContainer getTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, String jenkinsRootUrl) throws
+			TestProcessingException, IOException, InterruptedException {
+		try {
+			List<TestResult> testResults = GherkinTestResultsCollector.collectGherkinTestsResults(build.getRootDir());
+			return new TestResultContainer(testResults.iterator(), null);
+		} catch (IOException e) {
+			throw e;
+		} catch (InterruptedException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new TestProcessingException("Error while processing gherkin test results", e);
+		}
+	}
 }
