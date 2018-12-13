@@ -110,6 +110,10 @@ public class BuildHandlerUtils {
 	}
 
 	public static String getJobCiId(Run run) {
+		// we don't push individual maven module results (although we create the file)
+		if ("hudson.maven.MavenBuild".equals(run.getClass().getName())) {
+			return null;
+		}
 		if (run.getParent() instanceof MatrixConfiguration) {
 			return JobProcessorFactory.getFlowProcessor(((MatrixRun) run).getParentBuild().getParent()).getTranslateJobName();
 		}

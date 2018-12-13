@@ -95,7 +95,7 @@ public class TestListener {
 			try {
 				resultWriter.close();
 				if (success && hasTests) {
-					String projectFullName = BuildHandlerUtils.getProjectFullName(run);
+					String projectFullName = BuildHandlerUtils.getJobCiId(run);
 					if (projectFullName != null) {
 						OctaneSDK.getClients().forEach(octaneClient ->
 								octaneClient.getTestsService().enqueuePushTestsResult(projectFullName, String.valueOf(run.getNumber())));
