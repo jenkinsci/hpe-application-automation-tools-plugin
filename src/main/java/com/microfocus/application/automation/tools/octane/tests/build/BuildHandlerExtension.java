@@ -29,13 +29,14 @@ import hudson.model.Run;
 
 abstract class BuildHandlerExtension implements ExtensionPoint {
 
-    public abstract boolean supports(Run<?, ?> build);
+	public abstract boolean supports(Run<?, ?> build);
 
-    public abstract BuildDescriptor getBuildType(Run<?, ?> build);
+	public abstract BuildDescriptor getBuildType(Run<?, ?> build);
 
-    public abstract String getProjectFullName(Run<?, ?> build);
+	@Deprecated
+	public abstract String getProjectFullName(Run<?, ?> build);
 
-    public static ExtensionList<BuildHandlerExtension> all() {
-        return Hudson.getInstance().getExtensionList(BuildHandlerExtension.class);
-    }
+	public static ExtensionList<BuildHandlerExtension> all() {
+		return Hudson.getInstance().getExtensionList(BuildHandlerExtension.class);
+	}
 }
