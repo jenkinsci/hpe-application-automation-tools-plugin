@@ -533,6 +533,12 @@
 			<version>1.2.3</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>command-launcher</artifactId>
+			<version>1.2</version>
+		</dependency>
+
 		<!--sonar plugin for compile phase only-->
 		<dependency>
 			<artifactId>sonar</artifactId>
