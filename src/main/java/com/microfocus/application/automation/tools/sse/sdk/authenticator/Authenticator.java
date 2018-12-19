@@ -30,6 +30,9 @@ import com.microfocus.application.automation.tools.sse.sdk.Logger;
  */
 public interface Authenticator {
 
+    String IS_AUTHENTICATED = "rest/is-authenticated";
+    String AUTHENTICATE_HEADER = "WWW-Authenticate";
+
     boolean login(Client client, String username, String password, Logger logger);
     boolean logout(Client client, String username);
 
