@@ -370,44 +370,49 @@ public class DefaultExternalEntityUploadServiceImpl implements
 		List<AlmTestSet> testsets = reportParserManager.parseTestSets(reportFilePath, testingFramework,  testingTool);
 
 		if(testsets == null) {
-			logger.log("Failed to parse file: " + reportFilePath);
-			throw new ExternalEntityUploadException("ERR: Failed to parse file: " + reportFilePath);
+			logger.log("ERR: Failed to parse file: " + reportFilePath);
+			throw new ExternalEntityUploadException("Failed to parse file: " + reportFilePath);
 		} else  {
 			logger.log("INFO: parse resut file succeed.");
 		}
-		
-		if(testsets != null && testsets.size() >0 ) {
-			logger.log("INFO: Start to login to ALM Server.");
-			try {
-				if(restTool.login()) {
-					// Get the username again if logged in with API key.
-					String actualUser = restTool.getActualUsername();
-					if (actualUser != null && actualUser.length() != 0) {
-						logger.log("INFO: Checking test folder...");
-						AlmTestFolder testFolder = createTestFolderPath(2, testFolderPath);
-						logger.log("INFO: Checking testset folder...");
-						AlmTestSetFolder testsetFolder = createTestSetFolderPath (0, testsetFolderPath);
-						if(testFolder != null && testsetFolder != null) {
-							logger.log("INFO: Uploading ALM Entities...");
-							importExternalTestSet(
-									testsets,
-									actualUser,
-									Integer.valueOf(testsetFolder.getId()),
-									Integer.valueOf(testFolder.getId()),
-									testingTool,
-									subversion,
-									jobName,
-									buildUrl);
-						}
-					} else {
-						throw new ExternalEntityUploadException("ERR: Failed to get actual login user.");
-					}
-				} else {
-					throw new ExternalEntityUploadException("ERR: Failed to login to ALM Server.");
-				}
-			} catch (Exception e) {
-				throw new ExternalEntityUploadException(e);
+
+		if (testsets.size() <= 0) {
+			logger.log("INFO: No testset to upload.");
+			return;
+		}
+		logger.log("INFO: Start to login to ALM Server.");
+
+		try {
+			if(!restTool.login()) {
+				throw new ExternalEntityUploadException("ERR: Failed to login to ALM Server.");
 			}
+
+			// Get the username again if logged in with API key.
+			String actualUser = restTool.getActualUsername();
+			if (actualUser == null || actualUser.length() == 0) {
+				throw new ExternalEntityUploadException("ERR: Failed to get actual login user.");
+			}
+
+			logger.log("INFO: Checking test folder...");
+			AlmTestFolder testFolder = createTestFolderPath(2, testFolderPath);
+
+			logger.log("INFO: Checking testset folder...");
+			AlmTestSetFolder testsetFolder = createTestSetFolderPath (0, testsetFolderPath);
+
+			if(testFolder != null && testsetFolder != null) {
+				logger.log("INFO: Uploading ALM Entities...");
+				importExternalTestSet(
+						testsets,
+						actualUser,
+						Integer.valueOf(testsetFolder.getId()),
+						Integer.valueOf(testFolder.getId()),
+						testingTool,
+						subversion,
+						jobName,
+						buildUrl);
+			}
+		} catch (Exception e) {
+			throw new ExternalEntityUploadException(e);
 		}
 	}
 	
