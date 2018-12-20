@@ -370,7 +370,6 @@ public class DefaultExternalEntityUploadServiceImpl implements
 		List<AlmTestSet> testsets = reportParserManager.parseTestSets(reportFilePath, testingFramework,  testingTool);
 
 		if(testsets == null) {
-			logger.log("ERR: Failed to parse file: " + reportFilePath);
 			throw new ExternalEntityUploadException("Failed to parse file: " + reportFilePath);
 		} else  {
 			logger.log("INFO: parse resut file succeed.");
@@ -384,13 +383,13 @@ public class DefaultExternalEntityUploadServiceImpl implements
 
 		try {
 			if(!restTool.login()) {
-				throw new ExternalEntityUploadException("ERR: Failed to login to ALM Server.");
+				throw new ExternalEntityUploadException("Failed to login to ALM Server.");
 			}
 
 			// Get the username again if logged in with API key.
 			String actualUser = restTool.getActualUsername();
 			if (actualUser == null || actualUser.length() == 0) {
-				throw new ExternalEntityUploadException("ERR: Failed to get actual login user.");
+				throw new ExternalEntityUploadException("Failed to get actual login user.");
 			}
 
 			logger.log("INFO: Checking test folder...");
