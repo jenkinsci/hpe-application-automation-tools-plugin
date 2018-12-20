@@ -321,9 +321,6 @@ public class TestResultToALMUploader extends Recorder implements Serializable, M
 	    			logger.log("INFO: Uploaded "+fullpath + ".");
     			} catch (Exception e) {
     				logger.log("ERR: There's exception while uploading " + fullpath + ". " + e.getMessage());
-    				for (StackTraceElement i : e.getStackTrace()) {
-                        logger.log("ERR: " + i.toString());
-                    }
     				build.setResult(Result.UNSTABLE);
     			}
         	}
