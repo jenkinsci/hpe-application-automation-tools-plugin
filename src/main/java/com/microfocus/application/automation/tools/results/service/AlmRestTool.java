@@ -47,8 +47,8 @@ public class AlmRestTool {
 	private RestClient restClient;
 	private AlmRestInfo almLoginInfo;
 
-	private final String userNamePreTag = "<Username>";
-	private final String userNameSubTag = "</Username>";
+	private final String USERNAMEPRETAG = "<Username>";
+	private final String USERNAMESUBTAG = "</Username>";
 
 	public AlmRestTool (AlmRestInfo almLoginInfo, Logger logger) {
 		this.restClient = new RestClient(
@@ -87,27 +87,28 @@ public class AlmRestTool {
 	 * @return Actual user name
 	 */
 	public String getActualUsername() {
-		String username = null;
 		Response response =
 				restClient.httpGet(
 						restClient.build(RestAuthenticator.IS_AUTHENTICATED),
 						null,
 						null,
 						ResourceAccessLevel.PUBLIC);
+
 		if (!response.isOk()) {
 			_logger.log("ERR: Cannot get actual login username: " + response.getFailure());
-		} else {
-			String responseData = new String(response.getData());
-			if (!responseData.contains(userNamePreTag) || !responseData.contains(userNameSubTag)) {
-				_logger.log("ERR: Response is not as expected: " + responseData);
-			} else {
-                username = responseData.substring(
-                        responseData.indexOf(userNamePreTag) + userNamePreTag.length(),
-                        responseData.indexOf(userNameSubTag)
-                );
-            }
+            return null;
 		}
-		return username;
+
+        String responseData = new String(response.getData());
+        if (!responseData.contains(USERNAMEPRETAG) || !responseData.contains(USERNAMESUBTAG)) {
+            _logger.log("ERR: Response is not as expected: " + responseData);
+            return null;
+        }
+
+        return responseData.substring(
+                responseData.indexOf(USERNAMEPRETAG) + USERNAMEPRETAG.length(),
+                responseData.indexOf(USERNAMESUBTAG)
+        );
 	}
 
     /**
