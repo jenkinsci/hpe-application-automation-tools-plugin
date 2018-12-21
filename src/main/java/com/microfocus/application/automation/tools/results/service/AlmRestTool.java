@@ -100,11 +100,12 @@ public class AlmRestTool {
 			String responseData = new String(response.getData());
 			if (!responseData.contains(userNamePreTag) || !responseData.contains(userNameSubTag)) {
 				_logger.log("ERR: Response is not as expected: " + responseData);
-			}
-			username = responseData.substring(
-					responseData.indexOf(userNamePreTag) + userNamePreTag.length(),
-					responseData.indexOf(userNameSubTag)
-			);
+			} else {
+                username = responseData.substring(
+                        responseData.indexOf(userNamePreTag) + userNamePreTag.length(),
+                        responseData.indexOf(userNameSubTag)
+                );
+            }
 		}
 		return username;
 	}
