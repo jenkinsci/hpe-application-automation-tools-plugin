@@ -39,7 +39,7 @@ import com.microfocus.application.automation.tools.sse.sdk.Logger;
 import com.microfocus.application.automation.tools.sse.sdk.ResourceAccessLevel;
 import com.microfocus.application.automation.tools.sse.sdk.Response;
 import com.microfocus.application.automation.tools.sse.sdk.authenticator.AuthenticationTool;
-import com.microfocus.application.automation.tools.sse.sdk.authenticator.Authenticator;
+import com.microfocus.application.automation.tools.sse.sdk.authenticator.RestAuthenticator;
 
 public class AlmRestTool {
 	
@@ -90,7 +90,7 @@ public class AlmRestTool {
 		String username = null;
 		Response response =
 				restClient.httpGet(
-						restClient.build(Authenticator.IS_AUTHENTICATED),
+						restClient.build(RestAuthenticator.IS_AUTHENTICATED),
 						null,
 						null,
 						ResourceAccessLevel.PUBLIC);

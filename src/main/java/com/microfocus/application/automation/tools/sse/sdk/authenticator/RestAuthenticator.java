@@ -44,6 +44,8 @@ import com.microfocus.application.automation.tools.sse.sdk.Response;
 
 public class RestAuthenticator implements Authenticator {
 
+    public static final String IS_AUTHENTICATED = "rest/is-authenticated";
+    public static final String AUTHENTICATE_HEADER = "WWW-Authenticate";
     public static final String INVALID_ALM_SERVER_URL = "Invalid ALM Server URL";
     public static final String AUTHENTICATION_INFO = "AuthenticationInfo";
     public static final String USER_NAME = "Username";
