@@ -56,21 +56,7 @@ public class RestAuthenticator implements Authenticator {
         if (isAuthenticated(client, logger)) {
             return true;
         }
-
-        if (authenticationPoint != null && !isAuthenticatePointRight(authenticationPoint, client.getServerUrl(), logger)) {
-            authenticationPoint = null;
-        }
-
-        // Some customer always got wrong authenticate point because of an issue of ALM.
-        // But they still can login with a right authenticate point.
-        // So try to login with that anyway.
-        if (authenticationPoint == null) {
-            authenticationPoint = client.getServerUrl().endsWith("/") ?
-                    client.getServerUrl() + AUTHENTICATE_POINT :
-                    client.getServerUrl() + "/" + AUTHENTICATE_POINT;
-            logger.log("Try to authenticate through: " + authenticationPoint);
-        }
-
+        prepareAuthenticationPoint(client, logger);
         boolean ret = authenticate(client, authenticationPoint, username, password, logger);
         if (ret) {
             ret = appendQCSessionCookies(client, clientType, logger);
@@ -79,9 +65,28 @@ public class RestAuthenticator implements Authenticator {
     }
 
     /**
+     * Some customer always got wrong authenticate point because of an issue of ALM.
+     *          But they still can login with a right authenticate point.
+     *          So try to login with that anyway.
+     * @param client
+     * @param logger
+     */
+    private void prepareAuthenticationPoint(Client client, Logger logger) {
+        if (authenticationPoint != null && !isAuthenticatePointRight(authenticationPoint, client.getServerUrl(), logger)) {
+            authenticationPoint = null;
+        }
+        if (authenticationPoint == null) {
+            authenticationPoint = client.getServerUrl().endsWith("/") ?
+                    client.getServerUrl() + AUTHENTICATE_POINT :
+                    client.getServerUrl() + "/" + AUTHENTICATE_POINT;
+        }
+        logger.log("Try to authenticate through: " + authenticationPoint);
+    }
+
+    /**
      * Some ALM server generates wrong authenticate point and port.
-     * @param authenticatePoint
-     * @param serverUrl
+     * @param authenticatePointStr
+     * @param serverUrlStr
      * @param logger
      * @return
      */
