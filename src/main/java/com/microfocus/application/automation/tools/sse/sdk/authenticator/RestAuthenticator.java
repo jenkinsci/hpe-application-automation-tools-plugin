@@ -27,14 +27,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.microfocus.application.automation.tools.common.SSEException;
 import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
 import com.microfocus.application.automation.tools.sse.sdk.Base64Encoder;
 import com.microfocus.application.automation.tools.sse.sdk.Client;
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
 import com.microfocus.application.automation.tools.sse.sdk.ResourceAccessLevel;
 import com.microfocus.application.automation.tools.sse.sdk.Response;
-import sun.rmi.runtime.Log;
 
 /**
  * @author Effi Bar-She'an
@@ -59,7 +57,6 @@ public class RestAuthenticator implements Authenticator {
         }
 
         if (authenticationPoint != null) {
-            logger.log("Got authenticate point:" + authenticationPoint);
             if (!isAuthenticatePointRight(authenticationPoint, client.getServerUrl(), logger)) {
                 authenticationPoint = null;
             }
@@ -72,7 +69,7 @@ public class RestAuthenticator implements Authenticator {
             authenticationPoint = client.getServerUrl().endsWith("/") ?
                     client.getServerUrl() + AUTHENTICATE_POINT :
                     client.getServerUrl() + "/" + AUTHENTICATE_POINT;
-            logger.log("Failed to get authenticate point from server. Try to login with: " + authenticationPoint);
+            logger.log("Try to authenticate through: " + authenticationPoint);
         }
 
         boolean ret = authenticate(client, authenticationPoint, username, password, logger);
@@ -169,7 +166,6 @@ public class RestAuthenticator implements Authenticator {
      * @return null or authenticate point
      */
     private boolean isAuthenticated(Client client, Logger logger) {
-        boolean result = false;
         Response response =
                 client.httpGet(
                         client.build(IS_AUTHENTICATED),
@@ -178,49 +174,44 @@ public class RestAuthenticator implements Authenticator {
                         ResourceAccessLevel.PUBLIC);
         
         if (checkAuthResponse(response, client.getUsername(), logger)) {
-            logger.log(String.format(
-                    "Already logged in to ALM Server %s using %s",
-                    client.getServerUrl(),
-                    client.getUsername()));
-            result = true;
+            return true;
+        }
+
+        // Try to get authenticate point regardless the response status.
+        authenticationPoint = getAuthenticatePoint(response);
+
+        if (authenticationPoint == null) {
+            logger.log(String.format("Failed to get authenticate authenticate point. Exception %s", response.getFailure()));
         }
         else {
-            // Try to get authenticate point regardless the response status.
-            authenticationPoint = getAuthenticatePoint(response);
-            if (authenticationPoint == null) {
-                // If can't get authenticate point, then output the message.
-                logger.log("Can't get authenticate header.");
-                if(response.getStatusCode() != HttpURLConnection.HTTP_OK) {
-                    logger.log(String.format("Failed to get authenticate header. Exception: %s", response.getFailure()));
-                }
-            } else {
-                authenticationPoint = authenticationPoint.replace("\"", "");
-                authenticationPoint += "/authenticate";
-            }
+            authenticationPoint = authenticationPoint.replace("\"", "");
+            authenticationPoint += "/authenticate";
+            logger.log("Got authenticate point:" + authenticationPoint);
         }
-        return result;
+
+        return false;
     }
     
     private boolean checkAuthResponse(Response response, String authUser, Logger logger) {
-        boolean ret = false;
-        if (response.getStatusCode() == HttpURLConnection.HTTP_OK){
+        if (response.getStatusCode() == HttpURLConnection.HTTP_OK) {
             if (response.getData() != null
                     && new String(response.getData()).contains(AUTHENTICATION_INFO)
                     && new String(response.getData()).contains(USER_NAME)
-                    && new String(response.getData()).contains(authUser)){
-                ret = true;
+                    && new String(response.getData()).contains(authUser)) {
+                logger.log(String.format("Already logged in to ALM Server using %s", authUser));
+                return true;
             }
-            else {
-                logger.log("Failed to check authenticate response header.");
-            }
+            logger.log("Failed to check authenticate response header.");
+            return false;
         }
-        else if (response.getStatusCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
+
+        if (response.getStatusCode() == HttpURLConnection.HTTP_UNAUTHORIZED) {
             logger.log(String.format("User %s unauthorized.", authUser));
+            return false;
         }
-        else {
-            logger.log(String.format("Failed to check authenticate status. Exception: %s", response.getFailure()));
-        }
-        return ret;
+
+        logger.log(String.format("Failed to check authenticate status. Exception: %s", response.getFailure()));
+        return false;
     }
 
     /**
