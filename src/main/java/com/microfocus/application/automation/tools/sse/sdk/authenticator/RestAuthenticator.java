@@ -23,6 +23,8 @@
 package com.microfocus.application.automation.tools.sse.sdk.authenticator;
 
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +47,6 @@ public class RestAuthenticator implements Authenticator {
     public static final String AUTHENTICATE_HEADER = "WWW-Authenticate";
     public static final String AUTHENTICATION_INFO = "AuthenticationInfo";
     public static final String USER_NAME = "Username";
-    public static final String QCAPP_NAME = "/qcbin";
     public static final String AUTHENTICATE_POINT = "authentication-point/authenticate";
 
     private String authenticationPoint;
@@ -56,10 +57,8 @@ public class RestAuthenticator implements Authenticator {
             return true;
         }
 
-        if (authenticationPoint != null) {
-            if (!isAuthenticatePointRight(authenticationPoint, client.getServerUrl(), logger)) {
-                authenticationPoint = null;
-            }
+        if (authenticationPoint != null && !isAuthenticatePointRight(authenticationPoint, client.getServerUrl(), logger)) {
+            authenticationPoint = null;
         }
 
         // Some customer always got wrong authenticate point because of an issue of ALM.
@@ -86,30 +85,37 @@ public class RestAuthenticator implements Authenticator {
      * @param logger
      * @return
      */
-    private boolean isAuthenticatePointRight(String authenticatePoint, String serverUrl, Logger logger) {
-        boolean result = false;
+    private boolean isAuthenticatePointRight(String authenticatePointStr, String serverUrlStr, Logger logger) {
+        URL serverUrl;
+        URL authenticatePoint;
+
+        try {
+            serverUrl = new URL(serverUrlStr);
+        } catch (MalformedURLException e) {
+            logger.log(String.format("Server url %s is not a valid url.", e.getMessage()));
+            return false;
+        }
+
+        try {
+            authenticatePoint = new URL(authenticatePointStr);
+        } catch (MalformedURLException e) {
+            logger.log(String.format("Authenticate Point url %s is not a valid url.", e.getMessage()));
+            return false;
+        }
+
         // Check schema
-        if (!serverUrl.substring(0,5).equalsIgnoreCase(authenticatePoint.substring(0,5))) {
+        if (!serverUrl.getProtocol().equalsIgnoreCase(authenticatePoint.getProtocol())) {
             logger.log("Authenticate point schema is different with server schema. Please check with ALM site admin.");
+            return false;
         }
-        else {
-            // Check port
-            String serverPort = serverUrl.substring(
-                    serverUrl.indexOf(QCAPP_NAME) - 4,
-                    serverUrl.indexOf(QCAPP_NAME));
 
-            String authPointPort = authenticatePoint.substring(
-                    authenticatePoint.indexOf(QCAPP_NAME) - 4,
-                    authenticatePoint.indexOf(QCAPP_NAME));
-
-            if (!serverPort.equalsIgnoreCase(authPointPort)) {
-                logger.log("Authenticate point port is different with server port. Please check with ALM site admin.");
-            }
-            else {
-                result = true;
-            }
+        // Check port
+        if (serverUrl.getPort() != authenticatePoint.getPort()) {
+            logger.log("Authenticate point port is different with server port. Please check with ALM site admin.");
+            return false;
         }
-        return result;
+
+        return true;
     }
     
     /**
