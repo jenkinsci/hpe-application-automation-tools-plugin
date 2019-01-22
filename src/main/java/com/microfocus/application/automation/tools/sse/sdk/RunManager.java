@@ -53,7 +53,7 @@ public class RunManager {
         Testsuites ret = null;
         _logger = logger;
         _running = true;
-        if (AuthenticationTool.authenticate(client, args.getUsername(), args.getPassword(), args.getUrl(), args.getClientType(), logger)) {
+        if (AuthenticationTool.getInstance().authenticate(client, args.getUsername(), args.getPassword(), args.getUrl(), args.getClientType(), logger)) {
             initialize(args, client);
             if (start(args)) {
                 _polling = true;

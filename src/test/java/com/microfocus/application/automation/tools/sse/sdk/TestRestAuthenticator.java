@@ -43,7 +43,7 @@ public class TestRestAuthenticator extends TestCase {
     public void testLoginAlreadyAuthenticated() {
         
         Client client = new MockRestClientAlreadyAuthenticated(URL, DOMAIN, PROJECT, USER);
-        boolean ok = new RestAuthenticator().login(client, "tester", "blabla", new ConsoleLogger());
+        boolean ok = new RestAuthenticator().login(client, "tester", "blabla", "RESTClient", new ConsoleLogger());
         Assert.assertTrue(ok);
     }
     
@@ -69,7 +69,7 @@ public class TestRestAuthenticator extends TestCase {
     public void testLoginNotAuthenticated() {
         
         Client client = new MockRestClientNotAuthenticated(URL, DOMAIN, PROJECT, USER);
-        boolean ok = new RestAuthenticator().login(client, "tester", "blabla", new ConsoleLogger());
+        boolean ok = new RestAuthenticator().login(client, "tester", "blabla", "RESTClient", new ConsoleLogger());
         Assert.assertTrue(ok);
     }
     
@@ -126,7 +126,7 @@ public class TestRestAuthenticator extends TestCase {
     public void testLoginFailedToLogin() {
         
         Client client = new MockRestClientFailedToLogin(URL, DOMAIN, PROJECT, USER);
-        boolean ok = new RestAuthenticator().login(client, "tester", "blabla", new ConsoleLogger());
+        boolean ok = new RestAuthenticator().login(client, "tester", "blabla", "RESTClient", new ConsoleLogger());
         Assert.assertFalse(ok);
     }
     

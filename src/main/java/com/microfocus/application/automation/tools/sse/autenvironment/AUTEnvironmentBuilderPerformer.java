@@ -61,7 +61,7 @@ public class AUTEnvironmentBuilderPerformer {
     
     public void start() {
         try {
-            if (AuthenticationTool.authenticate(getClient(),
+            if (AuthenticationTool.getInstance().authenticate(getClient(),
                     model.getAlmUserName(),
                     model.getAlmPassword(),
                     model.getAlmServerUrl(),

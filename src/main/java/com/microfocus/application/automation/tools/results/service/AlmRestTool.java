@@ -73,7 +73,7 @@ public class AlmRestTool {
 	public boolean login() throws Exception {
 		boolean ret;
         try {
-			ret = AuthenticationTool.authenticate(restClient, almLoginInfo.getUserName(),
+			ret = AuthenticationTool.getInstance().authenticate(restClient, almLoginInfo.getUserName(),
 					almLoginInfo.getPassword(), almLoginInfo.getServerUrl(), almLoginInfo.getClientType(), _logger);
         } catch (Exception cause) {
             ret = false;

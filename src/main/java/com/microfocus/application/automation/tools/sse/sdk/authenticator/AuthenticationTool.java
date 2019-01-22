@@ -22,52 +22,43 @@
 
 package com.microfocus.application.automation.tools.sse.sdk.authenticator;
 
-import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
-import com.microfocus.application.automation.tools.common.SSEException;
 import com.microfocus.application.automation.tools.sse.sdk.Client;
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
-import com.microfocus.application.automation.tools.sse.sdk.ResourceAccessLevel;
-import com.microfocus.application.automation.tools.sse.sdk.Response;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Unify the rest authentication process here from separated part, ALMRestTool and RunManager.
  * Any authentication change will only need to change here.
  * Created by llu2 on 4/5/2017.
  */
-public final class AuthenticationTool {
+public class AuthenticationTool {
 
-    private static List<Authenticator> authenticators;
+    private List<Authenticator> authenticators;
+    private static AuthenticationTool instance;
 
     private AuthenticationTool() {
-        // Add the private constructor to hide the implicit public one.
-    }
-
-    static {
         authenticators = new ArrayList<>();
         authenticators.add(new RestAuthenticator());
+        authenticators.add(new ApiKeyAuthenticator());
+    }
+
+    public static synchronized AuthenticationTool getInstance() {
+        if (instance == null) {
+            instance = new AuthenticationTool();
+        }
+        return instance;
     }
 
     /**
      * Try authenticate use a list of authenticators and then create session.
      */
-    public static boolean authenticate(Client client, String username, String password, String url, String clientType, Logger logger) {
-        if (login(client, username, password, url, logger)) {
-            appendQCSessionCookies(client, clientType, logger);
-            return true;
-        }
-        return false;
-    }
-
-    private static boolean login(Client client, String username, String password, String url, Logger logger) {
+    public boolean authenticate(Client client, String username, String password, String url, String clientType, Logger logger) {
         boolean result = false;
         for(Authenticator authenticator : authenticators) {
             try {
-                result = authenticator.login(client, username, password, logger);
+                result = authenticator.login(client, username, password, clientType, logger);
                 if (result) {
                     break;
                 }
@@ -79,31 +70,5 @@ public final class AuthenticationTool {
             }
         }
         return result;
-    }
-
-    private static void appendQCSessionCookies(Client client, String clientType, Logger logger) {
-        logger.log("Creating session...");
-
-        Map<String, String> headers = new HashMap<String, String>();
-        headers.put(RESTConstants.CONTENT_TYPE, RESTConstants.APP_XML);
-        headers.put(RESTConstants.ACCEPT, RESTConstants.APP_XML);
-
-        // issue a post request so that cookies relevant to the QC Session will be added to the RestClient
-        Response response =
-                client.httpPost(
-                        client.build("rest/site-session"),
-                        generateClientTypeData(clientType),
-                        headers,
-                        ResourceAccessLevel.PUBLIC);
-        if (!response.isOk()) {
-            throw new SSEException("Cannot append QCSession cookies", response.getFailure());
-        } else {
-            logger.log("Session created.");
-        }
-    }
-
-    private static byte[] generateClientTypeData(String clientType) {
-        String data = String.format("<session-parameters><client-type>%s</client-type></session-parameters>", clientType);
-        return data.getBytes();
     }
 }

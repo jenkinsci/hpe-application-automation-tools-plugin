@@ -30,7 +30,7 @@ import com.microfocus.application.automation.tools.sse.sdk.Logger;
  */
 public interface Authenticator {
 
-    boolean login(Client client, String username, String password, Logger logger);
+    boolean login(Client client, String username, String password, String clientType, Logger logger);
     boolean logout(Client client, String username);
 
 }
