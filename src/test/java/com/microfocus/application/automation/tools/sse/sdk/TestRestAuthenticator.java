@@ -89,6 +89,15 @@ public class TestRestAuthenticator extends TestCase {
             _isAuthenticatedUrl = build(RestAuthenticator.IS_AUTHENTICATED);
             _authenticationUrl = build("authentication-point/authenticate");
         }
+
+        @Override
+        public Response httpPost(
+                String url,
+                byte[] data,
+                Map<String, String> headers,
+                ResourceAccessLevel resourceAccessLevel) {
+            return new Response(null, null, null, HttpURLConnection.HTTP_OK);
+        }
         
         @Override
         public Response httpGet(String url, String queryString, Map<String, String> headers, ResourceAccessLevel resourceAccessLevel) {

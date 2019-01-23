@@ -158,24 +158,7 @@ public class TestRunManager extends TestCase {
                         args.getUsername());
         Testsuites testsuites = new RunManager().execute(connection, args, new ConsoleLogger());
         
-        Assert.assertNull(testsuites);
-    }
-    
-    @Test
-    public void testBadDomain() throws InterruptedException {
-        
-        SseModel model = createBvsModel();
-        model.setAlmServerUrl(URL);
-        Args args = new ArgsFactory().create(model);
-        RestClient connection =
-                new MockRestClientFailedLogin(
-                        args.getUrl(),
-                        args.getDomain(),
-                        args.getProject(),
-                        args.getUsername());
-        Testsuites testsuites = new RunManager().execute(connection, args, new ConsoleLogger());
-        
-        Assert.assertNull(testsuites);
+        Assert.assertNotNull(testsuites);
     }
     
     @Test
