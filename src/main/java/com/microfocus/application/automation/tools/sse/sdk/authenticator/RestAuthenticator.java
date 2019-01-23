@@ -108,19 +108,13 @@ public class RestAuthenticator implements Authenticator {
             return false;
         }
 
-        // Check schema
-        if (!serverUrl.getProtocol().equalsIgnoreCase(authenticatePoint.getProtocol())) {
-            logger.log("Authenticate point schema is different with server schema. Please check with ALM site admin.");
-            return false;
-        }
+        boolean result = serverUrl.getProtocol().equalsIgnoreCase(authenticatePoint.getProtocol())
+                && serverUrl.getPort() == authenticatePoint.getPort();
 
-        // Check port
-        if (serverUrl.getPort() != authenticatePoint.getPort()) {
-            logger.log("Authenticate point port is different with server port. Please check with ALM site admin.");
-            return false;
+        if (!result) {
+            logger.log("Authenticate point schema or port is different with server's. Please check with ALM site admin.");
         }
-
-        return true;
+        return result;
     }
     
     /**
