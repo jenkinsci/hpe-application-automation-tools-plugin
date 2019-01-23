@@ -50,16 +50,19 @@ public class RestAuthenticator implements Authenticator {
     public static final String AUTHENTICATE_POINT = "authentication-point/authenticate";
 
     private String authenticationPoint;
+    private Logger logger;
     
     public boolean login(Client client, String username, String password, String clientType, Logger logger) {
-        logger.log("Start login to ALM server...");
-        if (isAuthenticated(client, logger)) {
+        this.logger = logger;
+
+        this.logger.log("Start login to ALM server...");
+        if (isAuthenticated(client)) {
             return true;
         }
-        prepareAuthenticationPoint(client, logger);
-        boolean ret = authenticate(client, authenticationPoint, username, password, logger);
+        prepareAuthenticationPoint(client);
+        boolean ret = authenticate(client, authenticationPoint, username, password);
         if (ret) {
-            ret = appendQCSessionCookies(client, clientType, logger);
+            ret = appendQCSessionCookies(client, clientType);
         }
         return ret;
     }
@@ -69,10 +72,9 @@ public class RestAuthenticator implements Authenticator {
      *          But they still can login with a right authenticate point.
      *          So try to login with that anyway.
      * @param client
-     * @param logger
      */
-    private void prepareAuthenticationPoint(Client client, Logger logger) {
-        if (authenticationPoint != null && !isAuthenticatePointRight(authenticationPoint, client.getServerUrl(), logger)) {
+    private void prepareAuthenticationPoint(Client client) {
+        if (authenticationPoint != null && !isAuthenticatePointRight(authenticationPoint, client.getServerUrl())) {
             authenticationPoint = null;
         }
         if (authenticationPoint == null) {
@@ -87,10 +89,9 @@ public class RestAuthenticator implements Authenticator {
      * Some ALM server generates wrong authenticate point and port.
      * @param authenticatePointStr
      * @param serverUrlStr
-     * @param logger
      * @return
      */
-    private boolean isAuthenticatePointRight(String authenticatePointStr, String serverUrlStr, Logger logger) {
+    private boolean isAuthenticatePointRight(String authenticatePointStr, String serverUrlStr) {
         URL serverUrl;
         URL authenticatePoint;
 
@@ -123,7 +124,7 @@ public class RestAuthenticator implements Authenticator {
      * @return true on operation success, false otherwise Basic authentication (must store returned
      *         cookies for further use)
      */
-    private boolean authenticate(Client client, String loginUrl, String username, String password, Logger logger) {
+    private boolean authenticate(Client client, String loginUrl, String username, String password) {
         // create a string that looks like:
         // "Basic ((username:password)<as bytes>)<64encoded>"
         byte[] credBytes = (username + ":" + password).getBytes();
@@ -166,11 +167,10 @@ public class RestAuthenticator implements Authenticator {
 
     /**
      * Verify is the client is already authenticated. If not, try get the authenticate point.
-     * @param client client
-     * @param logger logger
-     * @return null or authenticate point
+     * @param client
+     * @return
      */
-    private boolean isAuthenticated(Client client, Logger logger) {
+    private boolean isAuthenticated(Client client) {
         Response response =
                 client.httpGet(
                         client.build(IS_AUTHENTICATED),
@@ -178,7 +178,7 @@ public class RestAuthenticator implements Authenticator {
                         null,
                         ResourceAccessLevel.PUBLIC);
         
-        if (checkAuthResponse(response, client.getUsername(), logger)) {
+        if (checkAuthResponse(response, client.getUsername())) {
             return true;
         }
 
@@ -197,7 +197,7 @@ public class RestAuthenticator implements Authenticator {
         return false;
     }
     
-    private boolean checkAuthResponse(Response response, String authUser, Logger logger) {
+    private boolean checkAuthResponse(Response response, String authUser) {
         if (response.getStatusCode() == HttpURLConnection.HTTP_OK) {
             if (response.getData() != null
                     && new String(response.getData()).contains(AUTHENTICATION_INFO)
@@ -240,7 +240,7 @@ public class RestAuthenticator implements Authenticator {
         return authenticateHeaderArray[1];
     }
 
-    private boolean appendQCSessionCookies(Client client, String clientType, Logger logger) {
+    private boolean appendQCSessionCookies(Client client, String clientType) {
         logger.log("Creating session...");
         Map<String, String> headers = new HashMap<String, String>();
         headers.put(RESTConstants.CONTENT_TYPE, RESTConstants.APP_XML);
