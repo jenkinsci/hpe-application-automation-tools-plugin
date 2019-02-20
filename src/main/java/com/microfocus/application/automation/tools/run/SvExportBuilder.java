@@ -21,10 +21,10 @@
 package com.microfocus.application.automation.tools.run;
 
 import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.util.Iterator;
+import java.util.List;
 
 import com.microfocus.sv.svconfigurator.build.ProjectBuilder;
 import com.microfocus.sv.svconfigurator.core.IProject;
@@ -40,12 +40,15 @@ import com.microfocus.sv.svconfigurator.processor.ChmodeProcessorInput;
 import com.microfocus.sv.svconfigurator.processor.ExportProcessor;
 import com.microfocus.sv.svconfigurator.processor.IChmodeProcessor;
 import com.microfocus.sv.svconfigurator.serverclient.ICommandExecutor;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.*;
+import hudson.remoting.Channel;
+import hudson.remoting.LocalChannel;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
@@ -78,6 +81,8 @@ public class SvExportBuilder extends AbstractSvRunBuilder<SvExportModel> {
 
     @Override
     protected void performImpl(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, Launcher launcher, TaskListener listener) throws Exception {
+        boolean isMaster = !workspace.isRemote();
+
         PrintStream logger = listener.getLogger();
 
         ExportProcessor exportProcessor = new ExportProcessor(null);
@@ -88,10 +93,19 @@ public class SvExportBuilder extends AbstractSvRunBuilder<SvExportModel> {
 
         verifyNotNull(model.getTargetDirectory(), "Target directory must be set");
 
-        String targetDirectory = workspace.child(model.getTargetDirectory()).getRemote();
+        String targetDirectory = "";
+        if (isMaster) {
+            targetDirectory = workspace.child(model.getTargetDirectory()).getRemote();
+        } else {
+            targetDirectory = Files.createTempDirectory("svExport").toString();
+        }
 
         if (model.isCleanTargetDirectory()) {
-            cleanTargetDirectory(logger, targetDirectory);
+            if (isMaster) {
+                cleanTargetDirectory(logger, targetDirectory);
+            } else {
+                cleanSlaveTargetDirectory(logger, new FilePath(launcher.getChannel(), workspace.child(model.getTargetDirectory()).getRemote()));
+            }
         }
 
         if (model.getServiceSelection().getSelectionType().equals(SvServiceSelectionModel.SelectionType.PROJECT)) {
@@ -112,6 +126,40 @@ public class SvExportBuilder extends AbstractSvRunBuilder<SvExportModel> {
         if (model.getServiceSelection().getSelectionType().equals(SvServiceSelectionModel.SelectionType.PROJECT)) {
             exportProcessor.process(exec, targetDirectory, null, project, false, model.isArchive());
         }
+
+        if (!isMaster) {
+            String slaveDirectory = workspace.child(model.getTargetDirectory()).getRemote();
+            FilePath localpath = new FilePath(new File(targetDirectory));
+            FilePath slavepath = new FilePath(launcher.getChannel(), slaveDirectory);
+
+            if (!slavepath.exists()) {
+                try {
+                    slavepath.mkdirs();
+                } catch (IOException exc) {
+                    throw new CommandExecutorException(String.format("Cannot create output directory %s:", slavepath));
+                }
+            } else if (!slavepath.isDirectory()) {
+                throw new IllegalArgumentException("Specified path is not a directory: " + slavepath);
+            }
+
+            localpath.copyRecursiveTo(slavepath);
+            localpath.deleteRecursive();
+        }
+    }
+
+    private Node workspaceToNode(FilePath workspace) {
+        Jenkins j = Jenkins.getActiveInstance();
+        if (workspace != null && workspace.isRemote()) {
+            for (Computer c : j.getComputers()) {
+                if (c.getChannel() == workspace.getChannel()) {
+                    Node n = c.getNode();
+                    if (n != null) {
+                        return n;
+                    }
+                }
+            }
+        }
+        return j;
     }
 
     private void verifyNotLearningBeforeExport(PrintStream logger, ICommandExecutor exec, ServiceInfo serviceInfo)
@@ -158,6 +206,28 @@ public class SvExportBuilder extends AbstractSvRunBuilder<SvExportModel> {
             }
         }
     }
+
+    private void cleanSlaveTargetDirectory(PrintStream logger, FilePath targetDirectory) throws IOException, InterruptedException {
+        if(targetDirectory.exists()) {
+            List<FilePath> subfolders = targetDirectory.listDirectories();
+            List<FilePath> files = targetDirectory.list(new SuffixFileFilter(".vproj"));
+            if (subfolders.size() > 0 || files.size() > 0) {
+                logger.println("  Cleaning target directory...");
+            }
+            for(FilePath file : files) {
+                file.delete();
+            }
+            for (FilePath subfolder : subfolders) {
+                if (subfolder.list(new SuffixFileFilter(".vproj")).size() > 0) {
+                    logger.println("    Deleting subfolder of target directory: " + subfolder.absolutize());
+                    subfolder.deleteRecursive();
+                } else {
+                    logger.println("    Skipping delete of directory '" + subfolder.absolutize() + "' because it does not contain any *.vproj file.");
+                }
+            }
+        }
+    }
+
 
     @Extension
     public static final class DescriptorImpl extends AbstractSvRunDescriptor {
