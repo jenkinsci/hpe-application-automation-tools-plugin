@@ -147,21 +147,6 @@ public class SvExportBuilder extends AbstractSvRunBuilder<SvExportModel> {
         }
     }
 
-    private Node workspaceToNode(FilePath workspace) {
-        Jenkins j = Jenkins.getActiveInstance();
-        if (workspace != null && workspace.isRemote()) {
-            for (Computer c : j.getComputers()) {
-                if (c.getChannel() == workspace.getChannel()) {
-                    Node n = c.getNode();
-                    if (n != null) {
-                        return n;
-                    }
-                }
-            }
-        }
-        return j;
-    }
-
     private void verifyNotLearningBeforeExport(PrintStream logger, ICommandExecutor exec, ServiceInfo serviceInfo)
             throws CommunicatorException, CommandExecutorException {
 
