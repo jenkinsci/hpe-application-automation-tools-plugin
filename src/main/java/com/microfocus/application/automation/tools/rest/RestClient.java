@@ -50,6 +50,7 @@ import hudson.ProxyConfiguration;
 import com.microfocus.application.automation.tools.sse.sdk.HttpRequestDecorator;
 
 import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
+import org.apache.commons.lang.StringUtils;
 
 /***
  *
@@ -59,11 +60,14 @@ import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
  */
 public class RestClient implements Client {
 
+    private static final String CLIENT_TYPE = "ALM-CLIENT-TYPE";
+
     private final String _serverUrl;
     protected Map<String, String> _cookies = new HashMap<String, String>();
     private final String _restPrefix;
     private final String _webuiPrefix;
     private final String _username;
+    private String clientType;
 
     /**
      * Configure SSL context for the client.
@@ -123,6 +127,10 @@ public class RestClient implements Client {
                         String.format("domains/%s", domain),
                         String.format("projects/%s", project));
         _webuiPrefix = getPrefixUrl("webui/alm", domain, project);
+    }
+
+    public void setClientType(String clientType) {
+        this.clientType = clientType;
     }
 
     /**
@@ -254,6 +262,11 @@ public class RestClient implements Client {
                 decoratedHeaders.putAll(headers);
             }
 
+            //Client type should be in the headers. After ALM15.
+            if (!StringUtils.isBlank(clientType) && !decoratedHeaders.containsKey(CLIENT_TYPE)) {
+                decoratedHeaders.put(CLIENT_TYPE, clientType);
+            }
+
             HttpRequestDecorator.decorateHeaderWithUserInfo(
                     decoratedHeaders,
                     getUsername(),
@@ -336,7 +349,7 @@ public class RestClient implements Client {
             throw new SSEException(cause);
         }
 
-        InputStream inputStream;
+        InputStream inputStream = null;
         // select the source of the input bytes, first try 'regular' input
         try {
             inputStream = connection.getInputStream();
@@ -347,6 +360,10 @@ public class RestClient implements Client {
         catch (Exception e) {
             inputStream = connection.getErrorStream();
             ret.setFailure(e);
+        }
+
+        if (inputStream == null) {
+            return ret;
         }
 
         // this takes data from the previously set stream (error or input)

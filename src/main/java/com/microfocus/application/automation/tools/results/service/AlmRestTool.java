@@ -56,6 +56,8 @@ public class AlmRestTool {
         							almLoginInfo.getUserName());
 		this.almLoginInfo = almLoginInfo;
 		this._logger = logger;
+
+		restClient.setClientType(almLoginInfo.getClientType());
 	}
 
     /**
@@ -208,7 +210,8 @@ public class AlmRestTool {
 					return null;
 				}
 			} else {
-				_logger.log("Failed to get Entity:" +getEntityUnderParentFolderQuery );
+				_logger.log("Failed to get Entity:" + getEntityUnderParentFolderQuery);
+				_logger.log("response:" + response.getFailure());
 				return null;
 			}
 		} catch (Exception e) {
