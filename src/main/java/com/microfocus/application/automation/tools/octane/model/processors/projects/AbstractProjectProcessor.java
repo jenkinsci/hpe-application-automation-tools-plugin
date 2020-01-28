@@ -141,6 +141,10 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 		}
 	}
 
+	public String getTranslatedJobDisplayName(){
+		return BuildHandlerUtils.translateFullDisplayName(job.getFullDisplayName());
+	}
+
 	/**
 	 * Discover an internal phases of the Job
 	 *
