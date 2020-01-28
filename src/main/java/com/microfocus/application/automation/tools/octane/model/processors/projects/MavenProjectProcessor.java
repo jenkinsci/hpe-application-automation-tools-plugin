@@ -30,8 +30,12 @@ import java.util.Set;
  */
 class MavenProjectProcessor extends AbstractProjectProcessor<MavenModuleSet> {
 
-	MavenProjectProcessor(Job mavenJob, Set<Job> processedJobs) {
+	MavenProjectProcessor(Job mavenJob) {
 		super((MavenModuleSet) mavenJob);
+	}
+
+	@Override
+	protected void buildStructureInternal(Set<Job> processedJobs) {
 		//  Internal phases - pre maven phases
 		//
 		super.processBuilders(this.job.getPrebuilders(), this.job, "pre-maven", processedJobs);

@@ -32,9 +32,12 @@ import java.util.Set;
  */
 class FreeStyleProjectProcessor extends AbstractProjectProcessor<FreeStyleProject> {
 
-	FreeStyleProjectProcessor(Job job, Set<Job> processedJobs) {
+	FreeStyleProjectProcessor(Job job) {
 		super((FreeStyleProject) job);
+	}
 
+	@Override
+	protected void buildStructureInternal(Set<Job> processedJobs) {
 		//  Internal phases
 		//
 		super.processBuilders(this.job.getBuilders(), this.job, processedJobs);

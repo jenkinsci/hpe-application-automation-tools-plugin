@@ -22,7 +22,6 @@ package com.microfocus.application.automation.tools.octane.model.processors.proj
 
 import hudson.model.Job;
 
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -67,29 +66,23 @@ public class JobProcessorFactory {
 	}
 
 	public static <T extends Job> AbstractProjectProcessor<T> getFlowProcessor(T job) {
-		Set<Job> processedJobs = new HashSet<>();
-		return getFlowProcessor(job, processedJobs);
-	}
-
-	public static <T extends Job> AbstractProjectProcessor<T> getFlowProcessor(T job, Set<Job> processedJobs) {
 		AbstractProjectProcessor flowProcessor;
-		processedJobs.add(job);
 
 		switch (job.getClass().getName()) {
 			case FREE_STYLE_JOB_NAME:
-				flowProcessor = new FreeStyleProjectProcessor(job, processedJobs);
+				flowProcessor = new FreeStyleProjectProcessor(job);
 				break;
 			case MATRIX_JOB_NAME:
-				flowProcessor = new MatrixProjectProcessor(job, processedJobs);
+				flowProcessor = new MatrixProjectProcessor(job);
 				break;
 			case MATRIX_CONFIGURATION_NAME:
-				flowProcessor = new MatrixConfigurationProcessor(job, processedJobs);
+				flowProcessor = new MatrixConfigurationProcessor(job);
 				break;
 			case MAVEN_JOB_NAME:
-				flowProcessor = new MavenProjectProcessor(job, processedJobs);
+				flowProcessor = new MavenProjectProcessor(job);
 				break;
 			case MULTIJOB_JOB_NAME:
-				flowProcessor = new MultiJobProjectProcessor(job, processedJobs);
+				flowProcessor = new MultiJobProjectProcessor(job);
 				break;
 			case WORKFLOW_JOB_NAME:
 				flowProcessor = new WorkFlowJobProcessor(job);
@@ -98,8 +91,12 @@ public class JobProcessorFactory {
 				flowProcessor = new UnsupportedProjectProcessor(job);
 				break;
 		}
+		return flowProcessor;
+	}
 
-		processedJobs.remove(job);
+	public static <T extends Job> AbstractProjectProcessor<T> getFlowProcessorAndBuildStructure(T job, Set<Job> processedJobs) {
+		AbstractProjectProcessor flowProcessor = getFlowProcessor(job);
+		flowProcessor.buildStructure(processedJobs);
 		return flowProcessor;
 	}
 }

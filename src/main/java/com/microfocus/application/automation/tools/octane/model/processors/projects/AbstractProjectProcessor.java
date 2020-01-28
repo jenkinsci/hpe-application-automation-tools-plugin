@@ -34,6 +34,7 @@ import jenkins.model.Jenkins;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 	private static final Logger logger = SDKBasedLoggerProvider.getLogger(AbstractProjectProcessor.class);
 	private final List<PipelinePhase> internals = new ArrayList<>();
 	private final List<PipelinePhase> postBuilds = new ArrayList<>();
-
+	private boolean isProcessed = false;
 	T job;
 
 	AbstractProjectProcessor(T job) {
@@ -145,12 +146,25 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 		return BuildHandlerUtils.translateFullDisplayName(job.getFullDisplayName());
 	}
 
+	public final void buildStructure(Set<Job> processedJobs) {
+		processedJobs.add(job);
+		buildStructureInternal(processedJobs);
+		processedJobs.remove(job);
+		isProcessed = true;
+	}
+
+	protected void buildStructureInternal(Set<Job> processedJobs) {
+	}
+
 	/**
 	 * Discover an internal phases of the Job
 	 *
 	 * @return list of phases
 	 */
 	public List<PipelinePhase> getInternals() {
+		if (!isProcessed) {
+			buildStructure(new HashSet<>());
+		}
 		return internals;
 	}
 
@@ -160,6 +174,9 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 	 * @return list of phases
 	 */
 	public List<PipelinePhase> getPostBuilds() {
+		if (!isProcessed) {
+			buildStructure(new HashSet<>());
+		}
 		return postBuilds;
 	}
 
