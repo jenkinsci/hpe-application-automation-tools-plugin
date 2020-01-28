@@ -106,7 +106,7 @@ public class Webhooks implements UnprotectedRootAction {
 					try {
 						String octaneInstanceId = octaneClient.getInstanceId();
 						aclContext = ImpersonationUtil.startImpersonation(octaneInstanceId);
-						TopLevelItem topLevelItem = Jenkins.get().getItem(jobName);
+						Item topLevelItem = Jenkins.get().getItemByFullName(jobName);
 						if (isValidJenkinsJob(topLevelItem)) {
 							Job jenkinsJob = ((Job) topLevelItem);
 							Integer buildNumber = Integer.valueOf(buildId, 10);
@@ -195,7 +195,7 @@ public class Webhooks implements UnprotectedRootAction {
 
 	// we may get notifications from sonar project of jobs without sonar configuration
 	// or jobs of other CI servers, using this method, we ignore these notifications
-	private boolean isValidJenkinsJob(TopLevelItem jenkinsJob) {
+	private boolean isValidJenkinsJob(Item jenkinsJob) {
 		return jenkinsJob instanceof Job;
 	}
 
