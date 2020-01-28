@@ -150,14 +150,9 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 
 		if (upstreamCause != null) {
 			String causeJobName = upstreamCause.getUpstreamProject();
-			TopLevelItem parent = Jenkins.get().getItem(causeJobName);
+			Item parent = Jenkins.get().getItemByFullName(causeJobName);
 			if (parent == null) {
-				if (causeJobName.contains("/") && !causeJobName.contains(",")) {
-					Job parentJob = getJobFromFolder(causeJobName);
-					if (parentJob != null) {
-						result = true;
-					}
-				}
+				result = true;
 			} else {
 				if (parent.getClass().getName().equals(JobProcessorFactory.WORKFLOW_JOB_NAME)) {
 					result = true;
@@ -175,20 +170,5 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 			}
 		}
 		return result;
-	}
-
-	private static Job getJobFromFolder(String causeJobName) {
-		String newJobRefId = causeJobName.substring(0, causeJobName.indexOf('/'));
-		TopLevelItem item = Jenkins.get().getItem(newJobRefId);
-		if (item != null) {
-			Collection<? extends Job> allJobs = item.getAllJobs();
-			for (Job job : allJobs) {
-				if (causeJobName.endsWith(job.getName())) {
-					return job;
-				}
-			}
-			return null;
-		}
-		return null;
 	}
 }
