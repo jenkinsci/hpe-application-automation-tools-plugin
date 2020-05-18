@@ -105,6 +105,7 @@ public class TestNGExtensionTest extends OctanePluginTestBase {
 		assertTestNGFields(fields);
 	}
 
+	@Ignore
 	@Test
 	public void testMavenOneModule() throws Exception {
 		String projectName = "testNG-job-maven-" + UUID.randomUUID().toString();

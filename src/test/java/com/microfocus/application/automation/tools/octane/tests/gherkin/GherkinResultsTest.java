@@ -77,6 +77,7 @@ public class GherkinResultsTest extends OctanePluginTestBase {
         gherkinResults("**/*Gherkin*.xml", true);
     }
 
+    @Ignore
     @Test
     public void testGherkinResultsDirectlyOnWorkspaceEmptyGlob() throws Exception {
         gherkinResults("", true);
