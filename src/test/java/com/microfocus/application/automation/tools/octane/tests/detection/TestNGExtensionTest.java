@@ -34,10 +34,7 @@ import hudson.model.FreeStyleProject;
 import hudson.tasks.Maven;
 import hudson.tasks.junit.JUnitResultArchiver;
 import hudson.tasks.test.AbstractTestResultAction;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.ToolInstallations;
 
@@ -65,6 +62,7 @@ public class TestNGExtensionTest extends OctanePluginTestBase {
 		mavenName = ToolInstallations.configureMaven3().getName();
 	}
 
+	@Ignore
 	@Test
 	public void testFreestyleProject() throws Exception {
 		String projectName = "testNG-job-" + UUID.randomUUID().toString();
