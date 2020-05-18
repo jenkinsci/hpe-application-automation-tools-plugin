@@ -91,6 +91,7 @@ public class TestNGExtensionTest extends OctanePluginTestBase {
 		assertTestNGFields(fields);
 	}
 
+	@Ignore
 	@Test
 	public void testFreestyleProjectCustomLocation() throws Exception {
 		String projectName = "testNG-job-" + UUID.randomUUID().toString();

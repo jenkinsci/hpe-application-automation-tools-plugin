@@ -97,6 +97,8 @@ public class GherkinResultsTest extends OctanePluginTestBase {
     public void testGherkinResultsInSubFolderEmptyGlob() throws Exception {
         gherkinResultsInSubFolder("", true);
     }
+
+    @Ignore
     @Test
     public void testGherkinResultsInSubFolderNegative() throws Exception {
         gherkinResultsInSubFolder("*Gherkin*.xml", false);
