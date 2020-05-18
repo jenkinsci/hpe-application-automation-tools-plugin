@@ -187,6 +187,7 @@ public class TestNGExtensionTest extends OctanePluginTestBase {
 		Assert.assertNull(fields.getTestingTool());
 	}
 
+	@Ignore
 	@Test
 	public void testMavenMultimoduleCustomLocationPublished() throws Exception {
 		String projectName = "testNG-job-maven-" + UUID.randomUUID().toString();
