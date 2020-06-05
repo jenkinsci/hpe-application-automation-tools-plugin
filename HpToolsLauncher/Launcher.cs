@@ -1027,7 +1027,7 @@ namespace HpToolsLauncher
                 ConsoleWriter.WriteLine(errorNoValidTests);
             }
 
-            return null;
+            return new List<TestData>();
         }
 
         /// <summary>
