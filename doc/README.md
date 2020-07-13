@@ -38,7 +38,7 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 
 
-# What&#39;s New in version 5.9
+# What&#39;s New in version 6.3
 
 
 
@@ -46,39 +46,34 @@ See the [Changelog ](https://wiki.jenkins.io/display/JENKINS/Changelog)for infor
 
 
 
-Version 5.9 provides the following enhancements:
+Version 6.3 provides the following enhancements:
 
+**Minimum version**
+
+
+
+- Jenkins minimal version is 2.164.3 
 
 
 **ALM Octane**
 
 
 
-- Support for custom converters to test frameworks
+- Ability to disable configuration 
 
-- Improvements in logs
+- Ability to configure jenkinsUser per ALM Octane workspace and to restrict job visibility during new pipeline creation
 
-- Support for additional versions of the Sonarqube scanner plugin (2.6.1, 2.8.1, 2.9)
+- Abiltiy to configure ALM Octane allowed storage for logs 
 
-- Bug fixes
+- Support for base64 encoding for jobIds (relevant for ALM Octane behind an Apache server)
 
+- New icons that show which workspaces are connected
 
+- Bug Fix: UFT Discovery job now populates the description of UFT API tests 
 
-**UFT Mobile (Mobile Center)**
+- Bug Fix: Connectivity issue where ALM Octane shows that Jenkins was not connected was resolved
 
-
-
-- Rebrand from &quot;Mobile Center&quot; to &quot;UFT Mobile&quot;
-
-
-
-**ALM**
-
-
-
-- Improvements in the logic of parsing test case status.
-
-https://issues.jenkins-ci.org/browse/JENKINS-58134 
+- Bug Fix: The CI pipleine job in Octane gets updated automtically when you move or rename the Jenkins job name
 
 
 
@@ -86,11 +81,8 @@ https://issues.jenkins-ci.org/browse/JENKINS-58134
 
 
 
-- Support for ALM 15.0 with SSO   
+- You can now define the number of iterations for running  UFT tests  
 
-- Refactoring of HpToolsLauncher
-
-- Bug fixes
 
 
 
