@@ -1,0 +1,39 @@
+<!--
+  ~ Certain versions of software and/or documents ("Material") accessible here may contain branding from
+  ~ Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~ the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~ and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~ marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors ("Micro Focus") are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  -->
+
+<div>
+    Define one or more Jenkins users for specific workspaces in ALM Octane (relevant for v15.0.60 and later).
+    <br/>
+    This user will be used to get jobs to ALM Octane when creating new pipelines in that specific workspace.
+    <br/>
+    For all other actions, the general Jenkins user defined in the basic plugin configuration is used.
+    <br/><br/>
+    <b>Important</b>: The workspace-specific Jenkins user must have access to a subset of the jobs that are available to the general Jenkins user. You cannot have jobs that are available to the workspace-specific Jenkins user but not to the general Jenkins user.
+
+    <br/><br/>
+    The field is optional and does not need to include all workspaces. If a workspace does not contain a workspace-specific user, the general Jenkins user will be used.
+    <br/>
+    Format: 'Workspace ID: 'Jenkins user name', for example 1000:userForOctane.
+    <br/><br/>
+    Use a separate line for each workspace. Any line that starts with '#' is defined as a comment and is not parsed.
+    <br/>
+    If the configuration is defined correctly, test connection will show an icon next to "Connection successful" with all available workspaces. If a workspace has a workspace-specific Jenkins user, the user name will appear, for example <i>2001 - workspace name (userForOctane)</i>.
+
+</div>

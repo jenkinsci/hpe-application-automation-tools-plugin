@@ -1,0 +1,79 @@
+<!--
+  ~ Certain versions of software and/or documents ("Material") accessible here may contain branding from
+  ~ Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~ the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~ and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~ marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors ("Micro Focus") are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  -->
+
+<div>
+    Define additional parameters
+    <br/>
+    Format: <b>param_name:param_value</b>
+    <br/>
+    Use a separate line for each parameter. Any line that starts with '#' is defined as a comment and is not parsed.
+    <br/>
+    <br/>
+
+    <table border="1" width="100%" style="border-collapse: collapse;border: 1px solid black;">
+
+        <thead style="background-color: lightgray; font-weight: bold">
+        <tr>
+            <td style="width: 250px">Param name</td>
+            <td style="width: 110px">Value</td>
+            <td>Description</td>
+        </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>ENCODE_CI_JOB_BASE64</td>
+                <td>true/false</td>
+                <td>ALM Octane includes a built-in Jetty web server, but there is a possibility to add an external web server such as Apache HTTP server or similar.
+                    This is usually done to add one more security layer. Some such servers might not allow receiving requests with encoded slashes (%2F).
+                    As a job name might contain a slash, this parameter allows base64 encoding for job IDs during sending test results, build logs, coverage and vulnerabilities data to ALM Octane.
+                    <br/>
+                    Default is false. Supported ALM Octane version 15.1.20 and above.</td>
+            </tr>
+            <tr>
+                <td>SCM_REST_API</td>
+                <td>true/false</td>
+                <td>The plugin uses a dedicated REST API in order to send data on SCM commits to ALM Octane. This parameter allows to use the events mechanism instead of REST API.
+                    <br/>
+                Default is true (Rest API). Supported ALM Octane version 15.1.21 and above.</td>
+            </tr>
+            <tr>
+                <td>UFT_TEST_RUNNER_FOLDER</td>
+                <td>folder path</td>
+                <td>ALM Octane allows generation of discovery and execution jobs for UFT test runner. By default, those jobs are created in Jenkins root. This parameter allow to define the folder
+                    in which those jobs will be created. <br/>For example : my_team_folder/uft</td>
+            </tr>
+            <tr>
+                <td>FORTIFY_SSC_TOKEN</td>
+                <td>authentication token</td>
+                <td>
+                    Token for integration with Fortify Software Security Center (SSC).
+                    See help information in  <a target="_blank" href="https://admhelp.microfocus.com/octane/en/latest/Online/Content/AdminGuide/how-setup-FoD-integration.htm">ALM Octane Help Center</a>.
+                </td>
+            </tr>
+            <tr>
+                <td>FORTIFY_SSC_FETCH_TIMEOUT</td>
+                <td>number (1-12)</td>
+                <td>Maximum time (in hours) to wait for results from Fortify SSC. Default is 12 hours.</td>
+            </tr>
+
+
+        </tbody>
+    </table>
+</div>

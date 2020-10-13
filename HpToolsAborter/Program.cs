@@ -265,7 +265,7 @@ namespace HpToolsAborter
                 Process proc = Process.GetProcessById(pid);
                 proc.Kill();
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
                 // Process already exited.
             }

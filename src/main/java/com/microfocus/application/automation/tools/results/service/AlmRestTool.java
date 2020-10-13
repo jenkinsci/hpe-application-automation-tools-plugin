@@ -48,6 +48,11 @@ public class AlmRestTool {
 	private final String USERNAMEPRETAG = "<Username>";
 	private final String USERNAMESUBTAG = "</Username>";
 
+	public AlmRestTool(RestClient restClient, Logger logger) {
+		this.restClient = restClient;
+		this._logger = logger;
+	}
+
 	public AlmRestTool (AlmRestInfo almLoginInfo, Logger logger) {
 		this.restClient = new RestClient(
         							almLoginInfo.getServerUrl(),
@@ -58,26 +63,13 @@ public class AlmRestTool {
 		this._logger = logger;
 	}
 
-    /**
-     * Get rest client
-     */
 	public RestClient getRestClient() {
 		return this.restClient;
 	}
 
-    /**
-     * Login
-     */
-	public boolean login() throws Exception {
-		boolean ret;
-        try {
-			ret = AuthenticationTool.getInstance().authenticate(restClient, almLoginInfo.getUserName(),
-					almLoginInfo.getPassword(), almLoginInfo.getServerUrl(), almLoginInfo.getClientType(), _logger);
-        } catch (Exception cause) {
-            ret = false;
-            throw new AlmRestException (cause);
-        }
-        return ret;
+	public boolean login() {
+        return AuthenticationTool.getInstance().authenticate(restClient, almLoginInfo.getUserName(),
+				almLoginInfo.getPassword(), almLoginInfo.getServerUrl(), almLoginInfo.getClientType(), _logger);
 	}
 
 	/**

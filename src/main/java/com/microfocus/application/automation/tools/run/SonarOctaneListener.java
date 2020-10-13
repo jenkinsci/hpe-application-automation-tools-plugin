@@ -172,7 +172,7 @@ public class SonarOctaneListener extends Builder implements SimpleBuildStep {
         PrintStream logger = listener.getLogger();
         initializeSonarDetails(run, listener);
 
-        String jenkinsRoot = Jenkins.getInstance().getRootUrl();
+        String jenkinsRoot = Jenkins.get().getRootUrl();
         String callbackWebHooksURL = jenkinsRoot + Webhooks.WEBHOOK_PATH + Webhooks.NOTIFY_METHOD;
         if (StringUtils.isNullOrEmpty(this.sonarServerUrl) || StringUtils.isNullOrEmpty(this.sonarToken)) {
             logger.println("Web-hook registration in sonarQube for build " + getBuildNumber(run) + " failed, missing sonarQube server url or sonarQube authentication token");

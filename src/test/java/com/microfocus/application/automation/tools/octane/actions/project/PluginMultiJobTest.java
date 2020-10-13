@@ -162,21 +162,27 @@ public class PluginMultiJobTest extends OctanePluginTestBase {
         )));
         p.getBuildersList().add(new MultiJobBuilder(
                 "Build",
+                //PhaseJobsConfig(String jobName, String jobAlias, String jobProperties, boolean currParams, List<AbstractBuildParameters> configs,
+                // PhaseJobsConfig.KillPhaseOnJobResultCondition killPhaseOnJobResultCondition, boolean disableJob, boolean enableRetryStrategy,
+                // String parsingRulesPath, int maxRetries, boolean enableCondition, boolean abortAllJob, String condition, boolean buildOnlyIfSCMChanges,
+                // boolean applyConditionOnlyIfNoSCMChanges) {
                 Arrays.asList(
-                        new PhaseJobsConfig("jobA", "", false, null, PhaseJobsConfig.KillPhaseOnJobResultCondition.NEVER, false, false, "", 0, false, false, "", false),
-                        new PhaseJobsConfig("jobB", "", false, null, PhaseJobsConfig.KillPhaseOnJobResultCondition.NEVER, false, false, "", 0, false, false, "", false),
-                        new PhaseJobsConfig("jobE", "", false, null, PhaseJobsConfig.KillPhaseOnJobResultCondition.NEVER, false, false, "", 0, false, false, "", false)
+                        createPhaseJobsConfig("jobA"),
+                        createPhaseJobsConfig("jobB"),
+                        createPhaseJobsConfig("jobE")
                 ),
-                MultiJobBuilder.ContinuationCondition.SUCCESSFUL
+                MultiJobBuilder.ContinuationCondition.SUCCESSFUL,
+                MultiJobBuilder.ExecutionType.SEQUENTIALLY
         ));
         p.getBuildersList().add(new Shell(""));
         p.getBuildersList().add(new MultiJobBuilder(
                 "Test",
                 Arrays.asList(
-                        new PhaseJobsConfig("jobC", "", false, null, PhaseJobsConfig.KillPhaseOnJobResultCondition.NEVER, false, false, "", 0, false, false, "", false),
-                        new PhaseJobsConfig("jobD", "", false, null, PhaseJobsConfig.KillPhaseOnJobResultCondition.NEVER, false, false, "", 0, false, false, "", false)
+                        createPhaseJobsConfig("jobC"),
+                        createPhaseJobsConfig("jobD")
                 ),
-                MultiJobBuilder.ContinuationCondition.SUCCESSFUL
+                MultiJobBuilder.ContinuationCondition.SUCCESSFUL,
+                MultiJobBuilder.ExecutionType.SEQUENTIALLY
         ));
         p.getPublishersList().add(new BuildTrigger("jobA, jobB", Result.SUCCESS));
         p.getPublishersList().add(new hudson.plugins.parameterizedtrigger.BuildTrigger(Collections.singletonList(
@@ -331,5 +337,11 @@ public class PluginMultiJobTest extends OctanePluginTestBase {
         assertEquals(0, tmpNode.getParameters().size());
         assertEquals(0, tmpNode.getPhasesInternal().size());
         assertEquals(0, tmpNode.getPhasesPostBuild().size());
+    }
+
+    private PhaseJobsConfig createPhaseJobsConfig(String jobName){
+        return new PhaseJobsConfig(jobName, "", null, false, null,
+                PhaseJobsConfig.KillPhaseOnJobResultCondition.NEVER, false, false, null, 1,
+                false, false, null, false, false);
     }
 }

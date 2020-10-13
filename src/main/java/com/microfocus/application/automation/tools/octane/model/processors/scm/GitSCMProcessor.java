@@ -42,6 +42,8 @@ import hudson.scm.SCM;
 import hudson.tasks.Mailer;
 import hudson.util.DescribableList;
 import jenkins.MasterToSlaveFileCallable;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.BlameCommand;
 import org.eclipse.jgit.api.Git;
@@ -95,8 +97,7 @@ class GitSCMProcessor implements SCMProcessor {
 		try {
 			FilePath workspace = build.getWorkspace();
 			if (workspace != null) {
-				File repoDir = new File(getRemoteString(build) + File.separator + ".git");
-				scmData = workspace.act(new LineEnricherCallable(repoDir, scmData));
+				scmData = workspace.act(new LineEnricherCallable(getCheckoutDir(build), scmData));
 				logger.info("Line enricher: process took: " + ((System.currentTimeMillis() - startTime) / 1000) + " seconds");
 			} else {
 				logger.warn("Line enricher: workspace is null");
@@ -123,13 +124,12 @@ class GitSCMProcessor implements SCMProcessor {
 			final AbstractBuild abstractBuild = (AbstractBuild) run;
 			FilePath workspace = ((AbstractBuild) run).getWorkspace();
 			if (workspace != null) {
-				File repoDir = new File(getRemoteString(abstractBuild) + File.separator + ".git");
-				commonOriginRevision.revision = workspace.act(new FileContentCallable(repoDir));
+				commonOriginRevision.revision = workspace.act(new FileContentCallable(getCheckoutDir(abstractBuild)));
 
 			}
-			logger.info("most recent common revision resolved to " + commonOriginRevision.revision + " (branch: " + commonOriginRevision.branch + ")");
+			logger.debug("most recent common revision resolved to " + commonOriginRevision.revision + " (branch: " + commonOriginRevision.branch + ")");
 		} catch (Exception e) {
-			logger.error("failed to resolve most recent common revision", e);
+			logger.error("failed to resolve most recent common revision : " + e.getClass().getName() + " - " + e.getMessage());
 			return commonOriginRevision;
 		}
 		return commonOriginRevision;
@@ -183,28 +183,15 @@ class GitSCMProcessor implements SCMProcessor {
 		return null;
 	}
 
-	private static String getRemoteString(AbstractBuild r) {
-		final DescribableList<GitSCMExtension, GitSCMExtensionDescriptor> extensions = ((GitSCM) (r.getProject()).getScm()).getExtensions();
-		String relativeTargetDir = "";
-		if (extensions != null) {
-			final RelativeTargetDirectory relativeTargetDirectory = extensions.get(RelativeTargetDirectory.class);
-			if (relativeTargetDirectory != null && relativeTargetDirectory.getRelativeTargetDir() != null) {
-				relativeTargetDir = File.separator + relativeTargetDirectory.getRelativeTargetDir();
-			}
-		}
-		if (r.getWorkspace() != null) {
-			if (r.getWorkspace().isRemote()) {
-				VirtualChannel vc = r.getWorkspace().getChannel();
-				String fp = r.getWorkspace().getRemote();
-				String remote = new FilePath(vc, fp).getRemote();
-				return remote + relativeTargetDir;
-			} else {
-				String remote = r.getWorkspace().getRemote();
-				return remote + relativeTargetDir;
-			}
-		} else {
-			return "";
-		}
+    private static String getCheckoutDir(AbstractBuild r) {
+        final DescribableList<GitSCMExtension, GitSCMExtensionDescriptor> extensions = ((GitSCM) (r.getProject()).getScm()).getExtensions();
+        if (extensions != null) {
+            final RelativeTargetDirectory relativeTargetDirectory = extensions.get(RelativeTargetDirectory.class);
+            if (relativeTargetDirectory != null && relativeTargetDirectory.getRelativeTargetDir() != null) {
+                return relativeTargetDirectory.getRelativeTargetDir();
+            }
+        }
+        return "";
 	}
 
 	private SCMRepository getRepository(Run run, GitSCM gitData) {
@@ -237,9 +224,6 @@ class GitSCMProcessor implements SCMProcessor {
 			for (ChangeLogSet.Entry change : set) {
 				if (change instanceof GitChangeSet) {
 					GitChangeSet commit = (GitChangeSet) change;
-					User user = commit.getAuthor();
-					String userEmail = null;
-
 					List<SCMChange> tmpChanges = new ArrayList<>();
 					for (GitChangeSet.Path item : commit.getAffectedFiles()) {
 						SCMChange tmpChange = dtoFactory.newDTO(SCMChange.class)
@@ -248,21 +232,14 @@ class GitSCMProcessor implements SCMProcessor {
 						tmpChanges.add(tmpChange);
 					}
 
-					for (UserProperty property : user.getAllProperties()) {
-						if (property instanceof Mailer.UserProperty) {
-							userEmail = ((Mailer.UserProperty) property).getAddress();
-						}
-					}
-
 					SCMCommit tmpCommit = dtoFactory.newDTO(SCMCommit.class)
 							.setTime(commit.getTimestamp())
-							.setUser(user.getId())
-							.setUserEmail(userEmail)
 							.setRevId(commit.getCommitId())
 							.setParentRevId(commit.getParentCommit())
 							.setComment(commit.getComment().trim())
 							.setChanges(tmpChanges);
 
+					setUserInCommit(commit,tmpCommit);
 					commits.add(tmpCommit);
 				}
 			}
@@ -270,15 +247,44 @@ class GitSCMProcessor implements SCMProcessor {
 		return commits;
 	}
 
-	private static final class FileContentCallable extends MasterToSlaveFileCallable<String> {
-		private final File repoDir;
+	private void setUserInCommit(GitChangeSet commit, SCMCommit dtoCommit) {
+		User user = commit.getAuthor();
+		String userName = user.getId();
+		String userEmail = null;
+		for (UserProperty property : user.getAllProperties()) {
+			if (property instanceof Mailer.UserProperty) {
+				userEmail = ((Mailer.UserProperty) property).getAddress();
+			}
+		}
 
-		private FileContentCallable(File file) {
-			this.repoDir = file;
+		try {
+			//commits in github UI - returns with user "noreply"
+			if ("noreply".equals(userName)) {
+				String authorEmail = (String) FieldUtils.readField(commit, "authorEmail", true);
+				if (StringUtils.isNotEmpty(authorEmail) && authorEmail.contains("@")) {
+					userEmail = authorEmail;
+					userName = authorEmail.substring(0, authorEmail.indexOf('@'));
+				}
+			}
+		} catch (Exception e) {
+			logger.info("Failed to extract authorEmail : " + e.getMessage());
+		}
+
+		dtoCommit
+				.setUser(userName)
+				.setUserEmail(userEmail);
+	}
+
+	private static final class FileContentCallable extends MasterToSlaveFileCallable<String> {
+		private final String checkoutDir;
+
+		private FileContentCallable(String checkoutDir) {
+			this.checkoutDir = checkoutDir;
 		}
 
 		@Override
 		public String invoke(File rootDir, VirtualChannel channel) throws IOException {
+			File repoDir = new File(rootDir, checkoutDir + File.separator + ".git");
 			try (Git git = Git.open(repoDir);
 			     Repository repo = git.getRepository()) {
 				if (repo == null) {
@@ -334,16 +340,17 @@ class GitSCMProcessor implements SCMProcessor {
 
 	/*line enricher running on the same jenkins node that the job is running in it*/
 	private static final class LineEnricherCallable extends MasterToSlaveFileCallable<SCMData> {
-		private final File repoDir;
+		private final String checkoutDir;
 		private final SCMData scmData;
 
-		private LineEnricherCallable(File file, SCMData scmData) {
-			this.repoDir = file;
+		private LineEnricherCallable(String checkoutDir, SCMData scmData) {
+			this.checkoutDir = checkoutDir;
 			this.scmData = scmData;
 		}
 
 		@Override
 		public SCMData invoke(File rootDir, VirtualChannel channel) throws IOException {
+			File repoDir = new File(rootDir, checkoutDir + File.separator + ".git");
 			try (Git git = Git.open(repoDir);
 			     Repository repo = git.getRepository()) {
 				if (repo == null) {
@@ -424,6 +431,9 @@ class GitSCMProcessor implements SCMProcessor {
 				blamer.setStartCommit(commitID);
 				blamer.setFilePath(filePath);
 				BlameResult blameResult = blamer.call();
+				if (blameResult == null) {
+					continue;
+				}
 				RawText rawText = blameResult.getResultContents();
 				int fileSize = rawText.size();
 

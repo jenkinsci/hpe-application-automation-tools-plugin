@@ -20,12 +20,13 @@
 
 package com.microfocus.application.automation.tools.model;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
-import hudson.util.FormValidation;
+
 import hudson.util.VariableResolver;
 
 import java.util.Arrays;
@@ -37,7 +38,7 @@ import java.util.Properties;
 
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
+
 
 import javax.annotation.Nonnull;
 
@@ -54,7 +55,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
     public final static int DEFAULT_TIMEOUT = 36000; // 10 hrs
     public final static String ALM_PASSWORD_KEY = "almPassword";
-    public final static String ALM_API_KEY_SECRET = "almApiKey";
+    public final static String ALM_API_KEY_SECRET = "almApiKeySecret";
 
     private String almServerName;
     private String almUserName;
@@ -71,11 +72,10 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
     private String almApiKey;
 
     @DataBoundConstructor
-    public RunFromAlmModel(String almServerName, String almUserName,
-                           String almPassword, String almDomain, String almProject,
+    public RunFromAlmModel(String almServerName, String almUserName, String almPassword, String almDomain, String almProject,
                            String almTestSets, String almRunResultsMode, String almTimeout,
                            String almRunMode, String almRunHost, Boolean isSSOEnabled,
-                           String almClientID, String almApiKey){
+                           String almClientID, String almApiKey) {
 
         this.almServerName = almServerName;
         this.almUserName = almUserName;
@@ -142,6 +142,10 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         return isSSOEnabled;
     }
 
+    public void setIsSSOEnabled(Boolean isSSOEnabled){
+        this.isSSOEnabled = isSSOEnabled;
+    }
+
     public String getAlmClientID() { return almClientID; }
 
     public String getAlmApiKey() { return almApiKey; }
@@ -155,9 +159,11 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         return CreateProperties(null, null);
     }
 
+
     private Properties CreateProperties(EnvVars envVars,
                                         VariableResolver<String> varResolver) {
         Properties props = new Properties();
+
         if(isSSOEnabled != null){
             props.put("SSOEnabled", Boolean.toString(isSSOEnabled));
         }else{
@@ -165,15 +171,12 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         }
 
         if (envVars == null) {
-            props.put("almUserName", almUserName);
-            props.put(ALM_PASSWORD_KEY, almPassword);
+            props.put("almUsername", almUserName);
             props.put("almDomain", almDomain);
             props.put("almProject", almProject);
         } else {
-
-            props.put("almUserName",
+           props.put("almUsername",
                     Util.replaceMacro(envVars.expand(almUserName), varResolver));
-            props.put(ALM_PASSWORD_KEY, almPassword);
             props.put("almDomain",
                     Util.replaceMacro(envVars.expand(almDomain), varResolver));
             props.put("almProject",
@@ -206,20 +209,10 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
         props.put("almRunMode", almRunMode);
         props.put("almRunHost", almRunHost);
-        if(almClientID != null){
-            props.put("almClientID", almClientID);
-        } else {
-            props.put("almClientID", "");
-        }
-
-        if(almApiKey != null){
-            props.put("almApiKey", almApiKey);
-        }else{
-            props.put("almApiKey", "");
-        }
 
         return props;
     }
+
 
     @Extension
     public static class DescriptorImpl extends Descriptor<RunFromAlmModel> {

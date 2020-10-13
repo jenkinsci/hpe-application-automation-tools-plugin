@@ -1,0 +1,117 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2019 Micro Focus or one of its affiliates..
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:p="/lib/hudson/project" xmlns:s="/lib/samples">
+  <l:layout title="ALM Octane Pull Request Fetch Report">
+    <style type="text/css">
+
+    .myTable {
+        empty-cells: show;
+        border: 1px solid #cbcbcb;
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+
+    .myTable thead {
+        background-color: #ffedb3;
+        text-align: left;
+        vertical-align: bottom;
+    }
+
+    .myTable th{
+        color: #555753;
+    }
+
+    .myTable caption{
+        font-weight: bold;
+        padding-bottom: 10px;
+    }
+
+    .myTable td, .myTable th {
+        border-left: 1px solid #cbcbcb;
+        border-width: 0 0 0 1px;
+        margin: 0;
+        text-align: left;
+        padding: 8px;
+    }
+
+    .myTable tbody tr:nth-child(even) {
+        background-color: #fff9e6;
+    }
+
+    </style>
+
+    <st:include it="${it.build}" page="sidepanel.jelly" />
+    <l:main-panel>
+       <p>
+       <h1><u>ALM Octane Pull Request Report</u></h1>
+       </p>
+       <br/>
+       <br/>
+       <div>
+            <div>repositoryUrl : ${it.repositoryUrl}</div>
+            <div>minUpdateDate : ${it.minUpdateTime} - ${it.getFormattedDate(it.minUpdateTime)}</div>
+            <div>sourceBranchFilter : ${it.sourceBranchFilter}</div>
+            <div>targetBranchFilter : ${it.targetBranchFilter}</div>
+       </div>
+
+
+       <table class = "myTable" frame="vsides above bottom" >
+        <caption>Pull requests</caption>
+        <thead>
+
+         <tr>
+             <th >Id</th>
+             <th>Title</th>
+             <th>State</th>
+             <th>IsMerged</th>
+             <th>Author</th>
+             <th>Updated Time</th>
+             <th>Source</th>
+             <th>Target</th>
+             <th>#Commits</th>
+         </tr>
+         </thead>
+
+         <tbody>
+          <j:forEach var="s" items="${it.pullRequests}">
+                <tr>
+                    <td ><a target="_blank" href="${s.selfUrl}">${s.id}</a></td>
+                    <td >${s.title}</td>
+                    <td >${s.state}</td>
+                    <td >${s.merged}</td>
+                    <td title="${s.authorEmail}">${s.authorName}</td>
+                    <td title="${s.updatedTime}">${it.getFormattedDate(s.updatedTime)}</td>
+                    <td >${s.sourceRepository.url} : ${s.sourceRepository.branch}</td>
+                    <td >${s.targetRepository.url} : ${s.targetRepository.branch}</td>
+                    <td title="${it.getTopCommits(s)}">${s.commits.size()}</td>
+                </tr>
+          </j:forEach>
+
+          </tbody>
+       </table>
+
+    </l:main-panel>
+
+  </l:layout>
+</j:jelly>

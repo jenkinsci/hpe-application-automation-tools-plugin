@@ -32,9 +32,12 @@ import java.util.Set;
  */
 class MatrixProjectProcessor extends AbstractProjectProcessor<MatrixProject> {
 
-	MatrixProjectProcessor(Job project, Set<Job> processedJobs) {
+	MatrixProjectProcessor(Job project) {
 		super((MatrixProject) project);
+	}
 
+	@Override
+	protected void buildStructureInternal(Set<Job> processedJobs) {
 		//  Internal phases
 		//
 		super.processBuilders(this.job.getBuilders(), this.job, processedJobs);

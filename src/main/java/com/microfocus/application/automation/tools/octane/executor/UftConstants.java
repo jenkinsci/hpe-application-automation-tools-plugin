@@ -24,21 +24,21 @@ package com.microfocus.application.automation.tools.octane.executor;
  */
 public class UftConstants {
 
-    public static final String EXECUTOR_ID_PARAMETER_NAME = "Connection ID";
-    public static final String EXECUTOR_LOGICAL_NAME_PARAMETER_NAME = "Connection logical name";
     public static final String SUITE_ID_PARAMETER_NAME = "suiteId";
     public static final String SUITE_RUN_ID_PARAMETER_NAME = "suiteRunId";
     public static final String FULL_SCAN_PARAMETER_NAME = "Full sync";
 
     public static final String TESTS_TO_RUN_PARAMETER_NAME = "testsToRun";
-    public static final String CHEKOUT_DIR_PARAMETER_NAME = "testsToRunCheckoutDirectory";
+    public static final String CHECKOUT_DIR_PARAMETER_NAME = "testsToRunCheckoutDirectory";
     public static final String TEST_RUNNER_ID_PARAMETER_NAME = "Test Runner ID";
     public static final String TEST_RUNNER_LOGICAL_NAME_PARAMETER_NAME = "Test Runner logical name";
 
-
-
-    public static final String EXECUTION_JOB_MIDDLE_NAME = "UFT test run job - Suite ID";
-    public static final String DISCOVERY_JOB_MIDDLE_NAME = "UFT test discovery job - Connection ID";
     public static final String DISCOVERY_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS = "UFT-test-discovery-job-Test-Runner-ID";
     public static final String EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS = "UFT-test-execution-job-Test-Runner-ID";
+
+    public static final String DISCOVERY_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW = "UFT-discovery-job";
+    public static final String EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW = "UFT-test-runner";
+
+    public static final String NO_USERNAME_DEFINED = "No username defined in Jenkins Configure System page";
+    public static final String NO_CLIENT_ID_DEFINED = "No client ID defined in Jenkins Configure System page";
 }

@@ -62,7 +62,7 @@ public class UftScenarioLoadStepExecution extends AbstractSynchronousNonBlocking
 
     @Override
     protected Void run() throws Exception {
-        listener.getLogger().println("Running UFT Scenario step");
+        listener.getLogger().println("Running UftScenarioLoadStepExecution");
 
         setRunnerTypeAsParameter();
 

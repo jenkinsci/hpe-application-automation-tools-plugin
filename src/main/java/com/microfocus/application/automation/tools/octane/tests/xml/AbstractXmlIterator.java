@@ -43,7 +43,7 @@ public abstract class AbstractXmlIterator<E> {
     public AbstractXmlIterator(InputStream is) throws XMLStreamException {
         this.is = is;
         reader = createXmlInputFactory().createXMLEventReader(is);
-        queue = new LinkedList<E>();
+        queue = new LinkedList<>();
     }
 
     public XMLEvent peek() throws XMLStreamException {

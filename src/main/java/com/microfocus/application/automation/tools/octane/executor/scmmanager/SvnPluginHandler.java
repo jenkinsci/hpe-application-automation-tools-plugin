@@ -28,7 +28,6 @@ import com.hp.octane.integrations.dto.scm.SCMType;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
 import hudson.model.Job;
-import hudson.scm.ChangeLogSet;
 import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
@@ -79,12 +78,9 @@ public class SvnPluginHandler implements ScmPluginHandler {
 		try {
 			svn.getDescriptor().checkRepositoryPath((Item) null, svn.getLocations()[0].getSVNURL(), credentials);
 			result.setStatus(HttpStatus.SC_OK);
-		} catch (SVNException e) {
-			result.setStatus(HttpStatus.SC_NOT_FOUND);
-			result.setBody(e.getMessage());
 		} catch (Exception e) {
 			result.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-			result.setBody(e.getMessage());
+			result.setBody("Failed to connect to SVN : " + e.getMessage());
 		}
 	}
 
@@ -101,5 +97,10 @@ public class SvnPluginHandler implements ScmPluginHandler {
 	@Override
 	public SCMType getScmType() {
 		return SCMType.SVN;
+	}
+
+	@Override
+	public String tryExtractUrlShortName(String url) {
+		return url;
 	}
 }

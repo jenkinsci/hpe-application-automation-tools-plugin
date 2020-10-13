@@ -22,7 +22,6 @@ package com.microfocus.application.automation.tools.octane.tests.gherkin;
 
 import com.microfocus.application.automation.tools.octane.actions.cucumber.CucumberTestResultsAction;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
-import com.microfocus.application.automation.tools.octane.tests.HPRunnerType;
 import com.microfocus.application.automation.tools.octane.tests.OctaneTestsExtension;
 import com.microfocus.application.automation.tools.octane.tests.TestProcessingException;
 import com.microfocus.application.automation.tools.octane.tests.TestResultContainer;

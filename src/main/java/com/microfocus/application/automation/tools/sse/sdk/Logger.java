@@ -30,4 +30,6 @@ package com.microfocus.application.automation.tools.sse.sdk;
 public interface Logger {
     
     public void log(String message);
+
+    public void error(String message);
 }

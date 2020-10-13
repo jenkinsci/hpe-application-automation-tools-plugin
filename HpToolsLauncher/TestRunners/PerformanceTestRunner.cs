@@ -146,7 +146,7 @@ namespace HpToolsLauncher.TestRunners
                 {
                     Directory.CreateDirectory(_resultsFolder);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     errorReason = string.Format(Resources.FailedToCreateTempDirError, _resultsFolder);
                     runDesc.TestState = TestState.Error;
@@ -979,7 +979,7 @@ namespace HpToolsLauncher.TestRunners
 
                 KillController();
             }
-            catch (Exception e)
+            catch (Exception)
             {
 
             }

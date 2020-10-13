@@ -32,8 +32,12 @@ import java.util.Set;
  */
 class MultiJobProjectProcessor extends AbstractProjectProcessor<MultiJobProject> {
 
-	MultiJobProjectProcessor(Job job, Set<Job> processedJobs) {
+	MultiJobProjectProcessor(Job job) {
 		super((MultiJobProject) job);
+	}
+
+	@Override
+	protected void buildStructureInternal(Set<Job> processedJobs) {
 		//  Internal phases
 		//
 		super.processBuilders(this.job.getBuilders(), this.job, processedJobs);

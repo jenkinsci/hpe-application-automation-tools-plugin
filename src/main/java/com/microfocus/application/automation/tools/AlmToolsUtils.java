@@ -47,28 +47,29 @@ public class AlmToolsUtils {
             TaskListener listener,
             FilePath file,
             String paramFileName) throws IOException, InterruptedException {
-        
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        PrintStream out = listener.getLogger();
-        
-        // Use script to run the cmdLine and get the console output
-        args.add(file);
-        args.add("-paramfile");
-        args.add(paramFileName);
-        
-        // Run the script on node
-        // Execution result should be 0
-        int returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).join();
-        
-        if (returnCode != 0) {
-            if (returnCode == -1) {
-                build.setResult(Result.FAILURE);
-            } else if (returnCode == -2) {
-                build.setResult(Result.UNSTABLE);
-            } else if (returnCode == -3) {
-                build.setResult(Result.ABORTED);
+
+            ArgumentListBuilder args = new ArgumentListBuilder();
+            PrintStream out = listener.getLogger();
+
+            // Use script to run the cmdLine and get the console output
+            args.add(file);
+            args.add("-paramfile");
+            args.add(paramFileName);
+
+            // Run the script on node
+            // Execution result should be 0
+            int returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).join();
+
+            if (returnCode != 0) {
+                if (returnCode == -1) {
+                    build.setResult(Result.FAILURE);
+                } else if (returnCode == -2) {
+                    build.setResult(Result.UNSTABLE);
+                } else if (returnCode == -3) {
+                    build.setResult(Result.ABORTED);
+                }
             }
-        }
+
     }
 
     public static void runHpToolsAborterOnBuildEnv(
@@ -92,7 +93,7 @@ public class AlmToolsUtils {
 
         String hpToolsAborter_exe = "HpToolsAborter.exe";
 
-		URL hpToolsAborterUrl = Jenkins.getInstance().pluginManager.uberClassLoader.getResource("HpToolsAborter.exe");
+		URL hpToolsAborterUrl = Jenkins.get().pluginManager.uberClassLoader.getResource("HpToolsAborter.exe");
         FilePath hpToolsAborterFile = runWorkspace.child(hpToolsAborter_exe);
         
         args.add(hpToolsAborterFile);

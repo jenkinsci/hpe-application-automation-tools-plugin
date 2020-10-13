@@ -30,4 +30,9 @@ public class SystemOutLogger implements Logger {
 
 	}
 
+	@Override
+	public void error(String message) {
+		log(message);
+	}
+
 }

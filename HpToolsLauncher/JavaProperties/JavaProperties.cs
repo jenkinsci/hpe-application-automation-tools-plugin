@@ -535,7 +535,7 @@ namespace HpToolsLauncher
             {
                 Store(out1, comments);
             }
-            catch (IOException e)
+            catch (IOException)
             {
             }
         }

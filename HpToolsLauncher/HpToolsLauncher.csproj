@@ -121,6 +121,7 @@
     <Compile Include="TestData.cs" />
     <Compile Include="TestInfo.cs" />
     <Compile Include="TestParameterInfo.cs" />
+    <Compile Include="TestRunners\IterationInfo.cs" />
     <Compile Include="TestRunners\ParallelTestRunner.cs" />
     <Compile Include="TestRunners\PerformanceTestRunner.cs" />
     <Compile Include="SummaryDataLogger.cs" />

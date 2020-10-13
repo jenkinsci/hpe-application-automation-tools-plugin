@@ -49,7 +49,7 @@ public class InherentParameterProcessor extends AbstractParametersProcessor {
 			result = ModelFactory.createParameterConfig(pd, CIParameterType.STRING);
 		} else if (pd instanceof ChoiceParameterDefinition) {
 			ChoiceParameterDefinition choicePd = (ChoiceParameterDefinition) pd;
-			result = ModelFactory.createParameterConfig(pd, CIParameterType.STRING, null, new ArrayList<Object>(choicePd.getChoices()));
+			result = ModelFactory.createParameterConfig(pd, CIParameterType.STRING, null, new ArrayList<>(choicePd.getChoices()));
 		} else if (pd instanceof PasswordParameterDefinition) {
 			PasswordParameterDefinition passPd = (PasswordParameterDefinition) pd;
 			result = ModelFactory.createParameterConfig(pd, CIParameterType.PASSWORD, passPd.getDefaultValue());

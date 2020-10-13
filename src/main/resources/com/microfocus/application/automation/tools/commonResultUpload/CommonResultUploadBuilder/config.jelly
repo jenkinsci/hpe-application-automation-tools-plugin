@@ -1,0 +1,81 @@
+<!--
+  ~
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2019 Micro Focus or one of its affiliates..
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+
+	<j:if test="${empty(descriptor.almServers)}">
+		<tr>
+      <td/>
+      <td colspan="2">
+        <div class="help" style="display:block;">
+          ${%AlmServersAreNotDefined}
+        </div>
+      </td>
+      <td/>
+    </tr>  
+	</j:if>
+     
+    <f:entry title="ALM server" field="almServerName">
+        <select name="almServerName">
+            <j:forEach var="almServer" items="${descriptor.almServers}">
+                <f:option selected="${almServer.almServerName==instance.almServerName}" value="${almServer.almServerName}">
+                    ${almServer.almServerName}
+                </f:option>
+            </j:forEach>
+        </select>
+    </f:entry>
+    <f:entry name="credentialsId" field="credentialsId" title="ALM Credentials">
+        <c:select/>
+    </f:entry>
+    <f:entry title="Domain" field="almDomain">
+        <f:textbox name="almDomain" value="${instance.almDomain}"/>
+    </f:entry>
+
+    <f:entry title="Project" field="almProject">
+        <f:textbox name="almProject" value="${instance.almProject}"/>
+    </f:entry>
+
+    <f:entry title="Client type" field="clientType">
+        <f:textbox name="clientType" value="${instance.clientType}"/>
+    </f:entry>
+    
+    <f:entry title="Test Folder" field="almTestFolder">
+        <f:textbox name="almTestFolder" value="${instance.almTestFolder}"/>
+    </f:entry>        
+    
+    <f:entry title="Test set Folder" field="almTestSetFolder">
+        <f:textbox name="almTestSetFolder" value="${instance.almTestSetFolder}"/>
+    </f:entry>        
+
+    <f:entry title="Testing result file" field="testingResultFile">
+        <f:textbox name="testingResultFile" value="${instance.testingResultFile}"/>
+    </f:entry>
+
+    <f:entry title="Field mapping" field="fieldMapping">
+         <f:textarea name="fieldMapping" value="${instance.fieldMapping}" default="${descriptor.defaultFieldMapping()}"/>
+    </f:entry>
+
+    <f:entry title="Run status mapping" field="runStatusMapping">
+        <f:textarea name="runStatusMapping" value="${instance.runStatusMapping}" default="${descriptor.defaultRunStatusMapping()}"/>
+    </f:entry>
+
+</j:jelly>

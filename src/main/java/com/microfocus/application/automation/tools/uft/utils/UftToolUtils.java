@@ -20,16 +20,25 @@
 
 package com.microfocus.application.automation.tools.uft.utils;
 
+import com.microfocus.application.automation.tools.results.projectparser.performance.XmlParserUtil;
 import com.microfocus.application.automation.tools.uft.model.RerunSettingsModel;
 import hudson.FilePath;
 import hudson.model.Node;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
-import java.io.File;
-import java.io.IOException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.*;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
@@ -37,6 +46,7 @@ import java.util.logging.Logger;
 public class UftToolUtils {
 
     private static final Logger logger = Logger.getLogger(UftToolUtils.class.getName());
+    private static final String ACTION_TAG = "Action";
 
     private UftToolUtils() {
     }
@@ -49,14 +59,22 @@ public class UftToolUtils {
      * @return
      */
     public static List<RerunSettingsModel> updateRerunSettings(String nodeName, String fsTestPath, List<RerunSettingsModel> rerunSettingsModels) {
-        List<String> testPaths = UftToolUtils.getTests(UftToolUtils.getBuildTests(nodeName, fsTestPath), rerunSettingsModels);
-        for (String testPath : testPaths) {
-            if (!UftToolUtils.listContainsTest(rerunSettingsModels, testPath)) {
-                rerunSettingsModels.add(new RerunSettingsModel(testPath, false, 0, ""));
+        List<String> buildTests = getBuildTests(nodeName, fsTestPath);
+
+        if(buildTests != null && !buildTests.isEmpty()) {
+            List<String> testPaths = getTests(buildTests, rerunSettingsModels);
+            for (String testPath : testPaths) {
+                if (!listContainsTest(rerunSettingsModels, testPath)) {
+                    rerunSettingsModels.add(new RerunSettingsModel(testPath, false, 0, ""));
+                }
             }
         }
 
         return rerunSettingsModels;
+    }
+
+    public static boolean isMtbxContent(String testContent) {
+        return testContent != null && testContent.toLowerCase().contains("<mtbx>");
     }
 
     /**
@@ -65,24 +83,68 @@ public class UftToolUtils {
      * @return an mtbx file with tests, a single test or a list of tests from test folder
      */
     public static List<String> getBuildTests(String nodeName, String fsTestPath) {
-        if (fsTestPath != null) {
-            List<String> buildTests;
-            Node node = Jenkins.getInstance().getNode(nodeName);
-            String directoryPath = fsTestPath.replace("\\", "/").trim();
+        if (fsTestPath == null)  return new ArrayList<>();
+        List<String> buildTests;
+        Node node = Jenkins.get().getNode(nodeName);
+        String rawTestString = fsTestPath.replace("\\", "/").trim();
 
-            if (Jenkins.getInstance().getNodes().isEmpty() || (node == null)) {//run tests on master
-                buildTests = listFilesForFolder(new File(directoryPath));
-            } else {//run tests on selected node
-                buildTests = getTestsFromNode(nodeName, directoryPath);
-            }
-            return buildTests;
+        if (Jenkins.get().getNodes().isEmpty() || (node == null)) {//run tests on master
+            buildTests = getTests(rawTestString);
+        } else {//run tests on selected node
+            buildTests = getTestsFromNode(nodeName, rawTestString);
         }
 
-        return null;
+        return buildTests;
     }
 
-    public static List<String> getTestsFromNode(String nodeName, String path) {
-        Node node = Jenkins.getInstance().getNode(nodeName);
+    private static List<String> getTests(String rawTestString) {
+        List<String> buildTests = new ArrayList<>();
+        if (isMtbxContent(rawTestString)) {//mtbx content in the test path
+            buildTests = extractTestPathsFromMtbxContent(rawTestString);
+        } else if (rawTestString != null) {
+            List<String> tests = Arrays.asList(rawTestString.split("\\r?\\n"));
+            File testFolder = new File(rawTestString);
+            if (tests.size() == 1 && (testFolder.isDirectory())) {//single test, folder or mtbx file
+                if(testFolder.exists()){
+                    buildTests = listFilesForFolder(new File(rawTestString));
+                }
+            } else {//list of tests/folders
+                for (String test : tests) {
+                    File testFile = new File(test.trim());
+                    if(testFile.exists()) {
+                        buildTests = getBuildTests(testFile);
+                    }
+                }
+            }
+        }
+        return buildTests;
+    }
+
+    public static List<String> extractTestPathsFromMtbxContent(String mtbxContent) {
+        List<String> tests = new ArrayList<>();
+
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(new ByteArrayInputStream(mtbxContent.getBytes()));
+            document.getDocumentElement().normalize();
+            Element root = document.getDocumentElement();
+            NodeList childNodes = root.getChildNodes();
+            for (int x = 0; x < childNodes.getLength(); x++) {
+                org.w3c.dom.Node data = childNodes.item(x);
+                if (data.getNodeName().equalsIgnoreCase("Test")) {
+                    tests.add(XmlParserUtil.getNodeAttr("path", data));
+                }
+            }
+        } catch (IOException | SAXException | ParserConfigurationException e) {
+            logger.warning("Failed to extractTestPathsFromMtbxContent : " + e.getMessage());
+        }
+
+        return tests;
+    }
+
+    private static List<String> getTestsFromNode(String nodeName, String path) {
+        Node node = Jenkins.get().getNode(nodeName);
         FilePath filePath = new FilePath(node.getChannel(), path);
         UftMasterToSlave uftMasterToSlave = new UftMasterToSlave();
         List<String> tests = new ArrayList<>();
@@ -97,6 +159,37 @@ public class UftToolUtils {
         return tests;
     }
 
+    public static void deleteReportFoldersFromNode(String nodeName, String testPath){
+         FilePath filePath = getFilePath(nodeName, testPath);
+            try {
+                List<FilePath> entries = filePath.list();
+                for (FilePath entry : entries) {
+                    if (entry.getName().contains("Report")) {
+                        entry.deleteContents();
+                        entry.delete();
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+
+    }
+
+    public static FilePath getFilePath(String nodeName, String testPath){
+        Node node = Jenkins.get().getNode(nodeName);
+        FilePath filePath;
+        if (Jenkins.get().getNodes().isEmpty() || (node == null)) {//tests are running on master
+            filePath = new FilePath(new File(testPath));
+        } else {//tests are running on node
+            filePath = new FilePath(node.getChannel(), testPath);
+        }
+
+        return filePath;
+    }
+
     /**
      * Retrieves the mtbx path, a test path or the list of tests inside a folder
      *
@@ -105,20 +198,35 @@ public class UftToolUtils {
      */
     public static List<String> listFilesForFolder(final File folder) {
         List<String> buildTests = new ArrayList<>();
+
         if (!folder.isDirectory() && folder.getName().contains("mtbx")) {
             buildTests.add(folder.getPath().trim());
             return buildTests;
         }
-        if (folder.isDirectory()) {
-            for (final File fileEntry : folder.listFiles()) {
-                if (fileEntry.isDirectory()) {
-                    if (fileEntry.getName().contains("Action")) {
-                        buildTests.add(folder.getPath().trim());//single test
-                        break;
-                    } else {
-                        buildTests.add(fileEntry.getPath().trim());
-                    }
+
+        if(folder.isDirectory() && !folder.getName().contains("mtbx") && folder.getName().contains(ACTION_TAG)){//single test
+                buildTests.add(folder.getPath().trim());
+        }
+
+        buildTests = getBuildTests(folder);
+
+        return buildTests;
+    }
+
+    /**
+     * Get the list of build tests
+     * @param folder
+     * @return either a single test or a set of tests
+     */
+    private static List<String> getBuildTests(final File folder){
+        List<String> buildTests = new ArrayList<>();
+        for (final File fileEntry : folder.listFiles()) {
+            if (fileEntry.isDirectory()) {
+                if(!fileEntry.getName().contains(ACTION_TAG)){
+                    buildTests.add(fileEntry.getPath().trim()); continue;
                 }
+                buildTests.add(folder.getPath().trim());//single test
+                break;
             }
         }
 
@@ -132,7 +240,7 @@ public class UftToolUtils {
      * @param test               the verified test
      * @return true if the list already contains the test, false otherwise
      */
-    public static Boolean listContainsTest(List<RerunSettingsModel> rerunSettingModels, String test) {
+    private static Boolean listContainsTest(List<RerunSettingsModel> rerunSettingModels, String test) {
         for (RerunSettingsModel settings : rerunSettingModels) {
             if (settings.getTest().trim().equals(test.trim())) {
                 return true;
@@ -149,7 +257,7 @@ public class UftToolUtils {
      * @param rerunSettingModels the list of current tests
      * @return the updated list of tests to rerun
      */
-    public static List<String> getTests(List<String> buildTests, List<RerunSettingsModel> rerunSettingModels) {
+    private static List<String> getTests(List<String> buildTests, List<RerunSettingsModel> rerunSettingModels) {
         List<String> rerunTests = new ArrayList<>();
         if (buildTests == null || rerunSettingModels == null) {
             return rerunTests;
@@ -194,7 +302,7 @@ public class UftToolUtils {
     }
 
     public static List<String> getNodesList() {
-        List<Node> nodeList = Jenkins.getInstance().getNodes();
+        List<Node> nodeList = Jenkins.get().getNodes();
         List<String> nodes = new ArrayList<>();
         nodes.add("master");
         for (Node node : nodeList) {

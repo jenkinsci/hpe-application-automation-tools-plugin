@@ -20,9 +20,13 @@
 
 package com.microfocus.application.automation.tools.octane.configuration;
 
+import hudson.model.Action;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /***
  * A utility class to help retrieving data from objects,
@@ -30,6 +34,7 @@ import java.lang.reflect.Field;
  */
 public class ReflectionUtils {
     private static final Logger logger = SDKBasedLoggerProvider.getLogger(ReflectionUtils.class);
+
     public static <T>  T getFieldValue(Object someObject, String fieldName) {
         for (Field field : someObject.getClass().getDeclaredFields()) {
             field.setAccessible(true);
@@ -46,5 +51,18 @@ public class ReflectionUtils {
             }
         }
         return null;
+    }
+
+    public static Object invokeMethodByName(Action action, String methodName, Object... args) throws InvocationTargetException, IllegalAccessException {
+        Method method = getMethodByName(action, methodName);
+
+        return method.invoke(action, args);
+    }
+
+    public static Method getMethodByName(Action action, String methodName) {
+        Method method = Arrays.stream(action.getClass().getDeclaredMethods())
+                .filter(m->m.getName().equals(methodName))
+                .findFirst().orElse(null);
+        return method;
     }
 }

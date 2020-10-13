@@ -124,7 +124,7 @@ public class GherkinTestResultsCollector {
         }
 
         private class ScenarioInfo {
-            private List<String> stepNames = new ArrayList<String>();
+            private List<String> stepNames = new ArrayList<>();
             private long duration = 0;
             private TestResultStatus status = TestResultStatus.PASSED;
             private boolean statusDetermined = false;
@@ -180,7 +180,7 @@ public class GherkinTestResultsCollector {
             }
 
             private List<Element> getStepElements(NodeList backgroundSteps, Element scenarioElement) {
-                List<Element> stepElements = new ArrayList<Element>();
+                List<Element> stepElements = new ArrayList<>();
                 if(backgroundSteps != null) {
                     for (int bs = 0; bs < backgroundSteps.getLength(); bs++) {
                         Element stepElement = (Element) backgroundSteps.item(bs);

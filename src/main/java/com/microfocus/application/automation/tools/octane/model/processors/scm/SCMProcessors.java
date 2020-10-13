@@ -21,7 +21,6 @@
 package com.microfocus.application.automation.tools.octane.model.processors.scm;
 
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
-import com.microfocus.application.automation.tools.settings.OctaneServerSettingsBuilder;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -34,7 +33,7 @@ public enum SCMProcessors {
 	SVN("hudson.scm.SubversionSCM", SvnSCMProcessor.class),
 	STARTEAM("hudson.plugins.starteam.StarTeamSCM", StarTeamSCMProcessor.class);
 
-	private static Logger logger = SDKBasedLoggerProvider.getLogger(OctaneServerSettingsBuilder.class);
+	private static Logger logger = SDKBasedLoggerProvider.getLogger(SCMProcessors.class);
 	private String targetSCMPluginClassName;
 	private Class<? extends SCMProcessor> processorClass;
 

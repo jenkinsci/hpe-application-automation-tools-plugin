@@ -29,6 +29,7 @@ using HpToolsLauncher.Properties;
 using HpToolsLauncher.TestRunners;
 using HpToolsLauncher.RTS;
 
+
 namespace HpToolsLauncher
 {
     public class FileSystemTestsRunner : RunnerBase, IDisposable
@@ -281,8 +282,22 @@ namespace HpToolsLauncher
             try
             {
                 var start = DateTime.Now;
+
+                Dictionary<string, int> indexList = new Dictionary<string, int>();
+                foreach(var test in _tests)
+                {
+                    indexList[test.TestPath] = 0;
+                }
+
+                Dictionary<string, int> rerunList = createDictionary(_tests);
+
                 foreach (var test in _tests)
                 {
+                    if (indexList[test.TestPath] == 0)
+                    {
+                        indexList[test.TestPath] = 1;
+                    }
+
                     if (RunCancelled()) break;
 
                     var testStart = DateTime.Now;
@@ -341,7 +356,44 @@ namespace HpToolsLauncher
 
                     UpdateCounters(runResult.TestState);
                     var testTotalTime = (DateTime.Now - testStart).TotalSeconds;
+
+                    //create test folders
+                    if (rerunList[test.TestPath] > 0)
+                    {
+                        if (!Directory.Exists(Path.Combine(test.TestPath, "Report1")))
+                        {
+                            rerunList[test.TestPath]--;
+                        }
+                        else
+                        {
+                            indexList[test.TestPath]++;
+                            rerunList[test.TestPath]--;
+                        }
+                    }
+
+                    //update report folder
+                    String uftReportDir = Path.Combine(test.TestPath, "Report");
+                    String uftReportDirNew = Path.Combine(test.TestPath, "Report" + indexList[test.TestPath]);
+
+                    try
+                    {
+                        if (Directory.Exists(uftReportDir))
+                        {
+                            if (Directory.Exists(uftReportDirNew))
+                            {
+                                Helper.DeleteDirectory(uftReportDirNew);
+                            }
+
+                            Directory.Move(uftReportDir, uftReportDirNew);
+                        }
+                    }
+                    catch
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                        Directory.Move(uftReportDir, uftReportDirNew);
+                    } 
                 }
+
                 totalTime = (DateTime.Now - start).TotalSeconds;
             }
             finally
@@ -358,6 +410,25 @@ namespace HpToolsLauncher
             }
 
             return activeRunDesc;
+        }
+
+             
+        private Dictionary<string, int> createDictionary(List<TestInfo> validTests)
+        {
+            var rerunList = new Dictionary<string, int>();
+            foreach (var item in validTests)
+            {
+                if (!rerunList.ContainsKey(item.TestPath))
+                {
+                    rerunList.Add(item.TestPath, 1);
+                }
+                else
+                {
+                    rerunList[item.TestPath]++;
+                }
+            }
+
+            return rerunList;
         }
 
         /// <summary>

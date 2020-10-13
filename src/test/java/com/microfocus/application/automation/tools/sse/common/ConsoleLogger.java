@@ -29,5 +29,10 @@ public class ConsoleLogger implements Logger {
         
         System.out.println(message);
     }
-    
+
+    @Override
+    public void error(String message) {
+        log(message);
+    }
+
 }

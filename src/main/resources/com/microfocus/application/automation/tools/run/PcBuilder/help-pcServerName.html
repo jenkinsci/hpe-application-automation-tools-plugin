@@ -19,12 +19,13 @@
   -->
 
 <div>
-Hostname or IP address (if port is not default, specify it).<br/>
-For example:
-<ul>
-	<li>mypcserverhostname</li>
-    <li>mypcserverhostname.mycompany.com:81</li>
-    <li>12.10.35.85:444</li>
-</ul>
-Important: Specifying Performance Center URL will not work.
+    Hostname or IP address
+    The LoadRunner Enterprise Hostname or IP address. If the port of the LRE server is different than the default one, mention it by adding a collon (:) and then the port number<br/>
+    <b>Example</b>: mypcserver.mycompany.net or 182.138.255.1 or mypcserver.mycompany.net:81<br/>
+    <br/>
+    If the LRE server requires to be accessed via a tenant, you can specify it by adding the tenant details to the LRE Server field.<br/>
+    <b>Example</b>: mypcserver.mycompany.net/?tenant=fa128c06-5436-413d-9cfa-9f04bb738df3 or 182.138.255.1/?tenant=fa128c06-5436-413d-9cfa-9f04bb738df3 or mypcserver.mycompany.net:81/?tenant=fa128c06-5436-413d-9cfa-9f04bb738df3<br/>
+    <br/>
+    <b>Important</b>: Do not use the full URL of LoadRunner Enterprise server. <br/>
+    For example, using https://mypcserver/LoadTest will fail. Instead, just specify 'mypcserver' value in 'LRE Server' field and switch on the 'Use HTTPS Protocol' if secured protocol is required.
 </div>

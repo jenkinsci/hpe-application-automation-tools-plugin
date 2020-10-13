@@ -34,11 +34,9 @@ public class ObjectStreamIterator<E> implements Iterator<E> {
     private static Logger logger = SDKBasedLoggerProvider.getLogger(ObjectStreamIterator.class);
 
     private ObjectInputStream ois;
-    private FilePath filePath;
     private E next;
 
     public ObjectStreamIterator(FilePath filePath) throws IOException, InterruptedException {
-        this.filePath = filePath;
         this.ois = new ObjectInputStream(new BufferedInputStream(filePath.read()));
     }
 

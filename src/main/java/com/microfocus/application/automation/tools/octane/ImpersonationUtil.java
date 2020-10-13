@@ -28,6 +28,12 @@ import com.microfocus.application.automation.tools.octane.configuration.SDKBased
 import hudson.model.User;
 import hudson.security.ACL;
 import hudson.security.ACLContext;
+import jenkins.model.Jenkins;
+import org.acegisecurity.Authentication;
+import org.acegisecurity.GrantedAuthority;
+import org.acegisecurity.providers.UsernamePasswordAuthenticationToken;
+import org.acegisecurity.userdetails.UsernameNotFoundException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.Logger;
 
@@ -40,31 +46,48 @@ import java.util.Collections;
 public class ImpersonationUtil {
     private static final Logger logger = SDKBasedLoggerProvider.getLogger(ImpersonationUtil.class);
 
-    public static ACLContext startImpersonation(String instanceId) {
+    public static ACLContext startImpersonation(String instanceId, Long workspaceId) {
         OctaneServerSettingsModel settings = ConfigurationService.getSettings(instanceId);
         if (settings == null) {
             throw new IllegalStateException("failed to retrieve configuration settings by instance ID " + instanceId);
         }
-        String user = settings.getImpersonatedUser();
+
+        String userName;
+        if (workspaceId != null && settings.getWorkspace2ImpersonatedUserMap().containsKey(workspaceId)) {
+            userName = settings.getWorkspace2ImpersonatedUserMap().get(workspaceId);
+            logger.info(String.format("Using workspace jenkins user '%s' for workspace '%s'", userName, workspaceId));
+        } else {
+            userName = settings.getImpersonatedUser();
+        }
+
         User jenkinsUser = null;
-        if (user != null && !user.isEmpty()) {
-            jenkinsUser = User.get(user, false, Collections.emptyMap());
+        if (!StringUtils.isEmpty(userName)) {
+            jenkinsUser = User.get(userName, false, Collections.emptyMap());
             if (jenkinsUser == null) {
                 throw new PermissionException(HttpStatus.SC_UNAUTHORIZED);
             }
-        } else {
-            logger.debug("No user set to impersonating to. Operations will be done using Anonymous user. Instance ID " + instanceId);
+        }
+        return startImpersonation(jenkinsUser);
+    }
+
+    public static ACLContext startImpersonation(User jenkinsUser) {
+
+        ACLContext impersonatedContext;
+        try {
+            impersonatedContext = ACL.as(jenkinsUser);
+        } catch (UsernameNotFoundException e) {
+            logger.debug("Failed to get impersonatedContext from user. Trial to get impersonatedContext by manual auth creation.");
+            //defect#921010 : User impersonation is failing as customer is using custom UserDetailsService that does not have implementation of loadUserByUsername
+            Authentication auth = (jenkinsUser == null ? Jenkins.ANONYMOUS : new UsernamePasswordAuthenticationToken(jenkinsUser.getId(), "", new GrantedAuthority[0]));
+            impersonatedContext = ACL.as(auth);
         }
 
-        ACLContext impersonatedContext = ACL.as(jenkinsUser);
         return impersonatedContext;
     }
 
-    public static Logger getLogger() {
-        return logger;
-    }
-
     public static void stopImpersonation(ACLContext impersonatedContext) {
-        impersonatedContext.close();
+        if (impersonatedContext != null) {
+            impersonatedContext.close();
+        }
     }
 }

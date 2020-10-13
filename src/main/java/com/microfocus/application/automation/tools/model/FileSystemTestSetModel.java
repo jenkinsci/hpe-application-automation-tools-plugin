@@ -39,7 +39,7 @@ public class FileSystemTestSetModel extends AbstractDescribableImpl<FileSystemTe
 
     /**
      * Construct a new FileSystemTestSetModel.
-     * @param fileSystemTestModels the list of tests and environments
+     * @param fileSystemTestSet the list of tests and environments
      */
     @DataBoundConstructor
     public FileSystemTestSetModel(List<FileSystemTestModel> fileSystemTestSet) {

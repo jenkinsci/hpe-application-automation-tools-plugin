@@ -24,14 +24,12 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
 
     private static Logger logger = SDKBasedLoggerProvider.getLogger(MFToolsDetectionExtension.class);
     private static final String STORMRUNNER_LOAD_TEST_RUNNER_CLASS = "StormTestRunner";
-    private static final String STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS = "RunFromSrfBuilder";
     private static final String PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "PcBuilder";
     private static final String RUN_FROM_FILE_BUILDER = "RunFromFileBuilder";
     private static final String RUN_FROM_ALM_BUILDER = "RunFromAlmBuilder";
 
     private static final String UFT = "UFT";
     private static final String STORMRUNNER_LOAD = "StormRunner Load";
-    private static final String STORMRUNNER_FUNCTIONAL = "StormRunner Functional";
     private static final String LOAD_RUNNER = "LoadRunner";
     private static final String PERFORMANCE_CENTER_RUNNER = "Performance Center";
     private static final String PERFORMANCE_TEST_TYPE = "Performance";
@@ -45,7 +43,6 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
 
     static {
         builder2RunnerType.put(STORMRUNNER_LOAD_TEST_RUNNER_CLASS, HPRunnerType.StormRunnerLoad);
-        builder2RunnerType.put(STORMRUNNER_FUNCTIONAL_TEST_RUNNER_CLASS, HPRunnerType.StormRunnerFunctional);
         builder2RunnerType.put(RUN_FROM_FILE_BUILDER, HPRunnerType.UFT);
         builder2RunnerType.put(RUN_FROM_ALM_BUILDER, HPRunnerType.UFT);
         builder2RunnerType.put(PERFORMANCE_CENTER_TEST_RUNNER_CLASS, HPRunnerType.PerformanceCenter);
@@ -53,7 +50,6 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
         runnerType2ResultFields.put(HPRunnerType.PerformanceCenter, new ResultFields(null, PERFORMANCE_CENTER_RUNNER, null, PERFORMANCE_TEST_TYPE));
         runnerType2ResultFields.put(HPRunnerType.UFT, new ResultFields(UFT, UFT, null));
         runnerType2ResultFields.put(HPRunnerType.StormRunnerLoad, new ResultFields(null, STORMRUNNER_LOAD, null));
-        runnerType2ResultFields.put(HPRunnerType.StormRunnerFunctional, new ResultFields(null, STORMRUNNER_FUNCTIONAL, null));
         runnerType2ResultFields.put(HPRunnerType.LoadRunner, new ResultFields(null, LOAD_RUNNER, null));
     }
 

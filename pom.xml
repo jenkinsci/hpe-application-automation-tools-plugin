@@ -27,11 +27,11 @@
 	</parent>
 
 	<artifactId>hp-application-automation-tools-plugin</artifactId>
-	<version>5.9.4-beta-SNAPSHOT</version>
+	<version>6.3.5-beta-SNAPSHOT</version>
 	<packaging>hpi</packaging>
 	<name>Micro Focus Application Automation Tools</name>
 	<description>The plugin integrates Jenkins with the following Micro Focus products - Service Virtualization,
-		LoadRunner, Performance Center, Unified Functional Testing, QuickTest Professional, Service Test, Unified Functional Testing Mobile,
+		LoadRunner, LoadRunner Enterprise, Unified Functional Testing, QuickTest Professional, Service Test, Unified Functional Testing Mobile,
 		Application Lifecycle Management and Application Lifecycle Management Octane.
 	</description>
 	<url>https://github.com/jenkinsci/hpe-application-automation-tools-plugin/blob/latest/doc/README.md</url>
@@ -48,11 +48,13 @@
 		<concurrency>1</concurrency>
 		<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
 		<msbuild.configuration>Release</msbuild.configuration>
-		<jenkins.version>2.150.3</jenkins.version>
+		<jenkins.version>2.176.1</jenkins.version>
 		<maven.exec.skip>false</maven.exec.skip>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<java.level>8</java.level>
+		<!--project.build.sourceEncoding>Unicode</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>Unicode</project.reporting.outputEncoding-->
 	</properties>
 
 	<distributionManagement>
@@ -88,9 +90,9 @@
 
 	<developers>
 		<developer>
-			<id>NarcisaMGalan</id>
-			<name>Maria Narcisa Galan</name>
-			<email>marianarcisa.galan@microfocus.com</email>
+			<id>PTofan</id>
+			<name>Tofan Paul-Adrian</name>
+			<email>paul-adrian.tofan@microfocus.com</email>
 			<roles>
 				<role>Global Owner</role>
 			</roles>
@@ -136,11 +138,11 @@
 			</roles>
 		</developer>
 		<developer>
-			<id>bamh</id>
+			<id>danieldanan</id>
 			<name>Daniel Danan</name>
 			<email>daniel.danan@microfocus.com</email>
 			<roles>
-				<role>Performance Center</role>
+				<role>LoadRunner Enterprise</role>
 			</roles>
 		</developer>
 		<developer>
@@ -221,7 +223,19 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<configuration>
-					<additionalparam>-Xdoclint:none</additionalparam>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>3.1.11</version>
+				<executions>
+					<execution>
+						<phase>none</phase>
+					</execution>
+				</executions>
+				<configuration>
 					<skip>true</skip>
 				</configuration>
 			</plugin>
@@ -259,6 +273,7 @@
 							<executable>java</executable>
 							<arguments>
 								<argument>-jar</argument>
+								<!--suppress UnresolvedMavenProperty -->
 								<argument>${env.JENKINS_HOME}war\WEB-INF\jenkins-cli.jar</argument>
 								<argument>-s</argument>
 								<argument>http://localhost:8080</argument>
@@ -269,6 +284,7 @@
 								<argument>"${project.artifactId}"</argument>
 								<!-- <argument>-deploy</argument> -->
 								<argument>-restart</argument>
+								<!--suppress UnresolvedMavenProperty -->
 								<argument>password-file ${id_rsa_file}</argument>
 							</arguments>
 						</configuration>
@@ -331,7 +347,7 @@
 		</repository>
 		<repository>
 			<id>central</id>
-			<url>http://repo1.maven.org/maven2</url>
+			<url>https://repo1.maven.org/maven2</url>
 		</repository>
 		<repository>
 			<id>bintray-adm-maven</id>
@@ -359,28 +375,63 @@
 			<version>1.1.0</version>
 		</dependency>
 
-		<!--WORKFLOW (PIPELINE-AS-A-CODE) integration-->
+		<!--workflow-aggregator-plugin : https://github.com/jenkinsci/workflow-aggregator-plugin
+		cloudbees doesn't support 2.6 therefore it is added manually -->
 		<dependency>
-			<artifactId>workflow-aggregator</artifactId>
 			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<version>2.5</version>
+			<artifactId>workflow-step-api</artifactId>
+			<version>2.16</version><!--jun 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<artifactId>workflow-api</artifactId>
+			<version>2.31</version><!--oct 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<artifactId>workflow-support</artifactId>
+			<version>2.22</version><!--nov 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<artifactId>workflow-cps</artifactId>
+			<version>2.61.1</version><!--jan 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<artifactId>workflow-job</artifactId>
+			<version>2.27</version><!--nov 2018 -->
+		</dependency>
+		<!--dependency>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<artifactId>workflow-basic-steps</artifactId>
+			<version>2.11</version>
+		</dependency-->
+		<dependency>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<artifactId>workflow-multibranch</artifactId>
+			<version>2.20</version><!--jul 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins.workflow</groupId>
+			<artifactId>workflow-scm-step</artifactId>
+			<version>2.6</version><!--jun 2017 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>pipeline-build-step</artifactId>
+			<version>2.7</version><!--jan 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>pipeline-input-step</artifactId>
+			<version>2.8</version><!--jul 2017 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkinsci.plugins</groupId>
+			<artifactId>pipeline-model-definition</artifactId>
+			<version>1.3.4.1</version><!--jan 2019 -->
 			<exclusions>
-				<exclusion>
-					<artifactId>workflow-api</artifactId>
-					<groupId>org.jenkins-ci.plugins.workflow</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>workflow-step-api</artifactId>
-					<groupId>org.jenkins-ci.plugins.workflow</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>workflow-scm-step</artifactId>
-					<groupId>org.jenkins-ci.plugins.workflow</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>workflow-support</artifactId>
-					<groupId>org.jenkins-ci.plugins.workflow</groupId>
-				</exclusion>
 				<exclusion>
 					<artifactId>*</artifactId>
 					<groupId>com.fasterxml.jackson.core</groupId>
@@ -389,47 +440,27 @@
 					<artifactId>*</artifactId>
 					<groupId>com.fasterxml.jackson.datatype</groupId>
 				</exclusion>
-				<exclusion>
-					<groupId>org.jenkins-ci.plugins.workflow</groupId>
-					<artifactId>workflow-multibranch</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.jenkins-ci.plugins.workflow</groupId>
-					<artifactId>workflow-job</artifactId>
-				</exclusion>
-
-
 			</exclusions>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
-			<artifactId>workflow-cps</artifactId>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<version>2.53</version>
-			<exclusions>
-				<exclusion>
-					<!--  workflow-support 2.18 requires 2.2.6, while org.jenkins-ci.plugins.workflow 2.50 requires 2.0.8-->
-					<groupId>org.jenkins-ci.plugins</groupId>
-					<artifactId>scm-api</artifactId>
-				</exclusion>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>structs</artifactId>
+			<version>1.17</version><!--oct 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>scm-api</artifactId>
+			<version>2.2.8</version><!--sep 2018 -->
+		</dependency>
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>script-security</artifactId>
+			<version>1.56</version><!--mar 2019 -->
+			<scope>test</scope>
+		</dependency>
+		<!--workflow-aggregator-plugin-->
 
-			</exclusions>
-		</dependency>
-		<!-- sonar 2.7.1 requires 2.18 required, while org.jenkins-ci.plugins.workflow 2.50 requires 2.17-->
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-support</artifactId>
-			<version>2.18</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-multibranch</artifactId>
-			<version>2.20</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jenkins-ci.plugins.workflow</groupId>
-			<artifactId>workflow-job</artifactId>
-			<version>2.21</version>
-		</dependency>
 
 		<dependency>
 			<groupId>org.jenkins-ci</groupId>
@@ -437,19 +468,14 @@
 			<version>1.4</version>
 		</dependency>
 		<dependency>
-			<artifactId>ssh-credentials</artifactId>
-			<groupId>org.jenkins-ci.plugins</groupId>
-			<version>1.13</version>
-		</dependency>
-		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>credentials</artifactId>
-			<version>2.1.11</version>
+			<version>2.1.19</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microfocus.sv</groupId>
 			<artifactId>SVConfigurator</artifactId>
-			<version>5.0</version>
+			<version>5.3</version>
 			<exclusions>
 				<exclusion>
 					<groupId>commons-io</groupId>
@@ -464,7 +490,7 @@
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>junit</artifactId>
-			<version>1.19</version>
+			<version>1.26.1</version>
 		</dependency>
 
 
@@ -473,37 +499,37 @@
 		<dependency>
 			<artifactId>integrations-sdk</artifactId>
 			<groupId>com.hpe.adm.octane.ciplugins</groupId>
-			<version>2.0.71.28</version>
+			<version>2.6.4.40</version>
 		</dependency>
 
 		<!--BUILDER providers integration-->
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>parameterized-trigger</artifactId>
-			<version>2.25</version>
+			<version>2.35.2</version>
 			<optional>true</optional>
+			<exclusions>
+				<exclusion>
+						<groupId>org.jenkins-ci.plugins</groupId>
+						<artifactId>conditional-buildstep</artifactId>
+					</exclusion>
+				</exclusions>
 		</dependency>
 		<dependency>
 			<artifactId>maven-plugin</artifactId>
 			<groupId>org.jenkins-ci.main</groupId>
-			<version>2.17</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>mailer</artifactId>
-					<groupId>org.jenkins-ci.plugins</groupId>
-				</exclusion>
-			</exclusions>
+			<version>3.2</version>
 		</dependency>
 		<dependency>
 			<artifactId>matrix-project</artifactId>
 			<groupId>org.jenkins-ci.plugins</groupId>
-			<version>1.7.1</version>
+			<version>1.13</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<artifactId>jenkins-multijob-plugin</artifactId>
 			<groupId>org.jenkins-ci.plugins</groupId>
-			<version>1.15</version>
+			<version>1.30</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -511,13 +537,13 @@
 		<dependency>
 			<artifactId>git</artifactId>
 			<groupId>org.jenkins-ci.plugins</groupId>
-			<version>3.1.0</version>
+			<version>3.9.3</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>subversion</artifactId>
-			<version>2.7.1</version>
+			<version>2.10.6</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -525,7 +551,7 @@
 		<dependency>
 			<artifactId>extended-choice-parameter</artifactId>
 			<groupId>org.jenkins-ci.plugins</groupId>
-			<version>0.64</version>
+			<version>0.76</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
@@ -545,21 +571,20 @@
 		<dependency>
 			<artifactId>token-macro</artifactId>
 			<groupId>org.jenkins-ci.plugins</groupId>
-			<version>1.12.1</version>
+			<version>2.6</version>
 			<optional>true</optional>
 		</dependency>
-
 		<dependency>
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>jquery</artifactId>
 			<version>1.11.2-0</version>
 			<optional>true</optional>
 		</dependency>
-
 		<dependency>
-			<groupId>com.squareup</groupId>
-			<artifactId>tape</artifactId>
-			<version>1.2.3</version>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>mailer</artifactId>
+			<version>1.22</version>
+			<optional>true</optional>
 		</dependency>
 
 		<!--sonar plugin for compile phase only-->
@@ -571,26 +596,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.glassfish.jersey.core</groupId>
-			<artifactId>jersey-common</artifactId>
-			<version>2.9</version>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish.jersey.media</groupId>
-			<artifactId>jersey-media-sse</artifactId>
-			<version>2.9</version>
-			<exclusions>
-				<exclusion>
-					<groupId>javax.validation</groupId>
-					<artifactId>validation-api</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
 			<groupId>com.microfocus.adm.performancecenter</groupId>
 			<artifactId>plugins-common</artifactId>
-			<version>1.0.2</version>
+			<version>1.1.4</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.thoughtworks.xstream</groupId>
@@ -604,7 +612,34 @@
 					<groupId>org.apache.httpcomponents</groupId>
 					<artifactId>httpclient</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.springframework</groupId>
+					<artifactId>spring-context</artifactId>
+				</exclusion>
 			</exclusions>
+		</dependency>
+
+		<!--dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>jackson2-api</artifactId>
+			<version>2.11.2</version>
+		</dependency-->
+		<dependency>
+			<groupId>org.jenkins-ci.plugins</groupId>
+			<artifactId>github-branch-source</artifactId>
+			<version>2.3.0</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
+			<version>2.11.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.11.1</version>
 		</dependency>
 
 		<!--Test-->
@@ -617,9 +652,28 @@
 		<dependency>
 			<groupId>org.jenkins-ci.main</groupId>
 			<artifactId>jenkins-test-harness-tools</artifactId>
-			<version>2.0</version>
+			<version>2.2</version>
 			<scope>test</scope>
 		</dependency>
+            <!-- https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api -->
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
+		</dependency>
 
+            <!-- https://mvnrepository.com/artifact/javax.activation/activation -->
+		<dependency>
+			<groupId>javax.activation</groupId>
+			<artifactId>activation</artifactId>
+			<version>1.1</version>
+		</dependency>
+
+            <!-- https://mvnrepository.com/artifact/org.glassfish.jaxb/jaxb-runtime -->
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+			<version>3.0.0-M3</version>
+		</dependency>
 	</dependencies>
 </project>

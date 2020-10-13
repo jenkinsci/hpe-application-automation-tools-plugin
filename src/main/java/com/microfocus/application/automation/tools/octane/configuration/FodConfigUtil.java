@@ -30,6 +30,7 @@ import jenkins.model.Jenkins;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.Logger;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import java.io.IOException;
 import java.util.Map;
@@ -68,12 +69,18 @@ public class FodConfigUtil {
     }
 
     private static Descriptor getFODDescriptor() {
-        return Jenkins.getInstance().getDescriptorByName(FOD_DESCRIPTOR);
+        return Jenkins.getInstanceOrNull().getDescriptorByName(FOD_DESCRIPTOR);
 
     }
 
     public static Long getFODReleaseFromBuild(AbstractBuild build) {
         return build != null ? getRelease(build.getProject()) : null;
+    }
+
+    public static Long getFODReleaseFromRun(WorkflowRun run) {
+        // to understand what does it mean for pipeline run
+        logger.debug("implement get release for " + run );
+        return null;
     }
 
     private static Long getRelease(AbstractProject project) {

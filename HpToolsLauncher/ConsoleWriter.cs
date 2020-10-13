@@ -95,7 +95,7 @@ namespace HpToolsLauncher
         {
             message = FilterXmlProblematicChars(message);
             //File.AppendAllText("c:\\stam11.stam", message);
-            Console.Out.WriteLine(message);
+            Console.WriteLine(message);
             if (activeTestRun != null)
                 activeTestRun.ConsoleOut += message + "\n";
         }

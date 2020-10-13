@@ -61,8 +61,8 @@ public class AuthenticationTool {
                     break;
                 }
             } catch (Exception e) {
-                logger.log(String.format(
-                        "Failed login to ALM Server URL: %s. Exception: %s",
+                logger.error(String.format(
+                        "Failed login to ALM Server URL: (%s). Exception: %s",
                         url.endsWith("/") ? url : String.format("%s/", url),
                         e.getMessage()));
             }

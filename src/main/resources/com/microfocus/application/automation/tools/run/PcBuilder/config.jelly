@@ -140,7 +140,7 @@
                 var popup = window.open(scheme + "://" + pcServer + "/loadtest/");
                 popup.opener = null;
             }else{
-                alert("Performance Center Server name is missing.");
+                alert("LoadRunner Enterprise Server name is missing.");
             }
             return false;
 		}
@@ -165,13 +165,13 @@
 	<f:entry title="Description" field="description">
 		<f:textbox name="pc.description" value="${instance.pcModel.description}" />
 	</f:entry>
-	<f:entry title="PC Server" field="pcServerName">
+	<f:entry title="LRE Server" field="pcServerName">
 		<f:textbox name="pc.pcServerName" value="${instance.pcModel.pcServerName}" />
 	</f:entry>
 	<f:entry title="&#160;">
         <f:checkbox title="Use HTTPS Protocol" field="HTTPSProtocol" name="pc.HTTPSProtocol" checked="${instance.pcModel.HTTPSProtocol}" />
     </f:entry>
-    <f:entry name="pc.credentialsId" field="credentialsId" title="PC Credentials">
+    <f:entry name="pc.credentialsId" field="credentialsId" title="LRE Credentials">
         <c:select expressionAllowed="true" />
     </f:entry>
 	<f:entry title="Domain" field="almDomain">

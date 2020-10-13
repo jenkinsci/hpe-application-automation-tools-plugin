@@ -93,11 +93,11 @@ public class PcClient {
                     logger.println(String.format("%s - %s", dateFormatter.getDate(), Messages.UsingPCCredentialsBuildParameters()));
                 else
                     logger.println(String.format("%s - %s", dateFormatter.getDate(), Messages.UsingPCCredentialsConfiguration()));
-                logger.println(String.format("%s - %s\n[PCServer='%s://%s/loadtest', User='%s']", dateFormatter.getDate(), Messages.TryingToLogin(), model.isHTTPSProtocol(), model.getPcServerName(true), usernamePCPasswordCredentials.getUsername()));
+                logger.println(String.format("%s - %s\n[PCServer='%s://%s/loadtest/%s', User='%s']", dateFormatter.getDate(), Messages.TryingToLogin(), model.isHTTPSProtocol(), restProxy.GetPcServer(), restProxy.GetTenant(), usernamePCPasswordCredentials.getUsername()));
                 loggedIn = restProxy.authenticate(usernamePCPasswordCredentials.getUsername(), usernamePCPasswordCredentials.getPassword().getPlainText());
             }
             else {
-                logger.println(String.format("%s - %s\n[PCServer='%s://%s/loadtest', User='%s']", dateFormatter.getDate(), Messages.TryingToLogin(), model.isHTTPSProtocol(), model.getPcServerName(true), PcBuilder.usernamePCPasswordCredentials.getUsername()));
+                logger.println(String.format("%s - %s\n[PCServer='%s://%s/loadtest/%s', User='%s']", dateFormatter.getDate(), Messages.TryingToLogin(), model.isHTTPSProtocol(), restProxy.GetPcServer(), restProxy.GetTenant(), PcBuilder.usernamePCPasswordCredentials.getUsername()));
                 loggedIn = restProxy.authenticate(PcBuilder.usernamePCPasswordCredentials.getUsername(), PcBuilder.usernamePCPasswordCredentials.getPassword().getPlainText());
             }
         } catch (PcException e) {
@@ -377,7 +377,7 @@ public class PcClient {
             try {
 
                 if (threeStrikes < 3) {
-                    logger.println(String.format("%s - Cannot get response from PC about the state of the Run (ID=%s) %s time(s) consecutively",
+                    logger.println(String.format("%s - Cannot get response from LRE about the state of the Run (ID=%s) %s time(s) consecutively",
                             dateFormatter.getDate(),
                             runId,
                             (3 - threeStrikes)));
@@ -402,7 +402,7 @@ public class PcClient {
                 }
 
                 // In case we are in state before collate or before analyze, we will wait 1 minute for the state to change otherwise we exit
-                // because the user probably stopped the run from PC or timeslot has reached the end.
+                // because the user probably stopped the run from LRE or timeslot has reached the end.
                 if (Arrays.asList(states).contains(currentState)) {
                     counter++;
                     Thread.sleep(1000);
@@ -420,7 +420,11 @@ public class PcClient {
                 }
                 threeStrikes = 3;
             }
-            catch(InterruptedException|PcException e)
+            catch(InterruptedException e)
+            {
+                throw e;
+            }
+            catch(PcException e)
             {
                 threeStrikes--;
             }

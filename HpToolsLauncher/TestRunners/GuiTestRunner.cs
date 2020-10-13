@@ -30,6 +30,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Win32;
+using HpToolsLauncher.TestRunners;
 
 namespace HpToolsLauncher
 {
@@ -270,7 +271,9 @@ namespace HpToolsLauncher
                                                  ? tagUnifiedLicenseType.qtUnifiedFunctionalTesting
                                                  : tagUnifiedLicenseType.qtNonUnified);
 
-            if (!HandleInputParameters(testPath, ref errorReason, testinf.GetParameterDictionaryForQTP(), testinf.DataTablePath))
+            Dictionary<string, object> paramList = testinf.GetParameterDictionaryForQTP();
+
+            if (!HandleInputParameters(testPath, ref errorReason, testinf.GetParameterDictionaryForQTP(), testinf))
             {
                 runDesc.TestState = TestState.Error;
                 runDesc.ErrorDesc = errorReason;
@@ -279,7 +282,6 @@ namespace HpToolsLauncher
 
             GuiTestRunResult guiTestRunResult = ExecuteQTPRun(runDesc);
             runDesc.ReportLocation = guiTestRunResult.ReportPath;
-
             if (!guiTestRunResult.IsSuccess)
             {
                 runDesc.TestState = TestState.Error;
@@ -587,7 +589,7 @@ namespace HpToolsLauncher
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 errorReason = Resources.QtpNotLaunchedError;
                 return false;
@@ -628,7 +630,7 @@ namespace HpToolsLauncher
             return legal;
         }
 
-        private bool HandleInputParameters(string fileName, ref string errorReason, Dictionary<string, object> inputParams, string dataTablePath)
+        private bool HandleInputParameters(string fileName, ref string errorReason, Dictionary<string, object> inputParams, TestInfo testInfo)
         {
             try
             {
@@ -672,13 +674,46 @@ namespace HpToolsLauncher
                 }
 
                 // specify data table path
-                if (dataTablePath != null)
+                if (testInfo.DataTablePath != null)
                 {
-                    _qtpApplication.Test.Settings.Resources.DataTablePath = dataTablePath;
-                    ConsoleWriter.WriteLine("Using external data table: " + dataTablePath);
+                    _qtpApplication.Test.Settings.Resources.DataTablePath = testInfo.DataTablePath;
+                    ConsoleWriter.WriteLine("Using external data table: " + testInfo.DataTablePath);
+                }
+
+                // specify iteration mode
+                if (testInfo.IterationInfo != null)
+                {
+                    try
+                    {
+                        IterationInfo ii = testInfo.IterationInfo;
+                        if (!IterationInfo.AvailableTypes.Contains(ii.IterationMode))
+                        {
+                            throw new ArgumentException(String.Format("Illegal iteration mode '{0}'. Available modes are : {1}", ii.IterationMode, string.Join(", ", IterationInfo.AvailableTypes)));
+                        }
+
+                        bool rangeMode = IterationInfo.RANGE_ITERATION_MODE.Equals(ii.IterationMode);
+                        if (rangeMode)
+                        {
+                            int start = Int32.Parse(ii.StartIteration);
+                            int end = Int32.Parse(ii.EndIteration);
+
+                            _qtpApplication.Test.Settings.Run.StartIteration = start;
+                            _qtpApplication.Test.Settings.Run.EndIteration = end;
+                        }
+
+                        _qtpApplication.Test.Settings.Run.IterationMode = testInfo.IterationInfo.IterationMode;
+
+                        ConsoleWriter.WriteLine("Using iteration mode: " + testInfo.IterationInfo.IterationMode +
+                       (rangeMode ? " " + testInfo.IterationInfo.StartIteration + "-" + testInfo.IterationInfo.EndIteration : ""));
+                    }
+                    catch (Exception e)
+                    {
+                        String msg = "Failed to parse 'Iterations' element . Using default iteration settings. Error : " + e.Message;
+                        ConsoleWriter.WriteLine(msg);
+                    }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 errorReason = Resources.QtpRunError;
                 return false;
@@ -710,7 +745,7 @@ namespace HpToolsLauncher
                             {
                                 _qtpApplication.Test.Stop();
                             }
-                            catch (Exception e)
+                            catch (Exception)
                             {
                             }
                             finally
@@ -721,7 +756,7 @@ namespace HpToolsLauncher
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
 

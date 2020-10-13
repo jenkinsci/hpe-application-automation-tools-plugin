@@ -32,7 +32,7 @@ import java.io.IOException;
 public class UftTestDiscoveryQueue extends AbstractResultQueueImpl {
 
     public UftTestDiscoveryQueue() throws IOException {
-        File queueFile = new File(Jenkins.getInstance().getRootDir(), "octane-uft-tests-queue.dat");
+        File queueFile = new File(Jenkins.getInstanceOrNull().getRootDir(), "octane-uft-tests-queue.dat");
         init(queueFile);
     }
 }

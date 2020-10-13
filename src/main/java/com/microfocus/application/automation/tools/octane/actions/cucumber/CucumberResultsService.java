@@ -50,7 +50,7 @@ public class CucumberResultsService {
     }
 
     public static String[] getCucumberResultFiles(final FilePath workspace, String glob) throws IOException, InterruptedException {
-        if (glob.isEmpty() || glob == null) {
+        if (glob == null || glob.isEmpty()) {
             glob = DEFAULT_GLOB;
             log(Messages.CucumberResultsActionEmptyConfiguration(), glob);
         }
@@ -83,7 +83,7 @@ public class CucumberResultsService {
     }
 
     private static void validateContent(byte[] content) {
-        String contentStr = new String(content, 0, content.length > 2000 ? 2000 : content.length);
+        String contentStr = new String(content, 0, Math.min(content.length , 2000));
         //Heuristic validation. we don't check the whole file structure here - we should be quick.
         if(!contentStr.contains("<features")) {
             throw new IllegalArgumentException("The file is not Octane Gherkin results file");

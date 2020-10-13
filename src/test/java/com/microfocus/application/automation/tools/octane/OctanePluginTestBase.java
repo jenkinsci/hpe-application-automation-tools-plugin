@@ -32,8 +32,8 @@ import java.util.UUID;
 
 public abstract class OctanePluginTestBase {
 	protected static final DTOFactory dtoFactory = DTOFactory.getInstance();
-	protected static String instanceId = UUID.randomUUID().toString();
-	protected static String ssp = UUID.randomUUID().toString();
+	protected static String instanceId;
+	protected static String ssp;
 
 	@ClassRule
 	public static final JenkinsRule rule = new JenkinsRule();
@@ -41,6 +41,9 @@ public abstract class OctanePluginTestBase {
 
 	@BeforeClass
 	public static void init() {
+
+		instanceId = UUID.randomUUID().toString();
+		ssp = UUID.randomUUID().toString();
 
 		OctaneServerSettingsModel model = new OctaneServerSettingsModel(
 				"http://localhost:8008/ui/?p=" + ssp,

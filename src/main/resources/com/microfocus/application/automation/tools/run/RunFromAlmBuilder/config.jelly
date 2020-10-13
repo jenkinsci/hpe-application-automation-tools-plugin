@@ -22,6 +22,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/almUtils.js"/>
 
     <style>
@@ -105,63 +106,44 @@
       </td>
       <td/>
     </tr>
+
+
         <f:entry>
-            <label>ALM server</label>
-            <f:entry field="almServerName">
-                <select name="runfromalm.almServerName">
-                    <j:forEach var="almServer" items="${descriptor.almServers}">
-                        <f:option selected="${almServer.almServerName==instance.almServerSettingsModel.almServerName}" value="${almServer.almServerName}">
-                            ${almServer.almServerName}
-                        </f:option>
-                    </j:forEach>
-                </select>
-            </f:entry>
+            <div class="info">
+                The credentials for "Run from ALM" tasks have been moved to Jenkins Configure System page. In order to update them please create a new project, add as a
+                "Post build action" in the configuration page the action called "Migrate ALM Credentials" and run the job.
+                In case migration process was accomplised, please add/edit credentials in global configuration page.
+            </div>
+        </f:entry>
+
+        <f:entry field="almServerName">
+          <label>ALM server</label>
+          <f:select clazz="servers"/>
         </f:entry>
 
         <f:entry field="isSSOEnabled">
             <f:checkbox id="ssoCheckbox" title="SSO enabled" name="runfromalm.isSSOEnabled" checked="${instance.runFromAlmModel.isSSOEnabled}"
-                    value="${instance.runFromAlmModel.isSSOEnabled}" onclick="enableSSO(this)"/>
+                    value="${instance.runFromAlmModel.isSSOEnabled}"/>
         </f:entry>
 
-        <f:entry>
-            <label id="clientId">Client ID</label>
-            <f:entry field="almClientID">
-                <f:textbox name="runfromalm.almClientID" value="${instance.runFromAlmModel.almClientID}" onclick="validateField()" onKeyPress="validateField()"
-                        onKeyUp="validateField()" />
-                <label id="errClientID" style="color: #CC0000; font-weight: bold; padding-top: 5px;">Client ID must be set</label>
-            </f:entry>
-        </f:entry>
+         <f:entry field="almUserName">
+              <div class="noSSOCredentials">
+                <label>ALM username</label>
+                <f:select clazz="usernameList" />
+              </div>
+         </f:entry>
 
-        <f:entry>
-            <label id="apiKey">API key secret</label>
-            <f:entry field="almApiKey">
-                <f:password name="runfromalm.almApiKey" value="${instance.runFromAlmModel.almApiKey}" onclick="validateField()" onKeyPress="validateField()"
-                    onKeyUp="validateField()"/>
-                <label id="errApiKey" style="color: #CC0000; font-weight: bold;">Api key secret must be set</label>
-            </f:entry>
+        <f:entry field="almClientID">
+             <div class="ssoCredentials">
+                <label>ALM Client ID</label>
+                <f:select clazz="clientIDList" />
+             </div>
         </f:entry>
-
-        <f:entry>
-            <label id="userName">User name</label>
-            <f:entry field="almUserName">
-                <f:textbox name="runfromalm.almUserName" value="${instance.runFromAlmModel.almUserName}" onclick="validateField()" onKeyPress="validateField()"
-                    onKeyUp="validateField()"/>
-                <label id="errUsername" style="color: #CC0000; font-weight: bold;">Username must be set</label>
-            </f:entry>
-        </f:entry>
-
-        <f:entry>
-            <label id="password">Password</label>
-            <f:entry field="almPassword">
-                <f:password name="runfromalm.almPassword" value="${instance.runFromAlmModel.almPassword}"/>
-            </f:entry>
-        </f:entry>
-
 
         <f:entry>
             <label>Domain</label>
             <f:entry field="almDomain">
-                <f:textbox name="runfromalm.almDomain" value="${instance.runFromAlmModel.almDomain}"/>
+                <f:textbox name="runfromalm.almDomain" value="${instance.runFromAlmModel.almDomain}" />
             </f:entry>
         </f:entry>
 

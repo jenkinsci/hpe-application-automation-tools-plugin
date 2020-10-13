@@ -33,6 +33,7 @@ public class ReportMetaData {
     private String status;
     private Boolean isHtmlReport;
     private Boolean isParallelRunnerReport;
+    private String  archiveUrl;
 
     public String getFolderPath() {
         return folderPath;
@@ -95,4 +96,16 @@ public class ReportMetaData {
     }
 
     public void setIsParallelRunnerReport(Boolean parallelRunnerReport) { isParallelRunnerReport = parallelRunnerReport; }
+
+    public String getArchiveUrl() {
+        return archiveUrl;
+    }
+
+    public void setArchiveUrl(String archiveUrl) {
+        this.archiveUrl = archiveUrl;
+    }
+
+    public boolean getHasArchiveUrl() {
+        return archiveUrl != null;
+    }
 }

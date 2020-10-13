@@ -23,6 +23,8 @@ package com.microfocus.application.automation.tools.octane.events;
 import com.google.inject.Inject;
 import com.hp.octane.integrations.OctaneSDK;
 import com.hp.octane.integrations.dto.DTOFactory;
+import com.hp.octane.integrations.dto.causes.CIEventCause;
+import com.hp.octane.integrations.dto.causes.CIEventCauseType;
 import com.hp.octane.integrations.dto.events.CIEvent;
 import com.hp.octane.integrations.dto.events.CIEventType;
 import com.hp.octane.integrations.dto.events.MultiBranchType;
@@ -42,11 +44,11 @@ import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
-import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -80,7 +82,9 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 			if (BuildHandlerUtils.isWorkflowStartNode(flowNode)) {
 				sendPipelineStartedEvent(flowNode);
 			} else if (BuildHandlerUtils.isWorkflowEndNode(flowNode)) {
-				sendPipelineFinishedEvent((FlowEndNode) flowNode);
+				WorkflowRun parentRun = BuildHandlerUtils.extractParentRun(flowNode);
+				sendPipelineFinishedEvent(parentRun);
+				BuildLogHelper.enqueueBuildLog(parentRun);
 			} else if (BuildHandlerUtils.isStageStartNode(flowNode)) {
 				sendStageStartedEvent((StepStartNode) flowNode);
 			} else if (BuildHandlerUtils.isStageEndNode(flowNode)) {
@@ -104,6 +108,7 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 
 		CIEvent event = dtoFactory.newDTO(CIEvent.class)
 				.setEventType(CIEventType.STARTED)
+				.setProjectDisplayName(BuildHandlerUtils.translateFullDisplayName(parentRun.getParent().getFullDisplayName()))
 				.setProject(BuildHandlerUtils.getJobCiId(parentRun))
 				.setBuildCiId(BuildHandlerUtils.getBuildCiId(parentRun))
 				.setNumber(String.valueOf(parentRun.getNumber()))
@@ -112,22 +117,35 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 				.setEstimatedDuration(parentRun.getEstimatedDuration())
 				.setCauses(CIEventCausesFactory.processCauses(parentRun));
 
+		if(isInternal(event.getCauses())){
+			event.setPhaseType(PhaseType.INTERNAL);
+		}
 		if (parentRun.getParent().getParent().getClass().getName().equals(JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME)) {
 			event
-					.setParentCiId(parentRun.getParent().getParent().getFullName())
+					.setParentCiId(BuildHandlerUtils.translateFolderJobName(parentRun.getParent().getParent().getFullName()))
 					.setMultiBranchType(MultiBranchType.MULTI_BRANCH_CHILD)
-					.setProjectDisplayName(parentRun.getParent().getFullDisplayName().replaceAll(" » ", "/"));
+					.setProjectDisplayName(BuildHandlerUtils.translateFullDisplayName(parentRun.getParent().getFullDisplayName()));
 		}
 
 		CIJenkinsServicesImpl.publishEventToRelevantClients(event);
+	}
+
+	private boolean isInternal(List<CIEventCause> causes) {
+		if (causes != null) {
+			for (CIEventCause cause : causes) {
+				if (CIEventCauseType.UPSTREAM.equals(cause.getType())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private String getBuildKey(WorkflowRun run){
 		return run.getFullDisplayName();
 	}
 
-	private void sendPipelineFinishedEvent(FlowEndNode flowEndNode) {
-		WorkflowRun parentRun = BuildHandlerUtils.extractParentRun(flowEndNode);
+	private void sendPipelineFinishedEvent(WorkflowRun parentRun) {
 		workflowJobStarted.remove(getBuildKey(parentRun));
 		boolean hasTests = testListener.processBuild(parentRun);
 

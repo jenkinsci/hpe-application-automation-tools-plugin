@@ -24,13 +24,17 @@ import com.hp.octane.integrations.OctaneSDK;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.events.CIEvent;
 import com.hp.octane.integrations.dto.events.CIEventType;
+import com.hp.octane.integrations.dto.events.ItemType;
+import com.microfocus.application.automation.tools.octane.CIJenkinsServicesImpl;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.executor.UftTestDiscoveryDispatcher;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
+import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import com.microfocus.application.automation.tools.settings.OctaneServerSettingsBuilder;
 import hudson.Extension;
 import hudson.model.Item;
+import hudson.model.Job;
 import hudson.model.listeners.ItemListener;
 import jenkins.model.Jenkins;
 import org.apache.logging.log4j.Logger;
@@ -55,6 +59,7 @@ public class GlobalEventsListenerOctaneImpl extends ItemListener {
 		logger.info("**********************************************************************");
 		logger.info("Jenkins version " + Jenkins.getVersion());
 		logger.info("Plugin version " + ConfigurationService.getPluginVersion());
+		logger.info("CI SDK version " + OctaneSDK.SDK_VERSION);
 
 		OctaneServerSettingsBuilder.getOctaneSettingsManager().initOctaneClients();
 	}
@@ -83,5 +88,40 @@ public class GlobalEventsListenerOctaneImpl extends ItemListener {
 		OctaneSDK.getClients().forEach(OctaneSDK::removeClient);
 		UftTestDiscoveryDispatcher dispatcher = Jenkins.get().getExtensionList(UftTestDiscoveryDispatcher.class).get(0);
 		dispatcher.close();
+	}
+
+	@Override
+	public void onLocationChanged(Item item, String oldFullName, String newFullName) {
+
+		if (!OctaneSDK.hasClients()) {
+			return;
+		}
+
+		boolean skip = JobProcessorFactory.isFolder(item) || JobProcessorFactory.isMultibranchChild(item);//for MultibranchChild - there is a logic in Octane that handle child on parent event
+		logger.info("onLocationChanged '" + oldFullName + "' to '" + newFullName + "'" + (skip ? ". Skipped." : ""));
+		if (skip) {
+			return;
+		}
+
+		try {
+			CIEvent event = dtoFactory.newDTO(CIEvent.class).setEventType(CIEventType.RENAMED);
+			if (JobProcessorFactory.isJob(item)) {
+				event.setItemType(ItemType.JOB);
+			} else if (JobProcessorFactory.isMultibranch(item)) {
+				event.setItemType(ItemType.MULTI_BRANCH);
+			} else {
+				logger.info("Cannot handle onLocationChanged for " + item.getClass().getName());
+				return;
+			}
+
+			event.setProject(BuildHandlerUtils.translateFolderJobName(newFullName))
+					.setProjectDisplayName(newFullName)
+					.setPreviousProject(BuildHandlerUtils.translateFolderJobName(oldFullName))
+					.setPreviousProjectDisplayName(oldFullName);
+
+			CIJenkinsServicesImpl.publishEventToRelevantClients(event);
+		} catch (Throwable throwable) {
+			logger.error("failed to build and/or dispatch RENAMED event for " + item, throwable);
+		}
 	}
 }

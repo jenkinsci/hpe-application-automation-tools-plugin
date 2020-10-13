@@ -38,12 +38,14 @@ import com.microfocus.application.automation.tools.sse.result.model.junit.Testsu
 import hudson.*;
 import hudson.console.HyperlinkNote;
 import hudson.model.*;
+import hudson.model.Queue;
 import hudson.model.queue.Tasks;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import hudson.util.LogTaskListener;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
@@ -61,10 +63,11 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.text.Format;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import hudson.model.Run;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
@@ -192,7 +195,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
         else
             WorkspacePath =  null;
         if((getPcModel() != null) && (build != null) && (build instanceof AbstractBuild))
-            setPcModelBuildParameters(build);
+            setPcModelBuildParameters(build, listener);
         if(build.getWorkspace() != null)
             perform(build, build.getWorkspace(), launcher, listener);
         else
@@ -200,10 +203,22 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
         return true;
     }
 
-    private void setPcModelBuildParameters(AbstractBuild<?, ?> build) {
-            String buildParameters = build.getBuildVariables().toString();
+    private void setPcModelBuildParameters(AbstractBuild<?, ?> build, BuildListener listener) throws IOException, InterruptedException {
+            Map<String, String> mapParamsAndEnvars = new HashMap<String, String>();
+            Map<String, String> buildParameters = build.getBuildVariables();
+            mapParamsAndEnvars.putAll(buildParameters);
+            if(listener != null) {
+                Map<String, String> buildEnvars = build.getEnvironment(listener);
+                mapParamsAndEnvars.putAll(buildEnvars);
+            }
+            else
+            {
+                Map<String, String> buildEnvars = build.getEnvironment(new LogTaskListener(null, Level.INFO));
+                mapParamsAndEnvars.putAll(buildEnvars);
+            }
+            String buildParametersAndEnvars =  mapParamsAndEnvars.toString();
             if (!buildParameters.isEmpty())
-                getPcModel().setBuildParameters(buildParameters);
+                getPcModel().setBuildParameters(buildParametersAndEnvars);
     }
 
     public File getWorkspacePath(){
@@ -374,7 +389,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
                         Messages.PluginVersionIs(),
                         version));
             if((getPcModel() !=null) && (build != null) && (build instanceof AbstractBuild))
-                setPcModelBuildParameters((AbstractBuild) build);
+                setPcModelBuildParameters((AbstractBuild) build, null);
             if (!StringUtils.isBlank(getPcModel().getDescription()))
                 logger.println(String.format("%s - %s: %s",
                         dateFormatter.getDate(),
@@ -408,7 +423,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
             throws InterruptedException, ClientProtocolException,
             IOException, PcException {
         if((getPcModel() !=null) && (build != null) && (build instanceof AbstractBuild))
-            setPcModelBuildParameters((AbstractBuild) build);
+            setPcModelBuildParameters((AbstractBuild) build, null);
         PcRunResponse response = null;
         String errorMessage = "";
         String eventLogString = "";
@@ -679,7 +694,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
     }
 
     private boolean isPluginActive(String pluginDisplayName){
-        List<PluginWrapper> allPlugin = Jenkins.getInstance().pluginManager.getPlugins();
+        List<PluginWrapper> allPlugin = Jenkins.get().pluginManager.getPlugins();
         for (PluginWrapper pw :
                 allPlugin) {
 
@@ -726,6 +741,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
                 new TriTrendReportTypes(TrendReportTypes.DataType.Transaction, TrendReportTypes.PctType.TRT, TrendReportTypes.Measurement.PCT_STDDEVIATION),
                 new TriTrendReportTypes(TrendReportTypes.DataType.Transaction, TrendReportTypes.PctType.TRT, TrendReportTypes.Measurement.PCT_COUNT1),
                 new TriTrendReportTypes(TrendReportTypes.DataType.Transaction, TrendReportTypes.PctType.TRT, TrendReportTypes.Measurement.PCT_PERCENTILE_90),
+                new TriTrendReportTypes(TrendReportTypes.DataType.Transaction, TrendReportTypes.PctType.TRT, TrendReportTypes.Measurement.PCT_PERCENTILE_95),
                 // Transaction - TPS
                 new TriTrendReportTypes(TrendReportTypes.DataType.Transaction, TrendReportTypes.PctType.TPS, TrendReportTypes.Measurement.PCT_MINIMUM),
                 new TriTrendReportTypes(TrendReportTypes.DataType.Transaction, TrendReportTypes.PctType.TPS, TrendReportTypes.Measurement.PCT_MAXIMUM),
@@ -880,7 +896,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
     
     private void provideStepResultStatus(Result resultStatus, Run<?, ?> build) {
         String runIdStr =
-                (runId > 0) ? String.format(" (PC RunID: %s)", String.valueOf(runId)) : "";
+                (runId > 0) ? String.format(" (LRE RunID: %s)", String.valueOf(runId)) : "";
         logger.println(String.format("%s - %s%s: %s\n- - -",
                 dateFormatter.getDate(),
                 Messages.ResultStatus(),
@@ -1093,7 +1109,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep{
         
         public FormValidation doCheckPcServerName(@QueryParameter String value) {
             
-           return validateString(value, "PC Server");
+           return validateString(value, "LRE Server");
         }
         
         public FormValidation doCheckAlmDomain(@QueryParameter String value) {

@@ -198,12 +198,14 @@ namespace HpToolsLauncher
         }
 
 
-        //verify that files/fodlers exist (does not recurse into folders)
+        //verify that files/folders exist (does not recurse into folders)
         public static List<TestData> ValidateFiles(IEnumerable<TestData> tests)
         {
+            //Console.WriteLine("[ValidateFiles]");
             List<TestData> validTests = new List<TestData>();
             foreach (TestData test in tests)
             {
+                //Console.WriteLine("ValidateFiles, test Id: " + test.Id +  ", test path " + test.Tests);
                 if (!File.Exists(test.Tests) && !Directory.Exists(test.Tests))
                 {
                     ConsoleWriter.WriteLine(string.Format(">>>> File/Folder not found: '{0}'", test.Tests));
@@ -469,7 +471,7 @@ namespace HpToolsLauncher
                 files = files.Union(root.GetFiles("*" + QTPFileExtention)).ToArray();
                 files = files.Union(root.GetFiles("*" + LoadRunnerFileExtention)).ToArray();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // This code just writes out the message and continues to recurse.
                 // You may decide to do something different here. For example, you
@@ -780,7 +782,7 @@ namespace HpToolsLauncher
                             }
                             if (finalState == TestState.Failed)
                             {
-                                runDesc.FailureDesc = desc;
+                                runDesc.FailureDesc = desc; 
                             }
                         }
                     }
@@ -795,7 +797,7 @@ namespace HpToolsLauncher
                 runDesc.TestState = finalState;
                 return runDesc.TestState;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return TestState.Unknown;
             }
@@ -866,7 +868,7 @@ namespace HpToolsLauncher
                 runDesc.TestState = TestState.Error;
                 return runDesc.TestState;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return TestState.Unknown;
             }
@@ -1032,7 +1034,7 @@ namespace HpToolsLauncher
                 }
                 return;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
             finally
@@ -1129,7 +1131,13 @@ namespace HpToolsLauncher
 
         #endregion
 
-
+        public static void DeleteDirectory(String dirPath)
+        {
+            DirectoryInfo directory = Directory.CreateDirectory(dirPath);
+            foreach (System.IO.FileInfo file in directory.GetFiles()) file.Delete();
+            foreach (System.IO.DirectoryInfo subDirectory in directory.GetDirectories()) subDirectory.Delete(true);
+            Directory.Delete(dirPath);
+        }
     }
 
     public class Stopper {

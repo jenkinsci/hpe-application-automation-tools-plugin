@@ -21,20 +21,13 @@
 package com.microfocus.application.automation.tools.octane.vulnerabilities;
 
 import com.hp.octane.integrations.OctaneSDK;
-import com.hp.octane.integrations.services.vulnerabilities.ToolType;
-import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
-import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import com.microfocus.application.automation.tools.octane.configuration.FodConfigUtil;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.configuration.SSCServerConfigUtil;
-import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.listeners.RunListener;
 import org.apache.logging.log4j.Logger;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Jenkins events life cycle listener for processing vulnerabilities scan results on build completed
@@ -43,63 +36,26 @@ import java.util.Map;
 @Extension
 @SuppressWarnings({"squid:S2699", "squid:S3658", "squid:S2259", "squid:S1872"})
 public class VulnerabilitiesListener extends RunListener<AbstractBuild> {
-	private static Logger logger = SDKBasedLoggerProvider.getLogger(VulnerabilitiesListener.class);
+    private static Logger logger = SDKBasedLoggerProvider.getLogger(VulnerabilitiesListener.class);
 
-	@Override
-	public void onFinalized(AbstractBuild build) {
-        if(!OctaneSDK.hasClients()){
+    @Override
+    public void onFinalized(AbstractBuild build) {
+        if (!OctaneSDK.hasClients()) {
             return;
         }
 
         SSCServerConfigUtil.SSCProjectVersionPair projectVersionPair = SSCServerConfigUtil.getProjectConfigurationFromBuild(build);
-        if (projectVersionPair != null) {
-            logger.warn("SSC configuration was found in " + build);
-            String sscServerUrl = SSCServerConfigUtil.getSSCServer();
-            if (sscServerUrl == null || sscServerUrl.isEmpty()) {
-                logger.debug("SSC configuration not found in the whole CI Server");
-                return;
-            }
-            insertQueueItem(build, ToolType.SSC, null);
+        if (!VulnerabilitiesUtils.insertQueueItem(build, projectVersionPair)) {
+            return;
         }
 
         Long release = FodConfigUtil.getFODReleaseFromBuild(build);
-        if(release != null) {
-            logger.warn("FOD configuration was found in " + build);
-            insertFODQueueItem(build, release);
+        if (release != null) {
+            logger.info("FOD configuration was found in " + build);
+            VulnerabilitiesUtils.insertFODQueueItem(build, release);
         }
-        if(projectVersionPair == null && release == null) {
-            logger.warn("No Security Scan integration configuration was found " + build);
+        if (projectVersionPair == null && release == null) {
+            logger.debug("No Security Scan integration configuration was found " + build);
         }
-	}
-
-    private void insertFODQueueItem(AbstractBuild build, Long releaseId ) {
-        HashMap<String,String> additionalProperties = new HashMap<>();
-        additionalProperties.put("releaseId", releaseId.toString());
-        insertQueueItem(build, ToolType.FOD, additionalProperties);
-    }
-
-    private void insertQueueItem(AbstractBuild build, ToolType toolType, Map<String,String> props) {
-        String jobCiId = BuildHandlerUtils.getJobCiId(build);
-        String buildCiId = BuildHandlerUtils.getBuildCiId(build);
-
-        //  [YG]: TODO productize the below code to be able to override the global maxTimeoutHours by Job's own configuration
-//		long queueItemTimeout = 0;
-//		ParametersAction parameters = run.getAction(ParametersAction.class);
-//		if (parameters != null && parameters.getParameter("some-predefined-value") != null) {
-//			queueItemTimeout = Long.parseLong((String) parameters.getParameter("some-predefined-value").getValue());
-//		}
-
-        OctaneSDK.getClients().forEach(octaneClient -> {
-            String instanceId = octaneClient.getInstanceId();
-            OctaneServerSettingsModel settings = ConfigurationService.getSettings(instanceId);
-            if (settings != null && !settings.isSuspend()) {
-                octaneClient.getVulnerabilitiesService().enqueueRetrieveAndPushVulnerabilities(
-                        jobCiId,
-                        buildCiId, toolType,
-                        build.getStartTimeInMillis(),
-                        settings.getMaxTimeoutHours(),
-                        props);
-            }
-        });
     }
 }

@@ -27,7 +27,7 @@ namespace HpToolsLauncher
     public class RunnerBase: IAssetRunner
     {
         
-        public void Dispose()
+        public virtual void Dispose()
         {
         }
         protected bool _blnRunCancelled = false;

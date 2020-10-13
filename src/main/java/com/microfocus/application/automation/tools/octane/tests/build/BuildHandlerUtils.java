@@ -20,8 +20,11 @@
 
 package com.microfocus.application.automation.tools.octane.tests.build;
 
+import com.hp.octane.integrations.dto.causes.CIEventCause;
+import com.hp.octane.integrations.dto.causes.CIEventCauseType;
 import com.hp.octane.integrations.dto.snapshots.CIBuildResult;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
+import com.microfocus.application.automation.tools.octane.model.CIEventCausesFactory;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
 import hudson.FilePath;
 import hudson.matrix.MatrixConfiguration;
@@ -45,6 +48,9 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Generic utilities handling Job/Run metadata extraction/transformation/processing
@@ -137,13 +143,15 @@ public class BuildHandlerUtils {
 	}
 
 	public static String translateFolderJobName(String jobPlainName) {
-		String newSplitterCharacters = "/job/";
-		return jobPlainName.replaceAll("/", newSplitterCharacters);
+		return jobPlainName.replaceAll("/", "/job/");
 	}
 
 	public static String revertTranslateFolderJobName(String translatedJobName) {
-		String newSplitterCharacters = "/";
-		return translatedJobName.replaceAll("/job/", newSplitterCharacters);
+		return translatedJobName.replaceAll("/job/", "/");
+	}
+
+	public static String translateFullDisplayName(String fullDisplayName) {
+		return fullDisplayName.replaceAll(" » ", "/");
 	}
 
 	public static CIBuildResult translateRunResult(Run run) {
@@ -185,6 +193,26 @@ public class BuildHandlerUtils {
 		} catch (IOException ioe) {
 			logger.error("failed to extract parent workflow run from " + flowNode, ioe);
 			throw new IllegalStateException("failed to extract parent workflow run from " + flowNode);
+		}
+	}
+
+	public static String getRootJobCiIds(Run<?, ?> run) {
+		Set<String> parents = new HashSet<>();
+		getRootJobCiIds(CIEventCausesFactory.processCauses(run), BuildHandlerUtils.getJobCiId(run), parents);
+		return String.join(";", parents);
+	}
+
+	private static void getRootJobCiIds(List<CIEventCause> causes, String prevUpstream, Set<String> parents) {
+		if (causes != null) {
+			for (CIEventCause cause : causes) {
+				if (CIEventCauseType.UPSTREAM.equals(cause.getType())) {
+					getRootJobCiIds(cause.getCauses(), cause.getProject(), parents);
+				} else {
+					if (prevUpstream != null && !prevUpstream.isEmpty()) {
+						parents.add(prevUpstream);
+					}
+				}
+			}
 		}
 	}
 }

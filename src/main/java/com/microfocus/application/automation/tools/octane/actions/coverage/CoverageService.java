@@ -18,7 +18,7 @@ package com.microfocus.application.automation.tools.octane.actions.coverage;
 
 import hudson.FilePath;
 import hudson.Util;
-import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 import org.apache.tools.ant.DirectoryScanner;
@@ -34,7 +34,7 @@ import java.nio.file.Files;
  */
 public class CoverageService {
     private static final String COVERAGE_REPORT_FILE_NAME_PREFIX = "coverage_report";
-    private static BuildListener listener;
+    private static TaskListener listener;
 
     public static class Jacoco {
         public static final String JACOCO_TYPE = "JACOCOXML";
@@ -93,7 +93,7 @@ public class CoverageService {
         }
     }
 
-    public static void setListener(BuildListener l) {
+    public static void setListener(TaskListener l) {
         listener = l;
     }
 

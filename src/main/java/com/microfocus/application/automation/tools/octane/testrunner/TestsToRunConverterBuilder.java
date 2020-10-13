@@ -54,7 +54,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
 
     private TestsToRunConverterModel framework;
 
-    private static final String TESTS_TO_RUN_PARAMETER = "testsToRun";
+    public static final String TESTS_TO_RUN_PARAMETER = "testsToRun";
 
     private static final String DEFAULT_EXECUTING_DIRECTORY = "${workspace}";
     private static final String CHECKOUT_DIRECTORY_PARAMETER = "testsToRunCheckoutDirectory";
@@ -180,7 +180,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
 
         @Override
         public String getDisplayName() {
-            return "Micro Focus ALM Octane testing framework converter";
+            return "ALM Octane testing framework converter";
         }
 
         public FormValidation doTestConvert(

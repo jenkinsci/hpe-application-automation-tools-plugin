@@ -68,6 +68,9 @@ public enum ParameterProcessors {
 			paramDefinitions = ((ParametersDefinitionProperty) job.getProperty(ParametersDefinitionProperty.class)).getParameterDefinitions();
 			for (int i = 0; paramDefinitions != null && i < paramDefinitions.size(); i++) {
 				pd = paramDefinitions.get(i);
+				if (pd instanceof PasswordParameterDefinition) {
+					continue;
+				}
 				className = pd.getClass().getName();
 				processor = getAppropriate(className);
 				result.add(processor.createParameterConfig(pd));

@@ -25,13 +25,13 @@ import com.hp.octane.integrations.OctaneSDK;
 import com.hp.octane.integrations.dto.entities.Entity;
 import com.hp.octane.integrations.dto.entities.EntityConstants;
 import com.hp.octane.integrations.dto.entities.impl.EntityImpl;
+import com.hp.octane.integrations.dto.scm.SCMType;
+import com.hp.octane.integrations.services.configuration.ConfigurationService;
 import com.hp.octane.integrations.services.entities.EntitiesService;
 import com.hp.octane.integrations.services.entities.QueryHelper;
 import com.hp.octane.integrations.uft.items.UftTestDiscoveryResult;
-import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
+import com.microfocus.application.automation.tools.octane.JellyUtils;
 import com.microfocus.application.automation.tools.octane.Messages;
-import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
-import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.executor.*;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginFactory;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginHandler;
@@ -45,18 +45,16 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.Logger;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -64,7 +62,6 @@ import java.util.List;
  */
 
 public class UFTTestDetectionPublisher extends Recorder {
-    private static final Logger logger = SDKBasedLoggerProvider.getLogger(UFTTestDetectionPublisher.class);
     private String configurationId;
     private String workspaceName;
     private String scmRepositoryId;
@@ -89,49 +86,36 @@ public class UFTTestDetectionPublisher extends Recorder {
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         UFTTestDetectionService.printToConsole(listener, "UFTTestDetectionPublisher is started.");
 
-        //validate configuration id
-        if (configurationId == null) {
-            logger.error("discovery configurationId is null.");
-            configurationId = tryFindConfigurationId(build, Long.parseLong(workspaceName));
-            if (configurationId != null) {
-                try {
-                    build.getParent().save();
-                } catch (IOException e) {
-                    logger.error("Failed to save UFTTestDetectionPublisher : " + e.getMessage());
-                }
-            } else {
-                logger.error("No relevant ALM Octane configuration is found.");
-                build.setResult(Result.FAILURE);
-                throw new IllegalArgumentException("No relevant ALM Octane configuration is found.");
+        try {
+            //validate configuration id
+            if (configurationId == null || JellyUtils.NONE.equals(configurationId)) {
+                throw new IllegalArgumentException("ALM Octane configuration is missing.");
             }
-        }
 
-        //validate scm repository id
-        if (StringUtils.isEmpty(scmRepositoryId)) {
-            String msg = "SCM repository field is empty. Get relevant scm repository id from ALM Octane SpaceConfiguration->DevOps->Scm Repositories. If you need to generate ScmRepository in ALM Octane based on your scm repository in job - set value \"-1\"";
-            logger.error(msg);
-            build.setResult(Result.FAILURE);
-            throw new IllegalArgumentException(msg);
-        }
-        if (scmRepositoryId.equals("-1")) {
-            try {
-                generateScmRepository(build, listener);
-            } catch (Exception e) {
-                UFTTestDetectionService.printToConsole(listener, "Failed to generate Scm Repository in ALM Octane : " + e.getMessage());
-                build.setResult(Result.FAILURE);
-                return false;
+            if (workspaceName == null || JellyUtils.NONE.equals(workspaceName)) {
+                throw new IllegalArgumentException("ALM Octane workspace is missing.");
             }
+
+            //validate scm repository id
+            if (StringUtils.isEmpty(scmRepositoryId)) {
+                generateScmRepository(build, listener);
+            }
+        } catch (IllegalArgumentException e) {
+            UFTTestDetectionService.printToConsole(listener, e.getMessage());
+            build.setResult(Result.FAILURE);
+            return false;
         }
 
         try {
-            UftTestDiscoveryResult results = build.getWorkspace().act(new UFTTestDetectionCallable(build, configurationId, getWorkspaceName(), getScmRepositoryId(), listener));
+            UftTestDiscoveryResult results = build.getWorkspace().act(new UFTTestDetectionCallable(build, configurationId, workspaceName, getScmRepositoryId(), listener));
             UFTTestDetectionBuildAction buildAction = new UFTTestDetectionBuildAction(build, results);
             build.addAction(buildAction);
 
             if (results.hasChanges()) {
                 UFTTestDetectionService.publishDetectionResults(build, listener, results);
                 UftTestDiscoveryDispatcher dispatcher = getExtension(UftTestDiscoveryDispatcher.class);
-                dispatcher.enqueueResult(build.getProject().getName(), build.getNumber());
+                dispatcher.enqueueResult(configurationId, build.getProject().getFullName(), build.getNumber(), workspaceName);
+
             }
             if (!results.getDeletedFolders().isEmpty()) {
                 UFTTestDetectionService.printToConsole(listener, String.format("Found %s deleted folders", results.getDeletedFolders().size()));
@@ -146,7 +130,7 @@ public class UFTTestDetectionPublisher extends Recorder {
         return true;
     }
 
-    private void generateScmRepository(AbstractBuild build, BuildListener listener) throws IOException {
+    private void generateScmRepository(AbstractBuild build, BuildListener listener) {
         SCM scm = build.getProject().getScm();
         if (scm instanceof NullSCM) {
             throw new IllegalArgumentException("SCM definition is missing in the job");
@@ -158,31 +142,106 @@ public class UFTTestDetectionPublisher extends Recorder {
         }
         OctaneClient octaneClient = OctaneSDK.getClientByInstanceId(configurationId);
         EntitiesService entitiesService = octaneClient.getEntitiesService();
-
-
-        List<String> conditions = Arrays.asList(QueryHelper.condition(EntityConstants.Base.NAME_FIELD, url));
+        ConfigurationService configurationService = octaneClient.getConfigurationService();
         long workspaceId = Long.parseLong(workspaceName);
-        String collectionName = "scm_repositories";
 
-        List<Entity> foundEntities = entitiesService.getEntities(workspaceId, collectionName, conditions, Arrays.asList("id"));
-        if (!foundEntities.isEmpty()) {
-            scmRepositoryId = foundEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is already exist in ALM Octane with id=" + scmRepositoryId);
+        if (configurationService.isOctaneVersionGreaterOrEqual("15.1.28")) {
+            scmRepositoryId = getScmRepositoriesWithRoots(listener, scmPluginHandler, url, entitiesService, workspaceId);
         } else {
-            //create a new scm repository
-            Entity newScmRepository = new EntityImpl();
-            newScmRepository.setType("scm_repository");
-            newScmRepository.setName(url);
-            newScmRepository.setField("url", url);
-            newScmRepository.setField("scm_type", scmPluginHandler.getScmType().getOctaneId());
-            List<Entity> createEntities = entitiesService.postEntities(workspaceId, collectionName, Arrays.asList(newScmRepository));
-            scmRepositoryId = createEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is created in ALM Octane with id=" + scmRepositoryId);
+            scmRepositoryId = getScmRepositoriesLegacy(listener, scmPluginHandler, url, entitiesService, workspaceId);
         }
 
-        build.getProject().save();
-        UFTTestDetectionService.printToConsole(listener, "SCM repository field value is updated to " + scmRepositoryId);
+        try {
+            build.getProject().save();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to save job with updated SCM repository. Update manually SCM repository to " + scmRepositoryId + ". Error message : " + e.getMessage());
+        }
 
+        UFTTestDetectionService.printToConsole(listener, "SCM repository field value is updated to " + scmRepositoryId);
+    }
+
+
+    private static String getScmRepositoriesLegacy(BuildListener listener, ScmPluginHandler scmPluginHandler, String url, EntitiesService entitiesService, long workspaceId) {
+        String scmRepoId;
+        String collectionName = "scm_repositories";
+        List<String> conditions = Collections.singletonList(QueryHelper.condition("url", url));
+        List<Entity> foundEntities = entitiesService.getEntities(workspaceId, collectionName, conditions, Collections.singletonList(EntityConstants.Base.ID_FIELD));
+        if (!foundEntities.isEmpty()) {
+            scmRepoId = foundEntities.get(0).getId();
+            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is already exist in ALM Octane with id=" + scmRepoId);
+        } else {
+            //create a new scm repository
+            Entity newScmRepository = buildNewRepoEntity(scmPluginHandler, url, "scm_repository");
+            String name = scmPluginHandler.tryExtractUrlShortName(url) + (SCMType.GIT.equals(scmPluginHandler.getScmType()) ? ":master" : "");
+            newScmRepository.setName(name);
+
+            List<Entity> createEntities = entitiesService.postEntities(workspaceId, collectionName, Collections.singletonList(newScmRepository));
+            scmRepoId = createEntities.get(0).getId();
+            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is created in ALM Octane with id=" + scmRepoId);
+        }
+        return scmRepoId;
+    }
+
+    private static String getScmRepositoriesWithRoots(BuildListener listener, ScmPluginHandler scmPluginHandler, String url, EntitiesService entitiesService, long workspaceId) {
+        String scmBranchId;
+        String scmRootId;
+        String branchCollectionName = EntityConstants.ScmRepository.COLLECTION_NAME;
+        String rootCollectionName = EntityConstants.ScmRepositoryRoot.COLLECTION_NAME;
+
+        boolean isGit = SCMType.GIT.equals(scmPluginHandler.getScmType());
+
+        //find repository root
+        List<String> conditions = Collections.singletonList(QueryHelper.condition("url", url));
+        List<Entity> foundEntities = entitiesService.getEntities(workspaceId, rootCollectionName, conditions, Collections.singletonList(EntityConstants.Base.ID_FIELD));
+        if (!foundEntities.isEmpty()) {
+            scmRootId = foundEntities.get(0).getId();
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s is already exist in ALM Octane with id=%s", url, scmRootId));
+        } else {
+            //create a new scm repository root
+            Entity newScmRepositoryRoot = buildNewRepoEntity(scmPluginHandler, url, EntityConstants.ScmRepositoryRoot.ENTITY_NAME);
+            List<Entity> createEntities = entitiesService.postEntities(workspaceId, rootCollectionName, Collections.singletonList(newScmRepositoryRoot));
+            scmRootId = createEntities.get(0).getId();
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s  is created in ALM Octane with id=%s", url, scmRootId));
+        }
+
+        //find branch
+        String name = scmPluginHandler.tryExtractUrlShortName(url) + (isGit ? ":master" : "");
+        String branchCondition = QueryHelper.orConditions(QueryHelper.condition(EntityConstants.ScmRepository.BRANCH, "master"),
+                QueryHelper.conditionEmpty(EntityConstants.ScmRepository.BRANCH));
+        conditions = Collections.singletonList(branchCondition);
+        foundEntities = entitiesService.getEntities(workspaceId, branchCollectionName, conditions,
+                Arrays.asList(EntityConstants.ScmRepository.ID_FIELD, EntityConstants.ScmRepository.BRANCH));
+        if (!foundEntities.isEmpty()) {
+            scmBranchId = foundEntities.get(0).getId();
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is already exist in ALM Octane with id=%s", name, scmBranchId));
+        } else {
+            //create a new branch
+            Entity newBranch = buildNewRepoEntity(scmPluginHandler, url, "scm_repository");
+            newBranch.setName(name);
+
+            if (isGit) {
+                newBranch.setField(EntityConstants.ScmRepository.BRANCH, "master");
+            }
+
+
+            Entity scmRoot = new EntityImpl().setType(EntityConstants.ScmRepositoryRoot.ENTITY_NAME).setId(scmRootId);
+            newBranch.setField(EntityConstants.ScmRepository.PARENT, scmRoot);
+            List<Entity> createEntities = entitiesService.postEntities(workspaceId, branchCollectionName, Collections.singletonList(newBranch));
+            scmBranchId = createEntities.get(0).getId();
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is created in ALM Octane with id=%s", name, scmBranchId));
+        }
+
+        return scmBranchId;
+    }
+
+    private static Entity buildNewRepoEntity(ScmPluginHandler scmPluginHandler, String url, String entityType) {
+        Entity newScmRepositoryRoot = new EntityImpl();
+        newScmRepositoryRoot.setType(entityType);
+        String name = scmPluginHandler.tryExtractUrlShortName(url);
+        newScmRepositoryRoot.setName(name);
+        newScmRepositoryRoot.setField("url", url);
+        newScmRepositoryRoot.setField("scm_type", scmPluginHandler.getScmType().getOctaneId());
+        return newScmRepositoryRoot;
     }
 
     private void handleDeletedFolders(AbstractBuild build) {
@@ -218,34 +277,6 @@ public class UFTTestDetectionPublisher extends Recorder {
         return items.get(0);
     }
 
-    private static String tryFindConfigurationId(AbstractBuild build, long workspaceId) {
-        String result = null;
-        List<OctaneClient> clients = OctaneSDK.getClients();
-        logger.warn("number of configurations is " + clients.size());
-        if (clients.size() == 1) {
-            result = OctaneSDK.getClients().get(0).getInstanceId();
-            logger.warn("selecting the only configurationId - " + result);
-        } else if (clients.size() > 0) {
-            String executorLogicalName = UftJobRecognizer.getExecutorLogicalName((FreeStyleProject) build.getParent());
-            Collection<String> conditions = Arrays.asList(QueryHelper.condition(EntityConstants.Base.LOGICAL_NAME_FIELD, executorLogicalName));
-            for (OctaneClient client : clients) {
-                try {
-                    List<Entity> entities = client.getEntitiesService().getEntities(workspaceId, EntityConstants.Executors.COLLECTION_NAME, conditions, null);
-                    if (!entities.isEmpty()) {
-                        result = client.getInstanceId();
-                        logger.warn("executor logical name found in configurationId - " + result);
-                        break;
-                    }
-                } catch (Exception e) {
-                    logger.warn("Failed to check executor logical name in configuration " + client.getInstanceId() + " : " + e.getMessage());
-                }
-            }
-        }
-
-        return result;
-    }
-
-
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -264,46 +295,11 @@ public class UFTTestDetectionPublisher extends Recorder {
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
         public ListBoxModel doFillConfigurationIdItems() {
-            ListBoxModel m = new ListBoxModel();
-
-            for (OctaneClient octaneClient : OctaneSDK.getClients()) {
-                OctaneServerSettingsModel model = ConfigurationService.getSettings(octaneClient.getInstanceId());
-                m.add(model.getCaption(), model.getIdentity());
-            }
-            return m;
-        }
-
-        public FormValidation doCheckConfigurationId(@QueryParameter String value) {
-            if (StringUtils.isEmpty(value)) {
-                return FormValidation.error("Please select configuration");
-            } else {
-                return FormValidation.ok();
-            }
+            return JellyUtils.fillConfigurationIdModel();
         }
 
         public ListBoxModel doFillWorkspaceNameItems(@QueryParameter String configurationId, @QueryParameter(value = "workspaceName") String workspaceName) {
-            ListBoxModel m = new ListBoxModel();
-            if (StringUtils.isNotEmpty(configurationId)) {
-                try {
-                    EntitiesService entitiesService = OctaneSDK.getClientByInstanceId(configurationId).getEntitiesService();
-                    List<Entity> workspaces = entitiesService.getEntities(null, "workspaces", null, null);
-                    for (Entity workspace : workspaces) {
-                        m.add(workspace.getName(), String.valueOf(workspace.getId()));
-                    }
-                } catch (Exception e) {
-                    //octane configuration not found
-                    m.add(workspaceName, workspaceName);
-                    return m;
-                }
-            }
-            return m;
-        }
-
-        public FormValidation doCheckWorkspaceName(@QueryParameter(value = "workspaceName") String value) {
-            if (StringUtils.isEmpty(value)) {
-                return FormValidation.error("Please select workspace");
-            }
-            return FormValidation.ok();
+            return JellyUtils.fillWorkspaceModel(configurationId, workspaceName);
         }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {

@@ -61,6 +61,10 @@
                     <td>Protractor</td>
                     <td>protractor conf.js --grep="$testsToRunConverted"</td>
                 </tr>
+                <tr>
+                    <td>Cucumber-JVM over Maven</td>
+                    <td>mvn clean -Dcucumber.options="$testsToRunConverted" test</td>
+                </tr>
                 </tbody>
             </table>
             </br>
@@ -87,6 +91,10 @@
                 <tr>
                     <td>Protractor</td>
                     <td>protractor conf.js --grep="%testsToRunConverted%"</td>
+                </tr>
+                <tr>
+                    <td>Cucumber-JVM over Maven</td>
+                    <td>mvn clean -Dcucumber.options="%testsToRunConverted%" test</td>
                 </tr>
                 </tbody>
             </table>
@@ -115,6 +123,10 @@
                     <td>Protractor</td>
                     <td>bat(/protractor conf.js --grep="${params.testsToRunConverted}"/)</td>
                 </tr>
+                <tr>
+                    <td>Cucumber-JVM over Maven</td>
+                    <td>bat(/mvn clean -Dcucumber.options="${params.testsToRunConverted}" test)</td>
+                </tr>
                 </tbody>
             </table>
             </br>
@@ -130,5 +142,13 @@
             default this is the job workspace directory. If tests are checked out in another directory, define in the job a String parameter "testsToRunCheckoutDirectory"
             with the correct directory.</li>
         <li> <b>JUnit/TestNG</b>: Supported for JUnit 4.7+, Surefire Plugin 2.19+, Failsafe Plugin 2.12.1+.</li>
+        <li> <b>Cucumber-JVM over Maven</b>: If your project contains several run classes, specify a run class that will
+            be used, otherwise all run classes will be executed by Cucumber. You can specify test runner by adding:
+            '-Dtest=[runner class name]' to the Maven command
+        </li>
     </ul>
+
+    </br>
+    </br>
+    See more help information in  <a target="_blank" href="https://admhelp.microfocus.com/octane/en/latest/Online/Content/AdminGuide/how-setup-testing-integration.htm">ALM Octane Help Center</a>
 </div>

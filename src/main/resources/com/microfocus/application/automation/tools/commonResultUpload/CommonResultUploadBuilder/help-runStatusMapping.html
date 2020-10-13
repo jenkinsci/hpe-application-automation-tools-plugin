@@ -1,0 +1,49 @@
+<!--
+  ~ Copyright (c) 2012 Hewlett-Packard Development Company, L.P.
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  ~ THE SOFTWARE.
+  -->
+
+<div>
+    <p>Run status mapping field is for mapping the test result's status values to ALM run status value.
+        Yaml key represents the test result run status value. You should first set the status field in field mapping.
+    Yaml value represents the ALM run status values. There are following status in ALM:<br>
+    No Run<br>
+    Passed<br>
+    Failed<br>
+    Blocked<br>
+    Not Completed<br>
+    </p>
+
+<xmp>
+Take following test result as example:
+<test-case name="ExampleTestOfNUnit.TestMultiplicationFail" executed="True" result="Failure" success="False" time="0.122" asserts="1">
+</xmp>
+
+<b>Sample field mapping:</b>
+<xmp>run:
+  status: "x: success"
+</xmp>
+<b>Sample status mapping:</b>
+<xmp>status:
+  True: "Passed"
+  False: "Failed"
+</xmp>
+
+</div>

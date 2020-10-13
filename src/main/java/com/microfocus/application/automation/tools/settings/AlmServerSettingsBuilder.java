@@ -25,9 +25,17 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
+import com.microfocus.application.automation.tools.model.CredentialsModel;
+import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
+import com.microfocus.application.automation.tools.model.SSOCredentialsModel;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import hudson.XmlFile;
+import net.sf.json.JSONArray;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.Logger;
@@ -83,13 +91,11 @@ public class AlmServerSettingsBuilder extends Builder {
     // This indicates to Jenkins that this is an implementation of an extension
     // point.
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        
+
         @Override
-        public boolean isApplicable(
-                @SuppressWarnings("rawtypes") Class<? extends AbstractProject> aClass) {
-            // Indicates that this builder can be used with all kinds of project
-            // types
-            return true;
+        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+            // Available only for global configuration
+            return false;
         }
         
         /**
@@ -140,10 +146,50 @@ public class AlmServerSettingsBuilder extends Builder {
             // (easier when there are many fields; need set* methods for this,
             // like setUseFrench)
             // req.bindParameters(this, "locks.");
-            
-            setInstallations(req.bindParametersToList(AlmServerSettingsModel.class, "alm.").toArray(
-                    new AlmServerSettingsModel[0]));
-            
+
+            List<AlmServerSettingsModel> models = new ArrayList<>();
+            JSONArray jsonArray = new JSONArray();
+
+            Object data = formData.get("inst");
+            if (data instanceof JSONObject) {
+                jsonArray.add(data);
+            } else if (data instanceof JSONArray) {
+                jsonArray.addAll((JSONArray) data);
+            }
+
+
+            for (Object jsonObject : jsonArray) {
+                JSONObject json = (JSONObject) jsonObject;
+                Object credentialsObj = json.get("credentials");
+                List<CredentialsModel> credentials = new ArrayList<>();
+                if (credentialsObj instanceof JSONArray) {
+                    JSONArray credentialsObjArray = (JSONArray) credentialsObj;
+                    credentials = req.bindJSONToList(CredentialsModel.class, credentialsObjArray);
+                } else if(credentialsObj instanceof JSONObject){
+                    CredentialsModel credentialsModel = req.bindJSON(CredentialsModel.class, (JSONObject) credentialsObj);
+                    credentials.add(credentialsModel);
+                }
+
+                Object ssoCredentialsObj = json.get("ssoCredentials");
+                List<SSOCredentialsModel> ssoCredentials = new ArrayList<>();
+                if (ssoCredentialsObj instanceof JSONArray) {
+                    JSONArray ssoCredentialsObjArray = (JSONArray) ssoCredentialsObj;
+                    ssoCredentials = req.bindJSONToList(SSOCredentialsModel.class, ssoCredentialsObjArray);
+                } else if(ssoCredentialsObj instanceof JSONObject){
+                    SSOCredentialsModel ssoCredentialsModel = req.bindJSON(SSOCredentialsModel.class, (JSONObject) ssoCredentialsObj);
+                    ssoCredentials.add(ssoCredentialsModel);
+                }
+
+                AlmServerSettingsModel newModel = req.bindJSON(AlmServerSettingsModel.class, json);
+                newModel.set_almCredentials(credentials);
+                newModel.set_almSSOCredentials(ssoCredentials);
+                if (!StringUtils.isEmpty(newModel.getAlmServerName()) && !(StringUtils.isEmpty(newModel.getAlmServerUrl()))) {
+                    models.add(newModel);
+                }
+            }
+
+            setInstallations(models.toArray(new AlmServerSettingsModel[0]));
+
             save();
             
             return super.configure(req, formData);
@@ -163,12 +209,19 @@ public class AlmServerSettingsBuilder extends Builder {
         public void setInstallations(AlmServerSettingsModel... installations) {
             this.installations = installations;
         }
-        
+
         public FormValidation doCheckAlmServerName(@QueryParameter String value) {
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error("ALM server name cannot be empty");
             }
-            
+
+            List<AlmServerSettingsModel> models = Arrays.asList(getInstallations());
+            for (AlmServerSettingsModel model : models) {
+                if (model.getAlmServerName().equals(value) && model.getAlmCredentials().isEmpty() && model.getAlmSSOCredentials().isEmpty()) {
+                    return FormValidation.error("Alm server does not have credentials defined");
+                }
+            }
+
             return FormValidation.ok();
         }
         
@@ -211,6 +264,31 @@ public class AlmServerSettingsBuilder extends Builder {
                 return FormValidation.error("Error opening a connection to the ALM server");
             }
             
+            return FormValidation.ok();
+        }
+
+
+
+        public FormValidation doCheckAlmUsername(@QueryParameter String value) {
+            if (StringUtils.isBlank(value)) {
+                return FormValidation.error("Username must be set");
+            }
+
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckAlmClientID(@QueryParameter String value) {
+            if (StringUtils.isBlank(value)) {
+                return FormValidation.error("Client ID must be set");
+            }
+
+            return FormValidation.ok();
+        }
+
+        private FormValidation doCheckAlmCredentials(@QueryParameter List<CredentialsModel> almCredentials) {
+            if(almCredentials.isEmpty()){
+                return FormValidation.error("Am server does not have credentials defined");
+            }
             return FormValidation.ok();
         }
 

@@ -110,10 +110,8 @@ public class TestNGExtension extends ResultFieldsDetectionExtension {
 			String[] includedFiles = ds.getIncludedFiles();
 			File baseDir = ds.getBasedir();
 
-			if (includedFiles.length > 0) {
-				if (findTestNgResultsFile(baseDir, includedFiles)) {
-					return true;
-				}
+			if (includedFiles.length > 0 && findTestNgResultsFile(baseDir, includedFiles)) {
+				return true;
 			}
 			return false;
 		}

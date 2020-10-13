@@ -20,10 +20,8 @@
 
 package com.microfocus.application.automation.tools.octane.model.processors.projects;
 
+import hudson.model.Item;
 import hudson.model.Job;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by gadiel on 30/11/2016.
@@ -57,6 +55,7 @@ public class JobProcessorFactory {
 
 	//  maven
 	public static final String MAVEN_JOB_NAME = "hudson.maven.MavenModuleSet";
+	public static final String MAVEN_MODULE_NAME = "hudson.maven.MavenModule";
 
 	//  folders
 	public static final String FOLDER_JOB_NAME = "com.cloudbees.hudson.plugins.folder.Folder";
@@ -66,29 +65,23 @@ public class JobProcessorFactory {
 	}
 
 	public static <T extends Job> AbstractProjectProcessor<T> getFlowProcessor(T job) {
-		Set<Job> processedJobs = new HashSet<>();
-		return getFlowProcessor(job, processedJobs);
-	}
-
-	public static <T extends Job> AbstractProjectProcessor<T> getFlowProcessor(T job, Set<Job> processedJobs) {
 		AbstractProjectProcessor flowProcessor;
-		processedJobs.add(job);
 
 		switch (job.getClass().getName()) {
 			case FREE_STYLE_JOB_NAME:
-				flowProcessor = new FreeStyleProjectProcessor(job, processedJobs);
+				flowProcessor = new FreeStyleProjectProcessor(job);
 				break;
 			case MATRIX_JOB_NAME:
-				flowProcessor = new MatrixProjectProcessor(job, processedJobs);
+				flowProcessor = new MatrixProjectProcessor(job);
 				break;
 			case MATRIX_CONFIGURATION_NAME:
-				flowProcessor = new MatrixConfigurationProcessor(job, processedJobs);
+				flowProcessor = new MatrixConfigurationProcessor(job);
 				break;
 			case MAVEN_JOB_NAME:
-				flowProcessor = new MavenProjectProcessor(job, processedJobs);
+				flowProcessor = new MavenProjectProcessor(job);
 				break;
 			case MULTIJOB_JOB_NAME:
-				flowProcessor = new MultiJobProjectProcessor(job, processedJobs);
+				flowProcessor = new MultiJobProjectProcessor(job);
 				break;
 			case WORKFLOW_JOB_NAME:
 				flowProcessor = new WorkFlowJobProcessor(job);
@@ -98,7 +91,23 @@ public class JobProcessorFactory {
 				break;
 		}
 
-		processedJobs.remove(job);
 		return flowProcessor;
+	}
+
+	public static  boolean isFolder(Item item) {
+		return JobProcessorFactory.FOLDER_JOB_NAME.equals(item.getClass().getName());
+	}
+
+	public static boolean isMultibranch(Item item) {
+		return JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME.equals(item.getClass().getName());
+	}
+
+	public static boolean isJob(Item item) {
+		return item instanceof Job;
+	}
+
+	public static boolean isMultibranchChild(Item item) {
+		return JobProcessorFactory.WORKFLOW_JOB_NAME.equals(item.getClass().getName()) &&
+				JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME.equals(item.getParent().getClass().getName());
 	}
 }

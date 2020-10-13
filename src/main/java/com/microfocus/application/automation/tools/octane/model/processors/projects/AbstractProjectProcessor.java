@@ -34,6 +34,7 @@ import jenkins.model.Jenkins;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 	private static final Logger logger = SDKBasedLoggerProvider.getLogger(AbstractProjectProcessor.class);
 	private final List<PipelinePhase> internals = new ArrayList<>();
 	private final List<PipelinePhase> postBuilds = new ArrayList<>();
-
+	private boolean isProcessed = false;
 	T job;
 
 	AbstractProjectProcessor(T job) {
@@ -90,10 +91,11 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 				item.getActions(ParametersAction.class).forEach(action -> {
 					if (checkSuiteIdParamsExistAndEqual(action, suiteId, suiteRunId)) {
 						try {
-							logger.info("canceling item in queue : " + item.getDisplayName());
+							logger.info("canceling item in queue : " + item.toString());
 							queue.cancel(item);
+							logger.info("Item in queue is cancelled item : " + item.toString());
 						} catch (Exception e) {
-							logger.warn("Failed to cancel '" + item.getDisplayName() + "' in queue : " + e.getMessage(), e);
+							logger.warn("Failed to cancel '" + item.toString() + "' in queue : " + e.getMessage(), e);
 						}
 					}
 				});
@@ -106,6 +108,7 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 						if (checkSuiteIdParamsExistAndEqual(action, suiteId, suiteRunId)) {
 							try {
 								aBuild.doStop();
+								logger.info("Build is stopped : " + aBuild.getProject().getDisplayName() + aBuild.getDisplayName());
 							} catch (Exception e) {
 								logger.warn("Failed to stop build '" + aBuild.getDisplayName() + "' :" + e.getMessage(), e);
 							}
@@ -141,12 +144,25 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 		}
 	}
 
+	public void buildStructure(Set<Job> processedJobs) {
+		processedJobs.add(job);
+		buildStructureInternal(processedJobs);
+		processedJobs.remove(job);
+		isProcessed = true;
+	}
+
+	protected void buildStructureInternal(Set<Job> processedJobs){
+	}
+
 	/**
 	 * Discover an internal phases of the Job
 	 *
 	 * @return list of phases
 	 */
 	public List<PipelinePhase> getInternals() {
+		if (!isProcessed) {
+			buildStructure(new HashSet<>());
+		}
 		return internals;
 	}
 
@@ -156,6 +172,9 @@ public abstract class AbstractProjectProcessor<T extends Job> {
 	 * @return list of phases
 	 */
 	public List<PipelinePhase> getPostBuilds() {
+		if (!isProcessed) {
+			buildStructure(new HashSet<>());
+		}
 		return postBuilds;
 	}
 

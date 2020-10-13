@@ -565,7 +565,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to No failed tests were found. Fix the test paths..
+        ///   Looks up a localized string similar to No tests were selected to rerun..
         /// </summary>
         internal static string LauncherNoFailedTestsFound {
             get {

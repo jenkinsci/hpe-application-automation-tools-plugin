@@ -46,14 +46,56 @@
 			<f:entry title="${%ALM server URL}" field="almServerUrl">
 				<f:textbox value="${inst.almServerUrl}" name="alm.almServerUrl" />
 			</f:entry>
-			
-			<f:entry title="">
+
+            <f:entry>
+                 <f:repeatable var="credentials" items="${inst.almCredentials}" add="Add credentials">
+                    <table>
+                         <f:entry title="ALM Username" field="almUsername">
+                            <f:textbox value="${credentials.almUsername}" name="almUsername" />
+                        </f:entry>
+
+                        <f:entry title="ALM Password" field="almPassword">
+                            <f:password value="${credentials.almPassword}" name="almPassword" />
+                        </f:entry>
+
+                        <f:entry>
+                            <div align="right">
+                                <f:repeatableDeleteButton value="Delete credentials" />
+                            </div>
+                        </f:entry>
+                    </table>
+                 </f:repeatable>
+             </f:entry>
+
+           <f:entry>
+              <f:repeatable var="ssoCredentials" items="${inst.almSSOCredentials}" add="Add SSO credentials">
+                 <table>
+                      <f:entry title="ALM Client ID" field="almClientID">
+                         <f:textbox value="${ssoCredentials.almClientID}" name="almClientID" />
+                     </f:entry>
+
+                     <f:entry title="ALM Api Key Secret" field="almApiKeySecret">
+                         <f:password value="${ssoCredentials.almApiKeySecret}" name="almApiKeySecret" />
+                     </f:entry>
+
+                     <f:entry>
+                         <div align="right">
+                             <f:repeatableDeleteButton value="Delete  SSO credentials" />
+                         </div>
+                     </f:entry>
+                 </table>
+              </f:repeatable>
+          </f:entry>
+
+
+			<f:entry>
 				<div align="right">
 				<f:repeatableDeleteButton value="Delete ALM server" />
 				</div>
 			</f:entry>
 			</table>
 		</f:repeatable>
+
 		</f:entry>
   </f:section>
 </j:jelly>

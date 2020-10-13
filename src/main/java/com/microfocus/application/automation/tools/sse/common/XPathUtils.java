@@ -47,6 +47,28 @@ import org.xml.sax.InputSource;
  */
 
 public class XPathUtils {
+
+    public static Map<String, String> getEntityFieldsMap(String xml) {
+        Document document = getDocument(xml);
+        NodeList entities = document.getElementsByTagName("Field");
+        Map<String, String> entityFieldsMap = new HashMap<String, String>();
+        for (int i = 0; i < entities.getLength(); i++) {
+            Element element = ((Element) entities.item(i));
+            entityFieldsMap.put(element.getAttribute("Label"), element.getAttribute("Name"));
+        }
+        return entityFieldsMap;
+    }
+
+    public static Map<String, String> getEntitySubtypesMap(String xml) {
+        Document document = getDocument(xml);
+        NodeList entities = document.getElementsByTagName("type");
+        Map<String, String> customizationMap = new HashMap<String, String>();
+        for (int i = 0; i < entities.getLength(); i++) {
+            Element element = ((Element) entities.item(i));
+            customizationMap.put(element.getAttribute("name"), element.getAttribute("id"));
+        }
+        return customizationMap;
+    }
     
     public static List<Map<String, String>> toEntities(String xml) {
         
@@ -138,7 +160,7 @@ public class XPathUtils {
         return ret;
     }
     
-    private static Document getDocument(String xml) {
+    public static Document getDocument(String xml) {
         
         Document ret = null;
         try {

@@ -139,6 +139,12 @@ public final class OctaneServerMock {
 					defaultGetTasksHandler(request, response);
 				} else if (request.getMethod().equals("GET") && request.getPathInfo().startsWith("/internal-api/shared_spaces/") && request.getPathInfo().endsWith("/workspaceId")) {
 					defaultGetWorkspaceFoLogsHandler(request, response);
+				} else if (request.getMethod().equals("GET") && request.getPathInfo().endsWith("connectivity/status")) {
+					response.setStatus(HttpServletResponse.SC_OK);
+					response.getWriter().write("{\"octaneVersion\":\"15.1.20.9999\",\"supportedSdkVersion\":\"1.4.17\"}");
+					response.getWriter().flush();
+					response.getWriter().close();
+					request.setHandled(true);
 				} else {
 					logger.info("will respond with 200 and empty content");
 					response.setStatus(HttpServletResponse.SC_OK);

@@ -35,6 +35,14 @@
       tags they use. Views are always organized according to its owner class,
       so it should be straightforward to find them.
     -->
+
+    <style>
+           .vertical-resizable{
+               resize: vertical;
+               height : 90px;
+           }
+    </style>
+
     <f:section title="ALM Octane CI">
         <f:entry title="ALM Octane Server Configuration" description="">
             <div data-aid="almOctane">
@@ -59,40 +67,38 @@
                             <f:textbox value="${mqm.impersonatedUser}"/>
                         </f:entry>
 
-                        <f:validateButton title="${%global.config.test.connection}" progress="${%global.config.test.connection.progress}"
-                                method="testConnection" with="uiLocation,username,password,impersonatedUser"/>
-
                         <f:advanced>
+                            <tr>
+                                <td class="setting-leftspace" colspan="3">
+                                    <div style="">
+                                        <f:checkbox checked="${mqm.suspend}" value="${mqm.suspend}" field="suspend"/>
+                                        <label>&#160; Disable configuration (Stop sending all data to ALM Octane) </label>
+                                    </div>
+                                </td>
+                            </tr>
                             <f:optionalBlock name="showIdentity" field="showIdentity" title="${%global.config.dynamic.instanceId.title}" >
                                 <f:entry title="${%global.config.instanceId.title}" field="identity" description="${%global.config.instanceId.description}">
                                     <f:textbox value="${mqm.identity}" />
                                 </f:entry>
                             </f:optionalBlock>
-                            <tr>
-                                <td class="setting-leftspace" colspan="3">
-                                    <div style="">
-                                        <f:checkbox checked="${mqm.suspend}" value="${mqm.suspend}" field="suspend"/>
-                                        <label>&#160; ${%global.config.suspend.title}</label>
-                                    </div>
-                                </td>
-                            </tr>
 
                             <f:entry/>
-                            <f:section title="${%global.config.ssc.tech.preview.title}"/>
+                             <f:entry title="${%global.config.workspaceConf.title}" field="workspace2ImpersonatedUserConf" description="${%global.config.workspaceConf.description}">
+                                <f:textarea  class="vertical-resizable"  value="${mqm.workspace2ImpersonatedUserConf}"/>
+                             </f:entry>
 
-                              <f:entry title="${%global.config.ssc.basetoken.title}" field="sscBaseToken" description="${%global.config.ssc.basetoken.description}">
-                                  <f:textbox value="${mqm.sscBaseToken}" />
+                              <f:entry title="${%global.config.parameters.title}" field="parameters" description="${%global.config.parameters.description}">
+                                 <f:textarea  class="vertical-resizable"  value="${mqm.parameters}"/>
                               </f:entry>
-                              <f:entry title="${%global.config.ssc.polling.timeout.title}" field="maxTimeoutHours" description="${%global.config.ssc.polling.timeout.description}">
-                                  <f:textbox value="${mqm.maxTimeoutHours}" />
-                              </f:entry>
+
                        </f:advanced>
 
+                        <f:validateButton title="${%global.config.test.connection}" progress="${%global.config.test.connection.progress}"
+                                              method="testConnection" with="uiLocation,username,password,impersonatedUser,suspend,workspace2ImpersonatedUserConf,parameters"/>
 
                     </table>
 
-
-                   <div style="float:right">
+                   <div align="right" style="margin-top:15px">
                         <f:repeatableDeleteButton value="${%delete_identity_btn}"></f:repeatableDeleteButton>
                     </div>
                 </f:repeatable>

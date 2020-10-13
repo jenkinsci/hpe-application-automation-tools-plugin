@@ -27,13 +27,13 @@ import com.hp.octane.integrations.dto.scm.SCMRepository;
 import com.hp.octane.integrations.dto.scm.SCMType;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import hudson.EnvVars;
+import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
 import hudson.model.Job;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.plugins.git.extensions.GitSCMExtension;
 import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
-import hudson.scm.ChangeLogSet;
 import hudson.scm.SCM;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.Logger;
@@ -43,6 +43,8 @@ import org.jenkinsci.plugins.gitclient.GitClient;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GitPluginHandler implements ScmPluginHandler {
 	private static final Logger logger = SDKBasedLoggerProvider.getLogger(GitPluginHandler.class);
@@ -56,7 +58,7 @@ public class GitPluginHandler implements ScmPluginHandler {
 		if (executorJob) {
 			String relativeCheckOut = "..\\..\\_test_sources\\" + scmRepository.getUrl().replaceAll("[<>:\"/\\|?*]", "_");
 			RelativeTargetDirectory targetDirectory = new RelativeTargetDirectory(relativeCheckOut);
-			extensions = Collections.<GitSCMExtension>singletonList(targetDirectory);
+			extensions = Collections.singletonList(targetDirectory);
 		}
 
 		String branch = "*/master";
@@ -71,13 +73,13 @@ public class GitPluginHandler implements ScmPluginHandler {
 			}
 		}
 
-		GitSCM scm = new GitSCM(repoLists, Collections.singletonList(new BranchSpec(branch)), false, Collections.<SubmoduleConfig>emptyList(), null, null, extensions);
+		GitSCM scm = new GitSCM(repoLists, Collections.singletonList(new BranchSpec(branch)), false, Collections.emptyList(), null, null, extensions);
 		proj.setScm(scm);
 	}
 
 	@Override
 	public String getSharedCheckOutDirectory(Job j) {
-		SCM scm = ((FreeStyleProject) j).getScm();
+		SCM scm = ((AbstractProject) j).getScm();
 
 		GitSCM gitScm = (GitSCM) scm;
 		RelativeTargetDirectory sharedCheckOutDirectory = gitScm.getExtensions().get(RelativeTargetDirectory.class);
@@ -124,4 +126,22 @@ public class GitPluginHandler implements ScmPluginHandler {
 	public SCMType getScmType() {
 		return SCMType.GIT;
 	}
+
+    @Override
+    public String tryExtractUrlShortName(String url) {
+		/*
+        Use Reg-ex pattern which covers both formats:
+        git@github.com:MicroFocus/hpaa-octane-dev.git
+        https://github.houston.softwaregrp.net/Octane/syncx.git
+        */
+
+        String patternStr = "^.*[/:](.*/.*)$";
+        Pattern pattern = Pattern.compile(patternStr);
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.find() && matcher.groupCount() == 1) {
+            return matcher.group(1);
+        } else {
+            return url;
+        }
+    }
 }

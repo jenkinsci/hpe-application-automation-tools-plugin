@@ -52,7 +52,6 @@
       <xs:enumeration value="decimal" />
     </xs:restriction>
   </xs:simpleType>
-
   <xs:element name="Mtbx">
     <xs:complexType>
       <xs:sequence>
@@ -73,6 +72,13 @@
               <xs:element name="DataTable" maxOccurs="1" minOccurs="0">
                 <xs:complexType>
                   <xs:attribute type="xs:string" name="path" use="required"/>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="Iterations" maxOccurs="1" minOccurs="0">
+                <xs:complexType>
+                  <xs:attribute type="xs:string" name="mode" use="required"/>
+                  <xs:attribute type="xs:integer" name="start" use="optional"/>
+                  <xs:attribute type="xs:integer" name="end" use="optional"/>
                 </xs:complexType>
               </xs:element>
             </xs:sequence>

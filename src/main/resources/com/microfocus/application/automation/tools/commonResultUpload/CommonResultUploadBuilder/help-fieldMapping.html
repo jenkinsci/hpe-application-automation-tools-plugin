@@ -1,0 +1,77 @@
+<!--
+  ~ Certain versions of software and/or documents ("Material") accessible here may contain branding from
+  ~ Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~ the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~ and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~ marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ (c) Copyright 2012-2019 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors ("Micro Focus") are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  -->
+
+<div>
+    <p>Field mapping content is a yaml format configuration. Three sections are required. They are 'testset', 'test' and 'run'.
+    Each section should has a 'root' property indicates the root node of the testset or test or run. Please note that test's root is based on testset's root. Run's root is based on test's root.</p>
+    <p>Beside root, you can define any field you want to upload as an ALM entity. Yaml key represents the entity's field name. Yaml value represents the entity's field value.</p>
+    <p>If you want to upload a value to a User defined field, you could use a key starts with 'udf|' follows by the UDF label. Such as 'udf-duration' would upload value to a UDF field which has label as 'duration'.</p>
+    <p>For the yaml value part, there're two types of value. Value starts with 'x:' means the following value represents the xpath in the test result file. Value starts with 'v:' means the following value is a string value which would be applied to every entity.</p>
+    <p>You can use '|' in yame value for combining several parts together.</p>
+
+    <b>Sample test result:</b>
+    <xmp><?xml version='1.0' encoding='UTF-8'?>
+    <result>
+        <suites>
+            <suite>
+                <file>Changes file</file>
+                <name>Changes Test Set 1</name>
+                <duration>2.293</duration>
+                <cases>
+                    <case>
+                        <duration>8.293</duration>
+                        <className>ChangesManagement</className>
+                        <testName>test1</testName>
+                        <testVersion>4.0</testVersion>
+                        <skipped>false</skipped>
+                        <failedSince>0</failedSince>
+                    </case>
+                    <case>
+                        <duration>8.293</duration>
+                        <className>ChangesManagement</className>
+                        <testName>List changes 2</testName>
+                        <testVersion>4.0</testVersion>
+                        <skipped>false</skipped>
+                        <failedSince>0</failedSince>
+                    </case>
+                </cases>
+            </suite>
+            <duration>0.576</duration>
+    </result></xmp>
+
+    <b>Sample field mapping:</b>
+    <xmp>
+testset:
+  root: "x:/result/suites/suite"
+  name: "x:file|v:_|x:name"
+  udf|duration: "x:duration"
+  subtype-id: "v:hp.qc.test-set.external"
+test:
+  root: "x:cases/case"
+  name: "x:testName"
+  subtype-id: "v:EXTERNAL-TEST"
+  udf|duration: "x:duration"
+  udf|test version: "x:testVersion"
+run:
+  root: "x:."
+  duration: "x:duration"
+  status: "x:failedSince"
+</xmp>
+</div>

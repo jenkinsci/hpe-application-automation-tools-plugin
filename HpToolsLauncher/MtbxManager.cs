@@ -29,15 +29,12 @@ using System.Text;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using HpToolsLauncher.Properties;
+using HpToolsLauncher.TestRunners;
 
 namespace HpToolsLauncher
 {
     public class MtbxManager
     {
-
-        private static string _defaultFileExt = ".mtbx";
-
-
 
         //the xml format of an mtbx file below:
         /*
@@ -47,6 +44,7 @@ namespace HpToolsLauncher
                 <Parameter Name="mee1" Value="12.0" Type="Double"/>
                 <Parameter Name="mee2" Value="abc" Type="String"/>
                 <DataTable path="c:\tables\my_data_table.xls"/>
+                <Iterations mode="rngIterations|rngAll|oneIteration" start="2" end="3"/>
             </Test>
             <Test Name="test2" path="${workspace}\test2">
                 <Parameter Name="mee" Value="12" Type="Integer"/>
@@ -84,9 +82,9 @@ namespace HpToolsLauncher
              && string.Equals(a.Name.LocalName, eName.LocalName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public static List<TestInfo> Parse(string mtbxFileName, Dictionary<string, string> jankinsEnvironmentVars, string testGroupName)
+        public static List<TestInfo> Parse(string mtbxFileName, Dictionary<string, string> jenkinsEnvironmentVars, string testGroupName)
         {
-            return LoadMtbx(File.ReadAllText(mtbxFileName), jankinsEnvironmentVars, testGroupName);
+            return LoadMtbx(File.ReadAllText(mtbxFileName), jenkinsEnvironmentVars, testGroupName);
         }
         private static string ReplaceString(string str, string oldValue, string newValue, StringComparison comparison)
         {
@@ -171,7 +169,7 @@ namespace HpToolsLauncher
                     if (xname != null && xname.Value != ""){
                         name = xname.Value;
                     }
-                    
+
                     // optional report path attribute
                     XAttribute xReportPath = GetAttribute(test, "reportPath");
                     string reportPath = null;
@@ -190,7 +188,6 @@ namespace HpToolsLauncher
 
                     foreach (var param in GetElements(test, "Parameter"))
                     {
-                        
                         string pname = GetAttribute(param, "name").Value;
                         string pval = GetAttribute(param, "value").Value;
                         XAttribute xptype = GetAttribute(param, "type");
@@ -216,6 +213,29 @@ namespace HpToolsLauncher
                     if (dataTable != null)
                     {
                         col.DataTablePath = GetAttribute(dataTable, "path").Value;
+                    }
+
+                    XElement iterations = GetElement(test, "Iterations");
+                    if (iterations != null)
+                    {
+                        IterationInfo ii = new IterationInfo();
+                        XAttribute modeAttr = GetAttribute(iterations, "mode");
+                        if (modeAttr != null)
+                        {
+                            ii.IterationMode = modeAttr.Value;
+                        }
+                        XAttribute startAttr = GetAttribute(iterations, "start");
+                        if (startAttr != null)
+                        {
+                            ii.StartIteration = startAttr.Value;
+                        }
+                        XAttribute endAttr = GetAttribute(iterations, "end");
+                        if (endAttr != null)
+                        {
+                            ii.EndIteration = endAttr.Value;
+                        }
+
+                        col.IterationInfo = ii;
                     }
 
                     retval.Add(col);

@@ -45,7 +45,6 @@ import hudson.scm.SCM;
 import jenkins.model.Jenkins;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -69,11 +68,15 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 		if(!OctaneSDK.hasClients()){
 			return;
 		}
+		publishStartEvent(build);
+	}
+
+	private void publishStartEvent(AbstractBuild build) {
 		try {
 			CIEvent event = dtoFactory.newDTO(CIEvent.class)
 					.setEventType(CIEventType.STARTED)
 					.setProject(BuildHandlerUtils.getJobCiId(build))
-					.setProjectDisplayName(BuildHandlerUtils.getJobCiId(build))
+					.setProjectDisplayName(BuildHandlerUtils.translateFullDisplayName(build.getParent().getFullDisplayName()))
 					.setBuildCiId(BuildHandlerUtils.getBuildCiId(build))
 					.setNumber(String.valueOf(build.getNumber()))
 					.setStartTime(build.getStartTimeInMillis())
@@ -96,12 +99,17 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 		if(!OctaneSDK.hasClients()){
 			return;
 		}
+		publishFinishEvent(build);
+		BuildLogHelper.enqueueBuildLog(build);
+	}
+
+	private void publishFinishEvent(AbstractBuild build) {
 		try {
 			boolean hasTests = testListener.processBuild(build);
 			CIEvent event = dtoFactory.newDTO(CIEvent.class)
 					.setEventType(CIEventType.FINISHED)
 					.setProject(BuildHandlerUtils.getJobCiId(build))
-					.setProjectDisplayName(BuildHandlerUtils.getJobCiId(build))
+					.setProjectDisplayName((BuildHandlerUtils.translateFullDisplayName(build.getParent().getFullDisplayName())))
 					.setBuildCiId(BuildHandlerUtils.getBuildCiId(build))
 					.setNumber(String.valueOf(build.getNumber()))
 					.setStartTime(build.getStartTimeInMillis())
@@ -150,14 +158,9 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 
 		if (upstreamCause != null) {
 			String causeJobName = upstreamCause.getUpstreamProject();
-			TopLevelItem parent = Jenkins.get().getItem(causeJobName);
+			Item parent = Jenkins.get().getItemByFullName(causeJobName);
 			if (parent == null) {
-				if (causeJobName.contains("/") && !causeJobName.contains(",")) {
-					Job parentJob = getJobFromFolder(causeJobName);
-					if (parentJob != null) {
-						result = true;
-					}
-				}
+				result = true;
 			} else {
 				if (parent.getClass().getName().equals(JobProcessorFactory.WORKFLOW_JOB_NAME)) {
 					result = true;
@@ -175,20 +178,5 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 			}
 		}
 		return result;
-	}
-
-	private static Job getJobFromFolder(String causeJobName) {
-		String newJobRefId = causeJobName.substring(0, causeJobName.indexOf('/'));
-		TopLevelItem item = Jenkins.get().getItem(newJobRefId);
-		if (item != null) {
-			Collection<? extends Job> allJobs = item.getAllJobs();
-			for (Job job : allJobs) {
-				if (causeJobName.endsWith(job.getName())) {
-					return job;
-				}
-			}
-			return null;
-		}
-		return null;
 	}
 }

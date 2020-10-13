@@ -110,7 +110,7 @@ public class SvDeployBuilder extends AbstractSvRunBuilder<SvDeployModel> {
 
             for (IService service : getServiceList(project)) {
                 logger.printf("  Deploying service '%s' [%s] %n", service.getName(), service.getId());
-                DeployProcessorInput deployInput = new DeployProcessorInput(model.isForce(), false, project, model.getService(), null);
+                DeployProcessorInput deployInput = new DeployProcessorInput(model.isForce(), false, project, model.getService(), null, false);
                 deployInput.setFirstAgentFailover(model.isFirstAgentFallback());
                 processor.process(deployInput, commandExecutor);
             }

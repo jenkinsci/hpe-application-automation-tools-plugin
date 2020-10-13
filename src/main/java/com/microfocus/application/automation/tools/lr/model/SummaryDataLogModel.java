@@ -26,7 +26,7 @@ import hudson.util.FormValidation;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import javax.annotation.Nonnull;

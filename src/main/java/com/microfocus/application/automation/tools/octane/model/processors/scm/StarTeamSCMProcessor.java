@@ -135,14 +135,14 @@ class StarTeamSCMProcessor implements SCMProcessor {
   }
 
   private Object callMethodViaReflection(Object object, String methodName) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-    Class<? extends Object> cls = object.getClass();
+    Class<?> cls = object.getClass();
     Method methodTocall = cls.getDeclaredMethod(methodName); 
     Object returnValue = methodTocall.invoke(object); 
     return returnValue;
   }
 
   private String getSCMRepositoryBranch(SCM starTeamSCM) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-    String branch = null;
+    String branch;
     if (usingStarTeamURL(starTeamSCM))
       branch = "";
     else {
@@ -157,7 +157,7 @@ class StarTeamSCMProcessor implements SCMProcessor {
   }
 
   private String getSCMRepositoryURL(SCM starTeamSCM) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    String url = null;
+    String url;
     if (usingStarTeamURL(starTeamSCM)) {
       Object returnValue = callMethodViaReflection(starTeamSCM, "getStFolderUrl"); 
       url = (String) returnValue;
@@ -216,7 +216,7 @@ class StarTeamSCMProcessor implements SCMProcessor {
 
   private String getChangeType(ChangeLogSet.Entry commit) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, SecurityException {
     Object changeType = callMethodViaReflection(commit, ("getChangeType"));
-    return (String) changeType.toString();
+    return changeType.toString();
   }
 
   private Integer getRevisionNumber(ChangeLogSet.Entry commit) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {

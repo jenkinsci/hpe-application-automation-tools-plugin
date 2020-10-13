@@ -25,7 +25,6 @@ package com.microfocus.application.automation.tools.octane.tests;
  */
 public enum HPRunnerType {
     StormRunnerLoad,
-    StormRunnerFunctional,
     UFT,
     PerformanceCenter,
     LoadRunner,

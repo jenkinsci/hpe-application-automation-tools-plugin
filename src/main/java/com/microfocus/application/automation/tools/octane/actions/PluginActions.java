@@ -20,11 +20,10 @@
 
 package com.microfocus.application.automation.tools.octane.actions;
 
+import com.hp.octane.integrations.OctaneClient;
 import com.hp.octane.integrations.OctaneSDK;
-import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.general.CIServerInfo;
 import com.microfocus.application.automation.tools.octane.CIJenkinsServicesImpl;
-import com.microfocus.application.automation.tools.octane.configuration.ConfigApi;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
 import hudson.Extension;
 import hudson.model.RootAction;
@@ -48,10 +47,10 @@ import java.util.Map;
 
 @Extension
 public class PluginActions implements RootAction {
-    private String STATUS_REQUEST = "/nga/api/v1/status";
-    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-
-    private static final DTOFactory dtoFactory = DTOFactory.getInstance();
+    private final String API = "/nga/api/v1";
+    private final String STATUS_REQUEST = API + "/status";
+    private final String REENQUEUE_EVENT_REQUEST = API + "/reenqueue";
+    private final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
     public String getIconFileName() {
         return null;
@@ -65,9 +64,6 @@ public class PluginActions implements RootAction {
         return "nga";
     }
 
-    public ConfigApi getConfiguration() {
-        return new ConfigApi();
-    }
 
     public void doDynamic(StaplerRequest req, StaplerResponse res) throws IOException {
 
@@ -76,6 +72,12 @@ public class PluginActions implements RootAction {
             res.setHeader("Content-Type", ContentType.APPLICATION_JSON.getMimeType());
             res.setStatus(200);
             res.getWriter().write(result.toString());
+            return;
+        } else if (req.getRequestURI().toLowerCase().contains(REENQUEUE_EVENT_REQUEST)) {
+            reEnqueueEvent(req.getParameterMap());
+            res.setHeader("Content-Type", ContentType.TEXT_PLAIN.getMimeType());
+            res.setStatus(200);
+            res.getWriter().write("resent");
             return;
         } else {
             res.setStatus(404);
@@ -107,18 +109,64 @@ public class PluginActions implements RootAction {
 
                     client -> {
                         JSONObject confJson = new JSONObject();
-                        JSONObject taskPollingMetricsJson = new JSONObject();
-                        client.getBridgeService().getMetrics().entrySet().forEach(e -> {
-                            String value = e.getValue() instanceof Date ? format.format(e.getValue()) : e.getValue().toString();
-                            taskPollingMetricsJson.put(e.getKey(), value);
-                        });
-                        confJson.put("taskPolling", taskPollingMetricsJson);
-                        allMetricsJson.put(client.getInstanceId(), confJson);
+                        addMetrics(client.getMetrics(), "client", confJson);
+                        addMetrics(client.getBridgeService().getMetrics(), "taskPollingService", confJson);
+                        addMetrics(client.getEventsService().getMetrics(), "eventsService", confJson);
+                        addMetrics(client.getTestsService().getMetrics(), "testsService", confJson);
+                        addMetrics(client.getLogsService().getMetrics(), "buildLogsService", confJson);
+                        addMetrics(client.getVulnerabilitiesService().getMetrics(), "vulnerabilitiesService", confJson);
+                        addMetrics(client.getSonarService().getMetrics(), "sonarService", confJson);
+                        addMetrics(client.getCoverageService().getMetrics(), "coverageService", confJson);
+                        addMetrics(client.getSCMDataService().getMetrics(), "scmDataService", confJson);
+                        addMetrics(client.getRestService().obtainOctaneRestClient().getMetrics(), "restClient", confJson);
+
+
+                        allMetricsJson.put(client.getConfigurationService().getConfiguration().geLocationForLog(), confJson);
                     }
             );
             result.put("metrics", allMetricsJson);
         }
 
         return result;
+    }
+
+    private void addMetrics(Map<String, Object> metrics, String metricsGroup, JSONObject confJson) {
+        JSONObject metricsJson = new JSONObject();
+        metrics.entrySet().forEach(e -> {
+            String value = e.getValue() instanceof Date ? format.format(e.getValue()) : e.getValue().toString();
+            metricsJson.put(e.getKey(), value);
+        });
+        confJson.put(metricsGroup, metricsJson);
+    }
+
+    private void reEnqueueEvent(Map<String, String[]> parameterMap) {
+        if (!parameterMap.containsKey("instanceId")) {
+            throw new IllegalArgumentException("instanceId parameter is missing");
+        }
+        if (!parameterMap.containsKey("eventType")) {
+            throw new IllegalArgumentException("eventType parameter is missing");
+        }
+        if (!parameterMap.containsKey("jobId")) {
+            throw new IllegalArgumentException("jobId parameter is missing");
+        }
+        if (!parameterMap.containsKey("buildId")) {
+            throw new IllegalArgumentException("buildId parameter is missing");
+        }
+
+        String instanceId = parameterMap.get("instanceId")[0];
+        String eventType = parameterMap.get("eventType")[0];
+        String jobId = parameterMap.get("jobId")[0];
+        String buildId = parameterMap.get("buildId")[0];
+        String rootId = null;
+        if (parameterMap.containsKey("rootId")) {
+            rootId = parameterMap.get("rootId")[0];
+        }
+
+        OctaneClient octaneClient = OctaneSDK.getClientByInstanceId(instanceId);
+        if ("tests".equals(eventType.toLowerCase())) {
+            octaneClient.getTestsService().enqueuePushTestsResult(jobId, buildId, rootId);
+        } else if ("commits".equals(eventType.toLowerCase())) {
+            octaneClient.getSCMDataService().enqueueSCMData(jobId, buildId, null);
+        }
     }
 }

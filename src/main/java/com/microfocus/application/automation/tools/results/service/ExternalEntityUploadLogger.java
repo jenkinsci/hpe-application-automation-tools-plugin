@@ -31,11 +31,17 @@ public class ExternalEntityUploadLogger implements Logger {
 	public ExternalEntityUploadLogger(PrintStream printStream) {
 		this.printStream = printStream;
 	}
+
 	@Override
 	public void log(String message) {
 		if(printStream != null) {
 			printStream.println(message);
 		}
+	}
+
+	@Override
+	public void error(String message) {
+		log(message);
 	}
 
 }

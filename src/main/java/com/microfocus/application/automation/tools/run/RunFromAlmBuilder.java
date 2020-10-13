@@ -20,6 +20,10 @@
 
 package com.microfocus.application.automation.tools.run;
 
+import com.cloudbees.groovy.cps.impl.ListBlock;
+import com.microfocus.application.automation.tools.model.*;
+import com.microfocus.application.automation.tools.octane.JellyUtils;
+import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.uft.model.FilterTestsModel;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsBuilder;
 import hudson.EnvVars;
@@ -34,6 +38,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.IOUtils;
+import hudson.util.ListBoxModel;
 import hudson.util.VariableResolver;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,10 +47,9 @@ import java.io.PrintStream;
 import java.net.URL;
 import java.text.Format;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
+import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
@@ -55,22 +59,20 @@ import org.kohsuke.stapler.QueryParameter;
 
 import com.microfocus.application.automation.tools.AlmToolsUtils;
 import com.microfocus.application.automation.tools.EncryptionUtils;
-import com.microfocus.application.automation.tools.model.AlmServerSettingsModel;
-import com.microfocus.application.automation.tools.model.EnumDescription;
-import com.microfocus.application.automation.tools.model.RunFromAlmModel;
 import com.microfocus.application.automation.tools.run.AlmRunTypes.RunType;
 
 import static com.microfocus.application.automation.tools.Messages.CompanyName;
 import static com.microfocus.application.automation.tools.Messages.RunFromAlmBuilderStepName;
 
 public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
-    
+
     public RunFromAlmModel runFromAlmModel;
     private boolean isFilterTestsEnabled;
     private FilterTestsModel filterTestsModel;
     private final static String HpToolsLauncher_SCRIPT_NAME = "HpToolsLauncher.exe";
     private String ResultFilename = "ApiResults.xml";
     private String ParamFileName = "ApiRun.txt";
+    private AlmServerSettingsModel almServerSettingsModel;
 
     @DataBoundConstructor
     public RunFromAlmBuilder(
@@ -88,10 +90,12 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             String almApiKey,
             boolean isSSOEnabled,
             boolean isFilterTestsEnabled,
-            FilterTestsModel filterTestsModel){
+            FilterTestsModel filterTestsModel,
+            AlmServerSettingsModel almServerSettingsModel){
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.filterTestsModel = filterTestsModel;
+        this.almServerSettingsModel = almServerSettingsModel;
 
         runFromAlmModel =
                 new RunFromAlmModel(
@@ -116,9 +120,17 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
 
     public boolean getIsSSOEnabled() { return runFromAlmModel.isSSOEnabled(); }
 
-    public String getAlmUserName(){
-        return runFromAlmModel.getAlmUserName();
+    public void setIsSSOEnabled(Boolean isSSOEnabled) { runFromAlmModel.setIsSSOEnabled(isSSOEnabled);}
+
+    @DataBoundSetter
+    public void setRunFromAlmModel(RunFromAlmModel runFromAlmModel){
+        this.runFromAlmModel = runFromAlmModel;
     }
+
+    @DataBoundSetter
+    public  void setAlmServerSettingsModel(AlmServerSettingsModel almServerSettingsModel) { this.almServerSettingsModel = almServerSettingsModel; }
+
+    public String getAlmUserName(){ return runFromAlmModel.getAlmUserName(); }
 
     public String getAlmPassword(){
         return runFromAlmModel.getAlmPassword();
@@ -160,6 +172,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
 
     public String getAlmApiKey() { return runFromAlmModel.getAlmApiKey(); }
 
+
    @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {
         this.isFilterTestsEnabled = isFilterTestsEnabled;
@@ -194,7 +207,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
 		
             return;
         }
-        
+
         EnvVars env = null;
         try {
             env = build.getEnvironment(listener);
@@ -209,13 +222,20 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
 
         mergedProperties.putAll(almServerSettingsModel.getProperties());
         mergedProperties.putAll(runFromAlmModel.getProperties(env, varResolver));
-        
+
         String encAlmPass = "";
         try {
-            
+            String almPassword = "";
+            List<CredentialsModel> credentials = almServerSettingsModel.getAlmCredentials();
+            for(CredentialsModel model : credentials){
+                if(model.getAlmUsername().equals(runFromAlmModel.getAlmUserName())){
+                    almPassword = model.getAlmPassword();
+                    break;
+                }
+            }
             encAlmPass =
                     EncryptionUtils.Encrypt(
-                            runFromAlmModel.getAlmPassword(),
+                            almPassword,
                             EncryptionUtils.getSecretKey());
             
             mergedProperties.remove(RunFromAlmModel.ALM_PASSWORD_KEY);
@@ -228,9 +248,18 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
 
         String encAlmApiKey = "";
         try{
+            String almApiKeySecret = "";
+            List<SSOCredentialsModel> ssoCredentials = almServerSettingsModel.getAlmSSOCredentials();
+            for(SSOCredentialsModel model : ssoCredentials){
+                if(model.getAlmClientID().equals(runFromAlmModel.getAlmClientID())){
+                    almApiKeySecret = model.getAlmApiKeySecret();
+                    break;
+                }
+            }
+
             encAlmApiKey =
                     EncryptionUtils.Encrypt(
-                            runFromAlmModel.getAlmApiKey(),
+                            almApiKeySecret,
                             EncryptionUtils.getSecretKey());
             mergedProperties.remove(RunFromAlmModel.ALM_API_KEY_SECRET);
             mergedProperties.put(RunFromAlmModel.ALM_API_KEY_SECRET, encAlmApiKey);
@@ -345,17 +374,18 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     
     public AlmServerSettingsModel getAlmServerSettingsModel() {
         for (AlmServerSettingsModel almServer : getDescriptor().getAlmServers()) {
-            if (this.runFromAlmModel != null
-                && runFromAlmModel.getAlmServerName().equals(almServer.getAlmServerName())) {
-                return almServer;
-            }
+            if (runFromAlmModel != null && runFromAlmModel.getAlmServerName().equals(almServer.getAlmServerName())) {
+                    return almServer;
+                }
         }
+
         return null;
     }
-    
+
     public RunFromAlmModel getRunFromAlmModel() {
         return runFromAlmModel;
     }
+
 
     // This indicates to Jenkins that this is an implementation of an extension
     // point.
@@ -385,9 +415,134 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                     AlmServerSettingsBuilder.DescriptorImpl.class).hasAlmServers();
         }
         
-        public AlmServerSettingsModel[] getAlmServers() {
-            return Hudson.getInstance().getDescriptorByType(
-                    AlmServerSettingsBuilder.DescriptorImpl.class).getInstallations();
+        public Set<AlmServerSettingsModel> getAlmServers() {
+            Set<AlmServerSettingsModel> almServers = new HashSet<>();
+            for (AlmServerSettingsModel almServer : Jenkins.getInstanceOrNull().getDescriptorByType(AlmServerSettingsBuilder.DescriptorImpl.class).getInstallations())
+            {
+                almServers.add(almServer);
+            }
+            return almServers;
+        }
+
+        public Set<String> getAlmServerNames(){
+            Set<String> almServers = new HashSet<>();
+            for (AlmServerSettingsModel almServer : Hudson.getInstance().getDescriptorByType(AlmServerSettingsBuilder.DescriptorImpl.class).getInstallations())
+            {
+                almServers.add(almServer.getAlmServerName());
+            }
+            return almServers;
+        }
+
+        public List<String> getAlmUsernames(String almServerName) {
+            List<String> usernames = new ArrayList<>();
+            Set<AlmServerSettingsModel> serverList = getAlmServers();
+            for (AlmServerSettingsModel model: serverList) {
+                    if (model.getAlmCredentials().get(0).getAlmUsername() != null && model.getAlmCredentials().get(0).getAlmUsername() != "" && model.getAlmServerName().equals(almServerName)) {
+                        usernames.add(model.getAlmCredentials().get(0).getAlmUsername());
+                    }
+            }
+
+            return usernames;
+        }
+
+
+       public List<String> getAlmClientIds(String almServerName) {
+            List<String> clientIDList = new ArrayList<>();
+            Set<AlmServerSettingsModel> serverList = getAlmServers();
+            for (AlmServerSettingsModel model: serverList) {
+                if(!model.getAlmCredentials().isEmpty()  && model.getAlmServerName().equals(almServerName)){
+                    for(SSOCredentialsModel ssoCredentialsModel : model.getAlmSSOCredentials()) {
+                        clientIDList.add(ssoCredentialsModel.getAlmClientID());
+                    }
+                }
+            }
+
+            return clientIDList;
+        }
+
+        public ListBoxModel doFillAlmServerNameItems() {
+            ListBoxModel m = new ListBoxModel();
+            Set<String> serverList = getAlmServerNames();
+            for(String server: serverList){
+                    m.add(server);
+            }
+            return m;
+        }
+
+
+
+
+        public ListBoxModel doFillAlmUserNameItems(@QueryParameter String almServerName) {
+            ListBoxModel m = new ListBoxModel();
+            Set<AlmServerSettingsModel> serverList = getAlmServers();
+            for (AlmServerSettingsModel model: serverList) {
+                if (model.getAlmServerName().equals(almServerName)) {
+                    if(!model.getAlmCredentials().isEmpty()) {
+                        for (CredentialsModel credentialsModel : model.getAlmCredentials()) {
+                            m.add(credentialsModel.getAlmUsername());
+                        }
+                    }
+                }
+            }
+            if(m.size() == 0 && !StringUtils.isEmpty(almServerName)){
+               m.add(UftConstants.NO_USERNAME_DEFINED);
+            }
+
+
+            if (m.size() == 0 && StringUtils.isEmpty(almServerName)) {//new job
+                Set<String> serverNames = getAlmServerNames();
+                for (AlmServerSettingsModel model: serverList) {
+                    for (String serverName : serverNames) {
+                        if (model.getAlmServerName().equals(serverName)) {
+                            for (CredentialsModel credentialsModel : model.getAlmCredentials()) {
+                                m.add(credentialsModel.getAlmUsername());
+                            }
+                        }
+                    }
+                }
+               if (m.size() == 0) {
+                    m.add(UftConstants.NO_USERNAME_DEFINED);
+               }
+            }
+
+            return m;
+        }
+
+        public ListBoxModel doFillAlmClientIDItems(@QueryParameter String almServerName){
+            ListBoxModel m = new ListBoxModel();
+            Set<AlmServerSettingsModel> serverList = getAlmServers();
+            for (AlmServerSettingsModel model: serverList) {
+                if(model.getAlmServerName().equals(almServerName)){
+                    if(!model.getAlmSSOCredentials().isEmpty()) {
+                        for (SSOCredentialsModel ssoCredentialsModel : model.getAlmSSOCredentials()) {
+                            m.add(ssoCredentialsModel.getAlmClientID());
+                        }
+                    }
+                }
+
+            }
+
+            if(m.size() == 0 && !StringUtils.isEmpty(almServerName)){
+                m.add(UftConstants.NO_CLIENT_ID_DEFINED);
+            }
+
+            if (m.size() == 0 && StringUtils.isEmpty(almServerName)) {//new job
+                Set<String> serverNames = getAlmServerNames();
+                for (AlmServerSettingsModel model: serverList) {
+                    for (String serverName : serverNames) {
+                        if (model.getAlmServerName().equals(serverName)) {
+                            for (SSOCredentialsModel ssoCredentialsModel : model.getAlmSSOCredentials()) {
+                                m.add(ssoCredentialsModel.getAlmClientID());
+                            }
+                        }
+                    }
+                }
+                if(m.size() == 0){
+                        m.add(UftConstants.NO_CLIENT_ID_DEFINED);
+                }
+            }
+
+            return m;
         }
 
 
@@ -409,10 +564,6 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         }
         
         public FormValidation doCheckAlmPassword(@QueryParameter String value) {
-            // if (StringUtils.isBlank(value)) {
-            // return FormValidation.error("Password must be set");
-            // }
-            
             return FormValidation.ok();
         }
         
@@ -450,7 +601,6 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         public List<EnumDescription> getAlmRunModes() {
             return RunFromAlmModel.runModes;
         }
-
 
     }
     

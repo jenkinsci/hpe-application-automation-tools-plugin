@@ -21,6 +21,7 @@
 package com.microfocus.application.automation.tools.model;
 
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
+import com.microfocus.application.automation.tools.uft.utils.UftToolUtils;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -32,8 +33,6 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static com.microfocus.application.automation.tools.model.RunFromFileSystemModel.isMtbxContent;
 
 /**
  * Represents the tests that ParallelRunner should run and the environments on which to run them.
@@ -102,7 +101,7 @@ public class FileSystemTestModel extends AbstractDescribableImpl<FileSystemTestM
         if(StringUtils.isNullOrEmpty(this.tests))
             return result;
 
-        if (isMtbxContent(expandedFsTests)) {
+        if (UftToolUtils.isMtbxContent(expandedFsTests)) {
             result.add(expandedFsTests);
         } else {
             result = Arrays.asList(expandedFsTests.replaceAll("\r", "").split("\n"));

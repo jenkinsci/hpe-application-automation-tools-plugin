@@ -54,6 +54,12 @@
       border-color: #666666;
       background-color: #00b0f0;
     }
+
+    .reportTable {
+        height: 400px;
+        display: block;
+        overflow: auto;
+    }
     </style>
 
     <st:include it="${it.build}" page="sidepanel.jelly" />
@@ -62,6 +68,7 @@
        <br/>
 
        <p>
+       <div class="reportTable">
        <table border="1" cellpadding="0" cellspacing="0" frame="vsides above bottom" >
          <tr>
              <th class = "topNormalCell">Type</th>
@@ -69,6 +76,7 @@
              <th class = "topNormalCell">Timestamp</th>
              <th class = "topNormalCell">Status</th>
              <th class = "topLastCell">Folder</th>
+             <th class = "topLastCell">Archive</th>
          </tr>
 
          <j:forEach var="s" items="${it.allReports}">
@@ -122,9 +130,15 @@
              </j:choose>
 
              <td class = "bodycell"><a href="../${s.resourceURL}">Open</a></td>
+             <td class = "bodycell">
+                <j:if test="${s.hasArchiveUrl}">
+                    <a href="../${s.archiveUrl}">Download</a>
+                </j:if>
+             </td>
            </tr>
          </j:forEach>
        </table>
+       </div>
        </p>
     </l:main-panel>
 

@@ -227,7 +227,7 @@ Save the test in QuickTest and then run it again.</value>
     <value>Test: {0}, Status: {1}, Message: {2}, Link: {3}</value>
   </data>
   <data name="FsRunnerNoValidTests" xml:space="preserve">
-    <value>===============================\nThere are no valid tests to run!\n===============================</value>
+    <value>=============================== There are no valid tests to run! ===============================</value>
   </data>
   <data name="FsRunnerRunningTest" xml:space="preserve">
     <value>Running test: {0}</value>
@@ -296,7 +296,7 @@ Save the test in QuickTest and then run it again.</value>
     <value>No valid cleanup tests were found. Fix the test paths.</value>
   </data>
   <data name="LauncherNoFailedTestsFound" xml:space="preserve">
-    <value>No failed tests were found. Fix the test paths.</value>
+    <value>No tests were selected to rerun.</value>
   </data>
   <data name="LauncherNoValidFailedTests" xml:space="preserve">
     <value>No valid failed tests to rerun were found. Fix the test paths.</value>

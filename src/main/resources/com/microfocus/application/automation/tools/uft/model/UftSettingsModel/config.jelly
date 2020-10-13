@@ -36,7 +36,7 @@
         <f:entry>
            <f:checkbox id="checkBox1" title="On failure" field="onCheckFailedTest" name="onCheckFailedTest" class="checbox-align" checked="${instance.onCheckFailedTest}" onclick="enableCombobox(this)"/>
            <f:entry field="fsTestType">
-                <select name="fsTestType" style="width: 200px;" disabled="${onCheckFailedTest.checked}" onchange="selectValueCombo(this)">
+                <select name="fsTestType" style="width: 250px;" disabled="${onCheckFailedTest.checked}" onchange="selectValueCombo(this)">
                     <j:forEach var="testType" items="${descriptor.fsTestTypes}">
                         <f:option selected="${testType.value == instance.fsTestType}" value="${testType.value}">
                             ${testType.description}
@@ -47,29 +47,30 @@
         </f:entry>
 
 
-        <f:entry>
-            <label>Nodes</label>
-            <f:entry field="selectedNode">
-                <select name="selectedNode" style="width: 150px;">
-                    <j:forEach var="node" items="${descriptor.nodes}">
-                        <f:option selected="${node==instance.selectedNode}" value="${node}">
-                            ${node}
-                        </f:option>
-                    </j:forEach>
-                </select>
-            </f:entry>
+    <f:entry>
+        <label>Nodes</label>
+        <f:entry field="selectedNode">
+            <select name="selectedNode" style="width: 150px;">
+                <j:forEach var="node" items="${descriptor.nodes}">
+                    <f:option selected="${node==instance.selectedNode}" value="${node}">
+                        ${node}
+                    </f:option>
+                </j:forEach>
+            </select>
         </f:entry>
+    </f:entry>
 
         <f:entry>
              <label class="attach-previous">Reruns:</label>
+
              <f:entry field="numberOfReruns">
-                 <f:number name="numberOfReruns" value="${instance.numberOfReruns}" default="0" style="width: 60px"/>
+                 <f:number name="numberOfReruns" value="${instance.numberOfReruns}" default="0" style="width: 60px; float: left;"/>
 
-                 <input type="button" id="clearBtn" title="Clear all the rerun settings applied on tests" onclick="clearRerunSettings()"/>
+                  <input type="button" id="clearBtn" title="Clear all the rerun settings applied on tests"  style="margin-top: 5px; float: left;" onclick="clearRerunSettings()"/>
 
-                 <label id="clear" style="margin-right: 5px; margin-left: 5px; visibility: hidden;">Clear |</label>
+                  <label id="clear" style="margin-right: 5px; margin-left: 5px; margin-top: 5px; float: left;">Clear |</label>
 
-                 <input type="button" id="copyPasteBtn" title="Copy the rerun settings for the selected tests" onclick="copyPasteRerunSettings()" />
+                  <input type="button" id="copyPasteBtn" style="float: left;" title="Copy the rerun settings for the selected tests" onclick="copyPasteRerunSettings()" />
             </f:entry>
         </f:entry>
 
@@ -82,16 +83,15 @@
         </f:entry>
 
         <f:entry>
-            <div id="infoMessage" style="margin-top: 20px; visibility: hidden;">Select one test or more from the list bellow in order to apply the relevant options</div>
+            <div id="infoMessage" style="margin-top: 20px;">Select one test or more from the list bellow in order to apply the relevant options</div>
         </f:entry>
 
         <f:section>
             <f:entry field="rerunSettingsModels">
-                <div id="testsTable" style="visibility: hidden;">
+                <div id="testsTable">
                      <f:repeatableProperty field="rerunSettingsModels"  minimum="1" noAddButton="true" />
                 </div>
             </f:entry>
         </f:section>
-
     </f:entry>
 </j:jelly>

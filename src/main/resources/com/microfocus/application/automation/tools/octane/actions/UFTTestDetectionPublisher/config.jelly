@@ -33,18 +33,18 @@
       When submitted, it will be passed to the corresponding constructor parameter.
     -->
 
-    <f:entry title="Octane configuration" field="configurationId"
+    <f:entry title="ALM Octane configuration" field="configurationId"
              description="Select the ALM Octane configuration to work with.">
         <f:select/>
     </f:entry>
 
-    <f:entry title="Octane workspace" field="workspaceName"
+    <f:entry title="ALM Octane workspace" field="workspaceName"
              description="Select the workspace to assign discovered tests to.">
         <f:select/>
     </f:entry>
 
     <f:entry title="Octane scm repository id" field="scmRepositoryId"
-             description="Set the SCM repository ID that will be assigned to discovered tests. If  you need to generate an SCM repository in ALM Octane based on your SCM repository in the job - set the value '-1'.">
+             description="SCM repository ID that will be assigned to discovered tests. This field is set automatically based on your SCM repository in the job.">
         <f:textbox/>
     </f:entry>
 

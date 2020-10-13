@@ -144,7 +144,6 @@ public class JUnitExtension extends OctaneTestsExtension {
 		//this class is run on master and JUnitXmlIterator is runnning on slave.
 		//this object pass some master2slave data
 		private Object additionalContext;
-		private String buildRootDir;
 
 		public GetJUnitTestResults(Run<?, ?> build, List<FilePath> reports, boolean stripPackageAndClass, String jenkinsRootUrl) throws IOException, InterruptedException {
 			this.reports = reports;
@@ -154,7 +153,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 			this.stripPackageAndClass = stripPackageAndClass;
 			this.hpRunnerType = MFToolsDetectionExtension.getRunnerType(build);
 			this.jenkinsRootUrl = jenkinsRootUrl;
-			this.buildRootDir = build.getRootDir().getCanonicalPath();
+			String buildRootDir = build.getRootDir().getCanonicalPath();
 			this.sharedCheckOutDirectory = CheckOutSubDirEnvContributor.getSharedCheckOutDirectory(build.getParent());
 
 			this.jobName = JobProcessorFactory.getFlowProcessor(build.getParent()).getTranslatedJobName();
@@ -188,22 +187,6 @@ public class JUnitExtension extends OctaneTestsExtension {
 					additionalContext = Files.readAllLines(path, StandardCharsets.UTF_8);
 				} catch (Exception e) {
 					logger.error("Failed to add log file for StormRunnerLoad :" + e.getMessage());
-				}
-			} else if (HPRunnerType.StormRunnerFunctional.equals(hpRunnerType)) {
-				try {
-					File file = new File(build.getRootDir(), "srf-test-result-urls");
-					Path path = Paths.get(file.getPath());
-					List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-					Map<String, String> map = new HashMap<>();
-					for (String line : lines) {
-						String[] parts = line.split(";");
-						if (parts.length == 2) {
-							map.put(parts[0], parts[1]);
-						}
-					}
-					additionalContext = map;
-				} catch (Exception e) {
-					logger.error("Failed to read/parse srf-test-result-urls file for StormRunnerFunctional :" + e.getMessage());
 				}
 			}
 		}

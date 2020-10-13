@@ -109,7 +109,7 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
                     continue;
                 }
 
-                OctaneClient client = null;
+                OctaneClient client;
                 try {
                     client = OctaneSDK.getClientByInstanceId(result.getConfigurationId());
                 } catch (Exception e) {
@@ -253,7 +253,7 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
         }
 
         //GET TESTS FROM OCTANE
-        Collection<String> additionalFields = SdkStringUtils.isNotEmpty(result.getTestRunnerId()) ? Arrays.asList(EntityConstants.AutomatedTest.TEST_RUNNER_FIELD) : null;
+        Collection<String> additionalFields = SdkStringUtils.isNotEmpty(result.getTestRunnerId()) ? Collections.singletonList(EntityConstants.AutomatedTest.TEST_RUNNER_FIELD) : null;
         Map<String, Entity> octaneTestsMapByKey = UftTestDispatchUtils.getTestsFromServer(entitiesService, Long.parseLong(result.getWorkspaceId()), Long.parseLong(result.getScmRepositoryId()), true, allTestNames, additionalFields);
 
 
@@ -306,7 +306,7 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
     public long getRecurrencePeriod() {
         String value = System.getProperty("UftTestDiscoveryDispatcher.Period"); // let's us config the recurrence period. default is 30 seconds.
         if (!SdkStringUtils.isEmpty(value)) {
-            return Long.valueOf(value);
+            return Long.parseLong(value);
         }
         return TimeUnit.SECONDS.toMillis(30);
     }
@@ -322,8 +322,8 @@ public class UftTestDiscoveryDispatcher extends AbstractSafeLoggingAsyncPeriodWo
      * @param projectName jobs name
      * @param buildNumber build number
      */
-    public void enqueueResult(String projectName, int buildNumber) {
-        queue.add(projectName, buildNumber);
+    public void enqueueResult( String instanceId, String projectName, int buildNumber, String workspace) {
+        queue.add(instanceId, projectName, buildNumber, workspace);
     }
 
     private static void handleMovedTests(UftTestDiscoveryResult result) {

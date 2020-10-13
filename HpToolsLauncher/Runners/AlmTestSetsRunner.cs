@@ -156,6 +156,7 @@ namespace HpToolsLauncher
             Storage = testStorageType;
             if (!Connected)
             {
+                Console.WriteLine("ALM Test set runner not connected");
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
         }
@@ -277,7 +278,6 @@ namespace HpToolsLauncher
         public bool ConnectToProject(string qcServerUrl, string qcLogin, string qcPass, string qcDomain, string qcProject, 
                                         bool SSOEnabled, string qcClientID, string qcApiKey)
         {
-
             if (string.IsNullOrWhiteSpace(qcServerUrl)
                 || (string.IsNullOrWhiteSpace(qcLogin) && !SSOEnabled)
                 || string.IsNullOrWhiteSpace(qcDomain)
@@ -331,7 +331,10 @@ namespace HpToolsLauncher
                             Console.WriteLine(ex.Message);
                         }
 
-                        if (TdConnection.ProjectConnected) return true;
+                        if (TdConnection.ProjectConnected)
+                        {
+                            return true;
+                        }
 
                         ConsoleWriter.WriteErrLine(Resources.AlmRunnerErrorConnectToProj);
                     }
@@ -380,7 +383,10 @@ namespace HpToolsLauncher
                             Console.WriteLine(ex.Message);
                         }
 
-                        if (TdConnectionOld.ProjectConnected) return true;
+                        if (TdConnectionOld.ProjectConnected)
+                        {
+                            return true;
+                        }
 
                         ConsoleWriter.WriteErrLine(Resources.AlmRunnerErrorConnectToProj);
                     }
@@ -478,8 +484,7 @@ namespace HpToolsLauncher
             ITestSetFolder tsFolder = null;
             try
             {
-           
-                tsFolder = (ITestSetFolder)tsTreeManager.NodeByPath[testSet];
+                tsFolder = (ITestSetFolder)tsTreeManager.get_NodeByPath(testSet);
             }
             catch (Exception ex)
             {
@@ -561,13 +566,16 @@ namespace HpToolsLauncher
         {
             ITestSet targetTestSet = null;
 
-            foreach (ITestSet testSet in testSetList)
+            if (testSetList != null)
             {
-                string tempName = testSet.Name;
-                if (tempName.Equals(testSuiteName, StringComparison.InvariantCultureIgnoreCase))
+                foreach (ITestSet testSet in testSetList)
                 {
-                    targetTestSet = testSet;
-                    break;
+                    string tempName = testSet.Name;
+                    if (tempName.Equals(testSuiteName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        targetTestSet = testSet;
+                        break;
+                    }
                 }
             }
 
@@ -576,6 +584,7 @@ namespace HpToolsLauncher
             ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerCantFindTestSet, testSuiteName));
 
             //this will make sure run will fail at the end. (since there was an error)
+            Console.WriteLine("Null target test set");
             Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
             return null;
 
@@ -598,7 +607,6 @@ namespace HpToolsLauncher
                                            string testSet, string tsName, ref string testSuiteName,
                                            string tsPath, ref bool isTestPath, ref string testName)
         {
-           
             if (testSuiteName == null) throw new ArgumentNullException("Missing test suite name");
             ITestSetTreeManager tsTreeManager;
             if (TdConnection != null)
@@ -613,7 +621,8 @@ namespace HpToolsLauncher
             }
 
             try
-            {//check test storage type
+            {
+                //check test storage type
                 if (testStorageType.Equals(TestStorageType.AlmLabManagement))
                 {
                     tsFolder = (ITestSetFolder)tsTreeManager.NodeByPath["Root"];
@@ -872,7 +881,7 @@ namespace HpToolsLauncher
                 var runOnHost = runHost;
                 if (runMode == QcRunMode.RUN_PLANNED_HOST)
                 {
-                    runOnHost = test.HostName; //runHost;
+                    runOnHost = test.HostName; //test["TC_HOST_NAME"]; //runHost;
                 }
 
 
@@ -1056,58 +1065,58 @@ namespace HpToolsLauncher
 
             TestSuiteRunResults activeRunDescription = new TestSuiteRunResults();
 
-            //find all the testSets under given folders
-            try
-            {
-                FindAllTestSetsUnderFolders();
-            }
-            catch (Exception ex)
-            {
-
-                ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerErrorBadQcInstallation, ex.Message, ex.StackTrace));
-                return null;
-            }
-
-            //run all the TestSets
-            foreach (string testSetItem in TestSets)
-            {
-                string testSet = testSetItem.TrimEnd("\\".ToCharArray());
-                string tsName = testSet;
-                int pos = testSetItem.LastIndexOf('\\');
-
-                string testSetDir = "";
-                string testParameters = "";
-
-                if (pos != -1)
+                //find all the testSets under given folders
+                try
                 {
-                    testSetDir = testSet.Substring(0, pos).Trim("\\".ToCharArray());
-                    if (testSetItem.IndexOf(" ", StringComparison.Ordinal) != -1 && testSet.Count(x => x == ' ') >= 1)
+                    FindAllTestSetsUnderFolders();
+                }
+                catch (Exception ex)
+                {
+
+                    ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerErrorBadQcInstallation, ex.Message, ex.StackTrace));
+                    return null;
+                }
+
+                //run all the TestSets
+                foreach (string testSetItem in TestSets)
+                {
+                    string testSet = testSetItem.TrimEnd("\\".ToCharArray());
+                    string tsName = testSet;
+                    int pos = testSetItem.LastIndexOf('\\');
+
+                    string testSetDir = "";
+                    string testParameters = "";
+
+                    if (pos != -1)
                     {
-                        if (!testSet.Contains(':'))//test has no parameters attached
+                        testSetDir = testSet.Substring(0, pos).Trim("\\".ToCharArray());
+                        if (testSetItem.IndexOf(" ", StringComparison.Ordinal) != -1 && testSet.Count(x => x == ' ') >= 1)
                         {
-                            tsName = testSet.Substring(pos, testSet.Length - pos).Trim("\\".ToCharArray());
+                            if (!testSet.Contains(':'))//test has no parameters attached
+                            {
+                                tsName = testSet.Substring(pos, testSet.Length - pos).Trim("\\".ToCharArray());
+                            }
+                            else
+                            {
+                                int quotationMarkIndex = testSet.IndexOf("\"", StringComparison.Ordinal);
+                                if (quotationMarkIndex > pos)
+                                {
+                                    tsName = testSet.Substring(pos, quotationMarkIndex - pos).Trim("\\".ToCharArray()).TrimEnd(' ');
+                                    testParameters = testSet.Substring(quotationMarkIndex, testSet.Length - quotationMarkIndex).Trim("\\".ToCharArray());
+                                }
+                            }
                         }
                         else
                         {
-                            int quotationMarkIndex = testSet.IndexOf("\"", StringComparison.Ordinal);
-                            if (quotationMarkIndex > pos)
-                            {
-                                tsName = testSet.Substring(pos, quotationMarkIndex - pos).Trim("\\".ToCharArray()).TrimEnd(' ');
-                                testParameters = testSet.Substring(quotationMarkIndex, testSet.Length - quotationMarkIndex).Trim("\\".ToCharArray());
-                            }
+                            tsName = testSet.Substring(pos, testSet.Length - pos).Trim("\\".ToCharArray());
                         }
                     }
-                    else
-                    {
-                        tsName = testSet.Substring(pos, testSet.Length - pos).Trim("\\".ToCharArray());
-                    }
+
+
+                    TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, testParameters, Timeout, RunMode, RunHost, IsFilterSelected, FilterByName, FilterByStatuses, Storage);
+                    if (runResults != null)
+                        activeRunDescription.AppendResults(runResults);
                 }
-
-                TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, testParameters, Timeout, RunMode, RunHost, IsFilterSelected, FilterByName, FilterByStatuses, Storage);
-
-                if (runResults != null)
-                    activeRunDescription.AppendResults(runResults);
-            }
 
             return activeRunDescription;
         }
@@ -1130,7 +1139,7 @@ namespace HpToolsLauncher
         public TestSuiteRunResults RunTestSet(string tsFolderName, string tsName, string testParameters, double timeout, QcRunMode runMode, string runHost,
                                               bool isFilterSelected, string filterByName, List<string> filterByStatuses, TestStorageType testStorageType)
         {
-            
+             
             string testSuiteName = tsName.TrimEnd();
             ITestSetFolder tsFolder = null;
             string testSet = "";
@@ -1163,82 +1172,86 @@ namespace HpToolsLauncher
             {
                 targetTestSet = GetTargetTestSet(testSetList, testSuiteName);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Console.WriteLine("Empty target test set list");
             }
 
-            ConsoleWriter.WriteLine(Resources.GeneralDoubleSeperator);
-            ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
-            ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerDisplayTest, testSuiteName, targetTestSet.ID));
+                ConsoleWriter.WriteLine(Resources.GeneralDoubleSeperator);
+                ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
+                ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerDisplayTest, testSuiteName, targetTestSet.ID));
 
-            //start execution
-            ITSScheduler scheduler = null;
-            try
-            {
-                //need to run this to install everything needed http://AlmServer:8080/qcbin/start_a.jsp?common=true
-                //start the scheduler
-                scheduler = targetTestSet.StartExecution("");
-                currentTestSetInstances = GetTestInstancesString(targetTestSet);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+                //start execution
+                ITSScheduler scheduler = null;
+                try
+                {
+                    //need to run this to install everything needed http://AlmServer:8080/qcbin/start_a.jsp?common=true
+                    //start the scheduler
+                    scheduler = targetTestSet.StartExecution("");
+                    if (targetTestSet == null)
+                    {
+                        Console.WriteLine("empty target test set");
+                    }
+                    currentTestSetInstances = GetTestInstancesString(targetTestSet);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
 
-            if (scheduler == null)
-            {
-                Console.WriteLine(GetAlmNotInstalledError());
+                if (scheduler == null)
+                {
+                    Console.WriteLine(GetAlmNotInstalledError());
 
                 //proceeding with program execution is tasteless, since nothing will run without a properly installed QC.
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
 
-            //filter tests
-            IList filteredTestList = FilterTests(targetTestSet, isTestPath, testName, isFilterSelected, filterByStatuses, filterByName);
+                //filter tests
+                IList filteredTestList = FilterTests(targetTestSet, isTestPath, testName, isFilterSelected, filterByStatuses, filterByName);
 
-            //set run host
-            try
-            {
-                //set up for the run depending on where the test instances are to execute
-                switch (runMode)
+                //set run host
+                try
                 {
-                    case QcRunMode.RUN_LOCAL:
-                        // run all tests on the local machine
-                        scheduler.RunAllLocally = true;
-                        break;
-                    case QcRunMode.RUN_REMOTE:
-                        // run tests on a specified remote machine
-                        scheduler.TdHostName = runHost;
-                        break;
-                    // RunAllLocally must not be set for remote invocation of tests. As such, do not do this: Scheduler.RunAllLocally = False
-                    case QcRunMode.RUN_PLANNED_HOST:
-                        // run on the hosts as planned in the test set
-                        scheduler.RunAllLocally = false;
-                        break;
+                    //set up for the run depending on where the test instances are to execute
+                    switch (runMode)
+                    {
+                        case QcRunMode.RUN_LOCAL:
+                            // run all tests on the local machine
+                            scheduler.RunAllLocally = true;
+                            break;
+                        case QcRunMode.RUN_REMOTE:
+                            // run tests on a specified remote machine
+                            scheduler.TdHostName = runHost;
+                            break;
+                        // RunAllLocally must not be set for remote invocation of tests. As such, do not do this: Scheduler.RunAllLocally = False
+                        case QcRunMode.RUN_PLANNED_HOST:
+                            // run on the hosts as planned in the test set
+                            scheduler.RunAllLocally = false;
+                            break;
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerProblemWithHost, ex.Message));
-            }
+                catch (Exception ex)
+                {
+                    ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerProblemWithHost, ex.Message));
+                }
 
 
-            //set test parameters
-            if (filteredTestList.Count > 0)
-            {
-                SetTestParameters(filteredTestList, testParameters, runHost, runMode, runDesc, scheduler);
-            }
+                //set test parameters
+                if (filteredTestList.Count > 0)
+                {
+                    SetTestParameters(filteredTestList, testParameters, runHost, runMode, runDesc, scheduler);
+                }
 
-            //start test runner
-            if (filteredTestList.Count == 0)
-            {
-                //ConsoleWriter.WriteErrLine("Specified test not found on ALM, please check your test path.");
-                //this will make sure run will fail at the end. (since there was an error)
-                //Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
-                Console.WriteLine(Resources.AlmTestSetsRunnerNoTestAfterApplyingFilters);
-                return null;
-            }
+                //start test runner
+                if (filteredTestList.Count == 0)
+                {
+                    //ConsoleWriter.WriteErrLine("Specified test not found on ALM, please check your test path.");
+                    //this will make sure run will fail at the end. (since there was an error)
+                    //Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
+                    Console.WriteLine(Resources.AlmTestSetsRunnerNoTestAfterApplyingFilters);
+                    return null;
+                }
 
             Stopwatch sw = Stopwatch.StartNew();
 
@@ -1256,49 +1269,52 @@ namespace HpToolsLauncher
             ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             IExecutionStatus executionStatus = scheduler.ExecutionStatus;
-           
+
 
             ITSTest prevTest = null;
             ITSTest currentTest = null;
             string abortFilename = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\stop" + Launcher.UniqueTimeStamp + ".txt";
 
-            //update run result description
-            UpdateTesResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet,
-                                        currentTestSetInstances, timeout, executionStatus, sw, ref prevTest, ref currentTest, abortFilename);
+                if(testStorageType == TestStorageType.AlmLabManagement)
+                {
+                    timeout = timeout * 60;
+                }
+                //update run result description
+                UpdateTestsResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet,
+                                            currentTestSetInstances, timeout, executionStatus, sw, ref prevTest, ref currentTest, abortFilename);
 
-            //close last test
-            if (prevTest != null)
-            {
-                WriteTestRunSummary(prevTest);
-            }
-           
-            //done with all tests, stop collecting output in the testRun object.
-            ConsoleWriter.ActiveTestRun = null;
+                //close last test
+                if (prevTest != null)
+                {
+                    WriteTestRunSummary(prevTest);
+                }
 
-            string testPath = "Root\\" + tsFolderName + "\\" + testSuiteName + "\\";
-            
-            SetTestResults(ref currentTest, executionStatus, targetTestSet, activeTestDesc, runDesc, testPath, abortFilename);
-         
+                //done with all tests, stop collecting output in the testRun object.
+                ConsoleWriter.ActiveTestRun = null;
 
-            //update the total runtime
-            runDesc.TotalRunTime = sw.Elapsed;
+                string testPath = "Root\\" + tsFolderName + "\\" + testSuiteName + "\\";
 
-            // test has executed in time
-            if (timeout == -1 || sw.Elapsed.TotalSeconds < timeout)
-            {
-                ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerTestsetDone, testSuiteName, DateTime.Now.ToString(Launcher.DateFormat)));
-            }
-            else
-            {
-                _blnRunCancelled = true;
-                ConsoleWriter.WriteLine(Resources.GeneralTimedOut);
+                SetTestResults(ref currentTest, executionStatus, targetTestSet, activeTestDesc, runDesc, testPath, abortFilename);
 
-                scheduler.Stop(currentTestSetInstances);
 
-                Launcher.ExitCode = Launcher.ExitCodeEnum.Aborted;
-            }
+                //update the total runtime
+                runDesc.TotalRunTime = sw.Elapsed;
 
-            return runDesc;
+                // test has executed in time
+                if (timeout == -1 || sw.Elapsed.TotalSeconds < timeout)
+                {
+                    ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerTestsetDone, testSuiteName, DateTime.Now.ToString(Launcher.DateFormat)));
+                }
+                else
+                {
+                    _blnRunCancelled = true;
+                    ConsoleWriter.WriteLine(Resources.GeneralTimedOut);
+
+                    scheduler.Stop(currentTestSetInstances);
+
+                    Launcher.ExitCode = Launcher.ExitCodeEnum.Aborted;
+                }
+                return runDesc;
         }
 
         /// <summary>
@@ -1436,7 +1452,7 @@ namespace HpToolsLauncher
         /// <param name="prevTest"></param>
         /// <param name="currentTest"></param>
         /// <param name="abortFilename"></param>
-        public void UpdateTesResultsDescription(ref TestRunResults activeTestDesc, TestSuiteRunResults runDesc,
+        public void UpdateTestsResultsDescription(ref TestRunResults activeTestDesc, TestSuiteRunResults runDesc,
                                              ITSScheduler scheduler, ITestSet targetTestSet,
                                              string currentTestSetInstances, double timeout,
                                              IExecutionStatus executionStatus, Stopwatch sw,
@@ -1455,80 +1471,108 @@ namespace HpToolsLauncher
                 }
                 for (var j = 1; j <= executionStatus.Count; ++j)
                 {
-             
-                    TestExecStatus testExecStatusObj = executionStatus[j];
-
-                    currentTest = targetTestSet.TSTestFactory[testExecStatusObj.TSTestId];
-                   
-                    if (currentTest == null)
+                    try
                     {
-                        ConsoleWriter.WriteLine(string.Format("currentTest is null for test.{0} during execution", j));
-                        continue;
-                    }
+                        ITestExecStatus baseTestExecObj = executionStatus[j];
+                        TestExecStatus testExecStatusObj = (TestExecStatus)baseTestExecObj;
 
-                    activeTestDesc = UpdateTestStatus(runDesc, targetTestSet, testExecStatusObj, true);
-
-                    if (activeTestDesc.PrevTestState != activeTestDesc.TestState)
-                    {
-                        TestState testState = activeTestDesc.TestState;
-                        if (testState == TestState.Running)
+                        if (testExecStatusObj == null)
                         {
-                            //currentTest = targetTestSet.TSTestFactory[testExecStatusObj.TSTestId];
-                            int testIndex = GetIndexOfTestIdentifiedByName(currentTest.Name, runDesc);
+                            Console.WriteLine("testExecStatusObj is null");
+                            continue;
+                        }
+                        else
+                        {
+                            currentTest = targetTestSet.TSTestFactory[testExecStatusObj.TSTestId];
+                        }
+                        if (currentTest == null)
+                        {
+                            ConsoleWriter.WriteLine(string.Format("currentTest is null for test.{0} during execution", j));
+                            continue;
+                        }
+                        activeTestDesc = UpdateTestStatus(runDesc, targetTestSet, testExecStatusObj, true);
 
-                            int prevRunId = GetTestRunId(currentTest);
-                            runDesc.TestRuns[testIndex].PrevRunId = prevRunId;
-
-                            //closing previous test
-                            if (prevTest != null)
+                        if (activeTestDesc != null)
+                        {
+                            if (activeTestDesc.PrevTestState != activeTestDesc.TestState)
                             {
-                                WriteTestRunSummary(prevTest);
+                                TestState testState = activeTestDesc.TestState;
+                                if (testState == TestState.Running)
+                                {
+                                    int testIndex = GetIndexOfTestIdentifiedByName(currentTest.Name, runDesc);
+                                    if (testIndex == -1)
+                                    {
+                                        Console.WriteLine("No test index exist for this test");
+                                    }
+                                    int prevRunId = GetTestRunId(currentTest);
+                                    if (prevRunId == -1)
+                                    {
+                                        Console.WriteLine("No test runs exist for this test");
+                                        continue;
+                                    }
+                                    runDesc.TestRuns[testIndex].PrevRunId = prevRunId;
+
+                                    //closing previous test
+                                    if (prevTest != null)
+                                    {
+                                        WriteTestRunSummary(prevTest);
+                                    }
+
+                                    //starting new test
+                                    prevTest = currentTest;
+                                    //assign the new test the console writer so it will gather the output
+
+                                    ConsoleWriter.ActiveTestRun = runDesc.TestRuns[testIndex];
+
+                                    ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Running: " + currentTest.Name);
+                                    activeTestDesc.TestName = currentTest.Name;
+                                    //tell user that the test is running
+                                    ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Running test: " + activeTestDesc.TestName + ", Test id: " + testExecStatusObj.TestId + ", Test instance id: " + testExecStatusObj.TSTestId);
+
+                                    //start timing the new test run
+                                    string folderName = "";
+                                    ITestSetFolder folder = targetTestSet.TestSetFolder as ITestSetFolder;
+
+                                    if (folder != null)
+                                        folderName = folder.Name.Replace(".", "_");
+
+                                    //the test group is it's test set. (dots are problematic since jenkins parses them as separators between package and class)
+                                    activeTestDesc.TestGroup = folderName + "\\" + targetTestSet.Name;
+                                    activeTestDesc.TestGroup = activeTestDesc.TestGroup.Replace(".", "_");
+                                }
+
+                                TestState enmState = GetTsStateFromQcState(testExecStatusObj.Status as string);
+                                string statusString = enmState.ToString();
+
+                                if (enmState == TestState.Running)
+                                {
+                                    ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerStat, activeTestDesc.TestName, testExecStatusObj.TSTestId, statusString));
+                                }
+                                else if (enmState != TestState.Waiting)
+                                {
+                                    ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerStatWithMessage, activeTestDesc.TestName, testExecStatusObj.TSTestId, statusString, testExecStatusObj.Message));
+                                }
+                                if (System.IO.File.Exists(abortFilename))
+                                {
+
+                                    scheduler.Stop(currentTestSetInstances);
+                                    //stop working
+                                    Environment.Exit((int)Launcher.ExitCodeEnum.Aborted);
+                                    break;
+                                }
                             }
-
-                            //starting new test
-                            prevTest = currentTest;
-
-                            //assign the new test the console writer so it will gather the output
-
-                            ConsoleWriter.ActiveTestRun = runDesc.TestRuns[testIndex];
-
-                            ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Running: " + currentTest.Name);
-                            activeTestDesc.TestName = currentTest.Name;
-                            //tell user that the test is running
-                            ConsoleWriter.WriteLine(DateTime.Now.ToString(Launcher.DateFormat) + " Running test: " + activeTestDesc.TestName + ", Test id: " + testExecStatusObj.TestId + ", Test instance id: " + testExecStatusObj.TSTestId);
-
-                            //start timing the new test run
-                            //start timing the new test run
-                            string folderName = "";
-                            ITestSetFolder folder = targetTestSet.TestSetFolder as ITestSetFolder;
-
-                            if (folder != null)
-                                folderName = folder.Name.Replace(".", "_");
-
-                            //the test group is it's test set. (dots are problematic since jenkins parses them as separators between package and class)
-                            activeTestDesc.TestGroup = folderName + "\\" + targetTestSet.Name;
-                            activeTestDesc.TestGroup = activeTestDesc.TestGroup.Replace(".", "_");
                         }
-
-                        TestState enmState = GetTsStateFromQcState(testExecStatusObj.Status as string);
-                        string statusString = enmState.ToString();
-
-                        if (enmState == TestState.Running)
+                        else
                         {
-                            ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerStat, activeTestDesc.TestName, testExecStatusObj.TSTestId, statusString));
+                            continue;
                         }
-                        else if (enmState != TestState.Waiting)
-                        {
-                            ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerStatWithMessage, activeTestDesc.TestName, testExecStatusObj.TSTestId, statusString, testExecStatusObj.Message));
-                        }
-                        if (System.IO.File.Exists(abortFilename))
-                        {
-
-                            scheduler.Stop(currentTestSetInstances);
-                            //stop working 
-                            Environment.Exit((int)Launcher.ExitCodeEnum.Aborted);
-                            break;
-                        }
+                    }
+                    catch (InvalidCastException ex)
+                    {
+                        Console.WriteLine("Conversion failed: " + ex.Message);
+                    }
+                    finally
+                    {
                     }
                 }
 
@@ -1583,10 +1627,12 @@ namespace HpToolsLauncher
             int runId = -1;
 
             if (currentTest == null) return runId;
-
-            IRun lastRun = currentTest.LastRun as IRun;
-            if (lastRun != null)
+            if(currentTest.LastRun != null)
+            {
+                IRun lastRun = currentTest.LastRun as IRun;
                 runId = lastRun.ID;
+                return runId;
+            }
 
             return runId;
         }
@@ -1695,6 +1741,11 @@ namespace HpToolsLauncher
         /// <returns></returns>
         private TestState GetTsStateFromQcState(string qcTestStatus)
         {
+            if(TdConnection == null && TdConnectionOld == null)
+            {
+                return TestState.Failed;
+            }
+
             if (qcTestStatus == null)
                 return TestState.Unknown;
             switch (qcTestStatus)
@@ -1814,7 +1865,7 @@ namespace HpToolsLauncher
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

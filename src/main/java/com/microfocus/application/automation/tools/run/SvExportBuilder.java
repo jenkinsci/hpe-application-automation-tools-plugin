@@ -117,11 +117,11 @@ public class SvExportBuilder extends AbstractSvRunBuilder<SvExportModel> {
                 logger.printf("  Exporting service '%s' [%s] to %s %n", serviceInfo.getName(), serviceInfo.getId(), targetDirectory);
                 verifyNotLearningBeforeExport(logger, exec, serviceInfo);
                 if (!model.getServiceSelection().getSelectionType().equals(SvServiceSelectionModel.SelectionType.PROJECT)) {
-                    exportProcessor.process(exec, targetDirectory, serviceInfo.getId(), project, false, model.isArchive());
+                    exportProcessor.process(exec, targetDirectory, serviceInfo.getId(), project, false, model.isArchive(), false);
                 }
             }
             if (model.getServiceSelection().getSelectionType().equals(SvServiceSelectionModel.SelectionType.PROJECT)) {
-                exportProcessor.process(exec, targetDirectory, null, project, false, model.isArchive());
+                exportProcessor.process(exec, targetDirectory, null, project, false, model.isArchive(), false);
             }
             return null;
         }

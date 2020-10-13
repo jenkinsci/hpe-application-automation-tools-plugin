@@ -20,6 +20,7 @@
  *
  */
 
+using HpToolsLauncher.TestRunners;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -75,7 +76,7 @@ namespace HpToolsLauncher
                 if (!string.IsNullOrWhiteSpace(validationMessages))
                     ConsoleWriter.WriteLine("parameter schema validation errors: \n" + validationMessages);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 ConsoleWriter.WriteErrLine("An error occured while creating ST parameter file, check the validity of TestInputParameters.xml in your test directory and of your mtbx file");
             }
@@ -154,6 +155,7 @@ namespace HpToolsLauncher
         string _testName;
         string _testGroup;
         string _dataTablePath;
+        IterationInfo _iterationInfo;
 
         public string TestGroup
         {
@@ -189,6 +191,12 @@ namespace HpToolsLauncher
         {
             get { return _dataTablePath; }
             set { _dataTablePath = value; }
+        }
+
+        public IterationInfo IterationInfo
+        {
+            get { return _iterationInfo; }
+            set { _iterationInfo = value; }
         }
 
 

@@ -398,7 +398,7 @@ public class JobConfigurationProxy {
 		long workspaceId = pipeline.getLong(WORKSPACE_ID_FIELD);
 		if (pipeline.containsKey(RELEASE_ID_FIELD) && pipeline.getLong(RELEASE_ID_FIELD) != -1) {
 			long releaseId = pipeline.getLong(RELEASE_ID_FIELD);
-			String releaseName = getReleasesById(octaneClient, Arrays.asList(releaseId), workspaceId).get(0).getName();
+			String releaseName = getReleasesById(octaneClient, Collections.singletonList(releaseId), workspaceId).get(0).getName();
 			pipeline.put("releaseName", releaseName);
 		}
 	}

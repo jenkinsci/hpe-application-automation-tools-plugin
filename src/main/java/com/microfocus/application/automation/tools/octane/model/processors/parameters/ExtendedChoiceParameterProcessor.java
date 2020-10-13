@@ -43,14 +43,14 @@ public class ExtendedChoiceParameterProcessor extends AbstractParametersProcesso
 	public CIParameter createParameterConfig(ParameterDefinition pd) {
 		ExtendedChoiceParameterDefinition extChoice = (ExtendedChoiceParameterDefinition) pd;
 		Map<String, String> choicesMap;
-		List<Object> choices = new ArrayList<Object>();
+		List<Object> choices = new ArrayList<>();
 		try {
 			choicesMap = extChoice.getChoicesByDropdownId();
 		} catch (Exception e) {
 			choicesMap = null;
 		}
 		if (choicesMap != null) {
-			choices = new ArrayList<Object>(choicesMap.values());
+			choices = new ArrayList<>(choicesMap.values());
 		}
 		return ModelFactory.createParameterConfig(pd, CIParameterType.STRING, null, choices);
 	}

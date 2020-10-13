@@ -17,4 +17,5 @@ com.hp.octane.integrations.dto.scm.impl.SCMCommitImpl
 com.hp.octane.integrations.dto.scm.impl.SCMDataImpl
 com.hp.octane.integrations.dto.scm.impl.SCMFileBlameImpl
 com.hp.octane.integrations.dto.scm.impl.SCMRepositoryImpl
+com.hp.octane.integrations.dto.scm.impl.PullRequestImpl
 

@@ -16,9 +16,9 @@
 
 package com.microfocus.application.automation.tools.octane.actions.coverage;
 
-import hudson.model.AbstractBuild;
-import hudson.model.Action;
-import hudson.model.BuildListener;
+import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
+import hudson.FilePath;
+import hudson.model.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,9 +30,9 @@ import java.util.List;
  * the files are calculated by a pattern that the user enters in job configuration page
  */
 public class CoveragePublisherAction implements Action {
-	private final AbstractBuild build;
+	private final Run build;
 
-	public CoveragePublisherAction(AbstractBuild build, BuildListener listener) {
+	public CoveragePublisherAction(Run build, TaskListener listener) {
 		this.build = build;
 		CoverageService.setListener(listener);
 	}
@@ -44,19 +44,20 @@ public class CoveragePublisherAction implements Action {
 	 */
 	public List<String> copyCoverageReportsToBuildFolder(String filePattern, String defaultFileName) {
 		List<String> result = new LinkedList<>();
-		if (build.getWorkspace() != null) {
+		FilePath workspace = BuildHandlerUtils.getWorkspace(build);
+		if (workspace != null) {
 			try {
 				CoverageService.log("start copying coverage report to build folder, using file patten of " + filePattern);
-				String[] files = CoverageService.getCoverageFiles(build.getWorkspace(), filePattern);
+				String[] files = CoverageService.getCoverageFiles(workspace, filePattern);
 				List<String> matchingReportFiles = filterFilesByFileExtension(files);
 				int index = 0;
 
 				for (String fileName : matchingReportFiles) {
-					File resultFile = new File(build.getWorkspace().child(fileName).toURI());
+					File resultFile = new File(workspace.child(fileName).toURI());
 					String nextOutputFilename = CoverageService.getCoverageReportFileName(index++, defaultFileName);
 					result.add(nextOutputFilename);
 					File targetReportFile = new File(build.getRootDir(), nextOutputFilename);
-					CoverageService.copyCoverageFile(resultFile, targetReportFile, build.getWorkspace());
+					CoverageService.copyCoverageFile(resultFile, targetReportFile, workspace);
 				}
 
 				if (result.isEmpty()) {

@@ -23,11 +23,13 @@ package com.microfocus.application.automation.tools.octane.model.processors.buil
 import com.hp.octane.integrations.dto.pipelines.PipelinePhase;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
+import hudson.model.AbstractProject;
 import hudson.model.Job;
 import hudson.tasks.Builder;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -72,5 +74,18 @@ public abstract class AbstractBuilderProcessor {
 			internalPhases.addAll(builderProcessor.getPhases());
 		}
 		processedJobs.remove(job);
+	}
+
+	protected void eliminateIllegalItems(Job job, Set<Job> processedJobs, List<AbstractProject> items) {
+		for (Iterator<AbstractProject> iterator = items.iterator(); iterator.hasNext(); ) {
+			AbstractProject next = iterator.next();
+			if (next == null) {
+				iterator.remove();
+				logger.warn("encountered null project reference; considering it as corrupted configuration and skipping");
+			} else if (processedJobs.contains(next)) {
+				iterator.remove();
+				logger.warn(String.format("encountered circular reference from %s to %s", job.getFullName(), next.getFullName()));
+			}
+		}
 	}
 }

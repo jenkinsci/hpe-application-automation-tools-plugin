@@ -327,6 +327,11 @@ public class SseBuilder extends Builder implements SimpleBuildStep {
 
                 logger.println(message);
             }
+
+            @Override
+            public void error(String message) {
+                log(message);
+            }
         }, buildVariableResolver);
     }
 

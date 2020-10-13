@@ -22,8 +22,8 @@ package com.microfocus.application.automation.tools.octane.tests.build;
 
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
-import hudson.model.Hudson;
 import hudson.model.Run;
+import jenkins.model.Jenkins;
 
 abstract class BuildHandlerExtension implements ExtensionPoint {
 
@@ -35,6 +35,6 @@ abstract class BuildHandlerExtension implements ExtensionPoint {
 	public abstract String getProjectFullName(Run<?, ?> build);
 
 	public static ExtensionList<BuildHandlerExtension> all() {
-		return Hudson.getInstance().getExtensionList(BuildHandlerExtension.class);
+		return Jenkins.getInstanceOrNull().getExtensionList(BuildHandlerExtension.class);
 	}
 }

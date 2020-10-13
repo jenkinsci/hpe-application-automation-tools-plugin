@@ -109,8 +109,13 @@ public class AutEnvironmentBuilder extends Builder {
         AUTEnvironmentBuilderPerformer performer;
 
         Logger logger = new Logger() {
+            @Override
             public void log(String message) {
                 printStreamLogger.println(message);
+            }
+            @Override
+            public void error(String message) {
+                log(message);
             }
         };
 
