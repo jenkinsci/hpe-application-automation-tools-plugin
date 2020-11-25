@@ -46,7 +46,6 @@
 
 	<properties>
 		<concurrency>1</concurrency>
-		<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
 		<msbuild.configuration>Release</msbuild.configuration>
 		<jenkins.version>2.190.1</jenkins.version>
 		<maven.exec.skip>false</maven.exec.skip>
@@ -628,6 +627,7 @@
 			<groupId>org.jenkins-ci.plugins</groupId>
 			<artifactId>github-branch-source</artifactId>
 			<version>2.3.0</version>
+			<optional>true</optional>
 		</dependency>
 
 
@@ -676,4 +676,28 @@
 			<version>3.0.0-M3</version>
 		</dependency>
 	</dependencies>
+	<profiles>
+		<profile>
+			<id>windows_profile</id>
+			<activation>
+				<os>
+					<family>Windows</family>
+				</os>
+			</activation>
+			<properties>
+				<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
+			</properties>
+		</profile>
+		<profile>
+			<id>osx_profile</id>
+			<activation>
+				<os>
+					<family>mac</family>
+				</os>
+			</activation>
+			<properties>
+				<msbuild.exe>/Library/Frameworks/Mono.framework/Versions/Current/Commands/msbuild</msbuild.exe>
+			</properties>
+		</profile>
+	</profiles>
 </project>
