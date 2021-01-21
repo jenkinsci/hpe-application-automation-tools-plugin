@@ -93,11 +93,11 @@ This plugin supports the following Micro Focus product versions:
 
 | Micro Focus tool                                    | Supported versions                                           | Find more information...                                     |
 | :-------------------------------------------------- | :----------------------------------------------------------- | ------------------------------------------------------------ |
-| ALM (Application Lifecycle Management)              | 12.xx, 15.x                                                  | [ALM Integration  page](ALM_Integration.md)                  |
-| ALM Lab Management                                  | 12.xx, 15.x                                                  | [ALM Integration  page](ALM_Integration.md#running-server-side-tests-using-alm-lab-management) |
+| ALM (Application Lifecycle Management)              | 12.xx, 15.x                                                  | [ALM integration page](ALM_Integration.md)                  |
+| ALM Lab Management                                  | 12.xx, 15.x                                                  | [ALM integration page](ALM_Integration.md#running-server-side-tests-using-alm-lab-management) |
 | ALM Octane                                          | 12.53.20 and higher (12.55.4 or later required for direct UFT One integration and for LoadRunner Enterprise integration using pipelines) | [ALM Octane Help](https://admhelp.microfocus.com/octane/en/latest/Online/Content/AdminGuide/jenkins-integration.htm) |
-| LoadRunner                                          | 12.xx, 2020                                                  | [LoadRunner Integration page](LR_Integration.md)             |
-| UFT Mobile (formerly Mobile Center)                 | 2.0 and higher                                               | [UFT Mobile Help Center](https://admhelp.microfocus.com/mobilecenter/en/latest/Content/CI_jenkins.htm) |
+| LoadRunner                                          | 12.xx, 2020                                                  | [LoadRunner Professional integration page](LR_Integration.md)             |
+| UFT Mobile (formerly Mobile Center)                 | 2.0 and higher                                               | [UFT Mobile integration page](UFT_Mobile_Integration.md) |
 | LoadRunner Enterprise (formerly Performance Center) | 12.xx (12.53 or higher required for trend reports), 2020     | [LoadRunner Enterprise Help Center](https://admhelp.microfocus.com/pc/en/latest/online_help/Content/PC/Continuous-Integration-Jenkins.htm) |
 | Service Virtualization                              | 3.80 and higher                                              | [Service Virtualization Help Center](https://admhelp.microfocus.com/sv/en/latest/Help/Content/UG/c_continuous_integration.htm) |
 | UFT One (formerly UFT)                              | 12.xx and 14.03 and higher                                   | [UFT One Help Center](https://admhelp.microfocus.com/uft/en/latest/UFT_Help/Content/User_Guide/Jenkins.htm) |
@@ -111,7 +111,7 @@ This plugin supports the following Micro Focus product versions:
 
 3. Install the plugin:
    
-   a. Download the .hpi file for the Jenkins plugin from the [plugin page]( https://updates.jenkins-ci.org/download/plugins/hp-application-automation-tools-plugin/ ). 
+   a. Download the .hpi file for the Jenkins plugin from the [plugin page](https://updates.jenkins-ci.org/download/plugins/hp-application-automation-tools-plugin/ ). 
    
    b. Navigate to the **Manage Jenkins > Manage Plugins > Advanced** tab. 
    
