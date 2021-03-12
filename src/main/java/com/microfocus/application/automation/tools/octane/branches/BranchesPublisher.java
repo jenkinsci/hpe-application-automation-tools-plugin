@@ -294,7 +294,7 @@ public class BranchesPublisher extends Recorder implements SimpleBuildStep {
         }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            return false;
+            return true;
         }
 
         public ListBoxModel doFillConfigurationIdItems() {
