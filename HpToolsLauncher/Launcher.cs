@@ -281,9 +281,11 @@ namespace HpToolsLauncher
             }
 
             TestSuiteRunResults results = runner.Run();
-     
-            RunTests(runner, resultsFilename, results);
-            
+
+            if (!_runType.Equals(TestStorageType.MBT))
+            {
+                RunTests(runner, resultsFilename, results);
+            }
 
             if (_runType.Equals(TestStorageType.FileSystem))
             {
@@ -830,6 +832,12 @@ namespace HpToolsLauncher
 
                     break;
 
+                case TestStorageType.MBT:
+                    string script = _ciParams["script"];
+                    string resultTest = _ciParams["resultsFilename"];
+                    string testStr = _ciParams["tests"];
+                    runner = new MBTRunner(script, resultTest, testStr.Split(';'));
+                    break;
                 default:
                     runner = null;
                     break;

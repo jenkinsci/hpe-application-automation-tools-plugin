@@ -39,6 +39,7 @@ namespace HpToolsLauncher
         AlmLabManagement,
         FileSystem,
         LoadRunner,
+        MBT,
         Unknown
     }
 

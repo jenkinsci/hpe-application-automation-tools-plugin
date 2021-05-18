@@ -117,6 +117,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Runners\MBTRunner.cs" />
     <Compile Include="Runners\RunnerBase.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="TestInfo.cs" />
