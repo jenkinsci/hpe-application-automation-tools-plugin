@@ -833,10 +833,26 @@ namespace HpToolsLauncher
                     break;
 
                 case TestStorageType.MBT:
-                    string script = _ciParams["script"];
-                    string resultTest = _ciParams["resultsFilename"];
-                    string testStr = _ciParams["tests"];
-                    runner = new MBTRunner(script, resultTest, testStr.Split(';'));
+                    string parentFolder = _ciParams["parentFolder"];
+
+                    int counter = 1;
+                    string testProp = "test" + counter;
+                    List<MBTTest> tests = new List<MBTTest>();
+                    while (_ciParams.ContainsKey(testProp))
+                    {
+                        MBTTest test = new MBTTest();
+                        tests.Add(test);
+
+                        test.Name = _ciParams[testProp];
+                        test.Script = _ciParams["script"  + counter];
+                        test.UnderlyingTests = new List<String>(_ciParams["underlyingTests" + counter].Split(';'));
+
+                        testProp = "test" + (++counter);
+                    }
+            
+   
+                    
+                    runner = new MBTRunner(parentFolder, tests);
                     break;
                 default:
                     runner = null;

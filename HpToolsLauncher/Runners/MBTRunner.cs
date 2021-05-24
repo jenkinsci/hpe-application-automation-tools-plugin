@@ -1,24 +1,19 @@
 ﻿using QTObjectModelLib;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 namespace HpToolsLauncher
 {
     public class MBTRunner : RunnerBase, IDisposable
     {
         private readonly object _lockObject = new object();
-        private string script;
-        private string resultTest;
-        private IEnumerable<string> tests;
+        private string parentFolder;
+        private IEnumerable<MBTTest> tests;
 
-        public MBTRunner(string script, string resultTest, IEnumerable<string> tests)
+        public MBTRunner(string parentFolder, IEnumerable<MBTTest> tests)
         {
-            this.script = script;
-            this.resultTest = resultTest;
+            this.parentFolder = parentFolder;
             this.tests = tests;
         }
 
@@ -29,35 +24,61 @@ namespace HpToolsLauncher
             lock (_lockObject)
             {
                 Application _qtpApplication = Activator.CreateInstance(type) as Application;
-                LoadNeededAddins(_qtpApplication, tests);
-
-                try
+                if (Directory.Exists(parentFolder))
                 {
-                    Version qtpVersion = Version.Parse(_qtpApplication.Version);
-                    _qtpApplication.Launch();
-                    _qtpApplication.Visible = false;
+                    Directory.Delete(parentFolder, true);
+                }
+                Directory.CreateDirectory(parentFolder);
 
-                    _qtpApplication.New();
-                    QTObjectModelLib.Action qtAction1 = _qtpApplication.Test.Actions[1];
-                    //string actionContent = "LoadAndRunAction \"c:\\Temp\\GUITest2\\\",\"Action1\"";
-                    string actionContent = File.ReadAllText(script);
-                    qtAction1.ValidateScript(actionContent);
-                    qtAction1.SetScript(actionContent);
+                DirectoryInfo parentDir = new DirectoryInfo(parentFolder);
 
-                    if (Directory.Exists(resultTest))
+                //LOAD LoadNeededAddins
+                HashSet<String> allUnderlyingTests = new HashSet<string>();
+                foreach (var test in tests)
+                {
+                    foreach (var underlyingTest in test.UnderlyingTests)
                     {
-                        Directory.Delete(resultTest, true/*recursive*/);
+                        allUnderlyingTests.Add(underlyingTest);
                     }
 
-                    _qtpApplication.Test.SaveAs(resultTest);
-                    ConsoleWriter.WriteLine("MBT test saved to : " +  resultTest);
-                    _qtpApplication.Quit();
                 }
-                catch (Exception e)
-                {
-                    ConsoleWriter.WriteErrLine("Fail in MBTRunner : " + e.Message);
-                }
+                LoadNeededAddins(_qtpApplication, allUnderlyingTests);
 
+
+                //START Test creation
+                _qtpApplication.Launch();
+                _qtpApplication.Visible = false;
+                foreach (var test in tests)
+                {
+                    ConsoleWriter.WriteLine("Creation of " + test.Name);
+                    try
+                    {
+                        DateTime start = DateTime.Now;
+                        _qtpApplication.New();
+                        QTObjectModelLib.Action qtAction1 = _qtpApplication.Test.Actions[1];
+                        //string actionContent = "LoadAndRunAction \"c:\\Temp\\GUITest2\\\",\"Action1\"";
+                        string actionContent = File.Exists(test.Script) ? File.ReadAllText(test.Script) : test.Script;
+                        qtAction1.ValidateScript(actionContent);
+                        qtAction1.SetScript(actionContent);
+
+                        string fullPath = parentDir.CreateSubdirectory(test.Name).FullName;
+                        if (Directory.Exists(fullPath))
+                        {
+                            Directory.Delete(fullPath, true/*recursive*/);
+                        }
+
+                        _qtpApplication.Test.SaveAs(fullPath);
+                        double sec = DateTime.Now.Subtract(start).TotalSeconds;
+                        ConsoleWriter.WriteLine($"MBT test was created in {fullPath} in {sec:0.0} secs");
+
+                    }
+                    catch (Exception e)
+                    {
+                        ConsoleWriter.WriteErrLine("Fail in MBTRunner : " + e.Message);
+                    }
+
+                }
+                _qtpApplication.Quit();
             }
 
             return null;
@@ -108,6 +129,14 @@ namespace HpToolsLauncher
                 // Try anyway to run the test
             }
         }
+    }
+
+    public class MBTTest
+    {
+        public String Name { get; set; }
+        public String Script { get; set; }
+
+        public List<String> UnderlyingTests { get; set; }
     }
 
 
