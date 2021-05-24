@@ -69,7 +69,7 @@ namespace HpToolsLauncher
 
                         _qtpApplication.Test.SaveAs(fullPath);
                         double sec = DateTime.Now.Subtract(start).TotalSeconds;
-                        ConsoleWriter.WriteLine($"MBT test was created in {fullPath} in {sec:0.0} secs");
+                        ConsoleWriter.WriteLine(String.Format("MBT test was created in {0} in {1:0.0} secs",fullPath,sec));
 
                     }
                     catch (Exception e)
