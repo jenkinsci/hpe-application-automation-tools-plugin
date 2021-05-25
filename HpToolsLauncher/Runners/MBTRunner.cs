@@ -29,32 +29,24 @@ namespace HpToolsLauncher
                     Directory.Delete(parentFolder, true);
                 }
                 Directory.CreateDirectory(parentFolder);
-
                 DirectoryInfo parentDir = new DirectoryInfo(parentFolder);
-
-                //LOAD LoadNeededAddins
-                HashSet<String> allUnderlyingTests = new HashSet<string>();
-                foreach (var test in tests)
-                {
-                    foreach (var underlyingTest in test.UnderlyingTests)
-                    {
-                        allUnderlyingTests.Add(underlyingTest);
-                    }
-
-                }
-                LoadNeededAddins(_qtpApplication, allUnderlyingTests);
 
 
                 //START Test creation
-                _qtpApplication.Launch();
-                _qtpApplication.Visible = false;
+                //_qtpApplication.Launch();
+                //_qtpApplication.Visible = false;
                 foreach (var test in tests)
                 {
-                    ConsoleWriter.WriteLine("Creation of " + test.Name);
+                    DateTime startTotal = DateTime.Now;
+                    ConsoleWriter.WriteLine("Creation of " + test.Name + " *****************************");
+                    LoadNeededAddins(_qtpApplication, test.UnderlyingTests);
+                    
                     try
                     {
-                        DateTime start = DateTime.Now;
+                        DateTime startSub1 = DateTime.Now;
+
                         _qtpApplication.New();
+                        ConsoleWriter.WriteLine(string.Format("_qtpApplication.New took {0:0.0} secs", DateTime.Now.Subtract(startSub1).TotalSeconds));
                         QTObjectModelLib.Action qtAction1 = _qtpApplication.Test.Actions[1];
                         //string actionContent = "LoadAndRunAction \"c:\\Temp\\GUITest2\\\",\"Action1\"";
                         string actionContent = File.Exists(test.Script) ? File.ReadAllText(test.Script) : test.Script;
@@ -62,13 +54,8 @@ namespace HpToolsLauncher
                         qtAction1.SetScript(actionContent);
 
                         string fullPath = parentDir.CreateSubdirectory(test.Name).FullName;
-                        if (Directory.Exists(fullPath))
-                        {
-                            Directory.Delete(fullPath, true/*recursive*/);
-                        }
-
                         _qtpApplication.Test.SaveAs(fullPath);
-                        double sec = DateTime.Now.Subtract(start).TotalSeconds;
+                        double sec = DateTime.Now.Subtract(startTotal).TotalSeconds;
                         ConsoleWriter.WriteLine(String.Format("MBT test was created in {0} in {1:0.0} secs",fullPath,sec));
 
                     }
@@ -76,9 +63,11 @@ namespace HpToolsLauncher
                     {
                         ConsoleWriter.WriteErrLine("Fail in MBTRunner : " + e.Message);
                     }
-
                 }
-                _qtpApplication.Quit();
+                if (_qtpApplication.Launched)
+                {
+                    _qtpApplication.Quit();
+                }
             }
 
             return null;
@@ -93,7 +82,9 @@ namespace HpToolsLauncher
                 {
                     try
                     {
+                        DateTime start1 = DateTime.Now;
                         var testAddinsObj = _qtpApplication.GetAssociatedAddinsForTest(fileName);
+                        ConsoleWriter.WriteLine(String.Format("GetAssociatedAddinsForTest took {0:0.0} secs", DateTime.Now.Subtract(start1).TotalSeconds));
                         object[] tempTestAddins = (object[])testAddinsObj;
 
                         foreach (string addin in tempTestAddins)
@@ -109,7 +100,8 @@ namespace HpToolsLauncher
 
                 if (_qtpApplication.Launched)
                 {
-                    _qtpApplication.Quit();
+                    //_qtpApplication.Quit();
+                    //ConsoleWriter.WriteLine("LoadNeededAddins : _qtpApplication.Quit");
                 }
 
                 object erroDescription = null;
@@ -117,7 +109,9 @@ namespace HpToolsLauncher
                 string[] addinsArr = new string[addinsSet.Count];
                 addinsSet.CopyTo(addinsArr);
                 ConsoleWriter.WriteLine("Loading Addins : " + string.Join(",", addinsArr));
+                DateTime start2 = DateTime.Now;
                 _qtpApplication.SetActiveAddins(addinsArr, out erroDescription);
+                ConsoleWriter.WriteLine(String.Format("SetActiveAddins took {0:0.0} secs", DateTime.Now.Subtract(start2).TotalSeconds));
                 if (!string.IsNullOrEmpty((string)erroDescription))
                 {
                     ConsoleWriter.WriteErrLine("Fail to SetActiveAddins : " + erroDescription);
