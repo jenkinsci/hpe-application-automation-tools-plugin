@@ -24,12 +24,34 @@ namespace HpToolsLauncher
             lock (_lockObject)
             {
                 Application _qtpApplication = Activator.CreateInstance(type) as Application;
-                if (Directory.Exists(parentFolder))
+                try
                 {
-                    Directory.Delete(parentFolder, true);
+                    if (Directory.Exists(parentFolder))
+                    {
+                        Directory.Delete(parentFolder, true);
+                    }
+                    ConsoleWriter.WriteLine("Using parent folder : " + parentFolder);
                 }
+                catch (Exception e)
+                {
+                    ConsoleWriter.WriteErrLine("Failed to delete parent folder : " + e.Message);
+                }
+
                 Directory.CreateDirectory(parentFolder);
                 DirectoryInfo parentDir = new DirectoryInfo(parentFolder);
+
+                try
+                {
+                    if (_qtpApplication.Launched)
+                    {
+                        _qtpApplication.Quit();
+                    }
+                }
+                catch (Exception e)
+                {
+                    ConsoleWriter.WriteErrLine("Failed to close qtpApp : " + e.Message);
+                }
+
 
 
                 //START Test creation
@@ -40,7 +62,7 @@ namespace HpToolsLauncher
                     DateTime startTotal = DateTime.Now;
                     ConsoleWriter.WriteLine("Creation of " + test.Name + " *****************************");
                     LoadNeededAddins(_qtpApplication, test.UnderlyingTests);
-                    
+
                     try
                     {
                         DateTime startSub1 = DateTime.Now;
@@ -56,7 +78,7 @@ namespace HpToolsLauncher
                         string fullPath = parentDir.CreateSubdirectory(test.Name).FullName;
                         _qtpApplication.Test.SaveAs(fullPath);
                         double sec = DateTime.Now.Subtract(startTotal).TotalSeconds;
-                        ConsoleWriter.WriteLine(String.Format("MBT test was created in {0} in {1:0.0} secs",fullPath,sec));
+                        ConsoleWriter.WriteLine(String.Format("MBT test was created in {0} in {1:0.0} secs", fullPath, sec));
 
                     }
                     catch (Exception e)
@@ -98,11 +120,11 @@ namespace HpToolsLauncher
                     }
                 }
 
-                if (_qtpApplication.Launched)
-                {
-                    //_qtpApplication.Quit();
-                    //ConsoleWriter.WriteLine("LoadNeededAddins : _qtpApplication.Quit");
-                }
+                //if (_qtpApplication.Launched)
+                //{
+                //_qtpApplication.Quit();
+                //ConsoleWriter.WriteLine("LoadNeededAddins : _qtpApplication.Quit");
+                //}
 
                 object erroDescription = null;
 
