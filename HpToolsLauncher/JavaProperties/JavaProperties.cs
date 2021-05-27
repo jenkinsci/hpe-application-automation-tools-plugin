@@ -53,6 +53,18 @@ namespace HpToolsLauncher
 
         }
 
+        public string GetOrDefault(string key, string defaultValue)
+        {
+            if (this.ContainsKey(key))
+            {
+                return this[key];
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
+
         /// <summary>
         /// Creates an empty property list with the specified defaults.
         /// </summary>

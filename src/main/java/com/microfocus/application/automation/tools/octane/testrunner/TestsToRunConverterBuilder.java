@@ -39,10 +39,7 @@ import com.microfocus.application.automation.tools.model.TestsFramework;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationValidator;
 import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
+import hudson.*;
 import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -59,10 +56,8 @@ import java.io.*;
 import java.net.URL;
 import java.text.Format;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.microfocus.application.automation.tools.run.RunFromFileBuilder.HP_TOOLS_LAUNCHER_EXE;
 
@@ -170,7 +165,9 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
         }
     }
 
-    private void createMTBTests(List<MbtTest> tests, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) {
+    private void createMTBTests(List<MbtTest> tests, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+
+
         build.getRootDir();
         Properties props = new Properties();
         props.setProperty("runType", "MBT");
@@ -179,10 +176,12 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
         props.setProperty("parentFolder", workspace.getRemote() +"\\" + MfUftConverter.MBT_PARENT_SUB_DIR);
         int counter = 1;
 
+        EnvVars env = build.getEnvironment(listener);
         for (MbtTest mbtTest : tests) {
             props.setProperty("test" + counter, mbtTest.getName());
-            props.setProperty("script" + counter, mbtTest.getScript());
-            props.setProperty("underlyingTests" + counter, String.join(";", mbtTest.getUnderlyingTests()));
+            props.setProperty("script" + counter, env.expand(mbtTest.getScript()));
+            props.setProperty("unitIds" + counter, mbtTest.getUnitIds().stream().map( n -> n.toString() ).collect(Collectors.joining(";" ) ));
+            props.setProperty("underlyingTests" + counter, env.expand((String.join(";", mbtTest.getUnderlyingTests()))));
             counter++;
         }
 

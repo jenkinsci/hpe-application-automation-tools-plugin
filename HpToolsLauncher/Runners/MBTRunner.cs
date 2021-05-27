@@ -70,6 +70,10 @@ namespace HpToolsLauncher
                         _qtpApplication.New();
                         ConsoleWriter.WriteLine(string.Format("_qtpApplication.New took {0:0.0} secs", DateTime.Now.Subtract(startSub1).TotalSeconds));
                         QTObjectModelLib.Action qtAction1 = _qtpApplication.Test.Actions[1];
+                        qtAction1.Description = "unitIds=" + string.Join(",", test.UnitIds);
+
+                        //https://myskillpoint.com/how-to-use-loadandrunaction-in-uft/#LoadAndRunAction_Having_Input-Output_Parameters
+                        //LoadAndRunAction "E:\UFT_WorkSpace\TestScripts\SampleTest","Action1",0,"inputParam1","inputParam2",outParameterVal
                         //string actionContent = "LoadAndRunAction \"c:\\Temp\\GUITest2\\\",\"Action1\"";
                         string actionContent = File.Exists(test.Script) ? File.ReadAllText(test.Script) : test.Script;
                         qtAction1.ValidateScript(actionContent);
@@ -106,7 +110,7 @@ namespace HpToolsLauncher
                     {
                         DateTime start1 = DateTime.Now;
                         var testAddinsObj = _qtpApplication.GetAssociatedAddinsForTest(fileName);
-                        ConsoleWriter.WriteLine(String.Format("GetAssociatedAddinsForTest took {0:0.0} secs", DateTime.Now.Subtract(start1).TotalSeconds));
+                        ConsoleWriter.WriteLine(string.Format("GetAssociatedAddinsForTest took {0:0.0} secs", DateTime.Now.Subtract(start1).TotalSeconds));
                         object[] tempTestAddins = (object[])testAddinsObj;
 
                         foreach (string addin in tempTestAddins)
@@ -151,7 +155,7 @@ namespace HpToolsLauncher
     {
         public String Name { get; set; }
         public String Script { get; set; }
-
+        public String UnitIds { get; set; }
         public List<String> UnderlyingTests { get; set; }
     }
 

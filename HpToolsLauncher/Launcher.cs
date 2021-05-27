@@ -844,8 +844,9 @@ namespace HpToolsLauncher
                         tests.Add(test);
 
                         test.Name = _ciParams[testProp];
-                        test.Script = _ciParams["script"  + counter];
-                        test.UnderlyingTests = new List<String>(_ciParams["underlyingTests" + counter].Split(';'));
+                        test.Script = _ciParams.GetOrDefault("script"  + counter,"");
+                        test.UnitIds = _ciParams.GetOrDefault("unitIds" + counter,"");
+                        test.UnderlyingTests = new List<string>(_ciParams.GetOrDefault("underlyingTests" + counter,"").Split(';'));
 
                         testProp = "test" + (++counter);
                     }
