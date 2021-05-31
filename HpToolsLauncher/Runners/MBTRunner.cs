@@ -79,7 +79,7 @@ namespace HpToolsLauncher
                         qtAction1.ValidateScript(actionContent);
                         qtAction1.SetScript(actionContent);
 
-                        string fullPath = parentDir.CreateSubdirectory(test.Name).FullName;
+                        string fullPath = parentDir.CreateSubdirectory("_" + test.Order).CreateSubdirectory(test.Name).FullName;
                         _qtpApplication.Test.SaveAs(fullPath);
                         double sec = DateTime.Now.Subtract(startTotal).TotalSeconds;
                         ConsoleWriter.WriteLine(String.Format("MBT test was created in {0} in {1:0.0} secs", fullPath, sec));
@@ -157,6 +157,7 @@ namespace HpToolsLauncher
         public String Script { get; set; }
         public String UnitIds { get; set; }
         public List<String> UnderlyingTests { get; set; }
+        public int Order { get; set; }
     }
 
 

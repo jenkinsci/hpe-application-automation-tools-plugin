@@ -847,12 +847,10 @@ namespace HpToolsLauncher
                         test.Script = _ciParams.GetOrDefault("script"  + counter,"");
                         test.UnitIds = _ciParams.GetOrDefault("unitIds" + counter,"");
                         test.UnderlyingTests = new List<string>(_ciParams.GetOrDefault("underlyingTests" + counter,"").Split(';'));
-
+                        test.Order = counter;
                         testProp = "test" + (++counter);
                     }
             
-   
-                    
                     runner = new MBTRunner(parentFolder, tests);
                     break;
                 default:
