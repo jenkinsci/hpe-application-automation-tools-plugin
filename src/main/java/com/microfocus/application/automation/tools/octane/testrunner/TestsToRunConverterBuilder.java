@@ -166,8 +166,6 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
     }
 
     private void createMTBTests(List<MbtTest> tests, @Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
-
-
         build.getRootDir();
         Properties props = new Properties();
         props.setProperty("runType", "MBT");
@@ -179,6 +177,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
         EnvVars env = build.getEnvironment(listener);
         for (MbtTest mbtTest : tests) {
             props.setProperty("test" + counter, mbtTest.getName());
+            props.setProperty("package" + counter, "_" + counter);
             props.setProperty("script" + counter, env.expand(mbtTest.getScript()));
             props.setProperty("unitIds" + counter, mbtTest.getUnitIds().stream().map( n -> n.toString() ).collect(Collectors.joining(";" ) ));
             props.setProperty("underlyingTests" + counter, env.expand((String.join(";", mbtTest.getUnderlyingTests()))));

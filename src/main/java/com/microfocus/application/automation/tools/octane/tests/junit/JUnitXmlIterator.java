@@ -192,11 +192,13 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 					// currently this handling is needed for UFT tests
 					int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName);
 					if (uftTextIndexStart != -1) {
-						String path = testName.substring(uftTextIndexStart);
+						String path = testName.substring(uftTextIndexStart).replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);;
 						if(path.startsWith(MfUftConverter.MBT_PARENT_SUB_DIR)){//remove MBT prefix
-							path = path.substring(MfUftConverter.MBT_PARENT_SUB_DIR.length());
+							//mbt test located in two level folder : ___mbt/_order
+							path = path.substring(MfUftConverter.MBT_PARENT_SUB_DIR.length());//remove ___mbt
+							path = path.substring(path.indexOf(SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER));//remove order part
 						}
-						path = path.replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);
+
 						path = StringUtils.strip(path, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);
 
 						//split path to package and name fields

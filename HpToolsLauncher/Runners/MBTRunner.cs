@@ -79,10 +79,16 @@ namespace HpToolsLauncher
                         qtAction1.ValidateScript(actionContent);
                         qtAction1.SetScript(actionContent);
 
-                        string fullPath = parentDir.CreateSubdirectory("_" + test.Order).CreateSubdirectory(test.Name).FullName;
+                        DirectoryInfo fullDir = parentDir;
+                        if (!string.IsNullOrEmpty(test.PackageName))
+                        {
+                            fullDir = fullDir.CreateSubdirectory(test.PackageName);
+                        }
+        
+                        string fullPath = fullDir.CreateSubdirectory(test.Name).FullName;
                         _qtpApplication.Test.SaveAs(fullPath);
                         double sec = DateTime.Now.Subtract(startTotal).TotalSeconds;
-                        ConsoleWriter.WriteLine(String.Format("MBT test was created in {0} in {1:0.0} secs", fullPath, sec));
+                        ConsoleWriter.WriteLine(string.Format("MBT test was created in {0} in {1:0.0} secs", fullPath, sec));
 
                     }
                     catch (Exception e)
@@ -153,11 +159,11 @@ namespace HpToolsLauncher
 
     public class MBTTest
     {
-        public String Name { get; set; }
-        public String Script { get; set; }
-        public String UnitIds { get; set; }
+        public string Name { get; set; }
+        public string Script { get; set; }
+        public string UnitIds { get; set; }
         public List<String> UnderlyingTests { get; set; }
-        public int Order { get; set; }
+        public string PackageName { get; set; }
     }
 
 
