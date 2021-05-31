@@ -195,7 +195,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 						String path = testName.substring(uftTextIndexStart).replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);;
 						if(path.startsWith(MfUftConverter.MBT_PARENT_SUB_DIR)){//remove MBT prefix
 							//mbt test located in two level folder : ___mbt/_order
-							path = path.substring(MfUftConverter.MBT_PARENT_SUB_DIR.length());//remove ___mbt
+							path = path.substring(MfUftConverter.MBT_PARENT_SUB_DIR.length()+1);//remove ___mbt
 							path = path.substring(path.indexOf(SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER));//remove order part
 						}
 
