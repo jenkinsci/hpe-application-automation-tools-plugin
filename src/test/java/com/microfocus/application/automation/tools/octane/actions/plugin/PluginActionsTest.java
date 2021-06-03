@@ -40,6 +40,7 @@ import com.microfocus.application.automation.tools.octane.configuration.Configur
 import com.microfocus.application.automation.tools.octane.tests.TestUtils;
 import hudson.model.*;
 import jenkins.model.Jenkins;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
@@ -68,6 +69,7 @@ public class PluginActionsTest extends OctanePluginTestBase {
 		assertEquals("nga", pluginActions.getUrlName());
 	}
 
+	@Ignore
 	@Test
 	public void testPluginActions_REST_Status() throws IOException, SAXException {
 		Page page = client.goTo("nga/api/v1/status", "application/json");
