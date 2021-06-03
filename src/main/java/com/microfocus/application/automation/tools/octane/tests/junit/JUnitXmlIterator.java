@@ -163,7 +163,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 			} else if ("stdout".equals(localName)) {
 				String stdoutValue = readNextValue();
 				if (stdoutValue != null) {
-					if (hpRunnerType.equals(HPRunnerType.UFT) && stdoutValue.contains("Test result: Warning")) {
+					if ((hpRunnerType.equals(HPRunnerType.UFT) || hpRunnerType.equals(HPRunnerType.UFT_MBT)) && stdoutValue.contains("Test result: Warning")) {
 						errorMsg = "Test ended with 'Warning' status.";
 						parseUftErrorMessages();
 					}
@@ -177,7 +177,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 					testName = testName.substring(0, testName.length() - 2);
 				}
 
-                if (hpRunnerType.equals(HPRunnerType.UFT)) {
+                if (hpRunnerType.equals(HPRunnerType.UFT)|| hpRunnerType.equals(HPRunnerType.UFT_MBT)) {
 					if (testName != null && testName.contains("..")) { //resolve existence of ../ - for example c://a/../b => c://b
 						testName = new File(testName).getCanonicalPath();
 					}
@@ -271,7 +271,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 				if (index >= 0) {
 					errorType = stackTraceStr.substring(0, index);
 				}
-				if (hpRunnerType.equals(HPRunnerType.UFT) && StringUtils.isNotEmpty(errorMsg)) {
+				if ((hpRunnerType.equals(HPRunnerType.UFT)|| hpRunnerType.equals(HPRunnerType.UFT_MBT)) && StringUtils.isNotEmpty(errorMsg)) {
 					parseUftErrorMessages();
 				}
 			}
@@ -283,9 +283,9 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 				TestError testError = new TestError(stackTraceStr, errorType, errorMsg);
 				if (stripPackageAndClass) {
 					//workaround only for UFT - we do not want packageName="All-Tests" and className="&lt;None>" as it comes from JUnit report
-					addItem(new JUnitTestResult(moduleName, "", "", testName, status, duration, buildStarted, testError, externalURL, description));
+					addItem(new JUnitTestResult(moduleName, "", "", testName, status, duration, buildStarted, testError, externalURL, description, hpRunnerType));
 				} else {
-					addItem(new JUnitTestResult(moduleName, packageName, className, testName, status, duration, buildStarted, testError, externalURL, description));
+					addItem(new JUnitTestResult(moduleName, packageName, className, testName, status, duration, buildStarted, testError, externalURL, description, hpRunnerType));
 				}
 			}
 		}

@@ -57,6 +57,7 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
     private static final String RUN_FROM_ALM_BUILDER = "RunFromAlmBuilder";
 
     private static final String UFT = "UFT";
+    public static final String UFT_MBT = "MBT";
     private static final String STORMRUNNER_LOAD = "StormRunner Load";
     private static final String LOAD_RUNNER = "LoadRunner";
     private static final String PERFORMANCE_CENTER_RUNNER = "Performance Center";
@@ -77,6 +78,7 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
 
         runnerType2ResultFields.put(HPRunnerType.PerformanceCenter, new ResultFields(null, PERFORMANCE_CENTER_RUNNER, null, PERFORMANCE_TEST_TYPE));
         runnerType2ResultFields.put(HPRunnerType.UFT, new ResultFields(UFT, UFT, null));
+        runnerType2ResultFields.put(HPRunnerType.UFT_MBT, new ResultFields(UFT_MBT, null, null));
         runnerType2ResultFields.put(HPRunnerType.StormRunnerLoad, new ResultFields(null, STORMRUNNER_LOAD, null));
         runnerType2ResultFields.put(HPRunnerType.LoadRunner, new ResultFields(null, LOAD_RUNNER, null));
     }
@@ -103,8 +105,9 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
      */
     public static HPRunnerType getRunnerType(Run run) {
         HPRunnerType hpRunnerType = HPRunnerType.NONE;
+        ParametersAction parameterAction = run.getAction(ParametersAction.class);
         if (JobProcessorFactory.WORKFLOW_RUN_NAME.equals(run.getClass().getName())) {
-            ParametersAction parameterAction = run.getAction(ParametersAction.class);
+
             ParameterValue runnerTypePv = parameterAction != null ? parameterAction.getParameter(HPRunnerType.class.getSimpleName()) : null;
             if (runnerTypePv != null) {
                 hpRunnerType = HPRunnerType.valueOf((String) runnerTypePv.getValue());
@@ -122,6 +125,12 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
             }
         }
 
+        if (hpRunnerType == HPRunnerType.UFT) {
+            ParameterValue octaneFramework = parameterAction != null ? parameterAction.getParameter("octaneTestRunnerFramework") : null;
+            if(octaneFramework!=null && octaneFramework.getValue().equals("MBT")){
+                hpRunnerType = HPRunnerType.UFT_MBT;
+            }
+        }
         if (hpRunnerType == HPRunnerType.UFT && isLoadRunnerProject(run)) {
             hpRunnerType = HPRunnerType.LoadRunner;
         }

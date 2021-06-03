@@ -30,6 +30,8 @@ package com.microfocus.application.automation.tools.octane.tests.junit;
 
 import com.hp.octane.integrations.testresults.XmlWritableTestResult;
 import com.hp.octane.integrations.utils.SdkStringUtils;
+import com.microfocus.application.automation.tools.octane.tests.HPRunnerType;
+import com.microfocus.application.automation.tools.octane.tests.detection.MFToolsDetectionExtension;
 import org.apache.commons.lang.StringUtils;
 
 import javax.xml.stream.XMLStreamException;
@@ -52,8 +54,10 @@ final public class JUnitTestResult implements Serializable, XmlWritableTestResul
     private final long started;
     private final TestError testError;
     private final String externalReportUrl;
+    private final HPRunnerType runnerType;
 
-    public JUnitTestResult(String moduleName, String packageName, String className, String testName, TestResultStatus result, long duration, long started, TestError testError, String externalReportUrl, String description) {
+
+    public JUnitTestResult(String moduleName, String packageName, String className, String testName, TestResultStatus result, long duration, long started, TestError testError, String externalReportUrl, String description, HPRunnerType runnerType) {
         this.moduleName = restrictSize(moduleName, DEFAULT_STRING_SIZE);
         this.packageName = restrictSize(packageName, DEFAULT_STRING_SIZE);
         this.className = restrictSize(className, DEFAULT_STRING_SIZE);
@@ -68,6 +72,7 @@ final public class JUnitTestResult implements Serializable, XmlWritableTestResul
         this.testError = testError;
         this.externalReportUrl = externalReportUrl;
         this.description = description;
+        this.runnerType = runnerType;
     }
 
     private String restrictSize(String value, int size) {
@@ -124,6 +129,9 @@ final public class JUnitTestResult implements Serializable, XmlWritableTestResul
         writer.writeAttribute("started", String.valueOf(started));
         if(externalReportUrl != null && !externalReportUrl.isEmpty()) {
             writer.writeAttribute("external_report_url", externalReportUrl);
+        }
+        if (HPRunnerType.UFT_MBT.equals(runnerType)) {
+            writer.writeAttribute("run_type", MFToolsDetectionExtension.UFT_MBT);
         }
         if (result.equals(TestResultStatus.FAILED) && testError != null) {
             writer.writeStartElement("error");

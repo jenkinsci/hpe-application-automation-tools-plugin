@@ -107,7 +107,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 
 			boolean getResultsOnMaster = false;
 			HPRunnerType hpRunnerType = MFToolsDetectionExtension.getRunnerType(run);
-			if(hpRunnerType.equals(HPRunnerType.UFT)){
+			if(hpRunnerType.equals(HPRunnerType.UFT) || hpRunnerType.equals(HPRunnerType.UFT_MBT)){
 				getResultsOnMaster = true;
 			}
 			FilePath filePath;
@@ -179,7 +179,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 			this.jenkinsRootUrl = jenkinsRootUrl;
 			String buildRootDir = build.getRootDir().getCanonicalPath();
 			this.sharedCheckOutDirectory = CheckOutSubDirEnvContributor.getSharedCheckOutDirectory(build.getParent());
-			if (sharedCheckOutDirectory == null && HPRunnerType.UFT.equals(hpRunnerType)) {
+			if (sharedCheckOutDirectory == null && (HPRunnerType.UFT.equals(hpRunnerType) || HPRunnerType.UFT_MBT.equals(hpRunnerType))) {
 				ParametersAction parameterAction = build.getAction(ParametersAction.class);
 				ParameterValue pv = parameterAction != null ? parameterAction.getParameter(UftConstants.UFT_CHECKOUT_FOLDER) : null;
 				sharedCheckOutDirectory = pv != null && pv instanceof StringParameterValue ?
@@ -194,7 +194,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 					new ModuleDetection.Default());
 
 
-			if (HPRunnerType.UFT.equals(hpRunnerType)) {
+			if (HPRunnerType.UFT.equals(hpRunnerType) || HPRunnerType.UFT_MBT.equals(hpRunnerType)) {
 
 				//extract folder names for created tests
 				String reportFolder = buildRootDir + "/archive/UFTReport";
