@@ -69,7 +69,7 @@ public class PluginActionsTest extends OctanePluginTestBase {
 		assertEquals("nga", pluginActions.getUrlName());
 	}
 
-	@Ignore
+	@Ignore("temp ignore")
 	@Test
 	public void testPluginActions_REST_Status() throws IOException, SAXException {
 		Page page = client.goTo("nga/api/v1/status", "application/json");
