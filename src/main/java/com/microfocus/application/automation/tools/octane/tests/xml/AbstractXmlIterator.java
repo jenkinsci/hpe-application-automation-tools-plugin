@@ -28,7 +28,7 @@
 
 package com.microfocus.application.automation.tools.octane.tests.xml;
 
-import org.apache.commons.io.IOUtils;
+import hudson.util.IOUtils;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;

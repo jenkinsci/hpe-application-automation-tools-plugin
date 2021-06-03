@@ -238,10 +238,6 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
             build.setResult(Result.FAILURE);
             listener.error("Failed running HpToolsLauncher " + ioe);
             return;
-        } catch (InterruptedException e) {
-            build.setResult(Result.ABORTED);
-            PrintStream out = listener.getLogger();
-            listener.error("Failed running HpToolsLauncher - build aborted " + e);
         }
     }
 
