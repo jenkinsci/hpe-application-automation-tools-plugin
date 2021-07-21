@@ -789,29 +789,6 @@ namespace HpToolsLauncher
                         test.PackageName = _ciParams.GetOrDefault("package" + counter);
                         test.DatableParams = _ciParams.GetOrDefault("datableParams" + counter);
 
-                        test.RecoveryScenarios = new List<RecoveryScenario>();
-                        string recScenarioValue = _ciParams.GetOrDefault("recoveryScenarios" + counter, "");
-                        if (!string.IsNullOrEmpty(recScenarioValue))
-                        {
-
-                            string[] scenarios = recScenarioValue.Split(';');
-                            foreach(string  sc in scenarios)
-                            {
-                                RecoveryScenario rc = RecoveryScenario.ParseFromString(sc);
-                                if (rc != null)
-                                {
-                                    test.RecoveryScenarios.Add(rc);
-                                }
-                            }
-                        }
-
-                        test.FunctionLibraries = new List<string>();
-                        string funcLibraries = _ciParams.GetOrDefault("functionLibraries" + counter, "");
-                        if (!string.IsNullOrEmpty(funcLibraries))
-                        {
-                            test.FunctionLibraries = new List<string>(funcLibraries.Split(';'));
-                        }
-
                         test.PackageName = _ciParams.GetOrDefault("package" + counter, "");
                         test.DatableParams = _ciParams.GetOrDefault("datableParams" + counter, "");
                         testProp = "test" + (++counter);

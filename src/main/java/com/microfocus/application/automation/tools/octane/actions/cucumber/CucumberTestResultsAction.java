@@ -30,7 +30,10 @@ package com.microfocus.application.automation.tools.octane.actions.cucumber;
 
 import com.microfocus.application.automation.tools.octane.Messages;
 import hudson.FilePath;
-import hudson.model.*;
+import hudson.model.Action;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 
 import java.io.File;
 
@@ -47,7 +50,7 @@ public class CucumberTestResultsAction implements Action {
         CucumberResultsService.setListener(listener);
     }
 
-    public boolean copyResultsToBuildFolder(FilePath workspace) {
+    public boolean copyResultsToBuildFolder(Run<?, ?> run, FilePath workspace) {
         try {
             CucumberResultsService.log(Messages.CucumberResultsActionCollecting());
             String[] files = CucumberResultsService.getCucumberResultFiles(workspace, glob);
@@ -55,7 +58,9 @@ public class CucumberTestResultsAction implements Action {
 
             for (String fileName : files) {
                 File resultFile = new File(workspace.child(fileName).toURI());
-                CucumberResultsService.copyResultFile(resultFile, build.getRootDir(), workspace);
+                if (run.getStartTimeInMillis() < resultFile.lastModified()) {
+                    CucumberResultsService.copyResultFile(resultFile, build.getRootDir(), workspace);
+                }
             }
 
             if (!found && build.getResult() != Result.FAILURE) {

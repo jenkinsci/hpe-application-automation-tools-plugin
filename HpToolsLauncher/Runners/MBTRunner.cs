@@ -86,20 +86,6 @@ namespace HpToolsLauncher
                             fullDir = fullDir.CreateSubdirectory(test.PackageName);
                         }
 
-                        //add function library
-                        foreach (string fl in test.FunctionLibraries)
-                        {
-                            string fileName = GetResourceFileNameAndAddToUftFoldersIfRequired(_qtpApplication, fl);
-                            _qtpApplication.Test.Settings.Resources.Libraries.Add(fileName);
-                        }
-
-                        //add recovery scenario
-                        foreach (RecoveryScenario rs in test.RecoveryScenarios)
-                        {
-                            string fileName = GetResourceFileNameAndAddToUftFoldersIfRequired(_qtpApplication, rs.FileName);
-                            _qtpApplication.Test.Settings.Recovery.Add(fileName, rs.Name, rs.Position);
-                        }
-
                         //Expects to receive params in CSV format, encoded base64
                         if (!string.IsNullOrEmpty(test.DatableParams))
                         {
@@ -140,14 +126,16 @@ namespace HpToolsLauncher
         private string GetResourceFileNameAndAddToUftFoldersIfRequired(Application qtpApplication, string filePath)
         {
             //file path might be full or just file name;
-            FileInfo fi = new FileInfo(filePath);
-            string fileName = fi.Name;
-            string location = qtpApplication.Folders.Locate(fileName);
+            string location = qtpApplication.Folders.Locate(filePath);
             if (!string.IsNullOrEmpty(location))
             {
-                ConsoleWriter.WriteLine(string.Format("Adding resources : {0} - location is already defined in UFT.", fileName));
+                ConsoleWriter.WriteLine(string.Format("Adding resources : {0} - done", filePath));
             }
             else
+            {
+                ConsoleWriter.WriteLine(string.Format("Adding resources : {0} - failed to find file in repository. Please check correctness of resource location.", filePath));
+            }
+            /*else
             {
                 string[] allFiles = Directory.GetFiles(repoFolder, fileName, SearchOption.AllDirectories);
                 if (allFiles.Length == 0)
@@ -195,9 +183,9 @@ namespace HpToolsLauncher
                     ConsoleWriter.WriteLine(string.Format("Adding resources : {0} - folder {1} is added to settings", fileName, directoryPath.Replace(repoFolder,"")));
                     qtpApplication.Folders.Add(directoryPath);
                 }
-            }
+            }*/
 
-            return fileName;
+            return filePath;
         }
 
         private void LoadNeededAddins(Application _qtpApplication, IEnumerable<String> fileNames)
@@ -298,10 +286,6 @@ namespace HpToolsLauncher
         public List<string> UnderlyingTests { get; set; }
         public string PackageName { get; set; }
         public string DatableParams { get; set; }
-
-        public List<string> FunctionLibraries { get; set; }
-
-        public List<RecoveryScenario> RecoveryScenarios { get; set; }
     }
 
 

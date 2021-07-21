@@ -38,6 +38,10 @@ public class UftConstants {
     public static final String BUILD_ID_PARAMETER_NAME = "buildId";
     public static final String EXECUTION_ID_PARAMETER_NAME = "executionId";
     public static final String FULL_SCAN_PARAMETER_NAME = "Full sync";
+    public static final String ADD_GLOBAL_PARAMETERS_TO_TESTS_PARAM = "ADD_GLOBAL_PARAMETERS_TO_TESTS";
+    public static final String OCTANE_WORKSPACE_PARAMETER_NAME = "octaneWorkspaceId";
+    public static final String OCTANE_SPACE_PARAMETER_NAME = "octaneSpaceId";
+
 
     public static final String TESTS_TO_RUN_PARAMETER_NAME = "testsToRun";
     public static final String CHECKOUT_DIR_PARAMETER_NAME = "testsToRunCheckoutDirectory";
