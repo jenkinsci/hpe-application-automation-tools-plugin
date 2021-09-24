@@ -580,7 +580,7 @@ namespace HpToolsLauncher
 
             if (targetTestSet != null) { return targetTestSet; }
 
-            ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerCantFindTestSet, testSuiteName));
+            ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerCantFindTestSet, testSuiteName));
 
             //this will make sure run will fail at the end. (since there was an error)
             Debug.WriteLine("Null target test set");
@@ -636,7 +636,7 @@ namespace HpToolsLauncher
             {
                 //not found
                 tsFolder = null;
-                Console.WriteLine(ex.Message);
+                ConsoleWriter.WriteLine(ex.Message + " Trying to find specific test(s) with the given name(s) on the defined path, optionally applying the set filters");
             }
 
             // test set not found, try to find specific test by path
@@ -665,7 +665,7 @@ namespace HpToolsLauncher
                 List testList = tsFolder.FindTestSets(testSuiteName);
                 if (testList == null)
                 {
-                    ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerCantFindTestSet, testSuiteName));
+                    ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerCantFindTestSet, testSuiteName));
                     //this will make sure run will fail at the end. (since there was an error)
                     Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
                     return null;
@@ -716,10 +716,11 @@ namespace HpToolsLauncher
         public IList FilterTests(ITestSet targetTestSet, bool isTestPath, string testName, bool isFilterSelected, List<string> filterByStatuses, string filterByName)
         {
             TSTestFactory tsTestFactory = targetTestSet.TSTestFactory;
-
             ITDFilter2 tdFilter = tsTestFactory.Filter;
 
-            tdFilter["TC_CYCLE_ID"] = targetTestSet.ID.ToString();
+            // DEF-673012 - causes problems when a non-existing and an existing specific test is given by the user, the list appears empty
+            // tdFilter["TC_CYCLE_ID"] = targetTestSet.ID.ToString();
+            // with commented out TC_CYCLE_ID, we get the initial testList by applying an empty filter
             IList testList = tsTestFactory.NewList(tdFilter.Text);
 
             List<ITSTest> testsFilteredByStatus = new List<ITSTest>();
@@ -785,6 +786,7 @@ namespace HpToolsLauncher
                 {
                     string tListIndexName = testList[index].Name;
                     string tListIndexTestName = testList[index].TestName;
+
                     if (!string.IsNullOrEmpty(tListIndexName) && !string.IsNullOrEmpty(testName) && !testName.Equals(tListIndexTestName))
                     {
                         testList.Remove(index);
@@ -1109,7 +1111,6 @@ namespace HpToolsLauncher
         public TestSuiteRunResults RunTestSet(string tsFolderName, string tsName, string testParameters, double timeout, QcRunMode runMode, string runHost,
                                               bool isFilterSelected, string filterByName, List<string> filterByStatuses, TestStorageType testStorageType)
         {
-
             string testSuiteName = tsName.TrimEnd();
             ITestSetFolder tsFolder = null;
             string tsPath = string.Format(@"Root\{0}", tsFolderName);
@@ -1117,7 +1118,9 @@ namespace HpToolsLauncher
             string currentTestSetInstances = string.Empty, testName = string.Empty;
             TestSuiteRunResults runDesc = new TestSuiteRunResults();
             TestRunResults activeTestDesc = null;
-            List testSetList;
+            List testSetList = null;
+
+            ConsoleWriter.WriteLine(Resources.GeneralDoubleSeperator);
 
             //get list of test sets
             try
@@ -1127,12 +1130,13 @@ namespace HpToolsLauncher
             catch (Exception ex)
             {
                 Console.WriteLine("Unable to retrieve the list of tests");
-                ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerCantFindTestSet, testSuiteName));
+                ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerCantFindTestSet, testSuiteName));
                 Console.WriteLine(ex.Message);
+
                 //this will make sure run will fail at the end. (since there was an error)
                 Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
-                return null;
             }
+
             if (testSetList == null)
             {
                 return null;
@@ -1146,14 +1150,15 @@ namespace HpToolsLauncher
             }
             catch (Exception)
             {
-                Console.WriteLine("Empty target test set list");
+                ConsoleWriter.WriteErrLine("Empty target test set list");
+                Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
             }
+
             if (targetTestSet == null)
             {
                 return null;
             }
 
-            ConsoleWriter.WriteLine(Resources.GeneralDoubleSeperator);
             ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
             ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerDisplayTest, testSuiteName, targetTestSet.ID));
 
@@ -1173,7 +1178,7 @@ namespace HpToolsLauncher
 
             if (scheduler == null)
             {
-                Console.WriteLine(GetAlmNotInstalledError());
+                ConsoleWriter.WriteErrLine(GetAlmNotInstalledError());
 
                 //proceeding with program execution is tasteless, since nothing will run without a properly installed QC.
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
@@ -1205,7 +1210,7 @@ namespace HpToolsLauncher
             }
             catch (Exception ex)
             {
-                ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerProblemWithHost, ex.Message));
+                ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerProblemWithHost, ex.Message));
             }
 
             //set test parameters
@@ -1217,10 +1222,9 @@ namespace HpToolsLauncher
             //start test runner
             if (filteredTestList.Count == 0)
             {
-                //ConsoleWriter.WriteErrLine("Specified test not found on ALM, please check your test path.");
                 //this will make sure run will fail at the end. (since there was an error)
-                //Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
-                Console.WriteLine(Resources.AlmTestSetsRunnerNoTestAfterApplyingFilters);
+                ConsoleWriter.WriteErrLine(Resources.AlmTestSetsRunnerNoTestAfterApplyingFilters);
+                Launcher.ExitCode = Launcher.ExitCodeEnum.Failed;
                 return null;
             }
 
@@ -1233,7 +1237,8 @@ namespace HpToolsLauncher
             }
             catch (Exception ex)
             {
-                ConsoleWriter.WriteLine(Resources.AlmRunnerRunError + ex.Message);
+                ConsoleWriter.WriteErrLine(Resources.AlmRunnerRunError + ex.Message);
+                return null;
             }
 
             ConsoleWriter.WriteLine(Resources.AlmRunnerSchedStarted + DateTime.Now.ToString(Launcher.DateFormat));
@@ -1282,6 +1287,7 @@ namespace HpToolsLauncher
 
                 Launcher.ExitCode = Launcher.ExitCodeEnum.Aborted;
             }
+
             return runDesc;
         }
 
@@ -1351,7 +1357,7 @@ namespace HpToolsLauncher
 
                 //update the state
                 qTest.PrevTestState = qTest.TestState;
-                qTest.TestState = GetTsStateFromQcState(testExecStatusObj.Status);
+                qTest.TestState = GetTsStateFromQcState(testExecStatusObj);
 
                 if (!onlyUpdateState)
                 {
@@ -1376,11 +1382,13 @@ namespace HpToolsLauncher
                         case TestState.Error:
                             qTest.ErrorDesc = string.Format("{0} : {1}", testExecStatusObj.Status, testExecStatusObj.Message);
                             break;
+                        case TestState.Warning:
+                            qTest.HasWarnings = true;
+                            break;
                         case TestState.Waiting:
                         case TestState.Running:
                         case TestState.NoRun:
                         case TestState.Passed:
-                        case TestState.Warning:
                         case TestState.Unknown:
                         default:
                             break;
@@ -1389,7 +1397,7 @@ namespace HpToolsLauncher
                     var runId = GetTestRunId(currentTest);
                     string linkStr = GetTestRunLink(runId);
 
-                    string statusString = GetTsStateFromQcState(testExecStatusObj.Status).ToString();
+                    string statusString = GetTsStateFromQcState(testExecStatusObj).ToString();
                     ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerTestStat, currentTest.Name, statusString, testExecStatusObj.Message, linkStr));
                     runResults.TestRuns[testIndex] = qTest;
                 }
@@ -1503,7 +1511,7 @@ namespace HpToolsLauncher
                                 activeTestDesc.TestGroup = string.Format(@"{0}\{1}", folderName, targetTestSet.Name).Replace(".", "_");
                             }
 
-                            TestState enmState = GetTsStateFromQcState(testExecStatusObj.Status);
+                            TestState enmState = GetTsStateFromQcState(testExecStatusObj);
                             string statusString = enmState.ToString();
 
                             if (enmState == TestState.Running)
@@ -1677,6 +1685,9 @@ namespace HpToolsLauncher
                 case TestState.Error:
                     ++testSuite.NumErrors;
                     break;
+                case TestState.Warning:
+                    ++testSuite.NumWarnings;
+                    break;
             }
         }
 
@@ -1685,7 +1696,7 @@ namespace HpToolsLauncher
         /// </summary>
         /// <param name="qcTestStatus"></param>
         /// <returns></returns>
-        private TestState GetTsStateFromQcState(string qcTestStatus)
+        private TestState GetTsStateFromQcState(TestExecStatus qcTestStatus)
         {
             if (TdConnection == null && TdConnectionOld == null)
             {
@@ -1694,7 +1705,7 @@ namespace HpToolsLauncher
 
             if (qcTestStatus == null)
                 return TestState.Unknown;
-            switch (qcTestStatus)
+            switch (qcTestStatus.Status)
             {
                 case "Waiting":
                     return TestState.Waiting;
@@ -1708,7 +1719,14 @@ namespace HpToolsLauncher
                 case "Success":
                 case "Finished":
                 case "FinishedPassed":
-                    return TestState.Passed;
+					{
+                        if (qcTestStatus.Message.Contains("warning"))
+						{
+                            return TestState.Warning;
+						}
+
+                        return TestState.Passed;
+                    }
                 case "FinishedFailed":
                     return TestState.Failed;
             }

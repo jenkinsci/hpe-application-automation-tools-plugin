@@ -37,6 +37,7 @@ namespace HpToolsLauncher
         private int m_numErrors = 0;
         private int m_numFailures = 0;
         private int m_numTests = 0;
+        private int m_numWarnings = 0;
         private TimeSpan m_totalRunTime = TimeSpan.Zero;
 
         public string SuiteName { get; set; }
@@ -52,6 +53,12 @@ namespace HpToolsLauncher
             get { return m_numTests; }
             set { m_numTests = value; }
         }
+
+        public int NumWarnings
+		{
+            get { return m_numWarnings; }
+            set { m_numWarnings = value; }
+		}
 
         public TimeSpan TotalRunTime
         {
@@ -79,6 +86,7 @@ namespace HpToolsLauncher
             this.NumErrors += desc.NumErrors;
             this.NumFailures += desc.NumFailures;
             this.NumTests += desc.NumTests;
+            this.NumWarnings += desc.NumWarnings;
         }
     }
 }

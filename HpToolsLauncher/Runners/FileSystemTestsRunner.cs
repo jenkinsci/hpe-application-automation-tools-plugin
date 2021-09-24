@@ -45,7 +45,7 @@ namespace HpToolsLauncher
         Dictionary<string, string> _jenkinsEnvVariables;
         private List<TestInfo> _tests;
         private static string _uftViewerPath;
-        private int _errors, _fail;
+        private int _errors, _fail, _warnings;
         private bool _useUFTLicense;
         private bool _displayController;
         private string _analysisTemplate;
@@ -72,28 +72,28 @@ namespace HpToolsLauncher
         private string _mobileInfoForAllGuiTests;
 
 
-        #endregion
+		#endregion
 
-        /// <summary>
-        /// overloaded constructor for adding support for run mode selection
-        /// </summary>
-        /// <param name="sources"></param>
-        /// <param name="timeout"></param>
-        /// <param name="uftRunMode"></param>
-        /// <param name="reportPath"></param>
-        /// <param name="useUftLicense"></param>
-        /// <param name="controllerPollingInterval"></param>
-        /// <param name="perScenarioTimeOutMinutes"></param>
-        /// <param name="ignoreErrorStrings"></param>
-        /// <param name="jenkinsEnvVariables"></param>
-        /// <param name="mcConnection"></param>
-        /// <param name="mobileInfo"></param>
-        /// <param name="parallelRunnerEnvironments"></param>
-        /// <param name="displayController"></param>
-        /// <param name="analysisTemplate"></param>
-        /// <param name="summaryDataLogger"></param>
-        /// <param name="scriptRtsSet"></param>
-        public FileSystemTestsRunner(List<TestData> sources,
+		/// <summary>
+		/// overloaded constructor for adding support for run mode selection
+		/// </summary>
+		/// <param name="sources"></param>
+		/// <param name="timeout"></param>
+		/// <param name="uftRunMode"></param>
+		/// <param name="reportPath"></param>
+		/// <param name="useUftLicense"></param>
+		/// <param name="controllerPollingInterval"></param>
+		/// <param name="perScenarioTimeOutMinutes"></param>
+		/// <param name="ignoreErrorStrings"></param>
+		/// <param name="jenkinsEnvVariables"></param>
+		/// <param name="mcConnection"></param>
+		/// <param name="mobileInfo"></param>
+		/// <param name="parallelRunnerEnvironments"></param>
+		/// <param name="displayController"></param>
+		/// <param name="analysisTemplate"></param>
+		/// <param name="summaryDataLogger"></param>
+		/// <param name="scriptRtsSet"></param>
+		public FileSystemTestsRunner(List<TestData> sources,
                                     TimeSpan timeout,
                                     string uftRunMode,
                                     int controllerPollingInterval,
@@ -408,6 +408,7 @@ namespace HpToolsLauncher
                 activeRunDesc.NumErrors = _errors;
                 activeRunDesc.TotalRunTime = TimeSpan.FromSeconds(totalTime);
                 activeRunDesc.NumFailures = _fail;
+                activeRunDesc.NumWarnings = _warnings;
 
                 foreach (IFileSysTestRunner cleanupRunner in _colRunnersForCleanup.Values)
                 {
@@ -559,6 +560,9 @@ namespace HpToolsLauncher
                     break;
                 case TestState.Failed:
                     _fail += 1;
+                    break;
+                case TestState.Warning:
+                    _warnings += 1;
                     break;
             }
         }
