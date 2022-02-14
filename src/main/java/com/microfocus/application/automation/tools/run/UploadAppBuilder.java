@@ -69,13 +69,12 @@ public class UploadAppBuilder extends Builder {
     private final UploadAppModel uploadAppModel;
 
     @DataBoundConstructor
-    public UploadAppBuilder(String mcServerName, String mcUserName, String mcPassword, String mcTenantId, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
-        uploadAppModel = new UploadAppModel(mcServerName, mcUserName, mcPassword, mcTenantId, proxySettings, applicationPaths);
+    public UploadAppBuilder(String mcServerName, String mcUserName, String mcPassword, String mcTenantId, String mcExecutionToken, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
+        uploadAppModel = new UploadAppModel(mcServerName, mcUserName, mcPassword, mcTenantId, mcExecutionToken, proxySettings, applicationPaths);
     }
 
     @Override
     public DescriptorImpl getDescriptor() {
-
         return (DescriptorImpl) super.getDescriptor();
     }
 
@@ -89,29 +88,29 @@ public class UploadAppBuilder extends Builder {
         String mcServerUrl = "";
         PrintStream out = listener.getLogger();
         List<UploadAppPathModel> paths = null;
-        if(uploadAppModel != null){
+        if (uploadAppModel != null) {
             paths = uploadAppModel.getApplicationPaths();
         }
         boolean allSuccess = true;
-        if(mcServerSettingsModel == null){
-            out.println("Failed to upload app to UFT Mobile server. Cause: UFT Mobile url didn't be configured." );
+        if (mcServerSettingsModel == null) {
+            out.println("Failed to upload app to UFT Mobile server. Cause: UFT Mobile url didn't be configured.");
             return false;
-        }else{
+        } else {
             mcServerUrl = mcServerSettingsModel.getProperties().getProperty("MobileHostAddress");
             out.println(String.format("There are %d apps to be uploaded.", paths.size()));
             String workspace = build.getWorkspace() == null ? "" : build.getWorkspace().toURI().getPath();
 
-            for(int i=1; i<=paths.size(); i++){
-                String path = paths.get(i-1).getMcAppPath();
+            for (int i = 1; i <= paths.size(); i++) {
+                String path = paths.get(i - 1).getMcAppPath();
                 String originPath = path;
-                if(StringUtils.isNullOrEmpty(path)){
+                if (StringUtils.isNullOrEmpty(path)) {
                     out.println(String.format("ignore the empty app %d upload", i));
                     continue;
                 }
                 //case insensitive replace of workspace to its real path
-                if (path.toUpperCase(Locale.ENGLISH).startsWith("${WORKSPACE}")){
-                    path = path.replaceAll("(?i)"+ Pattern.quote("${WORKSPACE}"), Matcher.quoteReplacement(workspace));
-                    if (!FilenameUtils.normalize(path).startsWith(FilenameUtils.normalize(workspace))){
+                if (path.toUpperCase(Locale.ENGLISH).startsWith("${WORKSPACE}")) {
+                    path = path.replaceAll("(?i)" + Pattern.quote("${WORKSPACE}"), Matcher.quoteReplacement(workspace));
+                    if (!FilenameUtils.normalize(path).startsWith(FilenameUtils.normalize(workspace))) {
                         out.println(String.format("Failed to upload app, Cause invalid application file: %s", path));
                         build.setResult(Result.FAILURE);
                         allSuccess = false;
@@ -120,17 +119,17 @@ public class UploadAppBuilder extends Builder {
                 }
                 FilePath filePath = new FilePath(build.getWorkspace().getChannel(), path);
                 File tempFile = null;
-                if (filePath.isRemote()){
+                if (filePath.isRemote()) {
                     tempFile = File.createTempFile("uftm", "." + FilenameUtils.getExtension(path));
                     try (OutputStream outputStream = new FileOutputStream(tempFile)) {
                         filePath.copyTo(outputStream);
                         path = tempFile.getCanonicalPath();
-                    } catch (NoSuchFileException noSuchFileException){
+                    } catch (NoSuchFileException noSuchFileException) {
                         out.println(String.format("Failed to upload app, Cause cannot find application file: %s", path));
                         build.setResult(Result.FAILURE);
                         allSuccess = false;
                         continue;
-                    } catch (Exception e){
+                    } catch (Exception e) {
                         out.println(String.format("Failed to upload app, Cause failed to copy application file: %s", path));
                         build.setResult(Result.FAILURE);
                         allSuccess = false;
@@ -138,34 +137,33 @@ public class UploadAppBuilder extends Builder {
                     }
                 }
 
-                try{
+                try {
                     out.println(String.format("starting to upload app %d %s", i, originPath));
-                    if(uploadAppModel.getProxySettings() == null){
-                        app = job.upload(mcServerUrl, uploadAppModel.getMcUserName(),uploadAppModel.getMcPassword(), uploadAppModel.getMcTenantId(), null, null, null, path);
-                    }else{
-                        app = job.upload(mcServerUrl, uploadAppModel.getMcUserName(),uploadAppModel.getMcPassword(), uploadAppModel.getMcTenantId(), uploadAppModel.getProxySettings().getFsProxyAddress(),uploadAppModel.getProxySettings().getFsProxyUserName(), uploadAppModel.getProxySettings().getFsProxyPassword(),path);
+                    if (uploadAppModel.getProxySettings() == null) {
+                        app = job.upload(mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getMcPassword(), uploadAppModel.getMcTenantId(), uploadAppModel.getMcExecutionToken(), null, null, null, path);
+                    } else {
+                        app = job.upload(mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getMcPassword(), uploadAppModel.getMcTenantId(), uploadAppModel.getMcExecutionToken(), uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName(), uploadAppModel.getProxySettings().getFsProxyPassword(), path);
                     }
-                    if(app == null){
-                        if(uploadAppModel.isUseProxy()){
-                            out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, username:%s, Proxy url:%s",
-                                    mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getProxySettings().getFsProxyAddress()));
-                        }else if(uploadAppModel.isUseAuthentication()){
-                            out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, username:%s, Proxy url:%s, proxy userName:%s",
-                                    mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
-                        }else{
-                            out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, username:%s,",
-                                    mcServerUrl, uploadAppModel.getMcUserName()));
+                    if (app == null) {
+                        if (uploadAppModel.isUseProxy()) {
+                            out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s",
+                                    mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress()));
+                        } else if (uploadAppModel.isUseAuthentication()) {
+                            out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s, proxy userName:%s",
+                                    mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
+                        } else {
+                            out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s.", mcServerUrl));
                         }
                         build.setResult(Result.FAILURE);
                         return false;
                     }
-                    if((Boolean)app.get("error")){
+                    if ((Boolean) app.get("error")) {
                         out.println("Job failed because got error message during the application uploading. " + app.toJSONString());
                         allSuccess = false;
                         build.setResult(Result.FAILURE);
                     }
                     out.println("uploaded app info: " + app.toJSONString());
-                } catch(FileNotFoundException fnf){
+                } catch (FileNotFoundException fnf) {
                     out.println(String.format("Failed to upload app to UFT Mobile server. Cause: File: %s is not found.", path));
                     build.setResult(Result.FAILURE);
                     allSuccess = false;
@@ -178,16 +176,15 @@ public class UploadAppBuilder extends Builder {
                 } catch (InterruptedException e) {
                     build.setResult(Result.ABORTED);
                     return false;
-                } catch (Exception e){
-                    if(uploadAppModel.isUseProxy()){
-                        out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, username:%s, Proxy url:%s",
-                                mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getProxySettings().getFsProxyAddress()));
-                    }else if(uploadAppModel.isUseAuthentication()){
-                        out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, username:%s, Proxy url:%s, proxy userName:%s",
-                                mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
-                    }else{
-                        out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, username:%s,",
-                                mcServerUrl, uploadAppModel.getMcUserName()));
+                } catch (Exception e) {
+                    if (uploadAppModel.isUseProxy()) {
+                        out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s",
+                                mcServerUrl,  uploadAppModel.getProxySettings().getFsProxyAddress()));
+                    } else if (uploadAppModel.isUseAuthentication()) {
+                        out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s, proxy userName:%s",
+                                mcServerUrl,  uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
+                    } else {
+                        out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s", mcServerUrl));
                     }
                     build.setResult(Result.FAILURE);
                     return false;

@@ -57,6 +57,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     public static final String MOBILE_PROXY_SETTING_USER_NAME = "MobileProxySetting_UserName";
     public static final String MOBILE_PROXY_SETTING_AUTHENTICATION = "MobileProxySetting_Authentication";
     public static final String MOBILE_USE_SSL = "MobileUseSSL";
+    public static final String MOBILE_USE_BASE_AUTH = "MobileUseBaseAuth";
 
     public final static EnumDescription FAST_RUN_MODE = new EnumDescription("Fast", "Fast");
     public final static EnumDescription NORMAL_RUN_MODE = new EnumDescription("Normal", "Normal");
@@ -76,6 +77,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     private String fsUserName;
     private Secret fsPassword;
     private String mcTenantId;
+    private String mcExecToken;
     private String fsReportPath;
 
     private String fsDeviceId;
@@ -90,6 +92,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     private String fsJobId;
     private ProxySettings proxySettings;
     private boolean useSSL;
+    private boolean useBaseAuth;
 
     /**
      * Instantiates a new Run from file system model.
@@ -104,6 +107,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      * @param mcServerName              the mc server name
      * @param fsUserName                the fs user name
      * @param fsPassword                the fs password
+     * @param mcExecToken               the mc execution token
      * @param fsDeviceId                the fs device id
      * @param fsTargetLab               the fs target lab
      * @param fsManufacturerAndModel    the fs manufacturer and model
@@ -118,11 +122,11 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      * @param useSSL                    the use ssl
      */
     @SuppressWarnings("squid:S00107")
-    public RunFromFileSystemModel(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval,String perScenarioTimeOut,
-                                  String ignoreErrorStrings, String analysisTemplate, String displayController, String mcServerName, String fsUserName, String fsPassword, String mcTenantId,
+    public RunFromFileSystemModel(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval, String perScenarioTimeOut,
+                                  String ignoreErrorStrings, String analysisTemplate, String displayController, String mcServerName, String fsUserName, String fsPassword, String mcTenantId, String mcExecToken,
                                   String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel, String fsOs,
                                   String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics, String fsInstrumented,
-                                  String fsExtraApps, String fsJobId, ProxySettings proxySettings, boolean useSSL, String fsReportPath){
+                                  String fsExtraApps, String fsJobId, ProxySettings proxySettings, boolean useSSL, boolean useBaseAuth, String fsReportPath) {
 
         this.setFsTests(fsTests);
 
@@ -140,6 +144,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.fsUserName = fsUserName;
         this.fsPassword = Secret.fromString(fsPassword);
         this.mcTenantId = mcTenantId;
+        this.mcExecToken = mcExecToken;
 
         this.fsDeviceId = fsDeviceId;
         this.fsOs = fsOs;
@@ -154,6 +159,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.fsJobId = fsJobId;
         this.proxySettings = proxySettings;
         this.useSSL = useSSL;
+        this.useBaseAuth = useBaseAuth;
     }
 
     /**
@@ -232,6 +238,22 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      */
     public void setFsPassword(String fsPassword) {
         this.fsPassword = Secret.fromString(fsPassword);
+    }
+
+    /**
+     * Gets mc execution token
+     *
+     */
+    public String getMcExecToken() {
+        return mcExecToken;
+    }
+    /**
+     * Sets mc execution token
+     *
+     * @param mcExecToken the mc execution token
+     */
+    public void setMcExecToken(String mcExecToken) {
+        this.mcExecToken = mcExecToken;
     }
 
     /**
@@ -374,7 +396,9 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      *
      * @return the fs runModes
      */
-    public List<EnumDescription> getFsUftRunModes() { return fsUftRunModes; }
+    public List<EnumDescription> getFsUftRunModes() {
+        return fsUftRunModes;
+    }
 
     /**
      * Gets mc server name.
@@ -401,8 +425,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      */
     public String getFsPassword() {
         //Temp fix till supported in pipeline module in LR
-        if(fsPassword == null)
-        {
+        if (fsPassword == null) {
             return null;
         }
         return fsPassword.getEncryptedValue();
@@ -650,13 +673,29 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     }
 
     /**
+     * Check if use base authentication for mc login.
+     */
+    public boolean isUseBaseAuth() {
+        return useBaseAuth;
+    }
+
+    /**
+     * Sets use base authentication for mc login.
+     *
+     * @param useBaseAuth use baseAuth
+     */
+    public void setUseBaseAuth(boolean useBaseAuth) {
+        this.useBaseAuth = useBaseAuth;
+    }
+
+    /**
      * Gets properties.
      *
      * @param envVars the env vars
      * @return the properties
      */
-	@Nullable
-	public Properties getProperties(EnvVars envVars) {
+    @Nullable
+    public Properties getProperties(EnvVars envVars) {
         return createProperties(envVars);
     }
 
@@ -701,59 +740,67 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         String perScenarioTimeOutVal = StringUtils.isEmpty(perScenarioTimeOut) ? "10" : envVars.expand(perScenarioTimeOut);
         props.put("PerScenarioTimeOut", perScenarioTimeOutVal);
 
-        if (!StringUtils.isEmpty(ignoreErrorStrings.replaceAll("\\r|\\n", ""))){
-            props.put("ignoreErrorStrings", ""+ignoreErrorStrings.replaceAll("\r", ""));
+        if (!StringUtils.isEmpty(ignoreErrorStrings.replaceAll("\\r|\\n", ""))) {
+            props.put("ignoreErrorStrings", "" + ignoreErrorStrings.replaceAll("\r", ""));
         }
 
-        if (StringUtils.isNotBlank(fsUserName)){
-            props.put("MobileUserName", fsUserName);
-        }
-        if (StringUtils.isNotBlank(mcTenantId)){
-            props.put("MobileTenantId", mcTenantId);
-        }
-
-        if(StringUtils.isNotBlank(fsReportPath)) {
+        if (StringUtils.isNotBlank(fsReportPath)) {
             props.put("fsReportPath", fsReportPath);
         }
 
-        if(isUseProxy()){
+        if (isUseProxy()) {
             props.put("MobileUseProxy", "1");
-            props.put("MobileProxyType","2");
+            props.put("MobileProxyType", "2");
             props.put("MobileProxySetting_Address", proxySettings.getFsProxyAddress());
 
-            if(isUseAuthentication()){
-                props.put(MOBILE_PROXY_SETTING_AUTHENTICATION,"1");
-                props.put(MOBILE_PROXY_SETTING_USER_NAME,proxySettings.getFsProxyUserName());
+            if (isUseAuthentication()) {
+                props.put(MOBILE_PROXY_SETTING_AUTHENTICATION, "1");
+                props.put(MOBILE_PROXY_SETTING_USER_NAME, proxySettings.getFsProxyUserName());
                 String encryptedPassword;
 
                 try {
                     encryptedPassword = EncryptionUtils.Encrypt(proxySettings.getFsProxyPassword(),
                             EncryptionUtils.getSecretKey());
-                }catch (Exception ex) {
+                } catch (Exception ex) {
                     return null; // cannot continue without proper config
                 }
 
                 props.put(MOBILE_PROXY_SETTING_PASSWORD_FIELD, encryptedPassword);
-            }else{
-                props.put(MOBILE_PROXY_SETTING_AUTHENTICATION,"0");
-                props.put(MOBILE_PROXY_SETTING_USER_NAME,"");
-                props.put(MOBILE_PROXY_SETTING_PASSWORD_FIELD,"");
+            } else {
+                props.put(MOBILE_PROXY_SETTING_AUTHENTICATION, "0");
+                props.put(MOBILE_PROXY_SETTING_USER_NAME, "");
+                props.put(MOBILE_PROXY_SETTING_PASSWORD_FIELD, "");
             }
-        }else{
+        } else {
             props.put("MobileUseProxy", "0");
-            props.put("MobileProxyType","0");
-            props.put(MOBILE_PROXY_SETTING_AUTHENTICATION,"0");
+            props.put("MobileProxyType", "0");
+            props.put(MOBILE_PROXY_SETTING_AUTHENTICATION, "0");
             props.put("MobileProxySetting_Address", "");
-            props.put(MOBILE_PROXY_SETTING_USER_NAME,"");
-            props.put(MOBILE_PROXY_SETTING_PASSWORD_FIELD,"");
+            props.put(MOBILE_PROXY_SETTING_USER_NAME, "");
+            props.put(MOBILE_PROXY_SETTING_PASSWORD_FIELD, "");
         }
 
-        if(useSSL){
-            props.put(MOBILE_USE_SSL,"1");
-        }else{
-            props.put(MOBILE_USE_SSL,"0");
+        if (useSSL) {
+            props.put(MOBILE_USE_SSL, "1");
+        } else {
+            props.put(MOBILE_USE_SSL, "0");
         }
 
+        if (useBaseAuth) {
+            props.put(MOBILE_USE_BASE_AUTH, "1");
+
+            if (StringUtils.isNotBlank(fsUserName)) {
+                props.put("MobileUserName", fsUserName);
+            }
+            if (StringUtils.isNotBlank(mcTenantId)) {
+                props.put("MobileTenantId", mcTenantId);
+            }
+        } else {
+            props.put(MOBILE_USE_BASE_AUTH, "0");
+            if (StringUtils.isNotBlank(mcExecToken)) {
+                props.put("MobileExecToken", mcExecToken);
+            }
+        }
         return props;
     }
 
@@ -766,12 +813,17 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      * @param proxyPassword the proxy password
      * @return the json object
      */
-    public JSONObject getJobDetails(String mcUrl, String proxyAddress, String proxyUserName, String proxyPassword){
-        if(StringUtils.isBlank(fsUserName) || StringUtils.isBlank(fsPassword.getPlainText())){
+    public JSONObject getJobDetails(String mcUrl, String proxyAddress, String proxyUserName, String proxyPassword) {
+        if (StringUtils.isBlank(fsUserName) || StringUtils.isBlank(fsPassword.getPlainText())) {
             return null;
         }
-        return JobConfigurationProxy
-                .getInstance().getJobById(mcUrl, fsUserName, fsPassword.getPlainText(), mcTenantId, proxyAddress, proxyUserName, proxyPassword, fsJobId);
+        if(useBaseAuth) {
+            return JobConfigurationProxy
+                    .getInstance().getJobById(mcUrl, fsUserName, fsPassword.getPlainText(), mcTenantId, proxyAddress, proxyUserName, proxyPassword, fsJobId);
+        }else {
+            return JobConfigurationProxy
+                    .getInstance().getJobById(mcUrl, mcExecToken, proxyAddress, proxyUserName, proxyPassword, fsJobId);
+        }
     }
 
 

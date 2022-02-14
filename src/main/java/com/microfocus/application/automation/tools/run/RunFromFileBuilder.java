@@ -166,16 +166,16 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     public RunFromFileBuilder(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval,
                               String perScenarioTimeOut, String ignoreErrorStrings, String displayController,
                               String analysisTemplate, String mcServerName, String fsUserName, String fsPassword,
-                              String mcTenantId, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
+                              String mcTenantId, String mcExecToken, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
                               String fsOs, String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics,
                               String fsInstrumented, String fsExtraApps, String fsJobId, ProxySettings proxySettings,
-                              boolean useSSL, boolean isParallelRunnerEnabled, String fsReportPath) {
+                              boolean useSSL, boolean useBaseAuth, boolean isParallelRunnerEnabled, String fsReportPath) {
         this.isParallelRunnerEnabled = isParallelRunnerEnabled;
         runFromFileModel = new RunFromFileSystemModel(fsTests, fsTimeout, fsUftRunMode, controllerPollingInterval,
                 perScenarioTimeOut, ignoreErrorStrings, displayController, analysisTemplate, mcServerName,
-                fsUserName, fsPassword, mcTenantId, fsDeviceId, fsTargetLab, fsManufacturerAndModel, fsOs,
+                fsUserName, fsPassword, mcTenantId, mcExecToken, fsDeviceId, fsTargetLab, fsManufacturerAndModel, fsOs,
                 fsAutActions, fsLaunchAppName, fsDevicesMetrics, fsInstrumented, fsExtraApps, fsJobId,
-                proxySettings, useSSL, fsReportPath);
+                proxySettings, useSSL, useBaseAuth, fsReportPath);
     }
 
     /**
@@ -578,6 +578,23 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         return runFromFileModel.getFsUserName();
     }
 
+    @DataBoundSetter
+    public void setMcExecToken(String mcExecToken) {
+        runFromFileModel.setMcExecToken(mcExecToken);
+    }
+
+    public String getMcExecToken() {
+        return runFromFileModel.getMcExecToken();
+    }
+
+    @DataBoundSetter
+    public void setUseBaseAuth(boolean useBaseAuth) {
+        runFromFileModel.setUseBaseAuth(useBaseAuth);
+    }
+
+    public boolean getUseBaseAuth() {
+        return runFromFileModel.isUseBaseAuth();
+    }
     /**
      * Sets fs user name.
      *
@@ -668,7 +685,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         ParameterValue octaneFrameworkParam = parameterAction != null ? parameterAction.getParameter("octaneTestRunnerFramework") : null;
         if (octaneFrameworkParam != null && octaneFrameworkParam.getValue().equals("MBT")) {
             String testsToRunConverted = env == null ? null : env.get(TestsToRunConverter.DEFAULT_TESTS_TO_RUN_CONVERTED_PARAMETER);
-            if(StringUtils.isEmpty(testsToRunConverted)) {
+            if (StringUtils.isEmpty(testsToRunConverted)) {
                 listener.getLogger().println(RunFromFileBuilder.class.getSimpleName() + " : No UFT tests were found");
                 return;
             }

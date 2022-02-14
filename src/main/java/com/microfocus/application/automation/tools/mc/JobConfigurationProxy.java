@@ -51,12 +51,13 @@ public class JobConfigurationProxy {
     private JobConfigurationProxy() {
     }
 
-    public static JobConfigurationProxy getInstance(){
-        if(instance == null){
+    public static JobConfigurationProxy getInstance() {
+        if (instance == null) {
             instance = new JobConfigurationProxy();
         }
         return instance;
     }
+
     //Login to MC
     public JSONObject loginToMC(String mcUrl, String mcUserName, String mcPassword, String mcTenantId,
                                 String proxyAddress, String proxyUsername, String proxyPassword) {
@@ -69,7 +70,7 @@ public class JobConfigurationProxy {
 //            headers.put("TENANT_ID_COOKIE", mcTenantId);
 
             JSONObject sendObject = new JSONObject();
-            if(!StringUtils.isNullOrEmpty(mcTenantId)){
+            if (!StringUtils.isNullOrEmpty(mcTenantId)) {
                 mcUserName = mcUserName + "#" + mcTenantId;
             }
             sendObject.put("name", mcUserName);
@@ -89,11 +90,11 @@ public class JobConfigurationProxy {
                 String tenantCookie = null;
                 if (setCookieList != null && setCookieList.size() != 0) {
                     setCookie = setCookieList.get(0);
-                    for(String str : setCookieList){
-                        if(str.contains(Constants.JSESSIONID) && str.startsWith(Constants.JSESSIONID)){
+                    for (String str : setCookieList) {
+                        if (str.contains(Constants.JSESSIONID) && str.startsWith(Constants.JSESSIONID)) {
                             setCookie = str;
                             continue;
-                        }else if(str.contains(Constants.TENANT_COOKIE) && str.startsWith(Constants.TENANT_COOKIE)){
+                        } else if (str.contains(Constants.TENANT_COOKIE) && str.startsWith(Constants.TENANT_COOKIE)) {
                             tenantCookie = str;
                             continue;
                         }
@@ -105,7 +106,66 @@ public class JobConfigurationProxy {
                 returnObject.put(Constants.TENANT_COOKIE, tenantId);
                 returnObject.put(Constants.LOGIN_SECRET, hp4mSecret);
                 String cookies = Constants.JESEEIONEQ + jsessionId;
-                if(!StringUtils.isNullOrEmpty(tenantId)){
+                if (!StringUtils.isNullOrEmpty(tenantId)) {
+                    cookies = cookies + Constants.TENANT_EQ + tenantId;
+                }
+                returnObject.put(Constants.COOKIE, cookies);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return returnObject;
+    }
+
+    //Login to MC POST /rest/client/v2/oauth2/login?TENANTID=999999999
+    public JSONObject loginToMC(String mcUrl, String mcExecutionToken,
+                                String proxyAddress, String proxyUsername, String proxyPassword) {
+
+        JSONObject returnObject = new JSONObject();
+        try {
+            if (!Oauth2TokenUtil.validate(mcExecutionToken)) {
+                return returnObject;
+            }
+            Map<String, String> headers = new HashMap<String, String>();
+            headers.put(Constants.ACCEPT, "application/json");
+            headers.put(Constants.CONTENT_TYPE, "application/json;charset=UTF-8");
+
+            JSONObject sendObject = new JSONObject();
+            sendObject.put("client", Oauth2TokenUtil.getClient());
+            sendObject.put("secret", Oauth2TokenUtil.getSecret());
+            sendObject.put("tenant", Oauth2TokenUtil.getTenant());
+            HttpResponse response = HttpUtils.post(HttpUtils.setProxyCfg(proxyAddress, proxyUsername, proxyPassword), mcUrl + Constants.LOGIN_URL_OAUTH, headers, sendObject.toJSONString().getBytes());
+
+            if (response != null && response.getHeaders() != null) {
+                Map<String, List<String>> headerFields = response.getHeaders();
+                List<String> hp4mSecretList = headerFields.get(Constants.LOGIN_SECRET);
+                String hp4mSecret = null;
+                if (hp4mSecretList != null && hp4mSecretList.size() != 0) {
+                    hp4mSecret = hp4mSecretList.get(0);
+                }
+                List<String> setCookieList = headerFields.get(Constants.SET_COOKIE);
+                String setCookie = null;
+                String tenantCookie = null;
+                if (setCookieList != null && setCookieList.size() != 0) {
+                    setCookie = setCookieList.get(0);
+                    for (String str : setCookieList) {
+                        if (str.contains(Constants.JSESSIONID) && str.startsWith(Constants.JSESSIONID)) {
+                            setCookie = str;
+                            continue;
+                        } else if (str.contains(Constants.TENANT_COOKIE) && str.startsWith(Constants.TENANT_COOKIE)) {
+                            tenantCookie = str;
+                            continue;
+                        }
+                    }
+                }
+                String jsessionId = getCookieValue(setCookie, Constants.JSESSIONID);
+                String tenantId = getCookieValue(tenantCookie, Constants.TENANT_COOKIE);
+                returnObject.put(Constants.JSESSIONID, jsessionId);
+                returnObject.put(Constants.TENANT_COOKIE, tenantId);
+                returnObject.put(Constants.LOGIN_SECRET, hp4mSecret);
+                String cookies = Constants.JESEEIONEQ + jsessionId;
+                if (!StringUtils.isNullOrEmpty(tenantId)) {
                     cookies = cookies + Constants.TENANT_EQ + tenantId;
                 }
                 returnObject.put(Constants.COOKIE, cookies);
@@ -118,7 +178,7 @@ public class JobConfigurationProxy {
     }
 
     //upload app to MC
-    public JSONObject upload(String mcUrl, String mcUserName, String mcPassword, String mcTenantId,
+    public JSONObject upload(String mcUrl, String mcUserName, String mcPassword, String mcTenantId, String mcExecToken,
                              String proxyAddress, String proxyUsername, String proxyPassword, String appPath) throws Exception {
 
         JSONObject json = null;
@@ -138,22 +198,25 @@ public class JobConfigurationProxy {
 
         outputStream.write(content.toString().getBytes());
 
-        FileInputStream in = new FileInputStream(appFile);
-        byte[] b = new byte[1024];
-        int i = 0;
-        while ((i = in.read(b)) != -1) {
-            outputStream.write(b, 0, i);
+        try(FileInputStream in = new FileInputStream(appFile)) {
+            byte[] b = new byte[1024];
+            int i = 0;
+            while ((i = in.read(b)) != -1) {
+                outputStream.write(b, 0, i);
+            }
         }
-        in.close();
 
         outputStream.write(("\r\n------" + Constants.BOUNDARYSTR + "--\r\n").getBytes());
 
         byte[] bytes = outputStream.toByteArray();
 
         outputStream.close();
-
-        JSONObject loginJson = loginToMC(mcUrl, mcUserName, mcPassword, mcTenantId, proxyAddress, proxyUsername, proxyPassword);
-
+        JSONObject loginJson;
+        if (StringUtils.isNullOrEmpty(mcExecToken)) {
+            loginJson = loginToMC(mcUrl, mcUserName, mcPassword, mcTenantId, proxyAddress, proxyUsername, proxyPassword);
+        } else {
+            loginJson = loginToMC(mcUrl, mcExecToken, proxyAddress, proxyUsername, proxyPassword);
+        }
         if (loginJson != null) {
             hp4mSecret = (String) loginJson.get(Constants.LOGIN_SECRET);
             jsessionId = (String) loginJson.get(Constants.JSESSIONID);
@@ -198,12 +261,12 @@ public class JobConfigurationProxy {
                 Map<String, String> headers = new HashMap<String, String>();
                 headers.put(Constants.LOGIN_SECRET, hp4mSecret);
                 headers.put(Constants.COOKIE, Constants.JESEEIONEQ + jsessionId);
-                HttpResponse response = HttpUtils.get(HttpUtils.setProxyCfg(proxyAddress,proxyUserName,proxyPassword), mcUrl + Constants.CREATE_JOB_URL, headers, null);
+                HttpResponse response = HttpUtils.get(HttpUtils.setProxyCfg(proxyAddress, proxyUserName, proxyPassword), mcUrl + Constants.CREATE_JOB_URL, headers, null);
 
                 if (response != null && response.getJsonObject() != null) {
                     job = response.getJsonObject();
-                    if(job != null && job.get("data") != null){
-                        JSONObject data = (JSONObject)job.get("data");
+                    if (job != null && job.get("data") != null) {
+                        JSONObject data = (JSONObject) job.get("data");
                         jobId = data.getAsString("id");
                     }
                 }
@@ -243,8 +306,47 @@ public class JobConfigurationProxy {
                 if (response != null && response.getJsonObject() != null) {
                     jobJsonObject = response.getJsonObject();
                 }
-                if(jobJsonObject != null){
-                    jobJsonObject = (JSONObject)jobJsonObject.get(Constants.DATA);
+                if (jobJsonObject != null) {
+                    jobJsonObject = (JSONObject) jobJsonObject.get(Constants.DATA);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return removeIcon(jobJsonObject);
+    }
+
+    //get one job by id
+    public JSONObject getJobById(String mcUrl, String mcExecToken, String proxyAddress, String proxyUsername, String proxyPassword, String jobUUID) {
+        JSONObject jobJsonObject = null;
+        String hp4mSecret = null;
+        String jsessionId = null;
+
+        String loginJson = loginToMC(mcUrl, mcExecToken, proxyAddress, proxyUsername, proxyPassword).toJSONString();
+        try {
+            if (loginJson != null) {
+                JSONObject jsonObject = (JSONObject) JSONValue.parseStrict(loginJson);
+                hp4mSecret = (String) jsonObject.get(Constants.LOGIN_SECRET);
+                jsessionId = (String) jsonObject.get(Constants.JSESSIONID);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        boolean b = argumentsCheck(jobUUID, hp4mSecret, jsessionId);
+
+        if (b) {
+            try {
+                Map<String, String> headers = new HashMap<String, String>();
+                headers.put(Constants.LOGIN_SECRET, hp4mSecret);
+                headers.put(Constants.COOKIE, Constants.JESEEIONEQ + jsessionId);
+                HttpResponse response = HttpUtils.get(HttpUtils.setProxyCfg(proxyAddress, proxyUsername, proxyPassword), mcUrl + Constants.GET_JOB_UEL + jobUUID, headers, null);
+
+                if (response != null && response.getJsonObject() != null) {
+                    jobJsonObject = response.getJsonObject();
+                }
+                if (jobJsonObject != null) {
+                    jobJsonObject = (JSONObject) jobJsonObject.get(Constants.DATA);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -310,7 +412,7 @@ public class JobConfigurationProxy {
 
                     extraAPPJSON.put("extraAppName", extraAppName);
                     extraAPPJSON.put("instrumented", instrumented ? "Packaged" : "Not Packaged");
-                    if(extraApps.length() > 1){
+                    if (extraApps.length() > 1) {
                         extraApps.append(";\n");
                     }
                     extraApps.append(extraAppName).append("\t\t").append(instrumented ? "Packaged" : "Not Packaged");
@@ -400,7 +502,7 @@ public class JobConfigurationProxy {
     }
 
     private String getCookieValue(String setCookie, String cookieName) {
-        if(StringUtils.isNullOrEmpty(setCookie)){
+        if (StringUtils.isNullOrEmpty(setCookie)) {
             return null;
         }
         String id = null;
@@ -428,13 +530,13 @@ public class JobConfigurationProxy {
     private String removeLastSemicolon(StringBuffer sb) {
         String result = sb.toString();
         int indexOf = result.lastIndexOf(";");
-        if(indexOf > 0){
+        if (indexOf > 0) {
             result = result.substring(0, indexOf);
         }
         return result;
     }
 
-    private JSONObject removeIcon(JSONObject jobJSON){
+    private JSONObject removeIcon(JSONObject jobJSON) {
         JSONArray extArr = null;
         if (jobJSON != null) {
             if (jobJSON != null) {

@@ -50,6 +50,7 @@ public class Constants {
     public static final String SET_COOKIE = "Set-Cookie";
     public static final String EQUAL = "=";
     public static final String LOGIN_URL = "/rest/client/login";
+    public static final String LOGIN_URL_OAUTH = "/rest/client/v2/oauth2/login";
     public static final String CREATE_JOB_URL = "/rest/job/createTempJob";
     public static final String GET_JOB_UEL = "/rest/job/";
     public final static String ICON = "icon";
