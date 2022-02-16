@@ -100,7 +100,6 @@ public class HttpUtils {
 
         connection.connect();
 
-
         int responseCode = connection.getResponseCode();
 
         if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -109,6 +108,8 @@ public class HttpUtils {
             Map<String, List<String>> headerFields = connection.getHeaderFields();
             response.setHeaders(headerFields);
             response.setJsonObject(jsonObject);
+        } else {
+            System.out.println(requestMethod + " " + connectionUrl + " failed with response code:" + responseCode);
         }
 
         connection.disconnect();

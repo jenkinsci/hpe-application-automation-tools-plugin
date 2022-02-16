@@ -43,20 +43,14 @@ import java.util.List;
  */
 public class UploadAppModel {
     private String mcServerName;
-    private String mcUserName;
-    private Secret mcPassword;
-    private String mcTenantId;
-    private String mcExecutionToken;
+    private MCAuthModel mcAuthModel;
     private ProxySettings proxySettings;
     private List<UploadAppPathModel> applicationPaths;
 
     @DataBoundConstructor
-    public UploadAppModel(String mcServerName, String mcUserName, String mcPassword, String mcTenantId, String mcExecutionToken, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
+    public UploadAppModel(String mcServerName, MCAuthModel mcAuthModel, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
         this.mcServerName = mcServerName;
-        this.mcUserName = mcUserName;
-        this.mcPassword = Secret.fromString(mcPassword);
-        this.mcTenantId = mcTenantId;
-        this.mcExecutionToken = mcExecutionToken;
+        this.mcAuthModel=mcAuthModel;
         this.proxySettings = proxySettings;
         this.applicationPaths = applicationPaths;
     }
@@ -65,20 +59,6 @@ public class UploadAppModel {
         return mcServerName;
     }
 
-    public String getMcUserName() {
-        return mcUserName;
-    }
-
-    public String getMcPassword() {
-        return mcPassword.getPlainText();
-    }
-
-    public String getMcTenantId() {
-        return mcTenantId;
-    }
-    public String getMcExecutionToken() {
-        return mcExecutionToken;
-    }
     public ProxySettings getProxySettings() {
         return proxySettings;
     }
@@ -93,5 +73,9 @@ public class UploadAppModel {
 
     public List<UploadAppPathModel> getApplicationPaths() {
         return applicationPaths;
+    }
+
+    public MCAuthModel getMcAuthModel() {
+        return mcAuthModel;
     }
 }

@@ -29,10 +29,7 @@
 package com.microfocus.application.automation.tools.run;
 
 import com.microfocus.application.automation.tools.mc.JobConfigurationProxy;
-import com.microfocus.application.automation.tools.model.MCServerSettingsModel;
-import com.microfocus.application.automation.tools.model.ProxySettings;
-import com.microfocus.application.automation.tools.model.UploadAppModel;
-import com.microfocus.application.automation.tools.model.UploadAppPathModel;
+import com.microfocus.application.automation.tools.model.*;
 import com.microfocus.application.automation.tools.settings.MCServerSettingsGlobalConfiguration;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
 import hudson.Extension;
@@ -69,8 +66,8 @@ public class UploadAppBuilder extends Builder {
     private final UploadAppModel uploadAppModel;
 
     @DataBoundConstructor
-    public UploadAppBuilder(String mcServerName, String mcUserName, String mcPassword, String mcTenantId, String mcExecutionToken, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
-        uploadAppModel = new UploadAppModel(mcServerName, mcUserName, mcPassword, mcTenantId, mcExecutionToken, proxySettings, applicationPaths);
+    public UploadAppBuilder(String mcServerName, MCAuthModel authModel, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
+        uploadAppModel = new UploadAppModel(mcServerName, authModel, proxySettings, applicationPaths);
     }
 
     @Override
@@ -139,11 +136,7 @@ public class UploadAppBuilder extends Builder {
 
                 try {
                     out.println(String.format("starting to upload app %d %s", i, originPath));
-                    if (uploadAppModel.getProxySettings() == null) {
-                        app = job.upload(mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getMcPassword(), uploadAppModel.getMcTenantId(), uploadAppModel.getMcExecutionToken(), null, null, null, path);
-                    } else {
-                        app = job.upload(mcServerUrl, uploadAppModel.getMcUserName(), uploadAppModel.getMcPassword(), uploadAppModel.getMcTenantId(), uploadAppModel.getMcExecutionToken(), uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName(), uploadAppModel.getProxySettings().getFsProxyPassword(), path);
-                    }
+                    app = job.upload(mcServerUrl, uploadAppModel.getMcAuthModel(), uploadAppModel.getProxySettings(), path);
                     if (app == null) {
                         if (uploadAppModel.isUseProxy()) {
                             out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s",
@@ -179,10 +172,10 @@ public class UploadAppBuilder extends Builder {
                 } catch (Exception e) {
                     if (uploadAppModel.isUseProxy()) {
                         out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s",
-                                mcServerUrl,  uploadAppModel.getProxySettings().getFsProxyAddress()));
+                                mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress()));
                     } else if (uploadAppModel.isUseAuthentication()) {
                         out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s, proxy userName:%s",
-                                mcServerUrl,  uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
+                                mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
                     } else {
                         out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s", mcServerUrl));
                     }

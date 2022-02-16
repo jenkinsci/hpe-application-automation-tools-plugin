@@ -48,6 +48,8 @@ namespace HpToolsLauncher
         private const string MOBILE_USER = "ALM_MobileUserName";
         private const string MOBILE_PASSWORD = "ALM_MobilePassword";
         private const string MOBILE_TENANT = "EXTERNAL_MobileTenantId";
+        private const string MOBILE_EXECUTION_TOKEN = "EXTERNAL_AccessKey";
+        private const string MOBILE_AUTH_TYPE = "EXTERNAL_AuthType";
         private const string MOBILE_USE_SSL = "ALM_MobileUseSSL";
         private const string MOBILE_USE_PROXY = "MobileProxySetting_UseProxy";
         private const string MOBILE_PROXY_SETTING_ADDRESS = "MobileProxySetting_Address";
@@ -185,6 +187,11 @@ namespace HpToolsLauncher
                         {
                             _qtpApplication.TDPierToTulip.SetTestOptionsVal(MOBILE_HOST_PORT, _mcConnection.MobileHostPort);
                         }
+                    }
+
+                    if (!string.IsNullOrEmpty(_mcConnection.MobileExecToken))
+                    {
+                        _qtpApplication.TDPierToTulip.SetTestOptionsVal(MOBILE_EXECUTION_TOKEN, _mcConnection.MobileExecToken);
                     }
 
                     if (!string.IsNullOrEmpty(_mcConnection.MobileUserName))

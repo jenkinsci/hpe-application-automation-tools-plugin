@@ -251,24 +251,28 @@
 				 <f:entry>
 					 <f:checkbox title="Use SSL" name="runfromfs.useSSL" checked="${instance.runFromFileModel.useSSL}" default="true"/>
 				 </f:entry>
-				 <f:entry>
-                     <f:optionalBlock title="Execution Token Authentication" name = "baseAuth" checked="${!instance.runFromFileModel.useBaseAuth}">
-                         <f:password name="runfromfs.mcExecToken" value="${instance.runFromFileModel.mcExecToken}"/>
-                     </f:optionalBlock>
-                 </f:entry>
-                 </f:entry>
-                     <f:optionalBlock title="Base Authentication" name = "baseAuth" checked="${instance.runFromFileModel.useBaseAuth}">
-                         <f:entry title="User name" field="fsUserName">
-                             <f:textbox name="runfromfs.fsUserName" value="${instance.runFromFileModel.fsUserName}"/>
-                         </f:entry>
-                         <f:entry title="Password" field="fsPassword">
-                             <f:password name="runfromfs.fsPassword" value="${instance.runFromFileModel.fsPassword}"/>
-                         </f:entry>
-                         <f:entry title="Tenant Id" field="mcTenantId">
-                             <f:textbox name="runfromfs.mcTenantId" value="${instance.runFromFileModel.mcTenantId}"/>
-                         </f:entry>
-					 </f:optionalBlock>
-				 </f:entry>
+                <f:entry>
+                    <f:radioBlock field="mcAuthType" name="runfromfs.mcAuthType" value="token" checked="${instance.runFromFileModel.mcAuthType == 'token' || instance.runFromFileModel.mcAuthType == null}" title="Execution Token Authentication">
+                        <f:nested>
+                            <f:entry title="Access Key" field="mcExecToken">
+                                <f:password name="runfromfs.mcExecToken" value="${instance.runFromFileModel.mcExecToken}" />
+                            </f:entry>
+                        </f:nested>
+                    </f:radioBlock>
+                    <f:radioBlock field="mcAuthType" name="runfromfs.mcAuthType" value="base" checked="${instance.runFromFileModel.mcAuthType == 'base'}" title="Base Authentication">
+                        <f:nested>
+                            <f:entry title="User name" field="fsUserName">
+                                <f:textbox name="runfromfs.fsUserName" value="${instance.runFromFileModel.fsUserName}"/>
+                            </f:entry>
+                            <f:entry title="Password" field="fsPassword">
+                                <f:password name="runfromfs.fsPassword" value="${instance.runFromFileModel.fsPassword}"/>
+                            </f:entry>
+                            <f:entry title="Tenant Id" field="mcTenantId">
+                                <f:textbox name="runfromfs.mcTenantId" value="${instance.runFromFileModel.mcTenantId}"/>
+                            </f:entry>
+                        </f:nested>
+                    </f:radioBlock>
+                </f:entry>
 				 <f:entry>
 					 <f:optionalBlock title="Use proxy settings" name = "proxySettings" checked="${instance.runFromFileModel.useProxy}">
 						 <f:entry title="Address" field="fsProxyAddress">

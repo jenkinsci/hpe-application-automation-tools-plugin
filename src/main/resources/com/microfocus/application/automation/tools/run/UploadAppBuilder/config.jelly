@@ -64,22 +64,26 @@
         </select>
     </f:entry>
     <f:entry>
-        <f:optionalBlock title="Execution Token Authentication" name = "baseAuth" checked="${instance.uploadAppModel.useTokenAuth}">
-            <f:password name="uploadApp.mcExecToken" value="${instance.uploadAppModel.mcExecToken}"/>
-        </f:optionalBlock>
-    </f:entry>
-    <f:entry>
-        <f:optionalBlock title="Base Authentication" name = "baseAuth" checked="${!instance.uploadAppModel.useTokenAuth}">
-            <f:entry title="User name" field="mcUserName">
-                <f:textbox name="uploadApp.mcUserName" value="${instance.uploadAppModel.mcUserName}"/>
-            </f:entry>
-            <f:entry title="Password" field="mcPassword">
-                <f:password name="uploadApp.mcPassword" value="${instance.uploadAppModel.mcPassword}"/>
-            </f:entry>
-            <f:entry title="Tenant Id" field="mcTenantId">
-                <f:textbox name="uploadApp.mcTenantId" value="${instance.uploadAppModel.mcTenantId}"/>
-            </f:entry>
-        </f:optionalBlock>
+        <f:radioBlock name="uploadApp.mcAuthType" value="token" checked="${instance.uploadAppModel.mcAuthType == 'token' || instance.uploadAppModel.mcAuthType == null}" title="Execution Token Authentication">
+            <f:nested>
+                <f:entry title="Access Key" field="mcExecToken">
+                    <f:password name="uploadApp.mcExecToken" value="${instance.uploadAppModel.mcExecToken}" />
+                </f:entry>
+            </f:nested>
+        </f:radioBlock>
+        <f:radioBlock name="uploadApp.mcAuthType" value="base" checked="${instance.uploadAppModel.mcAuthType == 'base'}" title="Base Authentication">
+            <f:nested>
+                <f:entry title="User name" field="mcUserName">
+                    <f:textbox name="uploadApp.mcUserName" value="${instance.uploadAppModel.mcUserName}"/>
+                </f:entry>
+                <f:entry title="Password" field="mcPassword">
+                    <f:password name="uploadApp.mcPassword" value="${instance.uploadAppModel.mcPassword}"/>
+                </f:entry>
+                <f:entry title="Tenant Id" field="mcTenantId">
+                    <f:textbox name="uploadApp.mcTenantId" value="${instance.uploadAppModel.mcTenantId}"/>
+                </f:entry>
+            </f:nested>
+        </f:radioBlock>
     </f:entry>
     <f:entry>
         <f:optionalBlock title="Use proxy settings" name = "proxySettings" checked="${instance.uploadAppModel.useProxy}">

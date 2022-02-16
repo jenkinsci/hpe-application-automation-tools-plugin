@@ -29,24 +29,21 @@
 package com.microfocus.application.automation.tools.model;
 
 import com.microfocus.application.automation.tools.EncryptionUtils;
-import com.microfocus.application.automation.tools.uft.model.UftSettingsModel;
-import com.microfocus.application.automation.tools.uft.utils.UftToolUtils;
 import com.microfocus.application.automation.tools.mc.JobConfigurationProxy;
+import com.microfocus.application.automation.tools.uft.utils.UftToolUtils;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
-import hudson.model.TaskListener;
-import hudson.util.Secret;
-import hudson.util.VariableResolver;
 import net.minidev.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * Holds the data for RunFromFile build type.
@@ -57,7 +54,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     public static final String MOBILE_PROXY_SETTING_USER_NAME = "MobileProxySetting_UserName";
     public static final String MOBILE_PROXY_SETTING_AUTHENTICATION = "MobileProxySetting_Authentication";
     public static final String MOBILE_USE_SSL = "MobileUseSSL";
-    public static final String MOBILE_USE_BASE_AUTH = "MobileUseBaseAuth";
+    public static final String MOBILE_AUTH_Type = "MobileAuthType";
 
     public final static EnumDescription FAST_RUN_MODE = new EnumDescription("Fast", "Fast");
     public final static EnumDescription NORMAL_RUN_MODE = new EnumDescription("Normal", "Normal");
@@ -74,10 +71,6 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     private String analysisTemplate;
     private String displayController;
     private String mcServerName;
-    private String fsUserName;
-    private Secret fsPassword;
-    private String mcTenantId;
-    private String mcExecToken;
     private String fsReportPath;
 
     private String fsDeviceId;
@@ -92,7 +85,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     private String fsJobId;
     private ProxySettings proxySettings;
     private boolean useSSL;
-    private boolean useBaseAuth;
+    private MCAuthModel authModel;
 
     /**
      * Instantiates a new Run from file system model.
@@ -105,9 +98,6 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      * @param analysisTemplate          the analysis template
      * @param displayController         the display controller
      * @param mcServerName              the mc server name
-     * @param fsUserName                the fs user name
-     * @param fsPassword                the fs password
-     * @param mcExecToken               the mc execution token
      * @param fsDeviceId                the fs device id
      * @param fsTargetLab               the fs target lab
      * @param fsManufacturerAndModel    the fs manufacturer and model
@@ -123,10 +113,10 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      */
     @SuppressWarnings("squid:S00107")
     public RunFromFileSystemModel(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval, String perScenarioTimeOut,
-                                  String ignoreErrorStrings, String analysisTemplate, String displayController, String mcServerName, String fsUserName, String fsPassword, String mcTenantId, String mcExecToken,
+                                  String ignoreErrorStrings, String analysisTemplate, String displayController, String mcServerName, MCAuthModel authModel,
                                   String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel, String fsOs,
                                   String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics, String fsInstrumented,
-                                  String fsExtraApps, String fsJobId, ProxySettings proxySettings, boolean useSSL, boolean useBaseAuth, String fsReportPath) {
+                                  String fsExtraApps, String fsJobId, ProxySettings proxySettings, boolean useSSL, String fsReportPath) {
 
         this.setFsTests(fsTests);
 
@@ -141,10 +131,6 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.displayController = displayController;
 
         this.mcServerName = mcServerName;
-        this.fsUserName = fsUserName;
-        this.fsPassword = Secret.fromString(fsPassword);
-        this.mcTenantId = mcTenantId;
-        this.mcExecToken = mcExecToken;
 
         this.fsDeviceId = fsDeviceId;
         this.fsOs = fsOs;
@@ -159,7 +145,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.fsJobId = fsJobId;
         this.proxySettings = proxySettings;
         this.useSSL = useSSL;
-        this.useBaseAuth = useBaseAuth;
+        this.authModel = authModel;
     }
 
     /**
@@ -222,39 +208,6 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.mcServerName = mcServerName;
     }
 
-    /**
-     * Sets fs user name.
-     *
-     * @param fsUserName the fs user name
-     */
-    public void setFsUserName(String fsUserName) {
-        this.fsUserName = fsUserName;
-    }
-
-    /**
-     * Sets fs password.
-     *
-     * @param fsPassword the fs password
-     */
-    public void setFsPassword(String fsPassword) {
-        this.fsPassword = Secret.fromString(fsPassword);
-    }
-
-    /**
-     * Gets mc execution token
-     *
-     */
-    public String getMcExecToken() {
-        return mcExecToken;
-    }
-    /**
-     * Sets mc execution token
-     *
-     * @param mcExecToken the mc execution token
-     */
-    public void setMcExecToken(String mcExecToken) {
-        this.mcExecToken = mcExecToken;
-    }
 
     /**
      * Sets fs device id.
@@ -410,40 +363,26 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     }
 
     /**
-     * Gets fs user name.
-     *
-     * @return the fs user name
-     */
-    public String getFsUserName() {
-        return fsUserName;
-    }
-
-    /**
-     * Gets fs password.
-     *
-     * @return the fs password
-     */
-    public String getFsPassword() {
-        //Temp fix till supported in pipeline module in LR
-        if (fsPassword == null) {
-            return null;
-        }
-        return fsPassword.getEncryptedValue();
-    }
-
-    public String getMcTenantId() {
-        return mcTenantId;
-    }
-
-    public void setMcTenantId(String mcTenantId) {
-        this.mcTenantId = mcTenantId;
-    }
-
-    /**
      * Sets the report path for the given tests.
      */
     public void setFsReportPath(String fsReportPath) {
         this.fsReportPath = fsReportPath;
+    }
+
+    public String getFsPassword() {
+        //Temp fix till supported in pipeline module in LR
+        if (authModel.getMcPassword() == null) {
+            return null;
+        }
+        return authModel.getMcEncryptedPassword();
+    }
+
+    public String getMcExecToken() {
+        //Temp fix till supported in pipeline module in LR
+        if (authModel.getMcExecToken() == null) {
+            return null;
+        }
+        return authModel.getMcEncryptedExecToken();
     }
 
     /**
@@ -672,20 +611,12 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.perScenarioTimeOut = perScenarioTimeOut;
     }
 
-    /**
-     * Check if use base authentication for mc login.
-     */
-    public boolean isUseBaseAuth() {
-        return useBaseAuth;
+    public MCAuthModel getAuthModel() {
+        return authModel;
     }
 
-    /**
-     * Sets use base authentication for mc login.
-     *
-     * @param useBaseAuth use baseAuth
-     */
-    public void setUseBaseAuth(boolean useBaseAuth) {
-        this.useBaseAuth = useBaseAuth;
+    public void setAuthModel(MCAuthModel authModel) {
+        this.authModel = authModel;
     }
 
     /**
@@ -786,19 +717,17 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             props.put(MOBILE_USE_SSL, "0");
         }
 
-        if (useBaseAuth) {
-            props.put(MOBILE_USE_BASE_AUTH, "1");
-
-            if (StringUtils.isNotBlank(fsUserName)) {
-                props.put("MobileUserName", fsUserName);
+        props.put(MOBILE_AUTH_Type, "base");
+        if (authModel.getValue().equals("base")) {
+            if (StringUtils.isNotBlank(authModel.getMcUserName())) {
+                props.put("MobileUserName", authModel.getMcUserName());
             }
-            if (StringUtils.isNotBlank(mcTenantId)) {
-                props.put("MobileTenantId", mcTenantId);
+            if (StringUtils.isNotBlank(authModel.getMcTenantId())) {
+                props.put("MobileTenantId", authModel.getMcTenantId());
             }
         } else {
-            props.put(MOBILE_USE_BASE_AUTH, "0");
-            if (StringUtils.isNotBlank(mcExecToken)) {
-                props.put("MobileExecToken", mcExecToken);
+            if (StringUtils.isNotBlank(authModel.getMcExecToken())) {
+                props.put("MobileExecToken", authModel.getMcExecToken());
             }
         }
         return props;
@@ -807,25 +736,12 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     /**
      * Get proxy details json object.
      *
-     * @param mcUrl         the mc url
-     * @param proxyAddress  the proxy address
-     * @param proxyUserName the proxy user name
-     * @param proxyPassword the proxy password
+     * @param mcUrl the mc url
      * @return the json object
      */
-    public JSONObject getJobDetails(String mcUrl, String proxyAddress, String proxyUserName, String proxyPassword) {
-        if (StringUtils.isBlank(fsUserName) || StringUtils.isBlank(fsPassword.getPlainText())) {
-            return null;
-        }
-        if(useBaseAuth) {
-            return JobConfigurationProxy
-                    .getInstance().getJobById(mcUrl, fsUserName, fsPassword.getPlainText(), mcTenantId, proxyAddress, proxyUserName, proxyPassword, fsJobId);
-        }else {
-            return JobConfigurationProxy
-                    .getInstance().getJobById(mcUrl, mcExecToken, proxyAddress, proxyUserName, proxyPassword, fsJobId);
-        }
+    public JSONObject getJobDetails(String mcUrl, ProxySettings proxy) {
+        return JobConfigurationProxy.getInstance().getJobById(mcUrl, authModel, proxy, fsJobId);
     }
-
 
     @Extension
     public static class DescriptorImpl extends Descriptor<RunFromFileSystemModel> {

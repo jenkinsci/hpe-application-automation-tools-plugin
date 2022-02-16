@@ -44,6 +44,9 @@ public class ProxySettings {
     private String fsProxyUserName;
     private Secret fsProxyPassword;
 
+    public ProxySettings() {
+    }
+
     @DataBoundConstructor
     public ProxySettings(boolean fsUseAuthentication, String fsProxyAddress, String fsProxyUserName, Secret fsProxyPassword) {
         this.fsUseAuthentication = fsUseAuthentication;
