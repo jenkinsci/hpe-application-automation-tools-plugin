@@ -28,7 +28,6 @@
 
 package com.microfocus.application.automation.tools.model;
 
-import hudson.util.Secret;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -50,7 +49,7 @@ public class UploadAppModel {
     @DataBoundConstructor
     public UploadAppModel(String mcServerName, MCAuthModel mcAuthModel, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
         this.mcServerName = mcServerName;
-        this.mcAuthModel=mcAuthModel;
+        this.mcAuthModel = mcAuthModel;
         this.proxySettings = proxySettings;
         this.applicationPaths = applicationPaths;
     }
@@ -77,5 +76,9 @@ public class UploadAppModel {
 
     public MCAuthModel getMcAuthModel() {
         return mcAuthModel;
+    }
+
+    public String getAuthType() {
+        return mcAuthModel == null ? "base" : mcAuthModel.getValue();
     }
 }
