@@ -61,7 +61,6 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
 
     public final static List<EnumDescription> fsUftRunModes = Arrays.asList(FAST_RUN_MODE, NORMAL_RUN_MODE);
 
-
     private String fsTests;
     private String fsTimeout;
     private String fsUftRunMode;
@@ -85,7 +84,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     private String fsJobId;
     private ProxySettings proxySettings;
     private boolean useSSL;
-    private MCAuthModel authModel;
+    private AuthModel authModel;
 
     /**
      * Instantiates a new Run from file system model.
@@ -113,7 +112,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      */
     @SuppressWarnings("squid:S00107")
     public RunFromFileSystemModel(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval, String perScenarioTimeOut,
-                                  String ignoreErrorStrings, String analysisTemplate, String displayController, String mcServerName, MCAuthModel authModel,
+                                  String ignoreErrorStrings, String analysisTemplate, String displayController, String mcServerName, AuthModel authModel,
                                   String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel, String fsOs,
                                   String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics, String fsInstrumented,
                                   String fsExtraApps, String fsJobId, ProxySettings proxySettings, boolean useSSL, String fsReportPath) {
@@ -611,14 +610,16 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.perScenarioTimeOut = perScenarioTimeOut;
     }
 
-    public MCAuthModel getAuthModel() {
+    public AuthModel getAuthModel() {
         return authModel;
     }
 
-    public void setAuthModel(MCAuthModel authModel) {
+    public void setAuthModel(AuthModel authModel) {
         this.authModel = authModel;
     }
-
+    public String getAuthType() {
+        return authModel == null ? "base" : authModel.getValue();
+    }
     /**
      * Gets properties.
      *

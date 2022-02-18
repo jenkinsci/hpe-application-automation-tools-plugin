@@ -64,23 +64,23 @@
         </select>
     </f:entry>
     <f:entry>
-        <f:radioBlock name="mcAuthModel" value="token" checked="${instance.uploadAppModel.authType == 'token' || instance.uploadAppModel.authType == null}" title="Execution Token Authentication">
+        <f:radioBlock name="authModel" field="authType" value="token" checked="${instance.uploadAppModel.authType == 'token' || instance.uploadAppModel.authType == null}" title="Execution Token Authentication">
             <f:nested>
                 <f:entry title="Access Key" field="mcExecToken">
-                    <f:password name="uploadApp.mcExecToken" value="${instance.uploadAppModel.mcExecToken}" />
+                    <f:password name="uploadApp.mcExecToken" value="${instance.uploadAppModel.authModel.mcExecToken}" />
                 </f:entry>
             </f:nested>
         </f:radioBlock>
-        <f:radioBlock name="mcAuthModel" value="base" checked="${instance.uploadAppModel.authType == 'base'}" title="Base Authentication">
+        <f:radioBlock name="authModel" field="authType" value="base" checked="${instance.uploadAppModel.authType == 'base'}" title="Base Authentication">
             <f:nested>
                 <f:entry title="User name" field="mcUserName">
-                    <f:textbox name="uploadApp.mcUserName" value="${instance.uploadAppModel.mcUserName}"/>
+                    <f:textbox name="uploadApp.mcUserName" value="${instance.uploadAppModel.authModel.mcUserName}"/>
                 </f:entry>
                 <f:entry title="Password" field="mcPassword">
-                    <f:password name="uploadApp.mcPassword" value="${instance.uploadAppModel.mcPassword}"/>
+                    <f:password name="uploadApp.mcPassword" value="${instance.uploadAppModel.authModel.mcPassword}"/>
                 </f:entry>
                 <f:entry title="Tenant Id" field="mcTenantId">
-                    <f:textbox name="uploadApp.mcTenantId" value="${instance.uploadAppModel.mcTenantId}"/>
+                    <f:textbox name="uploadApp.mcTenantId" value="${instance.uploadAppModel.authModel.mcTenantId}"/>
                 </f:entry>
             </f:nested>
         </f:radioBlock>

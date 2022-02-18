@@ -252,23 +252,23 @@
 					 <f:checkbox title="Use SSL" name="runfromfs.useSSL" checked="${instance.runFromFileModel.useSSL}" default="true"/>
 				 </f:entry>
                 <f:entry>
-                    <f:radioBlock field="mcAuthType" name="runfromfs.mcAuthType" value="token" checked="${instance.runFromFileModel.mcAuthType == 'token' || instance.runFromFileModel.mcAuthType == null}" title="Execution Token Authentication">
+                    <f:radioBlock name="authModel" value="token" checked="${instance.runFromFileModel.authType == 'token' || instance.runFromFileModel.authType == null}" title="Execution Token Authentication">
                         <f:nested>
                             <f:entry title="Access Key" field="mcExecToken">
-                                <f:password name="runfromfs.mcExecToken" value="${instance.runFromFileModel.mcExecToken}" />
+                                <f:password name="runfromfs.mcExecToken" value="${instance.runFromFileModel.authModel.mcExecToken}" />
                             </f:entry>
                         </f:nested>
                     </f:radioBlock>
-                    <f:radioBlock field="mcAuthType" name="runfromfs.mcAuthType" value="base" checked="${instance.runFromFileModel.mcAuthType == 'base'}" title="Base Authentication">
+                    <f:radioBlock name="authModel" field="authType" value="base" checked="${instance.runFromFileModel.authType == 'base'}" title="Base Authentication">
                         <f:nested>
-                            <f:entry title="User name" field="fsUserName">
-                                <f:textbox name="runfromfs.fsUserName" value="${instance.runFromFileModel.fsUserName}"/>
+                            <f:entry title="User name" field="mcUserName">
+                                <f:textbox name="runfromfs.mcUserName" value="${instance.runFromFileModel.authModel.mcUserName}"/>
                             </f:entry>
-                            <f:entry title="Password" field="fsPassword">
-                                <f:password name="runfromfs.fsPassword" value="${instance.runFromFileModel.fsPassword}"/>
+                            <f:entry title="Password" field="mcPassword">
+                                <f:password name="runfromfs.mcPassword" value="${instance.runFromFileModel.authModel.mcPassword}"/>
                             </f:entry>
                             <f:entry title="Tenant Id" field="mcTenantId">
-                                <f:textbox name="runfromfs.mcTenantId" value="${instance.runFromFileModel.mcTenantId}"/>
+                                <f:textbox name="runfromfs.mcTenantId" value="${instance.runFromFileModel.authModel.mcTenantId}"/>
                             </f:entry>
                         </f:nested>
                     </f:radioBlock>

@@ -68,6 +68,10 @@ public class ProxySettings {
     }
 
     public String getFsProxyPassword() {
-        return fsProxyPassword.getPlainText();
+        if(null != fsProxyPassword) {
+            return fsProxyPassword.getPlainText();
+        }else {
+            return null;
+        }
     }
 }

@@ -66,7 +66,7 @@ public class UploadAppBuilder extends Builder {
     private final UploadAppModel uploadAppModel;
 
     @DataBoundConstructor
-    public UploadAppBuilder(String mcServerName, MCAuthModel authModel, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
+    public UploadAppBuilder(String mcServerName, AuthModel authModel, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
         uploadAppModel = new UploadAppModel(mcServerName, authModel, proxySettings, applicationPaths);
     }
 
@@ -136,7 +136,7 @@ public class UploadAppBuilder extends Builder {
 
                 try {
                     out.println(String.format("starting to upload app %d %s", i, originPath));
-                    app = job.upload(mcServerUrl, uploadAppModel.getMcAuthModel(), uploadAppModel.getProxySettings(), path);
+                    app = job.upload(mcServerUrl, uploadAppModel.getAuthModel(), uploadAppModel.getProxySettings(), path);
                     if (app == null) {
                         if (uploadAppModel.isUseProxy()) {
                             out.println(String.format("Failed to upload app, Cause UFT Mobile connection info is incorrect. url:%s, Proxy url:%s",

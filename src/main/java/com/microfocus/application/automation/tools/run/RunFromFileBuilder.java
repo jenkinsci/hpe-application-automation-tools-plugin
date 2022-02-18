@@ -163,7 +163,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     @Deprecated
     public RunFromFileBuilder(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval,
                               String perScenarioTimeOut, String ignoreErrorStrings, String displayController,
-                              String analysisTemplate, String mcServerName, MCAuthModel authModel, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
+                              String analysisTemplate, String mcServerName, AuthModel authModel, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
                               String fsOs, String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics,
                               String fsInstrumented, String fsExtraApps, String fsJobId, ProxySettings proxySettings,
                               boolean useSSL, boolean isParallelRunnerEnabled, String fsReportPath) {
@@ -664,6 +664,16 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                 listener.fatalError("problem in UFT Mobile password encryption" + e);
             }
         }
+        if (runFromFileModel != null && null !=runFromFileModel.getAuthModel() && StringUtils.isNotBlank(runFromFileModel.getAuthModel().getMcExecToken())) {//TODO
+            try {
+                String encPassword = EncryptionUtils.Encrypt(runFromFileModel.getAuthModel().getMcExecToken(),
+                        EncryptionUtils.getSecretKey());
+                mergedProperties.put("MobileExecToken", encPassword);
+            } catch (Exception e) {
+                build.setResult(Result.FAILURE);
+                listener.fatalError("problem in UFT Mobile password encryption" + e);
+            }
+        }
 
         if (env == null) {
             listener.fatalError("Environment not set");
@@ -928,7 +938,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * @return the job id
          */
         @JavaScriptMethod
-        public String getJobId(String mcUrl, MCAuthModel authModel, ProxySettings proxy, String previousJobId) {
+        public String getJobId(String mcUrl, AuthModel authModel, ProxySettings proxy, String previousJobId) {
             if (null != previousJobId && !previousJobId.isEmpty()) {
                 JSONObject jobJSON = instance.getJobById(mcUrl, authModel, proxy, previousJobId);
                 if (jobJSON != null && previousJobId.equals(jobJSON.getAsString("id"))) {
@@ -948,7 +958,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * @return the json object
          */
         @JavaScriptMethod
-        public JSONObject populateAppAndDevice(String mcUrl, MCAuthModel authModel, ProxySettings proxy, String jobId) {
+        public JSONObject populateAppAndDevice(String mcUrl, AuthModel authModel, ProxySettings proxy, String jobId) {
             return instance.getJobJSONData(mcUrl, authModel, proxy, jobId);
         }
 

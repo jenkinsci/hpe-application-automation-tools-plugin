@@ -28,7 +28,7 @@
 
 package com.microfocus.application.automation.tools.mc;
 
-import com.microfocus.application.automation.tools.model.MCAuthModel;
+import com.microfocus.application.automation.tools.model.AuthModel;
 import com.microfocus.application.automation.tools.model.ProxySettings;
 import com.microfocus.application.automation.tools.sse.common.StringUtils;
 import net.minidev.json.JSONArray;
@@ -61,7 +61,7 @@ public class JobConfigurationProxy {
     }
 
     //Login to MC
-    public JSONObject loginToMC(String mcUrl, MCAuthModel authModel, String proxyAddress, String proxyUsername, String proxyPassword) {
+    public JSONObject loginToMC(String mcUrl, AuthModel authModel, String proxyAddress, String proxyUsername, String proxyPassword) {
 
         JSONObject returnObject = new JSONObject();
         try {
@@ -139,7 +139,7 @@ public class JobConfigurationProxy {
     }
 
     //upload app to MC
-    public JSONObject upload(String mcUrl, MCAuthModel authModel, ProxySettings proxy, String appPath) throws Exception {
+    public JSONObject upload(String mcUrl, AuthModel authModel, ProxySettings proxy, String appPath) throws Exception {
 
         JSONObject json = null;
         String hp4mSecret = null;
@@ -195,7 +195,7 @@ public class JobConfigurationProxy {
     }
 
     //create one temp job
-    public String createTempJob(String mcUrl, MCAuthModel authModel, ProxySettings proxy) {
+    public String createTempJob(String mcUrl, AuthModel authModel, ProxySettings proxy) {
         JSONObject job = null;
         String jobId = null;
         String hp4mSecret = null;
@@ -237,7 +237,7 @@ public class JobConfigurationProxy {
     }
 
     //get one job by id
-    public JSONObject getJobById(String mcUrl, MCAuthModel authModel, ProxySettings proxy, String jobUUID) {
+    public JSONObject getJobById(String mcUrl, AuthModel authModel, ProxySettings proxy, String jobUUID) {
         JSONObject jobJsonObject = null;
         String hp4mSecret = null;
         String jsessionId = null;
@@ -277,7 +277,7 @@ public class JobConfigurationProxy {
     }
 
     //parse one job.and get the data we want
-    public JSONObject getJobJSONData(String mcUrl, MCAuthModel authModel, ProxySettings proxy, String jobUUID) {
+    public JSONObject getJobJSONData(String mcUrl, AuthModel authModel, ProxySettings proxy, String jobUUID) {
         JSONObject jobJSON = getJobById(mcUrl, authModel, proxy, jobUUID);
 
         JSONObject returnJSON = new JSONObject();

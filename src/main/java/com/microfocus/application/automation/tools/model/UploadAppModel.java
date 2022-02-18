@@ -42,14 +42,14 @@ import java.util.List;
  */
 public class UploadAppModel {
     private String mcServerName;
-    private MCAuthModel mcAuthModel;
+    private AuthModel authModel;
     private ProxySettings proxySettings;
     private List<UploadAppPathModel> applicationPaths;
 
     @DataBoundConstructor
-    public UploadAppModel(String mcServerName, MCAuthModel mcAuthModel, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
+    public UploadAppModel(String mcServerName, AuthModel authModel, ProxySettings proxySettings, List<UploadAppPathModel> applicationPaths) {
         this.mcServerName = mcServerName;
-        this.mcAuthModel = mcAuthModel;
+        this.authModel = authModel;
         this.proxySettings = proxySettings;
         this.applicationPaths = applicationPaths;
     }
@@ -74,11 +74,11 @@ public class UploadAppModel {
         return applicationPaths;
     }
 
-    public MCAuthModel getMcAuthModel() {
-        return mcAuthModel;
+    public AuthModel getAuthModel() {
+        return authModel;
     }
 
     public String getAuthType() {
-        return mcAuthModel == null ? "base" : mcAuthModel.getValue();
+        return authModel == null ? "base" : authModel.getValue();
     }
 }

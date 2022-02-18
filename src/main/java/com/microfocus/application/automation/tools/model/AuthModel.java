@@ -3,7 +3,9 @@ package com.microfocus.application.automation.tools.model;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class MCAuthModel {
+import java.io.Serializable;
+
+public class AuthModel implements Serializable {
     private String mcUserName;
     private Secret mcPassword;
     private String mcTenantId;
@@ -11,7 +13,7 @@ public class MCAuthModel {
     private String value;
 
     @DataBoundConstructor
-    public MCAuthModel(String mcUserName, String mcPassword, String mcTenantId, String mcExecToken, String value) {
+    public AuthModel(String mcUserName, String mcPassword, String mcTenantId, String mcExecToken, String value) {
         this.mcUserName = mcUserName;
         this.mcPassword = Secret.fromString(mcPassword);
         this.mcTenantId = mcTenantId;
@@ -24,7 +26,11 @@ public class MCAuthModel {
     }
 
     public String getMcPassword() {
-        return mcPassword.getPlainText();
+        if (null != mcPassword) {
+            return mcPassword.getPlainText();
+        } else {
+            return null;
+        }
     }
 
     public String getMcTenantId() {
@@ -32,7 +38,11 @@ public class MCAuthModel {
     }
 
     public String getMcExecToken() {
-        return mcExecToken.getPlainText();
+        if (null != mcExecToken) {
+            return mcExecToken.getPlainText();
+        } else {
+            return null;
+        }
     }
 
     public void setMcUserName(String mcUserName) {
@@ -58,10 +68,20 @@ public class MCAuthModel {
     public void setValue(String value) {
         this.value = value;
     }
+
     public String getMcEncryptedExecToken() {
-        return mcExecToken.getEncryptedValue();
+        if (null != mcExecToken) {
+            return mcExecToken.getEncryptedValue();
+        } else {
+            return null;
+        }
     }
+
     public String getMcEncryptedPassword() {
-        return mcPassword.getEncryptedValue();
+        if (null != mcPassword) {
+            return mcPassword.getEncryptedValue();
+        } else {
+            return null;
+        }
     }
 }
