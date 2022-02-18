@@ -368,7 +368,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.fsReportPath = fsReportPath;
     }
 
-    public String getFsPassword() {
+    public String getMcPassword() {
         //Temp fix till supported in pipeline module in LR
         if (authModel.getMcPassword() == null) {
             return null;
@@ -718,7 +718,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             props.put(MOBILE_USE_SSL, "0");
         }
 
-        props.put(MOBILE_AUTH_Type, "base");
+        props.put(MOBILE_AUTH_Type, "base");//TODO
         if (authModel.getValue().equals("base")) {
             if (StringUtils.isNotBlank(authModel.getMcUserName())) {
                 props.put("MobileUserName", authModel.getMcUserName());

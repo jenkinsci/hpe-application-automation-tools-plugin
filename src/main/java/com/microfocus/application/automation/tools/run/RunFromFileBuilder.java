@@ -548,8 +548,51 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         runFromFileModel.setProxySettings(proxySettings);
     }
 
+    public String getMcTenantId() {
+        return runFromFileModel.getAuthModel().getMcTenantId();
+    }
+
+    @DataBoundSetter
+    public void setMcTenantId(String mcTenantId) {
+        runFromFileModel.getAuthModel().setMcTenantId(mcTenantId);
+    }
+
+    public String getMcPassword() {
+        return runFromFileModel.getAuthModel().getMcPassword();
+    }
+
+    @DataBoundSetter
+    public void setMcPassword(String mcPassword) {
+        runFromFileModel.getAuthModel().setMcPassword(mcPassword);
+    }
+
+    public String getMcUserName() {
+        return runFromFileModel.getAuthModel().getMcUserName();
+    }
+
+    @DataBoundSetter
+    public void setMcUserName(String mcUserName) {
+        runFromFileModel.getAuthModel().setMcUserName(mcUserName);
+    }
     public String getFsTargetLab() {
         return runFromFileModel.getFsTargetLab();
+    }
+
+    public String getMcExecToken() {
+        return runFromFileModel.getAuthModel().getMcExecToken();
+    }
+
+    @DataBoundSetter
+    public void setMcExecToken(String mcExecToken) {
+        runFromFileModel.getAuthModel().setMcExecToken(mcExecToken);
+    }
+    public AuthModel getAuthModel() {
+        return runFromFileModel.getAuthModel();
+    }
+
+    @DataBoundSetter
+    public void setAuthModel(AuthModel authModel) {
+        runFromFileModel.setAuthModel(authModel);
     }
 
     /**
@@ -644,19 +687,15 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         Properties mergedProperties = new Properties();
         if (mcServerSettingsModel != null) {
             mcServerUrl = mcServerSettingsModel.getProperties().getProperty("MobileHostAddress");
-            if (runFromFileModel.getProxySettings() == null) {
-                jobDetails = runFromFileModel.getJobDetails(mcServerUrl, new ProxySettings());
-            } else {
-                jobDetails = runFromFileModel.getJobDetails(mcServerUrl, runFromFileModel.getProxySettings());
-            }
+            jobDetails = runFromFileModel.getJobDetails(mcServerUrl, runFromFileModel.getProxySettings());
 
             mergedProperties.setProperty("mobileinfo", jobDetails != null ? jobDetails.toJSONString() : "");
             mergedProperties.setProperty("MobileHostAddress", mcServerUrl);
         }
 
-        if (runFromFileModel != null && StringUtils.isNotBlank(runFromFileModel.getFsPassword())) {
+        if (runFromFileModel != null && StringUtils.isNotBlank(runFromFileModel.getMcPassword())) {
             try {
-                String encPassword = EncryptionUtils.Encrypt(Secret.fromString(runFromFileModel.getFsPassword()).getPlainText(),
+                String encPassword = EncryptionUtils.Encrypt(Secret.fromString(runFromFileModel.getMcPassword()).getPlainText(),
                         EncryptionUtils.getSecretKey());
                 mergedProperties.put("MobilePassword", encPassword);
             } catch (Exception e) {

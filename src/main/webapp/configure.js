@@ -31,11 +31,11 @@ function loadMobileInfo(a) {
     if (buttonStatus) return;
     buttonStatus = true;
     var recreatJob = document.getElementsByName("runfromfs.recreateJob")[0].checked;
-    var mcUserName = document.getElementsByName("runfromfs.fsUserName")[0].value;
-    var mcPassword = document.getElementsByName("runfromfs.fsPassword")[0].value;
-    var mcTenantId = document.getElementsByName("runfromfs.mcTenantId")[0].value;
-    var mcExecToken = document.getElementsByName("runfromfs.mcExecToken")[0].value;
-    var useBaseAuth = document.getElementsByName("runfromfs.useBaseAuth")[0].checked;
+    var mcUserName = document.getElementsByName("runfromfs.authModel.mcUserName")[0].value;
+    var mcPassword = document.getElementsByName("runfromfs.authModel..mcPassword")[0].value;
+    var mcTenantId = document.getElementsByName("runfromfs.authModel..mcTenantId")[0].value;
+    var mcExecToken = document.getElementsByName("runfromfs.authModel.mcExecToken")[0].value;
+    var authType = document.getElementsByName("runfromfs.authModel.value")[0].value;
     var mcUrl = document.getElementsByName("runfromfs.mcServerName")[0].value;
     var useProxy = document.getElementsByName("proxySettings")[0].checked;
     var proxyAddress = document.getElementsByName("runfromfs.fsProxyAddress")[0].value;
@@ -44,7 +44,7 @@ function loadMobileInfo(a) {
     var proxyPassword = document.getElementsByName("runfromfs.fsProxyPassword")[0].value;
     var baseUrl = "";
     var isMcCredentialMissing;
-    if (useBaseAuth) {
+    if ('base' == authType) {
         isMcCredentialMissing = (mcUserName.trim() == "" || mcPassword.trim() == "");
     } else {
         isMcCredentialMissing = mcExecToken.trim() == "";

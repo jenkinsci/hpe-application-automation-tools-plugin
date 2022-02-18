@@ -64,14 +64,14 @@
         </select>
     </f:entry>
     <f:entry>
-        <f:radioBlock name="authModel" field="authType" value="token" checked="${instance.uploadAppModel.authType == 'token' || instance.uploadAppModel.authType == null}" title="Execution Token Authentication">
+        <f:radioBlock name="authModel" field="authModel" value="token" checked="${instance.uploadAppModel.authType == 'token' || instance.uploadAppModel.authType == null}" title="Execution Token Authentication">
             <f:nested>
                 <f:entry title="Access Key" field="mcExecToken">
                     <f:password name="uploadApp.mcExecToken" value="${instance.uploadAppModel.authModel.mcExecToken}" />
                 </f:entry>
             </f:nested>
         </f:radioBlock>
-        <f:radioBlock name="authModel" field="authType" value="base" checked="${instance.uploadAppModel.authType == 'base'}" title="Base Authentication">
+        <f:radioBlock name="authModel" field="authModel" value="base" checked="${instance.uploadAppModel.authType == 'base'}" title="Base Authentication">
             <f:nested>
                 <f:entry title="User name" field="mcUserName">
                     <f:textbox name="uploadApp.mcUserName" value="${instance.uploadAppModel.authModel.mcUserName}"/>

@@ -53,7 +53,6 @@ namespace HpToolsLauncher
         public string MobileHostAddress { get; set; }
         public string MobileHostPort { get; set; }
         public string MobileTenantId { get; set; }
-        public string MobileExecToken { get; set; }
         public int MobileUseSSL { get; set; }
         public int MobileUseProxy { get; set; }
         public int MobileProxyType { get; set; }
@@ -71,7 +70,6 @@ namespace HpToolsLauncher
             MobilePassword = string.Empty;
             MobileHostAddress = string.Empty;
             MobileTenantId = string.Empty;
-            MobileExecToken = string.Empty;
             MobileUseSSL = 0;
 
             MobileUseProxy = 0;
