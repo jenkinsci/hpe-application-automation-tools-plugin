@@ -179,7 +179,11 @@ public class HttpUtils {
                 while ((line = reader.readLine()) != null) {
                     res.append(line);
                 }
-                obj = (JSONObject) JSONValue.parseStrict(res.toString());
+                if (JSONValue.isValidJson(res.toString())) {
+                    obj = (JSONObject) JSONValue.parseStrict(res.toString());
+                } else {
+                    System.out.println("WARN::INVALIDE JSON" + res);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

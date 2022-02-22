@@ -190,7 +190,12 @@ public class JobConfigurationProxy {
             headers.put(Constants.LOGIN_SECRET, hp4mSecret);
             String cookies = Constants.JESEEIONEQ + jsessionId;
             if ("token".equals(authModel.getValue())) {
-                cookies += (";" + Constants.OAUTH2_COOKIE_KEY + "=" + (String) loginJson.get(Constants.OAUTH2_COOKIE_KEY));
+                String oauth=(String) loginJson.get(Constants.OAUTH2_COOKIE_KEY);
+                if(!StringUtils.isNullOrEmpty(oauth)) {
+                    cookies += (";" + Constants.OAUTH2_COOKIE_KEY + "=" + (String) loginJson.get(Constants.OAUTH2_COOKIE_KEY));
+                }else {
+                    System.out.println("ERROR:: loginToMC failed with null oauth cookie.");
+                }
             }
             headers.put(Constants.COOKIE, cookies);
         }

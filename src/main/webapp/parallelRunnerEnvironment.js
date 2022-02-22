@@ -30,7 +30,8 @@
  * Prototype that represents the modal dialog.
  * @constructor
  */
-function ModalDialog() {}
+function ModalDialog() {
+}
 
 /**
  * Add the style sheet to the provided modal node.
@@ -324,7 +325,7 @@ Utils.loadMC = function (a, button) {
     var mcPassword = document.getElementsByName("runfromfs.mcPassword")[0].value;
     var mcTenantId = document.getElementsByName("runfromfs.mcTenantId")[0].value;
     var mcExecToken = document.getElementsByName("runfromfs.mcExecToken")[0].value;
-    var mcAuthType = document.querySelector('input[name$="authType"]:checked').value;
+    var mcAuthType = document.querySelector('input[name$="authModel"]:checked').value;
     var mcUrl = document.getElementsByName("runfromfs.mcServerName")[0].value;
     var useProxy = document.getElementsByName("proxySettings")[0].checked;
     var proxyAddress = document.getElementsByName("runfromfs.fsProxyAddress")[0].value;
@@ -356,7 +357,7 @@ Utils.loadMC = function (a, button) {
             buttonStatus = false;
             return;
         }
-        a.getJobId(baseUrl, mcUserName, mcPassword, mcTenantId, proxyAddress, proxyUserName, proxyPassword, previousJobId, function (response) {
+        a.getJobId(baseUrl, mcUserName, mcPassword, mcTenantId, mcExecToken, mcAuthType, useAuthentication, proxyAddress, proxyUserName, proxyPassword, previousJobId, function (response) {
             var jobId = response.responseObject();
             if (jobId == null) {
                 ParallelRunnerEnvironment.setEnvironmentError(button, true);
@@ -368,7 +369,7 @@ Utils.loadMC = function (a, button) {
             openedWindow.location.href = baseUrl + "/integration/#/login?jobId=" + jobId + "&displayUFTMode=true&deviceOnly=true";
             var messageCallBack = function (event) {
                 if (event && event.data && event.data == "mcCloseWizard") {
-                    a.populateAppAndDevice(baseUrl, mcUserName, mcPassword, mcTenantId, proxyAddress, proxyUserName, proxyPassword, jobId, function (app) {
+                    a.populateAppAndDevice(baseUrl, mcUserName, mcPassword, mcTenantId, mcExecToken, mcAuthType, useAuthentication, proxyAddress, proxyUserName, proxyPassword, jobId, function (app) {
                         var jobInfo = app.responseObject();
                         let deviceId = "", OS = "", manufacturerAndModel = "";
                         if (jobInfo['deviceJSON']) {

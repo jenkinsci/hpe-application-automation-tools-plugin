@@ -48,11 +48,11 @@ public class ProxySettings {
     }
 
     @DataBoundConstructor
-    public ProxySettings(boolean fsUseAuthentication, String fsProxyAddress, String fsProxyUserName, Secret fsProxyPassword) {
+    public ProxySettings(boolean fsUseAuthentication, String fsProxyAddress, String fsProxyUserName, String fsProxyPassword) {
         this.fsUseAuthentication = fsUseAuthentication;
         this.fsProxyAddress = fsProxyAddress;
         this.fsProxyUserName = fsProxyUserName;
-        this.fsProxyPassword = fsProxyPassword;
+        this.fsProxyPassword = Secret.fromString(fsProxyPassword);
     }
 
     public boolean isFsUseAuthentication() {
@@ -68,9 +68,9 @@ public class ProxySettings {
     }
 
     public String getFsProxyPassword() {
-        if(null != fsProxyPassword) {
+        if (null != fsProxyPassword) {
             return fsProxyPassword.getPlainText();
-        }else {
+        } else {
             return null;
         }
     }

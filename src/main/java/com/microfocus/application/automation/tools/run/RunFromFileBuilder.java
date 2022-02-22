@@ -618,7 +618,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                         @Nonnull TaskListener listener)
             throws IOException {
         //synchronized (this) {
-
+        PrintStream out = listener.getLogger();
 
         UftOctaneUtils.setUFTRunnerTypeAsParameter(build, listener);
         // get the mc server settings
@@ -638,7 +638,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         if (octaneFrameworkParam != null && octaneFrameworkParam.getValue().equals("MBT")) {
             String testsToRunConverted = env == null ? null : env.get(TestsToRunConverter.DEFAULT_TESTS_TO_RUN_CONVERTED_PARAMETER);
             if (StringUtils.isEmpty(testsToRunConverted)) {
-                listener.getLogger().println(RunFromFileBuilder.class.getSimpleName() + " : No UFT tests were found");
+                out.println(RunFromFileBuilder.class.getSimpleName() + " : No UFT tests were found");
                 return;
             }
         }
@@ -669,7 +669,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                 listener.fatalError("problem in UFT Mobile password encryption" + e);
             }
         }
-        if (runFromFileModel != null && null !=runFromFileModel.getAuthModel() && StringUtils.isNotBlank(runFromFileModel.getAuthModel().getMcExecToken())) {//TODO
+        if (runFromFileModel != null && null != runFromFileModel.getAuthModel() && StringUtils.isNotBlank(runFromFileModel.getAuthModel().getMcExecToken())) {//TODO
             try {
                 String encPassword = EncryptionUtils.Encrypt(runFromFileModel.getAuthModel().getMcExecToken(),
                         EncryptionUtils.getSecretKey());
@@ -850,7 +850,6 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
             listener.error("Failed running HpToolsLauncher " + ioe);
         } catch (InterruptedException e) {
             build.setResult(Result.ABORTED);
-            PrintStream out = listener.getLogger();
             listener.error("Failed running HpToolsLauncher - build aborted " + e);
             try {
                 AlmToolsUtils.runHpToolsAborterOnBuildEnv(build, launcher, listener, ParamFileName, workspace);
@@ -939,11 +938,19 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * otherwise, create a new temp job and return the new job id.
          *
          * @param mcUrl         the mc url
+         * @param mcUserName    the mc user name
+         * @param mcPassword    the mc password
+         * @param proxyAddress  the proxy address
+         * @param proxyUserName the proxy user name
+         * @param proxyPassword the proxy password
          * @param previousJobId the previous job id
          * @return the job id
          */
         @JavaScriptMethod
-        public String getJobId(String mcUrl, AuthModel authModel, ProxySettings proxy, String previousJobId) {
+        public String getJobId(String mcUrl, String mcUserName, String mcPassword, String mcTenantId, String mcExecToken, String authType,
+                               boolean fsUseAuthentication, String proxyAddress, String proxyUserName, String proxyPassword, String previousJobId) {
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, mcExecToken, authType);
+            ProxySettings proxy = new ProxySettings(fsUseAuthentication, proxyAddress, proxyUserName, proxyPassword);
             if (null != previousJobId && !previousJobId.isEmpty()) {
                 JSONObject jobJSON = instance.getJobById(mcUrl, authModel, proxy, previousJobId);
                 if (jobJSON != null && previousJobId.equals(jobJSON.getAsString("id"))) {
@@ -963,7 +970,11 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * @return the json object
          */
         @JavaScriptMethod
-        public JSONObject populateAppAndDevice(String mcUrl, AuthModel authModel, ProxySettings proxy, String jobId) {
+        public JSONObject populateAppAndDevice(String mcUrl, String mcUserName, String mcPassword, String mcTenantId, String mcExecToken, String authType,
+                                               boolean fsUseAuthentication, String proxyAddress, String proxyUserName, String proxyPassword,
+                                               String jobId) {
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, mcExecToken, authType);
+            ProxySettings proxy = new ProxySettings(fsUseAuthentication, proxyAddress, proxyUserName, proxyPassword);
             return instance.getJobJSONData(mcUrl, authModel, proxy, jobId);
         }
 
