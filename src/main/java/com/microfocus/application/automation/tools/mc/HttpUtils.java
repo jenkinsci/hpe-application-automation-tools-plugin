@@ -105,13 +105,15 @@ public class HttpUtils {
         if (responseCode == HttpURLConnection.HTTP_OK) {
             InputStream inputStream = connection.getInputStream();
             JSONObject jsonObject = convertStreamToJSONObject(inputStream);
+            if (null == jsonObject) {
+                System.out.println(requestMethod + " " + connectionUrl + " return is null.");
+            }
             Map<String, List<String>> headerFields = connection.getHeaderFields();
             response.setHeaders(headerFields);
             response.setJsonObject(jsonObject);
         } else {
             System.out.println(requestMethod + " " + connectionUrl + " failed with response code:" + responseCode);
         }
-
         connection.disconnect();
 
         return response;

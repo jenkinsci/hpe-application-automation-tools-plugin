@@ -68,7 +68,6 @@ public class JobConfigurationProxy {
             Map<String, String> headers = new HashMap<String, String>();
             headers.put(Constants.ACCEPT, "application/json");
             headers.put(Constants.CONTENT_TYPE, "application/json;charset=UTF-8");
-//            headers.put("TENANT_ID_COOKIE", mcTenantId);
 
             JSONObject sendObject = new JSONObject();
             if (null == proxy) {
@@ -86,7 +85,7 @@ public class JobConfigurationProxy {
             } else {
                 headers.put(Constants.ACCEPT, "application/json");
                 headers.put(Constants.CONTENT_TYPE, "application/json;charset=UTF-8");
-
+                Oauth2TokenUtil.validate(authModel.getMcExecToken());
                 sendObject.put("client", Oauth2TokenUtil.getClient());
                 sendObject.put("secret", Oauth2TokenUtil.getSecret());
                 sendObject.put("tenant", Oauth2TokenUtil.getTenant());
@@ -111,6 +110,7 @@ public class JobConfigurationProxy {
             String cookies = null;
             String setCookie = null;
             String tenantCookie = null;
+            String oauth2Cookie = null;
             if (setCookieList != null && setCookieList.size() != 0) {
                 setCookie = setCookieList.get(0);
                 for (String str : setCookieList) {
@@ -122,18 +122,23 @@ public class JobConfigurationProxy {
                         tenantCookie = str;
                         cookies += (str + ';');
                         continue;
-                    } else if ((str.contains(Constants.LWSSO_COOKIE_KEY) && str.startsWith(Constants.LWSSO_COOKIE_KEY))
-                            || (str.contains(Constants.OAUTH2_COOKIE_KEY) && str.startsWith(Constants.OAUTH2_COOKIE_KEY))) {
-                        cookies += (str + ';');
+                    } else if (str.contains(Constants.OAUTH2_COOKIE_KEY) && str.startsWith(Constants.OAUTH2_COOKIE_KEY)) {
+                        oauth2Cookie = str;
                         continue;
                     }
                 }
             }
+            JSONObject returnObject = new JSONObject();
             String jsessionId = getCookieValue(setCookie, Constants.JSESSIONID);
             String tenantId = getCookieValue(tenantCookie, Constants.TENANT_COOKIE);
-            JSONObject returnObject = new JSONObject();
+            if (!StringUtils.isNullOrEmpty(oauth2Cookie)) {
+                String oauth = getCookieValue(oauth2Cookie, Constants.OAUTH2_COOKIE_KEY);
+                returnObject.put(Constants.OAUTH2_COOKIE_KEY, oauth);
+            }
+
             returnObject.put(Constants.JSESSIONID, jsessionId);
             returnObject.put(Constants.TENANT_COOKIE, tenantId);
+
             returnObject.put(Constants.LOGIN_SECRET, hp4mSecret);
             returnObject.put(Constants.COOKIE, cookies);
             return returnObject;
@@ -177,14 +182,19 @@ public class JobConfigurationProxy {
         if (null == proxy) {
             proxy = new ProxySettings();
         }
+        Map<String, String> headers = new HashMap<String, String>();
         JSONObject loginJson = loginToMC(mcUrl, authModel, proxy);
         if (loginJson != null) {
             hp4mSecret = (String) loginJson.get(Constants.LOGIN_SECRET);
             jsessionId = (String) loginJson.get(Constants.JSESSIONID);
+            headers.put(Constants.LOGIN_SECRET, hp4mSecret);
+            String cookies = Constants.JESEEIONEQ + jsessionId;
+            if ("token".equals(authModel.getValue())) {
+                cookies += (";" + Constants.OAUTH2_COOKIE_KEY + "=" + (String) loginJson.get(Constants.OAUTH2_COOKIE_KEY));
+            }
+            headers.put(Constants.COOKIE, cookies);
         }
-        Map<String, String> headers = new HashMap<String, String>();
-        headers.put(Constants.LOGIN_SECRET, hp4mSecret);
-        headers.put(Constants.COOKIE, Constants.JESEEIONEQ + jsessionId + ";" + ((String) loginJson.get(Constants.COOKIE)));
+
         headers.put(Constants.CONTENT_TYPE, Constants.CONTENT_TYPE_DOWNLOAD_VALUE + Constants.BOUNDARYSTR);
         headers.put(Constants.FILENAME, appFile.getName());
 
@@ -222,7 +232,13 @@ public class JobConfigurationProxy {
             try {
                 Map<String, String> headers = new HashMap<String, String>();
                 headers.put(Constants.LOGIN_SECRET, hp4mSecret);
-                headers.put(Constants.COOKIE, Constants.JESEEIONEQ + jsessionId + ";" + ((String) loginJson.get(Constants.COOKIE)));
+                if (loginJson != null) {
+                    String cookies = Constants.JESEEIONEQ + jsessionId;
+                    if ("token".equals(authModel.getValue())) {
+                        cookies += (";" + Constants.OAUTH2_COOKIE_KEY + "=" + (String) loginJson.get(Constants.OAUTH2_COOKIE_KEY));
+                    }
+                    headers.put(Constants.COOKIE, cookies);
+                }
                 HttpResponse response = HttpUtils.get(HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword()), mcUrl + Constants.CREATE_JOB_URL, headers, null);
 
                 if (response != null && response.getJsonObject() != null) {
@@ -263,7 +279,13 @@ public class JobConfigurationProxy {
             try {
                 Map<String, String> headers = new HashMap<String, String>();
                 headers.put(Constants.LOGIN_SECRET, hp4mSecret);
-                headers.put(Constants.COOKIE, Constants.JESEEIONEQ + jsessionId + ";" + ((String) loginJson.get(Constants.COOKIE)));
+                if (loginJson != null) {
+                    String cookies = Constants.JESEEIONEQ + jsessionId;
+                    if ("token".equals(authModel.getValue())) {
+                        cookies += (";" + Constants.OAUTH2_COOKIE_KEY + "=" + (String) loginJson.get(Constants.OAUTH2_COOKIE_KEY));
+                    }
+                    headers.put(Constants.COOKIE, cookies);
+                }
                 HttpResponse response = HttpUtils.get(HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword()), mcUrl + Constants.GET_JOB_UEL + jobUUID, headers, null);
 
                 if (response != null && response.getJsonObject() != null) {

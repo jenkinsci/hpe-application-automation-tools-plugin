@@ -320,11 +320,11 @@ Utils.loadMC = function (a, button) {
     var buttonStatus = false;
     if (buttonStatus) return;
     buttonStatus = true;
-    var mcUserName = document.getElementsByName("runfromfs.authModel.mcUserName")[0].value;
-    var mcPassword = document.getElementsByName("runfromfs.authModel.mcPassword")[0].value;
-    var mcTenantId = document.getElementsByName("runfromfs.authModel.mcTenantId")[0].value;
-    var mcExecToken = document.getElementsByName("runfromfs.authModel.mcExecToken")[0].value;
-    var mcAuthType = document.getElementsByName("runfromfs.authModel.value")[0].value;
+    var mcUserName = document.getElementsByName("runfromfs.mcUserName")[0].value;
+    var mcPassword = document.getElementsByName("runfromfs.mcPassword")[0].value;
+    var mcTenantId = document.getElementsByName("runfromfs.mcTenantId")[0].value;
+    var mcExecToken = document.getElementsByName("runfromfs.mcExecToken")[0].value;
+    var mcAuthType = document.querySelector('input[name$="authType"]:checked').value;
     var mcUrl = document.getElementsByName("runfromfs.mcServerName")[0].value;
     var useProxy = document.getElementsByName("proxySettings")[0].checked;
     var proxyAddress = document.getElementsByName("runfromfs.fsProxyAddress")[0].value;

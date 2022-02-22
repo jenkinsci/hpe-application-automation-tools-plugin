@@ -548,44 +548,10 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         runFromFileModel.setProxySettings(proxySettings);
     }
 
-    public String getMcTenantId() {
-        return runFromFileModel.getAuthModel().getMcTenantId();
-    }
-
-    @DataBoundSetter
-    public void setMcTenantId(String mcTenantId) {
-        runFromFileModel.getAuthModel().setMcTenantId(mcTenantId);
-    }
-
-    public String getMcPassword() {
-        return runFromFileModel.getAuthModel().getMcPassword();
-    }
-
-    @DataBoundSetter
-    public void setMcPassword(String mcPassword) {
-        runFromFileModel.getAuthModel().setMcPassword(mcPassword);
-    }
-
-    public String getMcUserName() {
-        return runFromFileModel.getAuthModel().getMcUserName();
-    }
-
-    @DataBoundSetter
-    public void setMcUserName(String mcUserName) {
-        runFromFileModel.getAuthModel().setMcUserName(mcUserName);
-    }
     public String getFsTargetLab() {
         return runFromFileModel.getFsTargetLab();
     }
 
-    public String getMcExecToken() {
-        return runFromFileModel.getAuthModel().getMcExecToken();
-    }
-
-    @DataBoundSetter
-    public void setMcExecToken(String mcExecToken) {
-        runFromFileModel.getAuthModel().setMcExecToken(mcExecToken);
-    }
     public AuthModel getAuthModel() {
         return runFromFileModel.getAuthModel();
     }
