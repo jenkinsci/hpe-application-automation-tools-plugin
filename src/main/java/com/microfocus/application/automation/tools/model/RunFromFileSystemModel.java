@@ -54,7 +54,6 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     public static final String MOBILE_PROXY_SETTING_USER_NAME = "MobileProxySetting_UserName";
     public static final String MOBILE_PROXY_SETTING_AUTHENTICATION = "MobileProxySetting_Authentication";
     public static final String MOBILE_USE_SSL = "MobileUseSSL";
-    public static final String MOBILE_AUTH_Type = "MobileAuthType";
 
     public final static EnumDescription FAST_RUN_MODE = new EnumDescription("Fast", "Fast");
     public final static EnumDescription NORMAL_RUN_MODE = new EnumDescription("Normal", "Normal");
@@ -718,17 +717,12 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             props.put(MOBILE_USE_SSL, "0");
         }
 
-        props.put(MOBILE_AUTH_Type, "base");//TODO
         if (authModel.getValue().equals("base")) {
             if (StringUtils.isNotBlank(authModel.getMcUserName())) {
                 props.put("MobileUserName", authModel.getMcUserName());
             }
             if (StringUtils.isNotBlank(authModel.getMcTenantId())) {
                 props.put("MobileTenantId", authModel.getMcTenantId());
-            }
-        } else {
-            if (StringUtils.isNotBlank(authModel.getMcExecToken())) {
-                props.put("MobileExecToken", authModel.getMcExecToken());
             }
         }
         return props;

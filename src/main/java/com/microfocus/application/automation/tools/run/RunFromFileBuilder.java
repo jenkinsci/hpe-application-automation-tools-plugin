@@ -659,24 +659,26 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
             mergedProperties.setProperty("MobileHostAddress", mcServerUrl);
         }
 
-        if (runFromFileModel != null && StringUtils.isNotBlank(runFromFileModel.getMcPassword())) {
-            try {
-                String encPassword = EncryptionUtils.Encrypt(Secret.fromString(runFromFileModel.getMcPassword()).getPlainText(),
-                        EncryptionUtils.getSecretKey());
-                mergedProperties.put("MobilePassword", encPassword);
-            } catch (Exception e) {
-                build.setResult(Result.FAILURE);
-                listener.fatalError("problem in UFT Mobile password encryption" + e);
+        if (runFromFileModel != null && null != runFromFileModel.getAuthModel()) {
+            if (StringUtils.isNotBlank(runFromFileModel.getMcPassword())) {
+                try {
+                    String encPassword = EncryptionUtils.Encrypt(Secret.fromString(runFromFileModel.getMcPassword()).getPlainText(),
+                            EncryptionUtils.getSecretKey());
+                    mergedProperties.put("MobilePassword", encPassword);
+                } catch (Exception e) {
+                    build.setResult(Result.FAILURE);
+                    listener.fatalError("problem in UFT Mobile password encryption" + e);
+                }
             }
-        }
-        if (runFromFileModel != null && null != runFromFileModel.getAuthModel() && StringUtils.isNotBlank(runFromFileModel.getAuthModel().getMcExecToken())) {//TODO
-            try {
-                String encPassword = EncryptionUtils.Encrypt(runFromFileModel.getAuthModel().getMcExecToken(),
-                        EncryptionUtils.getSecretKey());
-                mergedProperties.put("MobileExecToken", encPassword);
-            } catch (Exception e) {
-                build.setResult(Result.FAILURE);
-                listener.fatalError("problem in UFT Mobile password encryption" + e);
+            if (StringUtils.isNotBlank(runFromFileModel.getMcExecToken())) {
+                try {
+                    String encPassword = EncryptionUtils.Encrypt(Secret.fromString(runFromFileModel.getMcExecToken()).getPlainText(),
+                            EncryptionUtils.getSecretKey());
+                    mergedProperties.put("MobileExecToken", encPassword);
+                } catch (Exception e) {
+                    build.setResult(Result.FAILURE);
+                    listener.fatalError("problem in UFT Mobile password encryption" + e);
+                }
             }
         }
 
