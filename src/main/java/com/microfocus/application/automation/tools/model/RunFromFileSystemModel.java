@@ -383,7 +383,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
 
     public String getMcPassword() {
         //Temp fix till supported in pipeline module in LR
-        if (authModel.getMcPassword() == null) {
+        if (authModel == null || authModel.getMcPassword() == null) {
             return null;
         }
         return authModel.getMcEncryptedPassword();
@@ -391,7 +391,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
 
     public String getMcExecToken() {
         //Temp fix till supported in pipeline module in LR
-        if (authModel.getMcExecToken() == null) {
+        if (authModel == null || authModel.getMcExecToken() == null) {
             return null;
         }
         return authModel.getMcEncryptedExecToken();
@@ -694,7 +694,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             props.put(MOBILE_USE_SSL, "0");
         }
 
-        if (authModel.getValue().equals("base")) {
+        if (authModel != null && authModel.getValue().equals("base")) {
             if (StringUtils.isNotBlank(authModel.getMcUserName())) {
                 props.put("MobileUserName", authModel.getMcUserName());
             }

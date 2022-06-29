@@ -676,21 +676,19 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         }
 
         // check whether Mobile authentification info is given or not
-        if (StringUtils.isNotBlank(Secret.fromString(runFromFileModel.getMcPassword()).getPlainText())) {
+        String pwd = runFromFileModel.getMcPassword();
+        String tok = runFromFileModel.getMcExecToken();
+        if (pwd != null && StringUtils.isNotBlank(Secret.fromString(pwd).getPlainText())) {
             try {
-                String encPassword = EncryptionUtils.encrypt(Secret.fromString(runFromFileModel.getMcPassword()).getPlainText(),
-                    currNode);
-                mergedProperties.put("MobilePassword", encPassword);
+                mergedProperties.put("MobilePassword", EncryptionUtils.encrypt(Secret.fromString(pwd).getPlainText(), currNode));
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);
                 listener.fatalError("Problem in UFT Mobile password encryption: " + e.getMessage() + ".");
                 return;
             }
-        } else if (StringUtils.isNotBlank(Secret.fromString(runFromFileModel.getMcExecToken()).getPlainText())) {
+        } else if (tok != null && StringUtils.isNotBlank(Secret.fromString(tok).getPlainText())) {
             try {
-                String token = EncryptionUtils.encrypt(Secret.fromString(runFromFileModel.getMcExecToken()).getPlainText(),
-                        currNode);
-                mergedProperties.put("MobileExecToken", token);
+                mergedProperties.put("MobileExecToken", EncryptionUtils.encrypt(Secret.fromString(tok).getPlainText(), currNode));
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);
                 listener.fatalError("Problem in UFT Mobile execution token encryption: " + e.getMessage() + ".");
