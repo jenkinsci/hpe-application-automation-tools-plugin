@@ -114,7 +114,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 			"report.";
 	private static final String PARALLEL_RESULT_FILE = "parallelrun_results.html";
 	private static final String REPORT_ARCHIVE_SUFFIX = "_Report.zip";
-	private static final String EXTERNAL_REPORT_FOLDER = "StRes";
+	private static final String RUN_API_TEST_XPATH_EXPRESSION = "//Data[Name='RunAPITest']/Extension/StepCustomData";
 
 	private final ResultsPublisherModel _resultsPublisherModel;
 	private List<FilePath> runReportList;
@@ -528,7 +528,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 							if (xmlReport.exists()) {
 								XpathReader xr = new XpathReader(xmlReport);
 								try {
-									NodeList nodes = xr.getNodeListFromNode("//Data[Name='RunAPITest']/Extension/StepCustomData", xr.getDoc());
+									NodeList nodes = xr.getNodeListFromNode(RUN_API_TEST_XPATH_EXPRESSION, xr.getDoc());
 									Set<String> subdirs = reportMetaData.getStResFolders();
 									for (int x = 0; x < nodes.getLength(); x++) {
 										String val = nodes.item(x).getTextContent();
