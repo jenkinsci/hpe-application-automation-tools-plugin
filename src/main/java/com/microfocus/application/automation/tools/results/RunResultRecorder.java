@@ -29,7 +29,6 @@
 package com.microfocus.application.automation.tools.results;
 
 import com.microfocus.application.automation.tools.common.RuntimeUtils;
-import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.XpathReader;
 import com.microfocus.application.automation.tools.model.EnumDescription;
 import com.microfocus.application.automation.tools.model.ResultsPublisherModel;
 import com.microfocus.application.automation.tools.results.projectparser.performance.*;
@@ -76,7 +75,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
 import java.util.*;
 
@@ -96,7 +94,6 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 	public static final int SECS_IN_MINUTE = 60;
 	public static final String SLA_ULL_NAME = "FullName";
 	public static final String ARCHIVING_TEST_REPORTS_FAILED_DUE_TO_XML_PARSING_ERROR = "Archiving test reports failed due to xml parsing error: ";
-	private static final String FAILED_TO_PROCESS_XML_REPORT = "Failed to process run_results.xml report: ";
 	private static final long serialVersionUID = 1L;
 	private static final String PERFORMANCE_REPORT_FOLDER = "PerformanceReport";
 	private static final String IE_REPORT_FOLDER = "IE";
@@ -114,11 +111,10 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 			"report.";
 	private static final String PARALLEL_RESULT_FILE = "parallelrun_results.html";
 	private static final String REPORT_ARCHIVE_SUFFIX = "_Report.zip";
-	private static final String RUN_API_TEST_XPATH_EXPRESSION = "//Data[Name='RunAPITest']/Extension/StepCustomData";
+	private static  final String RUN_RESULTS_XML = "run_results.xml";
 
 	private final ResultsPublisherModel _resultsPublisherModel;
 	private List<FilePath> runReportList;
-
 
 	/**
 	 * Instantiates a new Run result recorder.
@@ -523,23 +519,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 							String resourceUrl = "artifact/UFTReport/" + testName;
 							reportMetaData.setResourceURL(resourceUrl);
 							reportMetaData.setDisPlayName(testName); // use the name, not the full path
-
-							FilePath xmlReport = new FilePath(reportFolder, "run_results.xml");
-							if (xmlReport.exists()) {
-								XpathReader xr = new XpathReader(xmlReport);
-								try {
-									NodeList nodes = xr.getNodeListFromNode(RUN_API_TEST_XPATH_EXPRESSION, xr.getDoc());
-									Set<String> subdirs = reportMetaData.getStResFolders();
-									for (int x = 0; x < nodes.getLength(); x++) {
-										String val = nodes.item(x).getTextContent();
-										if (val.startsWith("..\\StRes")) {
-											subdirs.add(val.substring(3));
-										}
-									}
-								} catch(NullPointerException | XPathExpressionException e) {
-									listener.error(FAILED_TO_PROCESS_XML_REPORT + e);
-								}
-							}
+							reportMetaData.computeStResFolders(new FilePath(reportFolder, RUN_RESULTS_XML), listener);
 
 							// don't know reportMetaData's URL path yet, we will generate it later.
 							ReportInfoToCollect.add(reportMetaData);

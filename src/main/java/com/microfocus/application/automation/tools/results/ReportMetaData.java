@@ -28,8 +28,16 @@
 
 package com.microfocus.application.automation.tools.results;
 
+import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.XpathReader;
 import com.microfocus.application.automation.tools.settings.RunnerMiscSettingsGlobalConfiguration;
+import hudson.FilePath;
+import hudson.model.TaskListener;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.IOException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -49,7 +57,10 @@ public class ReportMetaData {
     private Boolean isHtmlReport;
     private Boolean isParallelRunnerReport;
     private String  archiveUrl;
-    private final Set<String> stResPaths = new HashSet<>();
+    private final Set<String> stResFolders = new HashSet<>();
+    private static final String RUN_API_TEST_XPATH_EXPRESSION = "//Data[Name='RunAPITest']/Extension/StepCustomData";
+    private static final String FAILED_TO_PROCESS_XML_REPORT = "Failed to process run_results.xml report: ";
+    private static final String ST_RES = "..\\StRes";
 
     public String getFolderPath() {
         return folderPath;
@@ -151,6 +162,23 @@ public class ReportMetaData {
     }
 
     public Set<String> getStResFolders() {
-        return stResPaths;
+        return stResFolders;
+    }
+
+    public void computeStResFolders(FilePath xmlReport, TaskListener listener) throws InterruptedException {
+        try {
+            if (xmlReport.exists()) {
+                XpathReader xr = new XpathReader(xmlReport);
+                NodeList nodes = xr.getNodeListFromNode(RUN_API_TEST_XPATH_EXPRESSION, xr.getDoc());
+                for (int x = 0; x < nodes.getLength(); x++) {
+                    String val = nodes.item(x).getTextContent();
+                    if (val.startsWith(ST_RES)) {
+                        stResFolders.add(val.substring(3));
+                    }
+                }
+            }
+        } catch(NullPointerException | XPathExpressionException | IOException | SAXException | ParserConfigurationException e) {
+            listener.error(FAILED_TO_PROCESS_XML_REPORT + e);
+        }
     }
 }
