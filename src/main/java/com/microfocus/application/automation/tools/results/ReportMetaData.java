@@ -33,6 +33,8 @@ import com.microfocus.application.automation.tools.settings.RunnerMiscSettingsGl
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Set;
+import java.util.HashSet;
 
 import static com.microfocus.application.automation.tools.settings.RunnerMiscSettingsGlobalConfiguration.*;
 
@@ -47,6 +49,7 @@ public class ReportMetaData {
     private Boolean isHtmlReport;
     private Boolean isParallelRunnerReport;
     private String  archiveUrl;
+    private final Set<String> stResPaths = new HashSet<>();
 
     public String getFolderPath() {
         return folderPath;
@@ -147,4 +150,7 @@ public class ReportMetaData {
         return archiveUrl != null && !archiveUrl.equals("");
     }
 
+    public Set<String> getStResFolders() {
+        return stResPaths;
+    }
 }

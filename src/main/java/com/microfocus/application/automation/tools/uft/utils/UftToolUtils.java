@@ -205,6 +205,14 @@ public class UftToolUtils {
                 } catch (Exception e) {
                     listener.error(String.format("Failed to delete folder %s : %s", entry.getName(), e.getMessage()));
                 }
+                try {
+                    if (entry.getName().startsWith("StRes")) {
+                        entry.deleteRecursive();
+                        listener.getLogger().println(String.format("Folder %s is deleted", entry));
+                    }
+                } catch (Exception e) {
+                    listener.error(String.format("Failed to delete folder %s : %s", entry.getName(), e.getMessage()));
+                }
             }
             if (!isDeleted) {
                 listener.getLogger().println(String.format("No report folder was deleted"));

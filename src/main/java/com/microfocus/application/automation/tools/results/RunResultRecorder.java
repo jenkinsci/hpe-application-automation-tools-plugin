@@ -29,6 +29,7 @@
 package com.microfocus.application.automation.tools.results;
 
 import com.microfocus.application.automation.tools.common.RuntimeUtils;
+import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.XpathReader;
 import com.microfocus.application.automation.tools.model.EnumDescription;
 import com.microfocus.application.automation.tools.model.ResultsPublisherModel;
 import com.microfocus.application.automation.tools.results.projectparser.performance.*;
@@ -75,6 +76,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
 import java.util.*;
 
@@ -93,8 +95,8 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 	public static final int SECS_IN_HOUR = 3600;
 	public static final int SECS_IN_MINUTE = 60;
 	public static final String SLA_ULL_NAME = "FullName";
-	public static final String ARCHIVING_TEST_REPORTS_FAILED_DUE_TO_XML_PARSING_ERROR =
-			"Archiving test reports failed due to xml parsing error: ";
+	public static final String ARCHIVING_TEST_REPORTS_FAILED_DUE_TO_XML_PARSING_ERROR = "Archiving test reports failed due to xml parsing error: ";
+	private static final String FAILED_TO_PROCESS_XML_REPORT = "Failed to process run_results.xml report: ";
 	private static final long serialVersionUID = 1L;
 	private static final String PERFORMANCE_REPORT_FOLDER = "PerformanceReport";
 	private static final String IE_REPORT_FOLDER = "IE";
@@ -327,12 +329,10 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 		ArrayList<FilePath> reportFolders = new ArrayList<FilePath>();
 		List<String> reportNames = new ArrayList<String>();
 
-		listener.getLogger()
-				.println("Report archiving mode is set to: " + _resultsPublisherModel.getArchiveTestResultsMode());
+		listener.getLogger().println("Report archiving mode is set to: " + _resultsPublisherModel.getArchiveTestResultsMode());
 
 		// if user specified not to archive report
-		if (_resultsPublisherModel.getArchiveTestResultsMode()
-				.equals(ResultsPublisherModel.dontArchiveResults.getValue()))
+		if (_resultsPublisherModel.getArchiveTestResultsMode().equals(ResultsPublisherModel.dontArchiveResults.getValue()))
 			return;
 
 		FilePath projectWS = runWorkspace;
@@ -524,6 +524,23 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 							reportMetaData.setResourceURL(resourceUrl);
 							reportMetaData.setDisPlayName(testName); // use the name, not the full path
 
+							FilePath xmlReport = new FilePath(reportFolder, "run_results.xml");
+							if (xmlReport.exists()) {
+								XpathReader xr = new XpathReader(xmlReport);
+								try {
+									NodeList nodes = xr.getNodeListFromNode("//Data[Name='RunAPITest']/Extension/StepCustomData", xr.getDoc());
+									Set<String> subdirs = reportMetaData.getStResFolders();
+									for (int x = 0; x < nodes.getLength(); x++) {
+										String val = nodes.item(x).getTextContent();
+										if (val.startsWith("..\\StRes")) {
+											subdirs.add(val.substring(3));
+										}
+									}
+								} catch(NullPointerException | XPathExpressionException e) {
+									listener.error(FAILED_TO_PROCESS_XML_REPORT + e);
+								}
+							}
+
 							// don't know reportMetaData's URL path yet, we will generate it later.
 							ReportInfoToCollect.add(reportMetaData);
 						}
@@ -659,8 +676,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 
 	}
 
-	private Boolean collectAndPrepareHtmlReports(Run build, TaskListener listener, List<ReportMetaData> htmlReportsInfo,
-	                                             FilePath runWorkspace) throws IOException, InterruptedException {
+	private Boolean collectAndPrepareHtmlReports(Run build, TaskListener listener, List<ReportMetaData> htmlReportsInfo, FilePath runWorkspace) {
 		File reportDir = new File(new File(build.getRootDir(), "archive"), "UFTReport");
 
 		FilePath rootTarget = new FilePath(reportDir);
@@ -676,11 +692,13 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 				String htmlReportDir = htmlReportInfo.getFolderPath(); // C:\UFTTest\GuiTest1\Report
 				try {
 					EnvVars env = build.getEnvironment(listener);
-					long indexFolder = getIndexOfReportFolder(new File(htmlReportDir), EXTERNAL_REPORT_FOLDER, env.get("NODE_NAME"));
-					if(indexFolder > 0) {
-						String innerHtmlReportDir = htmlReportDir.substring(0, htmlReportDir.lastIndexOf('\\')) + "\\" + EXTERNAL_REPORT_FOLDER + indexFolder;
-
-						archiveAndCopyReportFolder(runWorkspace, reportDir, innerHtmlReportDir);
+					for (String subdir : htmlReportInfo.getStResFolders()) {
+						File dir = new File(htmlReportDir);
+						String testFolderPath = dir.getPath().substring(0, dir.getPath().lastIndexOf('\\'));
+						String stResPath = new File(testFolderPath, subdir).getAbsolutePath();
+						if (UftToolUtils.getFilePath(env.get("NODE_NAME"), stResPath).exists()) {
+							archiveAndCopyReportFolder(runWorkspace, reportDir, stResPath);
+						}
 					}
 				} catch (Exception e){
 					listener.getLogger().println("Path to test folder not found");
@@ -764,22 +782,6 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 		outStr.close();
 		inStr.close();
 	}
-
-
-	public int getIndexOfReportFolder(File directory, String fileName, String nodeName) throws IOException, InterruptedException {
-		String testFolderPath = directory.getPath().substring(0, directory.getPath().lastIndexOf('\\'));
-		int index = 0;
-
-		FilePath testFilePath = UftToolUtils.getFilePath(nodeName, testFolderPath);
-		for (FilePath file : testFilePath.listDirectories()) {
-			if (file.isDirectory() && file.getName().startsWith(fileName) && index < Integer.parseInt(file.getName().substring(5))) {
-				index = Integer.parseInt(file.getName().substring(5));
-			}
-		}
-
-		return index;
-	}
-
 
 	/**
 	 * Copies the run report from the executing node to the Jenkins master for
@@ -1210,8 +1212,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 	/*
 	 * if we have a directory with file name "file.zip" we will return "file_1.zip"
 	 */
-	private String getUniqueZipFileNameInFolder(ArrayList<String> names, String fileName, String productName)
-			throws IOException, InterruptedException {
+	private String getUniqueZipFileNameInFolder(ArrayList<String> names, String fileName, String productName) {
 
 		String result = fileName + REPORT_ARCHIVE_SUFFIX;
 		int index = 1;
