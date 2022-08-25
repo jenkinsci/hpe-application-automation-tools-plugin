@@ -38,6 +38,16 @@
         <f:textbox name="runPipeline.fsTimeout" value="${instance.fsTimeout}" default=""/>
     </f:entry>
 
+    <f:entry title="Output encoding" field="outEncoding">
+        <select name="outEncoding" style="width: 250px;">
+            <j:forEach var="enc" items="${descriptor.encodings}">
+                <f:option selected="${enc == instance.outEncoding}" value="${enc}">
+                    ${enc}
+                </f:option>
+            </j:forEach>
+        </select>
+    </f:entry>
+
     <f:entry title="Run Mode" field="fsUftRunMode">
         <select name="runPipeline.fsUftRunMode">
             <j:forEach var="runMode" items="${descriptor.fsUftRunModes}">
