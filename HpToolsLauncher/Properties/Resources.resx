@@ -535,4 +535,7 @@ Save the test in QuickTest and then run it again.</value>
   <data name="GeneralParameterUsage" xml:space="preserve">
     <value>Using parameter {0} = {1}</value>
   </data>
+  <data name="GeneralParameterUsageMask" xml:space="preserve">
+    <value>Using parameter {0} = **********</value>
+  </data>
 </root>

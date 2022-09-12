@@ -541,6 +541,15 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Using parameter {0} = **********.
+        /// </summary>
+        internal static string GeneralParameterUsageMask {
+            get {
+                return ResourceManager.GetString("GeneralParameterUsageMask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to QTP is not installed on {0}..
         /// </summary>
         internal static string GeneralQtpNotInstalled {
