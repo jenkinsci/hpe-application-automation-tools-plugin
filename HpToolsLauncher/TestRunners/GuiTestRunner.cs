@@ -710,11 +710,11 @@ namespace HpToolsLauncher
                             try
                             {
                                 _qtpParameters[paramName].Value = paramValue;
-                                ConsoleWriter.WriteLine(string.Format("Type of {0} = {1}", paramName, Enum.GetName(typeof(qtParameterType), type)));
-                                if (type == qtParameterType.qtParamTypePassword)
-                                    ConsoleWriter.WriteLine(string.Format(Resources.GeneralParameterUsageMask, paramName));
-                                else
-                                    ConsoleWriter.WriteLine(string.Format(Resources.GeneralParameterUsage, paramName, type != qtParameterType.qtParamTypeDate ? paramValue : ((DateTime) paramValue).ToShortDateString()));
+                                //ConsoleWriter.WriteLine(string.Format("Type of {0} = {1}", paramName, Enum.GetName(typeof(qtParameterType), type)));
+                                //if (type == qtParameterType.qtParamTypePassword)
+                                //    ConsoleWriter.WriteLine(string.Format(Resources.GeneralParameterUsageMask, paramName));
+                                //else
+                                //    ConsoleWriter.WriteLine(string.Format(Resources.GeneralParameterUsage, paramName, type != qtParameterType.qtParamTypeDate ? paramValue : ((DateTime) paramValue).ToShortDateString()));
                             } catch (Exception)
                             {
                                 ConsoleWriter.WriteErrLine(string.Format(Resources.GeneralParameterTypeMismatchWith1Type, paramName));
