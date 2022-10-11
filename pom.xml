@@ -476,6 +476,21 @@
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-jdk14</artifactId>
 				</exclusion>
+				<!-- Provided by javax-activation-api plugin -->
+				<exclusion>
+					<groupId>javax.activation</groupId>
+					<artifactId>activation</artifactId>
+				</exclusion>
+				<!-- Provided by jaxb-api plugin -->
+				<exclusion>
+					<groupId>javax.xml.bind</groupId>
+					<artifactId>jaxb-api</artifactId>
+				</exclusion>
+				<!-- Provided by jaxb-api plugin -->
+				<exclusion>
+					<groupId>org.glassfish.jaxb</groupId>
+					<artifactId>jaxb-runtime</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
