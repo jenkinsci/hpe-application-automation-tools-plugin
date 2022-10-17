@@ -407,7 +407,7 @@ namespace HpToolsLauncher
         /// <returns></returns>
         private string GetAlmNotInstalledError()
         {
-            return "Could not create scheduler, please verify ALM client installation on run machine by downloading and in installing the add-in form: " + GetQcCommonInstallationUrl(MQcServer);
+            return "Could not create scheduler, please verify ALM client installation on run machine by downloading and in installing the add-in from: " + GetQcCommonInstallationUrl(MQcServer);
         }
 
 
