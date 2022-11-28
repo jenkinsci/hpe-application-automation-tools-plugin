@@ -400,11 +400,17 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         try {
             // create a file for the properties file, and save the properties
             propsFileName.copyFrom(propsStream);
+        } catch (IOException e1) {
+            build.setResult(Result.FAILURE);
+            listener.error(String.format("Failed to copy %s to '%s' as user %s: %s", ParamFileName, propsFileName.getParent(), System.getProperty("user.name"), e1.getMessage()));
+            return;
+        }
+        try {
             // Copy the script to the project workspace
             CmdLineExe.copyFrom(cmdExeUrl);
         } catch (IOException e1) {
             build.setResult(Result.FAILURE);
-            listener.error("Failed to copy UFT tools to agent machine.");
+            listener.error(String.format("Failed to copy %s to '%s' as user %s: %s", HpToolsLauncher_SCRIPT_NAME, CmdLineExe.getParent(), System.getProperty("user.name"), e1.getMessage()));
             return;
         }
         try {
