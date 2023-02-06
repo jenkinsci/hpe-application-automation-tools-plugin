@@ -53,20 +53,13 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version 7.6 introduced the following enhancements and fixes:
+Version 7.7 introduced the following enhancements and fixes:
 
 **UFT One**
 
-- Implementation of the **Password** type for the Table of Parameters (for ALM and File System jobs)
-- A job level option to hide the logging of parameters (for File System jobs)
-- The ability to transfer parameters from one test to another through a batch command (using MTBX, for File System jobs)
-- Layout bug fixes and optimizations
-
-**ALM Octane**
-
-- Abilitiy to enable the **ALM Octane pipeline** action for multi-branch projects
-- HTTPS support for the Security tool
-- Defect fixes
+- Support running UFT One as a different user.
+- Release UFT One license safely when aborting Jenkins builds.
+- Bug fixes and optimizations
 
 For information about enhancements introduced in previous versions, see [What's new in earlier versions](WhatsNewEarlier.md). 
 
