@@ -183,6 +183,7 @@ namespace HpToolsLauncher
                         }
                     }
 
+                    ConsoleWriter.WriteLine("UFT One Version = " + _qtpApplication.Version);
                     Version qtpVersion = Version.Parse(_qtpApplication.Version);
                     if (qtpVersion.Equals(new Version(11, 0)))
                     {
@@ -211,6 +212,7 @@ namespace HpToolsLauncher
             }
             catch (Exception e)
             {
+                ConsoleWriter.WriteLine(e.Message);
                 if (string.IsNullOrEmpty(errorReason))
                 {
                     errorReason = Resources.QtpNotLaunchedError;
@@ -280,7 +282,7 @@ namespace HpToolsLauncher
         private string GetReportLocation(TestInfo testinf, string testPath)
         {
             // use the defined report path if provided
-            string rptLocation = string.IsNullOrEmpty(testinf.ReportPath) ? 
+            string rptLocation = string.IsNullOrEmpty(testinf.ReportPath) ?
                             Path.Combine(testPath, REPORT) :
                             Path.Combine(testinf.ReportPath, REPORT);
 
@@ -371,7 +373,6 @@ namespace HpToolsLauncher
             {
                 _qtpApplication.TDPierToTulip.SetTestOptionsVal(MOBILE_INFO, _mobileInfo);
             }
-
             #endregion
         }
 
@@ -395,7 +396,7 @@ namespace HpToolsLauncher
                         _qtpApplication = Activator.CreateInstance(_qtType) as Application;
                     }
 
-                    if (skipIfVisible && _qtpApplication.Launched && _qtpApplication.Visible) 
+                    if (skipIfVisible && _qtpApplication.Launched && _qtpApplication.Visible)
                     {
                         return;
                     }
@@ -473,12 +474,13 @@ namespace HpToolsLauncher
                 {
                     if (_qtpApplication.Launched && _uftRunAsUser == null)
                     {
-                        if (qtpVersion < new Version(15, 0, 2))
+                        if (qtpVersion < new Version(15, 0))
                         {
                             _qtpApplication.Quit();
                         }
                         else if (_qtpApplication.Visible)
                         {
+                            ConsoleWriter.WriteLine("UFT One is Visible");
                             QTPTestCleanup();
                         }
                     }
@@ -766,6 +768,7 @@ namespace HpToolsLauncher
                 // handle all parameters (index starts with 1 !!!)
                 for (int i = 1; i <= _qtpParamDefs.Count; i++)
                 {
+                    ConsoleWriter.WriteLine(string.Format("Parameter {0} {1} {2}", _qtpParamDefs[i].InOut, _qtpParamDefs[i].Name, _qtpParamDefs[i].Type));
                     // input parameters
                     if (_qtpParamDefs[i].InOut == qtParameterDirection.qtParamDirIn)
                     {
@@ -853,6 +856,7 @@ namespace HpToolsLauncher
             catch (Exception)
             {
                 errorReason = Resources.QtpRunError;
+                ConsoleWriter.WriteLine("END HandleInputParameters with err");
                 return false;
             }
             return true;
@@ -877,8 +881,10 @@ namespace HpToolsLauncher
                     {
                         try
                         {
+                            ConsoleWriter.WriteLine("START QTPTestCleanup");
                             _qtpApplication.Test.Stop();
                             _qtpApplication.Test.Close();
+                            ConsoleWriter.WriteLine("END QTPTestCleanup");
                         }
                         catch (Exception)
                         { }
