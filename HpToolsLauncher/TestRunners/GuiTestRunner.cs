@@ -212,7 +212,7 @@ namespace HpToolsLauncher
             }
             catch (Exception e)
             {
-                ConsoleWriter.WriteLine(e.Message);
+                ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e.Message, e.StackTrace));
                 if (string.IsNullOrEmpty(errorReason))
                 {
                     errorReason = Resources.QtpNotLaunchedError;
@@ -879,15 +879,19 @@ namespace HpToolsLauncher
                     var qtpTest = _qtpApplication.Test;
                     if (qtpTest != null)
                     {
-                        try
+                        if (_qtpApplication.GetStatus() == RUNNING || _qtpApplication.GetStatus() == BUSY)
                         {
-                            ConsoleWriter.WriteLine("START QTPTestCleanup");
-                            _qtpApplication.Test.Stop();
-                            _qtpApplication.Test.Close();
-                            ConsoleWriter.WriteLine("END QTPTestCleanup");
+                            try
+                            {
+                                ConsoleWriter.WriteLine("START QTPTestCleanup");
+                                if (qtpTest.IsRunning) 
+                                    _qtpApplication.Test.Stop();
+                                _qtpApplication.Test.Close();
+                                ConsoleWriter.WriteLine("END QTPTestCleanup");
+                            }
+                            catch (Exception)
+                            { }
                         }
-                        catch (Exception)
-                        { }
                     }
                 }
             }

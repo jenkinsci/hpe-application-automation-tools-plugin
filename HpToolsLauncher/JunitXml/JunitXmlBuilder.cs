@@ -90,7 +90,7 @@ namespace HpToolsLauncher
                 }
                 else
                 {
-                    testcase ufttc = CovertUFTRunResultsToTestcase(testRes);
+                    testcase ufttc = ConvertUFTRunResultsToTestcase(testRes);
                     uftts.AddTestCase(ufttc);
                 }
             }
@@ -119,7 +119,7 @@ namespace HpToolsLauncher
         /// <param name="addToTestSuites">flag to indicate if the first param testsuite must be added to the collection</param>
         public void CreateOrUpdatePartialXmlReport(testsuite ts, TestRunResults testRes, bool addToTestSuites)
         {
-            testcase tc = CovertUFTRunResultsToTestcase(testRes);
+            testcase tc = ConvertUFTRunResultsToTestcase(testRes);
             ts.AddTestCase(tc);
             if (addToTestSuites)
             {
@@ -151,7 +151,7 @@ namespace HpToolsLauncher
                         if (childNode.Attributes != null && childNode.Attributes["FullName"] != null)
                         {
                             testRes.TestGroup = testRes.TestPath;
-                            testcase lrtc = CovertUFTRunResultsToTestcase(testRes);
+                            testcase lrtc = ConvertUFTRunResultsToTestcase(testRes);
                             lrtc.name = childNode.Attributes["FullName"].Value;
                             if (childNode.InnerText.ToLowerInvariant().Contains("failed"))
                             {
@@ -183,7 +183,7 @@ namespace HpToolsLauncher
             return lrts;
         }
 
-        private testcase CovertUFTRunResultsToTestcase(TestRunResults testRes)
+        private testcase ConvertUFTRunResultsToTestcase(TestRunResults testRes)
         {
             testcase tc = new testcase
             {
