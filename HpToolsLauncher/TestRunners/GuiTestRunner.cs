@@ -875,32 +875,32 @@ namespace HpToolsLauncher
                     {
                         return;
                     }
-
                     var qtpTest = _qtpApplication.Test;
                     if (qtpTest != null)
                     {
-                        if (_qtpApplication.GetStatus() == RUNNING || _qtpApplication.GetStatus() == BUSY)
+                        if (_qtpApplication.GetStatus().In(READY, RUNNING, BUSY))
                         {
                             try
                             {
-                                ConsoleWriter.WriteLine("START QTPTestCleanup");
                                 if (qtpTest.IsRunning) 
                                     _qtpApplication.Test.Stop();
                                 _qtpApplication.Test.Close();
-                                ConsoleWriter.WriteLine("END QTPTestCleanup");
                             }
-                            catch (Exception)
-                            { }
+                            catch
+                            {
+                            }
                         }
                     }
                 }
             }
-            catch (Exception)
+            catch
             {
             }
-
-            _qtpParameters = null;
-            _qtpParamDefs = null;
+            finally
+            {
+                _qtpParameters = null;
+                _qtpParamDefs = null;
+            }
         }
 
         private RegistryKey GetQuickTestProfessionalAutomationRegKey(RegistryView registryView)
