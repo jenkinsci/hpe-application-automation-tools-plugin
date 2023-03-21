@@ -853,10 +853,11 @@ namespace HpToolsLauncher
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 errorReason = Resources.QtpRunError;
-                ConsoleWriter.WriteLine("END HandleInputParameters with err");
+                ConsoleWriter.WriteLine("HandleInputParameters err " + ex.Message);
+                ConsoleWriter.WriteLine(ex.StackTrace);
                 return false;
             }
             return true;
