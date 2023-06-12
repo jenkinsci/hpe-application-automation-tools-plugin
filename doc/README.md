@@ -53,7 +53,7 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version 7.9 introduced the following enhancements and fixes:
+Versions 7.9-8.0 introduced the following enhancements and fixes:
 
 **ALM Octane**
 
