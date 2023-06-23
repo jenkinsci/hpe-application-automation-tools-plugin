@@ -728,7 +728,9 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 				try {
 					unzippedFolderPath.renameTo(targetPath);
 				} catch(Exception e){
-					listener.getLogger().println("Cannot rename to target path.");
+					listener.getLogger().println("Cannot rename to target path: " + e.getMessage());
+					listener.getLogger().println(e.getCause());
+					listener.getLogger().println(e.getStackTrace());
 				}
 				// fill in the urlName of this report. we need a network path not a FS path
 				String resourceUrl = htmlReportInfo.getResourceURL();
