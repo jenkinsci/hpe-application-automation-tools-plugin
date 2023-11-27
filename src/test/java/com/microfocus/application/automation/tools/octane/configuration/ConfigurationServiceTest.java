@@ -32,7 +32,7 @@
 
 package com.microfocus.application.automation.tools.octane.configuration;
 
-import com.gargoylesoftware.htmlunit.html.*;
+import org.htmlunit.html.*;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.microfocus.application.automation.tools.octane.Messages;
 import com.microfocus.application.automation.tools.octane.OctanePluginTestBase;
@@ -109,9 +109,9 @@ public class ConfigurationServiceTest extends OctanePluginTestBase {
 
 
 		ssp = UUID.randomUUID().toString();
-		((HtmlInput) findInputText(addConfigForm, "_.uiLocation", null)).setValueAttribute("http://localhost:8008/ui/?p=" + ssp + "/1002");
-		((HtmlInput) findInputText(addConfigForm, "_.username", null)).setValueAttribute("username");
-		((HtmlInput) findInputText(addConfigForm, "_.password", null)).setValueAttribute("password");
+		((HtmlInput) findInputText(addConfigForm, "_.uiLocation", null)).setValue("http://localhost:8008/ui/?p=" + ssp + "/1002");
+		((HtmlInput) findInputText(addConfigForm, "_.username", null)).setValue("username");
+		((HtmlInput) findInputText(addConfigForm, "_.password", null)).setValue("password");
 
 		rule.submit(addConfigForm);
 		assertEquals(2, ConfigurationService.getAllSettings().size());
@@ -132,10 +132,10 @@ public class ConfigurationServiceTest extends OctanePluginTestBase {
 	public void testConfigurationRoundTrip() throws Exception {
 		HtmlForm formIn = client.goTo("configure").getFormByName("config");
 		HtmlForm formOut = client.goTo("configure").getFormByName("config");
-		assertEquals(formIn.getInputByName("_.uiLocation").getValueAttribute(), formOut.getInputByName("_.uiLocation").getValueAttribute());
-		assertEquals(formIn.getInputByName("_.username").getValueAttribute(), formOut.getInputByName("_.username").getValueAttribute());
+		assertEquals(formIn.getInputByName("_.uiLocation").getValue(), formOut.getInputByName("_.uiLocation").getValue());
+		assertEquals(formIn.getInputByName("_.username").getValue(), formOut.getInputByName("_.username").getValue());
 		// NOTE: password is actually empty (bug or security feature?)
-		assertEquals(formIn.getInputByName("_.password").getValueAttribute(), formOut.getInputByName("_.password").getValueAttribute());
+		assertEquals(formIn.getInputByName("_.password").getValue(), formOut.getInputByName("_.password").getValue());
 	}
 
 	@Test

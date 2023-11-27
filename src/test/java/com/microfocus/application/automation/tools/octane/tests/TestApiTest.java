@@ -33,7 +33,7 @@
 package com.microfocus.application.automation.tools.octane.tests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gargoylesoftware.htmlunit.Page;
+import org.htmlunit.Page;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.tests.TestsResult;
 import com.hp.octane.integrations.services.WorkerPreflight;

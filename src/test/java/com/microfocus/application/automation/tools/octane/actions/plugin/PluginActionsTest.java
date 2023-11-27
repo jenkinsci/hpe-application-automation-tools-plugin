@@ -32,7 +32,7 @@
 
 package com.microfocus.application.automation.tools.octane.actions.plugin;
 
-import com.gargoylesoftware.htmlunit.Page;
+import org.htmlunit.Page;
 import com.hp.octane.integrations.dto.general.CIJobsList;
 import com.hp.octane.integrations.dto.general.CIProviderSummaryInfo;
 import com.hp.octane.integrations.dto.general.CIServerTypes;
