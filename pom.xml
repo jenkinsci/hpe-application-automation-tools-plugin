@@ -59,7 +59,7 @@
 	</licenses>
 
 	<properties>
-		<revision>23.3.2-beta</revision>
+		<revision>CE 23.4</revision>
 		<changelist>-SNAPSHOT</changelist>
 		<gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
 		<concurrency>1</concurrency>
