@@ -63,7 +63,7 @@
 		<changelist>-SNAPSHOT</changelist>
 		<gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
 		<concurrency>1</concurrency>
-		<msbuild.exe>C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild.exe</msbuild.exe>
+		<msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
 		<msbuild.configuration>Release</msbuild.configuration>
 		<jenkins.version>2.346.1</jenkins.version>
 		<maven.exec.skip>false</maven.exec.skip>
