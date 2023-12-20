@@ -69,7 +69,7 @@ public class ResultFieldsDetectionTest  extends OctanePluginTestBase {
 		detectionService = Mockito.mock(ResultFieldsDetectionService.class);
 		junitExtension._setResultFieldsDetectionService(detectionService);
 
-		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven3();
+		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven35();
 		//Maven.MavenInstallation mavenInstallation = new Maven.MavenInstallation("default-system-maven", TestUtils.getMavenHome(), JenkinsRule.NO_PROPERTIES);
 
 		//project.getBuildersList().add(new Maven(String.format("--settings \"%s\\conf\\settings.xml\" -U test",TestUtils.getMavenHome()), mavenInstallation.getName(), null, null, "-Dmaven.test.failure.ignore=true"));
