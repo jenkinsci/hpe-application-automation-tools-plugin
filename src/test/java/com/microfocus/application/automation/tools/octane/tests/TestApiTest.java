@@ -104,7 +104,7 @@ public class TestApiTest {
 
 		//  run the actual pipeline producing the tests
 		FreeStyleProject project = rule.createFreeStyleProject(testsJobName);
-		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven3();
+		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven35();
 		project.getBuildersList().add(new Maven(String.format("--settings \"%s\\conf\\settings.xml\" test -Dmaven.repo.local=\"%s\\m2-temp\"",
 				TestUtils.getMavenHome(), System.getenv("TEMP")), mavenInstallation.getName(), "helloWorld/pom.xml", null, "-Dmaven.test.failure.ignore=true"));
 		project.getPublishersList().add(new JUnitResultArchiver("**/target/surefire-reports/*.xml"));

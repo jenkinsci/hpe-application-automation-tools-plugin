@@ -71,7 +71,7 @@ public class TestNGExtensionTest extends OctanePluginTestBase {
 
 	@Before
 	public void setUp() throws Exception {
-		mavenName = ToolInstallations.configureMaven3().getName();
+		mavenName = ToolInstallations.configureMaven35().getName();
 	}
 
 	@Ignore("temp ignore")

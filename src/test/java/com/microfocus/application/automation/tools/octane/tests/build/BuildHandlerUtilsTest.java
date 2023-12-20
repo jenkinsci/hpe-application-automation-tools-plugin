@@ -84,7 +84,7 @@ public class BuildHandlerUtilsTest {
 		MavenModuleSet project = jenkins.createProject(MavenModuleSet.class, "maven-project");
 		project.runHeadless();
 
-		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven3();
+		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven35();
 
 		project.setMaven(mavenInstallation.getName());
 		project.setGoals(String.format("clean test --settings \"%s\\conf\\settings.xml\" -Dmaven.repo.local=\"%s\\m2-temp\" -Dmaven.test.failure.ignore=true", TestUtils.getMavenHome(), System.getenv("TEMP")));

@@ -91,7 +91,7 @@ public class UFTExtensionTest {
 		SpecifyParametersModel parametersModel = new SpecifyParametersModel("[]");
 		AlmServerSettingsModel almServerSettingsModel =  new AlmServerSettingsModel("server2", "serverURL",  new ArrayList<>(), new ArrayList<>());
 		project.getBuildersList().add(new Maven(String.format("--settings \"%s\\conf\\settings.xml\" test -Dmaven.repo.local=%s\\m2-temp",
-				TestUtils.getMavenHome(),System.getenv("TEMP")), ToolInstallations.configureMaven3().getName(), null, null, "-Dmaven.test.failure.ignore=true"));
+				TestUtils.getMavenHome(),System.getenv("TEMP")), ToolInstallations.configureMaven35().getName(), null, null, "-Dmaven.test.failure.ignore=true"));
 		project.getBuildersList().add(new RunFromAlmBuilder("notExistingServer", "JOB", "sa", "", "domain", "project", "notExistingTests", "", "", "", "", "","", false, false, false, filterTestsModel, parametersModel, almServerSettingsModel));
 
 		AbstractBuild buildMock = Mockito.mock(AbstractBuild.class);
