@@ -75,7 +75,7 @@ public class JUnitResultsTest extends OctanePluginTestBase {
 	@BeforeClass
 	public static void prepareClass() throws Exception {
 		rule.jenkins.setNumExecutors(10);
-		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven3();
+		Maven.MavenInstallation mavenInstallation = ToolInstallations.configureMaven35();
 		mavenName = mavenInstallation.getName();
 	}
 
