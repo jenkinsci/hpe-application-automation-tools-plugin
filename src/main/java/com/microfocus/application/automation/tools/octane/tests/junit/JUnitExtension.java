@@ -71,6 +71,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.hp.octane.integrations.utils.SdkConstants.JobParameters.OCTANE_CONFIG_ID_PARAMETER_NAME;
 
@@ -164,9 +165,9 @@ public class JUnitExtension extends OctaneTestsExtension {
 		}catch (Exception e){
 			//if failed on controller/agent retrying from agent/controller
 			logger.error(String.format("Failed to get test results from %s, trying to get test results from %s : %s",
-						getResultsOnController ? "controller" : "agent",
-						getResultsOnController ? "agent" : "controller",
-						e.getMessage()),
+							getResultsOnController ? "controller" : "agent",
+							getResultsOnController ? "agent" : "controller",
+							e.getMessage()),
 					e);
 			if (getResultsOnController) {
 				logger.info("Get results from agent");
@@ -194,6 +195,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 		private List<ModuleDetection> moduleDetection;
 		private long buildStarted;
 		private FilePath workspace;
+		private Set<FilePath> allWorkspaces;
 		private boolean stripPackageAndClass;
 		private String sharedCheckOutDirectory;
 		private Pattern testParserRegEx;
@@ -201,14 +203,15 @@ public class JUnitExtension extends OctaneTestsExtension {
 
 		//this class is run on master and JUnitXmlIterator is runnning on slave.
 		//this object pass some master2slave data
-		private Object additionalContext;
-		private String nodeName;
+		private       Object      additionalContext;
+		private final Set<String> nodeNames = new HashSet<>();
 
 		public GetJUnitTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, List<FilePath> reports, boolean stripPackageAndClass, String jenkinsRootUrl) throws IOException, InterruptedException {
 			this.reports = reports;
 			this.filePath = new FilePath(build.getRootDir()).createTempFile(TEMP_TEST_RESULTS_FILE_NAME_PREFIX, null);
 			this.buildStarted = build.getStartTimeInMillis();
 			this.workspace = BuildHandlerUtils.getWorkspace(build);
+			this.allWorkspaces = BuildHandlerUtils.getWorkspaces(build);
 			this.stripPackageAndClass = stripPackageAndClass;
 			this.hpRunnerType = hpRunnerType;
 			this.jenkinsRootUrl = jenkinsRootUrl;
@@ -218,7 +221,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 				ParametersAction parameterAction = build.getAction(ParametersAction.class);
 				ParameterValue pv = parameterAction != null ? parameterAction.getParameter(UftConstants.UFT_CHECKOUT_FOLDER) : null;
 				sharedCheckOutDirectory = pv != null && pv instanceof StringParameterValue ?
-						StringUtils.strip((String) pv.getValue(), "\\/") : "";
+										  StringUtils.strip((String) pv.getValue(), "\\/") : "";
 			}
 
 			this.jobName = JobProcessorFactory.getFlowProcessor(build.getParent()).getTranslatedJobName();
@@ -230,22 +233,31 @@ public class JUnitExtension extends OctaneTestsExtension {
 
 
 			if (HPRunnerType.UFT.equals(hpRunnerType) || HPRunnerType.UFT_MBT.equals(hpRunnerType)) {
-				Node node = JenkinsUtils.getCurrentNode(workspace);
-				this.nodeName = node != null && !node.getNodeName().isEmpty() ? node.getNodeName() : "";
+
+				List<Node> nodes = allWorkspaces.stream()
+						.map(JenkinsUtils::getCurrentNode)
+						.collect(Collectors.toList());
+				nodes.forEach(node -> this.nodeNames.add(node != null && !node.getNodeName().isEmpty() ? node.getNodeName() : ""));
 				//extract folder names for created tests
-				String reportFolder = buildRootDir + "/archive/UFTReport" +
-						(StringUtils.isNotEmpty(this.nodeName) ? "/" + this.nodeName : "");
+
+				List<String> reportFolders = new ArrayList<>();
+				this.nodeNames.forEach(nodeName ->
+						reportFolders.add(buildRootDir + "/archive/UFTReport" + (StringUtils.isNotEmpty(nodeName) ? "/" + nodeName : "")));
+
 				List<String> testFolderNames = new ArrayList<>();
 				testFolderNames.add(build.getRootDir().getAbsolutePath());
-				File reportFolderFile = new File(reportFolder);
-				if (reportFolderFile.exists()) {
-					File[] children = reportFolderFile.listFiles();
-					if (children != null) {
-						for (File child : children) {
-							testFolderNames.add(child.getName());
+				reportFolders.forEach(reportFolder ->{
+					File reportFolderFile = new File(reportFolder);
+					if (reportFolderFile.exists()) {
+						File[] children = reportFolderFile.listFiles();
+						if (children != null) {
+							for (File child : children) {
+								testFolderNames.add(child.getParentFile().getName() + "/" + child.getName());
+							}
 						}
 					}
-				}
+				});
+
 				additionalContext = testFolderNames;
 			}
 			if (HPRunnerType.StormRunnerLoad.equals(hpRunnerType)) {
@@ -258,7 +270,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 				}
 			}
 			if(build.getAction(ParametersAction.class) != null && build.getAction(ParametersAction.class).getParameter(TEST_RESULT_NAME_REGEX_PATTERN_PARAMETER_NAME) != null &&
-					build.getAction(ParametersAction.class).getParameter(TEST_RESULT_NAME_REGEX_PATTERN_PARAMETER_NAME).getValue() != null) {
+			   build.getAction(ParametersAction.class).getParameter(TEST_RESULT_NAME_REGEX_PATTERN_PARAMETER_NAME).getValue() != null) {
 				try {
 					//\[.*\] - input for testName = testName[parameters]
 					//\[.*\) - input for testName = testName[parameters](more params)
@@ -292,7 +304,9 @@ public class JUnitExtension extends OctaneTestsExtension {
 
 			try {
 				for (FilePath report : reports) {
-					JUnitXmlIterator iterator = new JUnitXmlIterator(report.read(), moduleDetection, workspace, sharedCheckOutDirectory, jobName, buildId, buildStarted, stripPackageAndClass, hpRunnerType, jenkinsRootUrl, additionalContext,testParserRegEx, octaneSupportsSteps,nodeName);
+					JUnitXmlIterator iterator = new JUnitXmlIterator(report.read(), moduleDetection, workspace, sharedCheckOutDirectory, jobName,
+							buildId, buildStarted, stripPackageAndClass, hpRunnerType, jenkinsRootUrl, additionalContext,
+							testParserRegEx, octaneSupportsSteps, nodeNames);
 					while (iterator.hasNext()) {
 						oos.writeObject(iterator.next());
 					}

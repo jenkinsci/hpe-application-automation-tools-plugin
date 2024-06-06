@@ -119,13 +119,13 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
     private String stepName;
     private ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private Map<String, CodelessResult> testNameToCodelessResultMap = new HashMap<>();
-    private String nodeName;
+    private Set<String> nodeNames;
 
     private final int ERROR_MESSAGE_MAX_SIZE = System.getProperty("octane.sdk.tests.error_message_max_size") != null ? Integer.parseInt(System.getProperty("octane.sdk.tests.error_message_max_size")) : 512*512;
     private final int ERROR_DETAILS_MAX_SIZE = System.getProperty("octane.sdk.tests.error_details_max_size") != null ? Integer.parseInt(System.getProperty("octane.sdk.tests.error_details_max_size")) : 512*512;
 
 
-    public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String sharedCheckOutDirectory, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext, Pattern testParserRegEx, boolean octaneSupportsSteps,String nodeName) throws XMLStreamException {
+    public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String sharedCheckOutDirectory, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext, Pattern testParserRegEx, boolean octaneSupportsSteps,Set<String> nodeNames) throws XMLStreamException {
 		super(read);
 		this.stripPackageAndClass = stripPackageAndClass;
 		this.moduleDetection = moduleDetection;
@@ -139,7 +139,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 		this.additionalContext = additionalContext;
 		this.testParserRegEx = testParserRegEx;
 		this.octaneSupportsSteps = octaneSupportsSteps;
-		this.nodeName = nodeName;
+        this.nodeNames = nodeNames;
 	}
 
 	private static long parseTime(String timeString) {
@@ -261,6 +261,10 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                     }
 
                     String cleanedTestName = cleanTestName(testName);
+                    String nodeName = "";
+                    if(!nodeNames.isEmpty()){
+                        nodeName = nodeNames.stream().findFirst().get();
+                    }
                     boolean testReportCreated = true;
                     if (additionalContext != null && additionalContext instanceof List) {
                         //test folders are appear in the following format GUITest1[1], while [1] number of test. It possible that tests with the same name executed in the same job
@@ -268,17 +272,26 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                         //We assume that test folders are sorted so in this section, once we found the test folder, we remove it from collection , in order to find the second instance in next iteration
                         List<String> createdTests = (List<String>) additionalContext;
                         String searchFor = cleanedTestName + "[";
-                        Optional<String> optional = createdTests.stream().filter(str -> str.startsWith(searchFor)).findFirst();
+                        Optional<String> optional = createdTests.stream().filter(str -> str.contains(searchFor)).findFirst();
                         if (optional.isPresent()) {
-                            cleanedTestName = optional.get();
-                            createdTests.remove(cleanedTestName);
+                            String nodeTestString = optional.get();
+                            if(nodeTestString.contains("/")){
+                                String node = nodeTestString.split("/")[0];
+                                if (nodeNames.contains(node)) {
+                                    nodeName = node;
+                                }
+
+                                cleanedTestName = nodeTestString.split("/")[1];
+                                createdTests.remove(nodeTestString);
+                            }
+
                         }
                         testReportCreated = optional.isPresent();
                     }
 
                     if (testReportCreated) {
                         final String basePath = ((List<String>) additionalContext).get(0);
-                        String nodeNameSubFolder = StringUtils.isNotEmpty(this.nodeName) ? nodeName +"/" : "";
+                        String nodeNameSubFolder = StringUtils.isNotEmpty(nodeName) ? nodeName +"/" : "";
                         uftResultFilePath = Paths.get(basePath, "archive", "UFTReport", nodeNameSubFolder, cleanedTestName, "/Result/run_results.xml").toFile().getCanonicalPath();
                         externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/artifact/UFTReport/" + nodeNameSubFolder + cleanedTestName + "/Result/run_results.html";
                     } else {

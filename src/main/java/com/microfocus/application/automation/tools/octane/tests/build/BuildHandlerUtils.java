@@ -62,6 +62,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -124,6 +125,38 @@ public class BuildHandlerUtils {
 
 		logger.error("BuildHandlerUtils.getWorkspace - run is not handled. Run type : " + run.getClass());
 		return null;
+	}
+
+	public static Set<FilePath> getWorkspaces(Run<?, ?> run) {
+		if (run.getExecutor() != null && run.getExecutor().getCurrentWorkspace() != null) {
+			return Collections.singleton(run.getExecutor().getCurrentWorkspace());
+		}
+		if (run instanceof AbstractBuild) {
+			return Collections.singleton(((AbstractBuild) run).getWorkspace());
+		}
+		Set<FilePath> workspaces = new HashSet<>();
+		if (run instanceof WorkflowRun) {
+			FlowExecution fe = ((WorkflowRun) run).getExecution();
+			if (fe != null) {
+				FlowGraphWalker w = new FlowGraphWalker(fe);
+				for (FlowNode n : w) {
+					WorkspaceAction action = n.getAction(WorkspaceAction.class);
+					if (action != null) {
+						FilePath workspace = action.getWorkspace();
+						if (workspace == null) {
+							workspace = handleWorkspaceActionWithoutWorkspace(action);
+						}
+						workspaces.add(workspace);
+					}
+				}
+			}
+		}
+
+		if(workspaces.isEmpty()) {
+			logger.error("BuildHandlerUtils.getWorkspaces - run is not handled. Run type : " + run.getClass());
+		}
+
+		return workspaces;
 	}
 
 	private static FilePath handleWorkspaceActionWithoutWorkspace(WorkspaceAction action) {
