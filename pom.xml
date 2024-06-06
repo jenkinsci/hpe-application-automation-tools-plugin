@@ -6,7 +6,7 @@
  ~ __________________________________________________________________
  ~ MIT License
  ~
- ~ Copyright 2012-2023 Open Text
+ ~ Copyright 2012-2024 Open Text
  ~
  ~ The only warranties for products and services of Open Text and
  ~ its affiliates and licensors ("Open Text") are as may be set forth
@@ -59,7 +59,7 @@
 	</licenses>
 
 	<properties>
-		<revision>24.1.2-beta</revision>
+		<revision>24.2</revision>
 		<changelist>-SNAPSHOT</changelist>
 		<gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
 		<concurrency>1</concurrency>
