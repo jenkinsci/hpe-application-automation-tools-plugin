@@ -236,6 +236,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                     // currently this handling is needed for UFT tests
                     int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName);
                     if (uftTextIndexStart != -1) {
+                        logger.info("here1");
                         String path = testName.substring(uftTextIndexStart).replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);;
                         boolean isMBT = path.startsWith(MfMBTConverter.MBT_PARENT_SUB_DIR);
                         if(isMBT){//remove MBT prefix
@@ -266,6 +267,9 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                         nodeName = nodeNames.stream().findFirst().get();
                     }
                     boolean testReportCreated = true;
+                    logger.info("additionalContext: {}", additionalContext.toString());
+                    logger.info("nodeNames: {}", nodeNames.toString());
+                    logger.info("cleaned test name: {}", cleanedTestName);
                     if (additionalContext != null && additionalContext instanceof List) {
                         //test folders are appear in the following format GUITest1[1], while [1] number of test. It possible that tests with the same name executed in the same job
                         //by adding [1] or [2] we can differentiate between different instances.

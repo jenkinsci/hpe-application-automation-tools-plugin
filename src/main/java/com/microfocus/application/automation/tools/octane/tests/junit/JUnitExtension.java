@@ -239,7 +239,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 						.collect(Collectors.toList());
 				nodes.forEach(node -> this.nodeNames.add(node != null && !node.getNodeName().isEmpty() ? node.getNodeName() : ""));
 				//extract folder names for created tests
-
+				logger.info("nodes: {}", this.nodeNames);
 				List<String> reportFolders = new ArrayList<>();
 				this.nodeNames.forEach(nodeName ->
 						reportFolders.add(buildRootDir + "/archive/UFTReport" + (StringUtils.isNotEmpty(nodeName) ? "/" + nodeName : "")));
