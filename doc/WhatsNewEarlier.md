@@ -3,6 +3,8 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
+[What&#39;s New in version CE 24.3](#what&#39;s-new-in-version-CE-24&#46;3)
+
 [What&#39;s New in version CE 24.2](#what&#39;s-new-in-version-CE-24&#46;2)
 
 [What&#39;s New in version CE 24.1.0](#what&#39;s-new-in-version-CE-24&#46;1&#46;0)
@@ -45,6 +47,14 @@ This page shows a history of the enhancements made to the OpenText Application A
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
 
+
+## What&#39;s New in version CE 24&#46;3
+
+**Java 21**
+- Starting with version 24.3 version fo the plugin, Java 21 will be required to run
+
+**ALM Octane**
+- Bug fixes
 
 ## What&#39;s New in version CE 24&#46;2
 
