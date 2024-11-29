@@ -159,11 +159,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
                 }
             }
             if (!noProxyHost) {
-                result = dtoFactory.newDTO(CIProxyConfiguration.class)
-                        .setHost(proxy.name)
-                        .setPort(proxy.port)
-                        .setUsername(proxy.getUserName())
-                        .setPassword(proxy.getPassword());
+                result = dtoFactory.newDTO(CIProxyConfiguration.class).setHost(proxy.name).setPort(proxy.port).setUsername(proxy.getUserName()).setPassword(proxy.getPassword());
             }
         }
         return result;
@@ -231,38 +227,35 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
         return result;
     }
 
-    public static boolean isJobIsRelevantForPipelineModule(Job job){
-        return !(job == null ||
-                (job instanceof AbstractProject && ((AbstractProject) job).isDisabled()) ||
-                job instanceof MatrixConfiguration ||
-                job instanceof MavenModule);
+    public static boolean isJobIsRelevantForPipelineModule(Job job) {
+        return !(job == null || (job instanceof AbstractProject && ((AbstractProject) job).isDisabled()) || job instanceof MatrixConfiguration || job instanceof MavenModule);
     }
 
     @Override
     public PipelineNode getPipeline(String rootJobCiId) {
         ACLContext securityContext = startImpersonation();
         try {
-            PipelineNode result;
-            boolean hasRead = Jenkins.get().hasPermission(Item.READ);
-            if (!hasRead) {
+            Item item = getItemByRefId(rootJobCiId);
+            // Verify that the user has permission to access the job(Read permission for a specific job or global read)
+            if (!Jenkins.get().hasPermission(Item.READ) && !item.hasPermission(Item.READ)) {
+                logger.warn("Insufficient permissions to access jobRefId: '{}'.", rootJobCiId);
                 throw new PermissionException(HttpStatus.SC_FORBIDDEN);
             }
-
-            Item item = getItemByRefId(rootJobCiId);
             if (item == null) {
                 logger.warn("Failed to get project from jobRefId: '" + rootJobCiId + "' check plugin user Job Read/Overall Read permissions / project name");
                 throw new ConfigurationException(HttpStatus.SC_NOT_FOUND);
-            } else if (item instanceof Job) {
-                result = ModelFactory.createStructureItem((Job) item);
-            } else {
-                result = createPipelineNodeFromJobName(item.getFullName());
-                if (item.getClass().getName().equals(JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME)) {
-                    WorkflowMultiBranchProject parentItem = (WorkflowMultiBranchProject) item;
-                    if(!parentItem.isDisabled()) {
-                        addParametersAndDefaultBranchFromConfig(item, result);
-                        result.setMultiBranchType(MultiBranchType.MULTI_BRANCH_PARENT);
-                    } else result = null;
-                }
+            }
+
+            if (item instanceof Job) {
+                return ModelFactory.createStructureItem((Job) item);
+            }
+            PipelineNode result = createPipelineNodeFromJobName(item.getFullName());
+            if (item.getClass().getName().equals(JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME)) {
+                WorkflowMultiBranchProject parentItem = (WorkflowMultiBranchProject) item;
+                if (!parentItem.isDisabled()) {
+                    addParametersAndDefaultBranchFromConfig(item, result);
+                    result.setMultiBranchType(MultiBranchType.MULTI_BRANCH_PARENT);
+                } else result = null;
             }
             return result;
         } finally {
@@ -332,8 +325,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
                 if (item.getClass().getName().equals(JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME)) {
                     result = doGetListOfBranchesImpl(item, filterBranchName);
                 }
-                return dtoFactory.newDTO(CIBranchesList.class)
-                        .setBranches(result);
+                return dtoFactory.newDTO(CIBranchesList.class).setBranches(result);
             } else {
                 throw new ConfigurationException(HttpStatus.SC_NOT_FOUND);
             }
@@ -345,11 +337,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
     private List<Branch> doGetListOfBranchesImpl(Item item, String filterBranchName) {
         Collection<? extends Job> allJobs = item.getAllJobs();
 
-        return allJobs.stream().filter(job -> getDisplayNameFromJob(job).equals(filterBranchName))
-                .map(job -> dtoFactory.newDTO(Branch.class)
-                        .setName(job.getDisplayName())
-                        .setInternalId(job.getName()))
-                .collect(Collectors.toList());
+        return allJobs.stream().filter(job -> getDisplayNameFromJob(job).equals(filterBranchName)).map(job -> dtoFactory.newDTO(Branch.class).setName(job.getDisplayName()).setInternalId(job.getName())).collect(Collectors.toList());
     }
 
     @Override
@@ -494,11 +482,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
             String sscAuthToken = getFortifySSCToken();
 
             if (sscServerUrl != null && !sscServerUrl.isEmpty() && projectVersionPair != null) {
-                result = dtoFactory.newDTO(SSCProjectConfiguration.class)
-                        .setSSCUrl(sscServerUrl)
-                        .setSSCBaseAuthToken(sscAuthToken)
-                        .setProjectName(projectVersionPair.project)
-                        .setProjectVersion(projectVersionPair.version);
+                result = dtoFactory.newDTO(SSCProjectConfiguration.class).setSSCUrl(sscServerUrl).setSSCBaseAuthToken(sscAuthToken).setProjectName(projectVersionPair.project).setProjectVersion(projectVersionPair.version);
             }
 
             return result;
@@ -540,11 +524,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
 
             FodConfigUtil.ServerConnectConfig fodServerConfig = FodConfigUtil.getFODServerConfig();
             if (fodServerConfig != null) {
-                return dtoFactory.newDTO(FodServerConfiguration.class)
-                        .setClientId(fodServerConfig.clientId)
-                        .setClientSecret(fodServerConfig.clientSecret)
-                        .setApiUrl(fodServerConfig.apiUrl)
-                        .setBaseUrl(fodServerConfig.baseUrl);
+                return dtoFactory.newDTO(FodServerConfiguration.class).setClientId(fodServerConfig.clientId).setClientSecret(fodServerConfig.clientSecret).setApiUrl(fodServerConfig.apiUrl).setBaseUrl(fodServerConfig.baseUrl);
             }
             return null;
         } finally {
@@ -592,8 +572,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
 
             //validate UftTestRunnerFolderParameter
             if (response.getStatus() == HttpStatus.SC_OK) {
-                UftTestRunnerFolderParameter uftFolderParameter = (UftTestRunnerFolderParameter) octaneClient.getConfigurationService()
-                        .getConfiguration().getParameter(UftTestRunnerFolderParameter.KEY);
+                UftTestRunnerFolderParameter uftFolderParameter = (UftTestRunnerFolderParameter) octaneClient.getConfigurationService().getConfiguration().getParameter(UftTestRunnerFolderParameter.KEY);
                 if (uftFolderParameter != null) {
                     List<String> errors = new ArrayList<>();
                     ConfigurationValidator.checkUftFolderParameter(uftFolderParameter, errors);
@@ -633,9 +612,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
     @Override
     public List<CredentialsInfo> getCredentials() {
         List<StandardUsernameCredentials> list = CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class, (Item) null, null, (DomainRequirement) null);
-        List<CredentialsInfo> output = list.stream()
-                .map(c -> dtoFactory.newDTO(CredentialsInfo.class).setCredentialsId(c.getId()).setUsername(CredentialsNameProvider.name(c)))
-                .collect(Collectors.toList());
+        List<CredentialsInfo> output = list.stream().map(c -> dtoFactory.newDTO(CredentialsInfo.class).setCredentialsId(c.getId()).setUsername(CredentialsNameProvider.name(c))).collect(Collectors.toList());
         return output;
     }
 
@@ -652,9 +629,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
     }
 
     private PipelineNode createPipelineNode(String name, Job job, boolean includeParameters) {
-        PipelineNode tmpConfig = dtoFactory.newDTO(PipelineNode.class)
-                .setJobCiId(JobProcessorFactory.getFlowProcessor(job).getTranslatedJobName())
-                .setName(name);
+        PipelineNode tmpConfig = dtoFactory.newDTO(PipelineNode.class).setJobCiId(JobProcessorFactory.getFlowProcessor(job).getTranslatedJobName()).setName(name);
 
         if (includeParameters) {
             tmpConfig.setParameters(ParameterProcessors.getConfigs(job));
@@ -676,39 +651,26 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
     }
 
     private PipelineNode createPipelineNodeFromJobName(String name) {
-        return dtoFactory.newDTO(PipelineNode.class)
-                .setJobCiId(BuildHandlerUtils.translateFolderJobName(name))
-                .setName(name);
+        return dtoFactory.newDTO(PipelineNode.class).setJobCiId(BuildHandlerUtils.translateFolderJobName(name)).setName(name);
     }
 
     private CIBuildStatusInfo getUnavailableJobStatus(String ciJobId, String paramName, String paramValue) {
-        return DTOFactory.getInstance().newDTO(CIBuildStatusInfo.class)
-                .setBuildStatus(CIBuildStatus.UNAVAILABLE)
-                .setJobCiId(ciJobId)
-                .setParamName(paramName)
-                .setParamValue(paramValue)
-                .setResult(CIBuildResult.UNAVAILABLE);
+        return DTOFactory.getInstance().newDTO(CIBuildStatusInfo.class).setBuildStatus(CIBuildStatus.UNAVAILABLE).setJobCiId(ciJobId).setParamName(paramName).setParamValue(paramValue).setResult(CIBuildResult.UNAVAILABLE);
     }
 
     private void addParametersAndDefaultBranchFromConfig(Item item, PipelineNode result) {
         String defaultBranchesConfig = RunnerMiscSettingsGlobalConfiguration.getInstance() != null ? RunnerMiscSettingsGlobalConfiguration.getInstance().getDefaultBranches() : null;
         if(defaultBranchesConfig != null && !defaultBranchesConfig.isEmpty()) {
             String[] defaultBranchesArray = defaultBranchesConfig.split(DEFAULT_BRANCHES_SEPARATOR);
-            Set<String> defaultBranches = Arrays.stream(defaultBranchesArray)
-                    .map(String::trim)
-                    .filter(StringUtils::isNotEmpty)
-                    .collect(Collectors.toSet());
+            Set<String> defaultBranches = Arrays.stream(defaultBranchesArray).map(String::trim).filter(StringUtils::isNotEmpty).collect(Collectors.toSet());
 
             Collection<? extends Job> allJobs = item.getAllJobs();
 
-            Job job = allJobs.stream()
-                    .filter(tempJob -> defaultBranches.contains(getDisplayNameFromJob(tempJob)))
-                    .findFirst().orElse(null);
+            Job job = allJobs.stream().filter(tempJob -> defaultBranches.contains(getDisplayNameFromJob(tempJob))).findFirst().orElse(null);
 
             if (job != null) {
                 String defaultBranch = getDisplayNameFromJob(job);
-                result.setParameters(ParameterProcessors.getConfigs(job))
-                        .setDefaultBranchName(defaultBranch);
+                result.setParameters(ParameterProcessors.getConfigs(job)).setDefaultBranchName(defaultBranch);
             }
         }
     }
@@ -722,9 +684,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
         String octaneLogFilePath = run.getRootDir() + File.separator + "octane_log";
         File logFile = new File(octaneLogFilePath);
         if (!logFile.exists()) {
-            try (FileOutputStream fileOutputStream = new FileOutputStream(logFile);
-                 InputStream logStream = run.getLogInputStream();
-                 PlainTextConsoleOutputStream out = new PlainTextConsoleOutputStream(fileOutputStream)) {
+            try (FileOutputStream fileOutputStream = new FileOutputStream(logFile); InputStream logStream = run.getLogInputStream(); PlainTextConsoleOutputStream out = new PlainTextConsoleOutputStream(fileOutputStream)) {
                 IOUtils.copy(logStream, out);
                 out.flush();
             } catch (IOException ioe) {
@@ -765,8 +725,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
             parametersAction = new ParametersAction(createParameters(job, ciParameters));
         }
 
-        Cause cause = new Cause.RemoteCause(ConfigurationService.getSettings(getInstanceId()) == null ? "non available URL" :
-                ConfigurationService.getSettings(getInstanceId()).getLocation(), "octane driven " + methodName);
+        Cause cause = new Cause.RemoteCause(ConfigurationService.getSettings(getInstanceId()) == null ? "non available URL" : ConfigurationService.getSettings(getInstanceId()).getLocation(), "octane driven " + methodName);
         method.accept(cause, parametersAction);
     }
 
@@ -909,10 +868,7 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
         if (serverUrl != null && serverUrl.endsWith("/")) {
             serverUrl = serverUrl.substring(0, serverUrl.length() - 1);
         }
-        result.setType(CIServerTypes.JENKINS.value())
-                .setVersion(Jenkins.VERSION)
-                .setUrl(serverUrl)
-                .setSendingTime(System.currentTimeMillis());
+        result.setType(CIServerTypes.JENKINS.value()).setVersion(Jenkins.VERSION).setUrl(serverUrl).setSendingTime(System.currentTimeMillis());
         return result;
     }
 
