@@ -73,6 +73,6 @@
 		</div>
 
 		<!-- Display an error message if the mobile center settings are not configured properly -->
-		<div class="error" name="mcSettingsError" style="padding-top: 10px;display:none;">Digital Lab login information or proxy is incorrect.</div>
+		<div class="error" name="mcSettingsError" style="padding-top: 10px;display:none;">Functional Testing Lab login information or proxy is incorrect.</div>
 	</f:entry>
 </j:jelly>

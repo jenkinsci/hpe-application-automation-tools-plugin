@@ -703,7 +703,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                 mergedProps.put("MobilePassword", encPassword);
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);
-                listener.fatalError("Problem in Digital Lab password encryption: " + e.getMessage() + ".");
+                listener.fatalError("Problem in Functional Testing Lab password encryption: " + e.getMessage() + ".");
                 return;
             }
         } else if (StringUtils.isNotBlank(plainTextToken)) {
@@ -712,7 +712,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                 mergedProps.put("MobileExecToken", encToken);
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);
-                listener.fatalError("Problem in Digital Lab execution token encryption: " + e.getMessage() + ".");
+                listener.fatalError("Problem in Functional Testing Lab execution token encryption: " + e.getMessage() + ".");
                 return;
             }
         }

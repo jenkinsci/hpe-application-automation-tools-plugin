@@ -277,20 +277,20 @@
 	</f:advanced>
 
 	<!-- add MC server and app info starting -->
-	<f:advanced title="Digital Lab (formerly UFT Mobile) Options" align="right">
+	<f:advanced title="OpenText™ Functional Testing Lab (Digital Lab) Options" align="right">
 		<div id="mobileSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
 					<div class="tr help-sibling config-table-top-row">
 						<div colspan="3">
 							<div>
-								<b>Digital Lab Options</b>
+								<b>Functional Testing Lab Options</b>
 							</div>
 							<span class="setting-no-help"></span>
 						</div>
 					</div>
 				</div>
-				<f:entry title="Digital Lab Server" field="mcServerName">
+				<f:entry title="Server name" field="mcServerName">
 					<j:choose>
 						<j:when test="${hasConfigPermission}">
 							<select name="mcServerName">
@@ -384,12 +384,12 @@
 							</f:entry>
 						</div>
 						<f:entry>
-							<f:checkbox title="Recreate Digital Lab job if this job is copied from another job" name="recreateJob" checked="false"/>
+							<f:checkbox title="Recreate Functional Testing Lab job if this job is copied from another job" name="recreateJob" checked="false"/>
 						</f:entry>
 						<j:if test="${hasConfigPermission}">
 							<f:entry>
 								<input name="digitalLabWizard" type="button" value="Wizard" onClick="startLoadInfo(a, this)"/>
-								<span class="error-msg">Digital Lab login information or proxy is incorrect.</span>
+								<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
 							</f:entry>
 						</j:if>
 					</div>
@@ -401,7 +401,7 @@
 							<j:if test="${hasConfigPermission}">
 								<input type="button" name="cloudBrowserLab" value="Browser settings" onclick="startLoadInfo(a, this,'${rootURL}');" />
 							</j:if>
-							<span class="error-msg">Digital Lab login information or proxy is incorrect.</span>
+							<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
 							<f:textbox name="cloudBrowserUrl" value="${instance.runFromFileModel.cloudBrowserModel.url}" placeholder="URL"/>
 							<div class="repeated-chunk">
 								<f:entry title="Operating System" field="cloudBrowserOs">
@@ -427,8 +427,8 @@
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide Digital Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
-									Hide Digital Lab Options
+								<button type="button" tabindex="0" title="Hide Functional Testing Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
+									Hide Functional Testing Lab Options
 								</button>
 							</span>
 						</span>

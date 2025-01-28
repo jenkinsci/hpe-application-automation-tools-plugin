@@ -512,13 +512,13 @@ Save the test in QuickTest and then run it again.</value>
     <value>Invalid execution token for Digital Lab, should contain ClientID, SecretKey and TenantID.</value>
   </data>
   <data name="McMalformedTokenInvalidKey" xml:space="preserve">
-    <value>Malformed execution token for Digital Lab, invalid key value: {0}.</value>
+    <value>Malformed execution token for Functional Testing Lab, invalid key value: {0}.</value>
   </data>
   <data name="McMalformedTokenInvalidKeyValueSeparator" xml:space="preserve">
-    <value>Malformed execution token for Digital Lab, key-value pairs are not separated by {0}.</value>
+    <value>Malformed execution token for Functional Testing Lab, key-value pairs are not separated by {0}.</value>
   </data>
   <data name="McMalformedTokenMissingKeyValuePair" xml:space="preserve">
-    <value>Malformed execution token for Digital Lab, token without key-value.</value>
+    <value>Malformed execution token for Functional Testing Lab, token without key-value.</value>
   </data>
   <data name="FsDuplicateParamNames" xml:space="preserve">
     <value>Duplicate parameter name entry found, please check the parameters' specification.</value>
@@ -542,10 +542,10 @@ Save the test in QuickTest and then run it again.</value>
     <value>The installed version of UFT One does not support the LaunchAsUser method. Please use the version 2023 or later.</value>
   </data>
   <data name="McEmptyHostAddress" xml:space="preserve">
-    <value>Empty Digital Lab Server.</value>
+    <value>Empty Functional Testing Lab Server.</value>
   </data>
   <data name="McInvalidUrl" xml:space="preserve">
-    <value>Invalid Digital Lab Server URL: '{0}'.</value>
+    <value>Invalid Functional Testing Lab Server URL: '{0}'.</value>
   </data>
   <data name="CloudBrowserNotSupported" xml:space="preserve">
     <value>Cloud Browser is not supported in UFT One {0}. Please upgrade to UFT One 23.4 or later.</value>

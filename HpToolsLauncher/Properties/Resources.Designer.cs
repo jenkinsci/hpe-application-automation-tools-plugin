@@ -1171,7 +1171,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Empty Digital Lab Server..
+        ///   Looks up a localized string similar to Empty Functional Testing Lab Server..
         /// </summary>
         internal static string McEmptyHostAddress {
             get {
@@ -1189,7 +1189,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Invalid Digital Lab Server URL: &apos;{0}&apos;..
+        ///   Looks up a localized string similar to Invalid Functional Testing Lab Server URL: &apos;{0}&apos;..
         /// </summary>
         internal static string McInvalidUrl {
             get {
@@ -1198,7 +1198,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Malformed execution token for Digital Lab, invalid key value: {0}..
+        ///   Looks up a localized string similar to Malformed execution token for Functional Testing Lab, invalid key value: {0}..
         /// </summary>
         internal static string McMalformedTokenInvalidKey {
             get {
@@ -1207,7 +1207,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Malformed execution token for Digital Lab, key-value pairs are not separated by {0}..
+        ///   Looks up a localized string similar to Malformed execution token for Functional Testing Lab, key-value pairs are not separated by {0}..
         /// </summary>
         internal static string McMalformedTokenInvalidKeyValueSeparator {
             get {
@@ -1216,7 +1216,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Malformed execution token for Digital Lab, token without key-value..
+        ///   Looks up a localized string similar to Malformed execution token for Functional Testing Lab, token without key-value..
         /// </summary>
         internal static string McMalformedTokenMissingKeyValuePair {
             get {
