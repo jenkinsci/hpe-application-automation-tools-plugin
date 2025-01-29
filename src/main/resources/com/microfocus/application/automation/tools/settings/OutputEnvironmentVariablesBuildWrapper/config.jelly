@@ -39,7 +39,7 @@
 <?jelly escape-by-default='true'?>
 
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-        <f:entry title="List of the environment variables to store in ValueEdge / ALM Octane" field="outputEnvironmentParameters">
+        <f:entry title="List of the environment variables to store in ValueEdge / Software Delivery Management" field="outputEnvironmentParameters">
             <f:textarea name="mf.outputEnvironmentParameters" value="${instance.outputEnvironmentParameters}"/>
         </f:entry>
 </j:jelly>

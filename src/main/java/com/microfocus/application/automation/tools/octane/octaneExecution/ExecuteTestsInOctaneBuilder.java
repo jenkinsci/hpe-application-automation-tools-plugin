@@ -100,10 +100,10 @@ public class ExecuteTestsInOctaneBuilder extends Builder implements SimpleBuildS
         supportsConsoleLog.println("Start **********************************************************************************************");
         supportsConsoleLog.println("");
         if (configurationId == null) {
-            throw new IllegalArgumentException("ALM Octane configuration is not defined.");
+            throw new IllegalArgumentException("Software Delivery Management configuration is not defined.");
         }
         if (workspaceId == null) {
-            throw new IllegalArgumentException("ALM Octane workspace is not defined.");
+            throw new IllegalArgumentException("Software Delivery Management workspace is not defined.");
         }
 
 
@@ -323,7 +323,7 @@ public class ExecuteTestsInOctaneBuilder extends Builder implements SimpleBuildS
 
         @Override
         public String getDisplayName() {
-            return "Execute tests from ALM Octane (Tech Preview)";
+            return "Execute tests from Software Delivery Management (Tech Preview)";
         }
 
 

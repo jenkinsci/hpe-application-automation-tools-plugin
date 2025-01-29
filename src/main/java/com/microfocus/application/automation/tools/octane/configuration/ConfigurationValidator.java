@@ -210,7 +210,7 @@ public class ConfigurationValidator {
             Set<Long> accessibleWorkspaceIds = availableWorkspaces.stream().map(Entity::getId).map(id -> Long.parseLong(id)).collect(Collectors.toSet());
             List<Long> notAccessibleWorkspaceIds = workspace2ImpersonatedUser.keySet().stream().filter(workspaceId -> !accessibleWorkspaceIds.contains(workspaceId)).collect(Collectors.toList());
             if (!notAccessibleWorkspaceIds.isEmpty()) {
-                errorMessages.add("Workspace configuration contains non-accessible ALM Octane workspaces: " + notAccessibleWorkspaceIds);
+                errorMessages.add("Workspace configuration contains non-accessible Software Delivery Management workspaces: " + notAccessibleWorkspaceIds);
             }
 
             List<String> tempErrorListForGeneralImpersonatedUser = new ArrayList<>();

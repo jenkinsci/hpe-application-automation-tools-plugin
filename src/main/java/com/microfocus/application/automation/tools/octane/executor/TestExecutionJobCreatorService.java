@@ -170,13 +170,13 @@ public class TestExecutionJobCreatorService {
 			String discoveryJobName = String.format("%s-%s-%s", discoveryJobPrefix, discoveryInfo.getExecutorId(), discoveryInfo.getExecutorLogicalName().substring(0,5));
 			FreeStyleProject proj = createProject(discoveryInfo.getConfigurationId(), discoveryJobName);
 
-			proj.setDescription(String.format("This job was created by the OpenText Application Automation Tools plugin for discovery of %s tests. It is associated with ALM Octane test runner #%s.",
+			proj.setDescription(String.format("This job was created by the OpenText Application Automation Tools plugin for discovery of %s tests. It is associated with Software Delivery Management test runner #%s.",
 					discoveryInfo.getTestingToolType().toString(), discoveryInfo.getExecutorId()));
 
 			setScmRepository(discoveryInfo.getScmRepository(), discoveryInfo.getScmRepositoryCredentialsId(), proj, false);
-			addConstantParameter(proj, UftConstants.TEST_RUNNER_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "ALM Octane test runner ID");
-			addConstantParameter(proj, UftConstants.TEST_RUNNER_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "ALM Octane test runner logical name");
-			addBooleanParameter(proj, UftConstants.FULL_SCAN_PARAMETER_NAME, false, "Specify whether to synchronize the set of tests on ALM Octane with the whole SCM repository or to update the set of tests on ALM Octane based on the latest commits.");
+			addConstantParameter(proj, UftConstants.TEST_RUNNER_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "Software Delivery Management test runner ID");
+			addConstantParameter(proj, UftConstants.TEST_RUNNER_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "Software Delivery Management test runner logical name");
+			addBooleanParameter(proj, UftConstants.FULL_SCAN_PARAMETER_NAME, false, "Specify whether to synchronize the set of tests on Software Delivery Management with the whole SCM repository or to update the set of tests on Software Delivery Management based on the latest commits.");
 
 			//set polling once in two minutes
 			SCMTrigger scmTrigger = new SCMTrigger("H/2 * * * *");//H/2 * * * * : once in two minutes
@@ -345,16 +345,16 @@ public class TestExecutionJobCreatorService {
 			String projectName = String.format("%s-%s-%s", exeJobPrefix, discoveryInfo.getExecutorId(), discoveryInfo.getExecutorLogicalName().substring(0,5));
 			FreeStyleProject proj = createProject(discoveryInfo.getConfigurationId(), projectName);
 
-			proj.setDescription(String.format("This job was created by the OpenText Application Automation Tools plugin for running UFT tests. It is associated with ALM Octane test runner #%s.",
+			proj.setDescription(String.format("This job was created by the OpenText Application Automation Tools plugin for running UFT tests. It is associated with Software Delivery Management test runner #%s.",
 					discoveryInfo.getExecutorId()));
 
 			setScmRepository(discoveryInfo.getScmRepository(), discoveryInfo.getScmRepositoryCredentialsId(), proj, true);
 			addStringParameter(proj, UftConstants.TESTS_TO_RUN_PARAMETER_NAME, "", "Tests to run");
 			addStringParameter(proj, UftConstants.CHECKOUT_DIR_PARAMETER_NAME, "${WORKSPACE}\\${CHECKOUT_SUBDIR}", "Shared UFT directory");
-			addConstantParameter(proj, UftConstants.TEST_RUNNER_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "ALM Octane test runner ID");
-			addConstantParameter(proj, UftConstants.TEST_RUNNER_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "ALM Octane test runner logical name");
-			addStringParameter(proj, SdkConstants.JobParameters.SUITE_ID_PARAMETER_NAME, "", "ALM Octane test suite ID");
-			addStringParameter(proj, SdkConstants.JobParameters.SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the ALM Octane test suite run to associate with the test run results.");
+			addConstantParameter(proj, UftConstants.TEST_RUNNER_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "Software Delivery Management test runner ID");
+			addConstantParameter(proj, UftConstants.TEST_RUNNER_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "Software Delivery Management test runner logical name");
+			addStringParameter(proj, SdkConstants.JobParameters.SUITE_ID_PARAMETER_NAME, "", "Software Delivery Management test suite ID");
+			addStringParameter(proj, SdkConstants.JobParameters.SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the Software Delivery Management test suite run to associate with the test run results.");
 
 			addExecutionAssignedNode(proj);
 			addTimestamper(proj);

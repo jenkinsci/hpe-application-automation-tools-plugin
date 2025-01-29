@@ -509,7 +509,7 @@ public class OctaneServerSettingsGlobalConfiguration extends GlobalConfiguration
         for (OctaneServerSettingsModel serverSettingsModel : servers) {
             if (octaneUrlParser != null && serverSettingsModel.getSharedSpace().equals(octaneUrlParser.getSharedSpace()) &&
                     serverSettingsModel.getLocation().equals(octaneUrlParser.getLocation())) {
-                ret = FormValidation.error("This ALM Octane server configuration was already set.");
+                ret = FormValidation.error("This Software Delivery Management server configuration was already set.");
                 return ret;
             }
         }
@@ -518,7 +518,7 @@ public class OctaneServerSettingsGlobalConfiguration extends GlobalConfiguration
 
     private void validateConfiguration(FormValidation result, String formField) throws FormException {
         if (!result.equals(FormValidation.ok())) {
-            throw new FormException("Validation of property '" + formField + "' in ALM Octane server Configuration failed: " + result.getMessage(), formField);
+            throw new FormException("Validation of property '" + formField + "' in Software Delivery Management server Configuration failed: " + result.getMessage(), formField);
         }
     }
 }

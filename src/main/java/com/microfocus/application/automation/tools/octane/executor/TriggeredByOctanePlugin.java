@@ -57,6 +57,6 @@ public class TriggeredByOctanePlugin extends Cause {
 
     @Override
     public String getShortDescription() {
-        return String.format("Triggered by ALM Octane plugin for %s #%s ", identifierType, identifier);
+        return String.format("Triggered by Software Delivery Management plugin for %s #%s ", identifierType, identifier);
     }
 }

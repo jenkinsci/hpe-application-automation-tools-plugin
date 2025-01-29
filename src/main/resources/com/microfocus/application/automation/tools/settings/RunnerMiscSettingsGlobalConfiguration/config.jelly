@@ -49,7 +49,7 @@
         <f:entry title="List of environment variables" field="outputEnvironmentParameters" >
             <f:textarea name="mf.outputEnvironmentParameters" value="${instance.outputEnvironmentParameters}" />
         </f:entry>
-        <f:entry title="Enable Agent to Controller access" description="If checked, when you execute a build on an agent, the agent will access the controller to write results that will be reported to ALM Octane.">
+        <f:entry title="Enable Agent to Controller access" description="If checked, when you execute a build on an agent, the agent will access the controller to write results that will be reported to Software Delivery Management.">
             <f:checkbox name="agentToControllerEnabled" checked="${instance.agentToControllerEnabled}"/>
         </f:entry>
     </f:section>

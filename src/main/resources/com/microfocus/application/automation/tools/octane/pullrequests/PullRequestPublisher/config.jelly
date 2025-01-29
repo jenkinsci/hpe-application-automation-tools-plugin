@@ -39,13 +39,13 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
-    <f:section title="ALM Octane"/>
-    <f:entry title="ALM Octane configuration" field="configurationId"
-             description="Select the ALM Octane configuration to work with.">
+    <f:section title="Software Delivery Management"/>
+    <f:entry title="Software Delivery Management configuration" field="configurationId"
+             description="Select the Software Delivery Management configuration to work with.">
         <f:select/>
     </f:entry>
 
-    <f:entry title="ALM Octane workspace" field="workspaceId"
+    <f:entry title="Software Delivery Management workspace" field="workspaceId"
              description="Select the workspace where you want pull requests sent.">
         <f:select/>
     </f:entry>
@@ -60,7 +60,7 @@
              description="Repository clone URL in HTTP format.">
         <f:textbox/>
     </f:entry>
-    <f:entry title="Use SSH format" field="useSSHFormat" description="If selected, the SCM repository URL will be sent to ALM Octane in SSH format.">
+    <f:entry title="Use SSH format" field="useSSHFormat" description="If selected, the SCM repository URL will be sent to Software Delivery Management in SSH format.">
            <f:checkbox/>
     </f:entry>
 

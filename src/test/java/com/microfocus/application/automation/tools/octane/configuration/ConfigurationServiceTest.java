@@ -112,7 +112,7 @@ public class ConfigurationServiceTest extends OctanePluginTestBase {
 		//add new configuration
 		configPage = client.goTo("configure");
 		HtmlForm addConfigForm = configPage.getFormByName("config");
-		HtmlElement addButton = findButton(addConfigForm, "Add ALM Octane server");
+		HtmlElement addButton = findButton(addConfigForm, "Add Software Delivery Management server");
 		configPage = (HtmlPage) HtmlElementUtil.click(addButton);
 		addConfigForm = configPage.getFormByName("config");
 
@@ -128,7 +128,7 @@ public class ConfigurationServiceTest extends OctanePluginTestBase {
 		//remove configuration
 		configPage = client.goTo("configure");
 		HtmlForm deleteConfigForm = configPage.getFormByName("config");
-		HtmlElement deleteButton = findButton(deleteConfigForm, "Delete ALM Octane server");
+		HtmlElement deleteButton = findButton(deleteConfigForm, "Delete Software Delivery Management server");
 		configPage = (HtmlPage) HtmlElementUtil.click(deleteButton);
 		deleteConfigForm = configPage.getFormByName("config");
 

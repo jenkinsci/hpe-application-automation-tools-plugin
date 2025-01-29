@@ -575,7 +575,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
 
         @Override
         public String getDisplayName() {
-            return "ALM Octane testing framework converter";
+            return "Software Delivery Management testing framework converter";
         }
 
         public FormValidation doTestConvert(

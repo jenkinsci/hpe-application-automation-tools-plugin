@@ -112,11 +112,11 @@ public class UFTTestDetectionPublisher extends Recorder {
         try {
             //validate configuration id
             if (configurationId == null || JellyUtils.NONE.equals(configurationId)) {
-                throw new IllegalArgumentException("ALM Octane configuration is missing.");
+                throw new IllegalArgumentException("Software Delivery Management configuration is missing.");
             }
 
             if (workspaceName == null || JellyUtils.NONE.equals(workspaceName)) {
-                throw new IllegalArgumentException("ALM Octane workspace is missing.");
+                throw new IllegalArgumentException("Software Delivery Management workspace is missing.");
             }
 
             //validate scm repository id
@@ -204,7 +204,7 @@ public class UFTTestDetectionPublisher extends Recorder {
         List<Entity> foundEntities = entitiesService.getEntities(workspaceId, collectionName, conditions, Collections.singletonList(EntityConstants.Base.ID_FIELD));
         if (!foundEntities.isEmpty()) {
             scmRepoId = foundEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is already exist in ALM Octane with id=" + scmRepoId);
+            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is already exist in Software Delivery Management with id=" + scmRepoId);
         } else {
             //create a new scm repository
             Entity newScmRepository = buildNewRepoEntity(scmPluginHandler, url, "scm_repository");
@@ -213,7 +213,7 @@ public class UFTTestDetectionPublisher extends Recorder {
 
             List<Entity> createEntities = entitiesService.postEntities(workspaceId, collectionName, Collections.singletonList(newScmRepository));
             scmRepoId = createEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is created in ALM Octane with id=" + scmRepoId);
+            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is created in Software Delivery Management with id=" + scmRepoId);
         }
         return scmRepoId;
     }
@@ -231,13 +231,13 @@ public class UFTTestDetectionPublisher extends Recorder {
         List<Entity> foundEntities = entitiesService.getEntities(workspaceId, rootCollectionName, conditions, Collections.singletonList(EntityConstants.Base.ID_FIELD));
         if (!foundEntities.isEmpty()) {
             scmRootId = foundEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s is already exist in ALM Octane with id=%s", url, scmRootId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s is already exist in Software Delivery Management with id=%s", url, scmRootId));
         } else {
             //create a new scm repository root
             Entity newScmRepositoryRoot = buildNewRepoEntity(scmPluginHandler, url, EntityConstants.ScmRepositoryRoot.ENTITY_NAME);
             List<Entity> createEntities = entitiesService.postEntities(workspaceId, rootCollectionName, Collections.singletonList(newScmRepositoryRoot));
             scmRootId = createEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s  is created in ALM Octane with id=%s", url, scmRootId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s  is created in Software Delivery Management with id=%s", url, scmRootId));
         }
 
         //find branch
@@ -249,7 +249,7 @@ public class UFTTestDetectionPublisher extends Recorder {
                 Arrays.asList(EntityConstants.ScmRepository.ID_FIELD, EntityConstants.ScmRepository.BRANCH_FIELD));
         if (!foundEntities.isEmpty()) {
             scmBranchId = foundEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is already exist in ALM Octane with id=%s", name, scmBranchId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is already exist in Software Delivery Management with id=%s", name, scmBranchId));
         } else {
             //create a new branch
             Entity newBranch = buildNewRepoEntity(scmPluginHandler, url, "scm_repository");
@@ -264,7 +264,7 @@ public class UFTTestDetectionPublisher extends Recorder {
             newBranch.setField(EntityConstants.ScmRepository.PARENT_FIELD, scmRoot);
             List<Entity> createEntities = entitiesService.postEntities(workspaceId, branchCollectionName, Collections.singletonList(newBranch));
             scmBranchId = createEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is created in ALM Octane with id=%s", name, scmBranchId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is created in Software Delivery Management with id=%s", name, scmBranchId));
         }
 
         return scmBranchId;

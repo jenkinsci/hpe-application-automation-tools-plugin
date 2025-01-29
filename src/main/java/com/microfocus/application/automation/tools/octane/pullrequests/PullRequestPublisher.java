@@ -118,10 +118,10 @@ public class PullRequestPublisher extends Recorder implements SimpleBuildStep {
         LogConsumer logConsumer = new LogConsumer(taskListener.getLogger());
         logConsumer.printLog("PullRequestPublisher is started ***********************************************************************");
         if (configurationId == null) {
-            throw new IllegalArgumentException("ALM Octane configuration is not defined.");
+            throw new IllegalArgumentException("Software Delivery Management configuration is not defined.");
         }
         if (workspaceId == null) {
-            throw new IllegalArgumentException("ALM Octane workspace is not defined.");
+            throw new IllegalArgumentException("Software Delivery Management workspace is not defined.");
         }
         if (scmTool == null) {
             throw new IllegalArgumentException("SCM Tool is not defined.");
@@ -153,7 +153,7 @@ public class PullRequestPublisher extends Recorder implements SimpleBuildStep {
         FetchHandler fetchHandler = FetchFactory.getHandler(ScmTool.fromValue(myScmTool), authenticationStrategy, secret);
         try {
             OctaneClient octaneClient = OctaneSDK.getClientByInstanceId(myConfigurationId);
-            logConsumer.printLog("ALM Octane " + octaneClient.getConfigurationService().getConfiguration().getLocationForLog() + ", workspace - " + myWorkspaceId);
+            logConsumer.printLog("Software Delivery Management " + octaneClient.getConfigurationService().getConfiguration().getLocationForLog() + ", workspace - " + myWorkspaceId);
             octaneClient.validateOctaneIsActiveAndSupportVersion(PullRequestAndBranchService.PULL_REQUEST_COLLECTION_SUPPORTED_VERSION);
             List<PullRequest> pullRequests = fetchHandler.fetchPullRequests(fp, GitFetchUtils::getUserIdForCommit, logConsumer::printLog);
 
@@ -172,13 +172,13 @@ public class PullRequestPublisher extends Recorder implements SimpleBuildStep {
             GitFetchUtils.updateRepoTemplates(octaneClient.getPullRequestAndBranchService(), fetchHandler, fp.getRepoUrl(), repoUrlForOctane,
                     Long.parseLong(myWorkspaceId), logConsumer::printLog);
         } catch (OctaneValidationException e) {
-            logConsumer.printLog("ALM Octane pull request collector failed on validation : " + e.getMessage());
+            logConsumer.printLog("Software Delivery Management pull request collector failed on validation : " + e.getMessage());
             run.setResult(Result.FAILURE);
         } catch (ResourceNotFoundException e) {
             logConsumer.printLog(e.getMessage());
             run.setResult(Result.FAILURE);
         } catch (Exception e) {
-            logConsumer.printLog("ALM Octane pull request collector failed : " + e.getMessage());
+            logConsumer.printLog("Software Delivery Management pull request collector failed : " + e.getMessage());
             e.printStackTrace(taskListener.getLogger());
             run.setResult(Result.FAILURE);
         }
@@ -346,7 +346,7 @@ public class PullRequestPublisher extends Recorder implements SimpleBuildStep {
         }
 
         public String getDisplayName() {
-            return "ALM Octane pull-request collector";
+            return "Software Delivery Management pull-request collector";
         }
     }
 }
