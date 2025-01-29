@@ -235,7 +235,7 @@ public final class EncryptionUtils {
             publicKeyProp = currNode.getNodeProperty(EncryptionNodeProperty.class);
         }
 
-        if (publicKeyProp == null) throw new EncryptionException("You need to enable encryption in Node configuration manually first, automatic addition failed before running UFT tests.");
+        if (publicKeyProp == null) throw new EncryptionException("You need to enable encryption in Node configuration manually first, automatic addition failed before running Functional Testing tests.");
 
         String publicKeyStr = Secret.fromString(publicKeyProp.getPublicKey()).getPlainText();
         PublicKey publicKey;

@@ -605,7 +605,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 						String reportMetaDataXml = reportMetaDataXmlFile.getAbsolutePath();
 						writeReportMetaData2XML(ReportInfoToCollect, reportMetaDataXml, listener);
 
-						// Add UFT report action
+						// Add Functional Testing report action
 						try {
 							listener.getLogger().println("Adding a report action to the current build.");
 							HtmlBuildReportAction reportAction = new HtmlBuildReportAction(build, reportName, index);

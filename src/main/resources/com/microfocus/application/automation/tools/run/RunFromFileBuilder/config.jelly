@@ -172,20 +172,20 @@
 		</f:entry>
 	</f:optionalBlock>
 
-	<f:optionalBlock name="isParallelRunnerEnabled" title="UFT parallel running mode" inline="true" checked="${instance.isParallelRunnerEnabled}">
+	<f:optionalBlock name="isParallelRunnerEnabled" title="Functional Testing parallel running mode" inline="true" checked="${instance.isParallelRunnerEnabled}">
 		<f:entry field="fileSystemTestSetModel">
 			<f:property field="fileSystemTestSetModel" hasConfigPermission="${hasConfigPermission}"/>
 		</f:entry>
 	</f:optionalBlock>
 
-	<f:advanced title="UFT-Specific Settings" align="right">
+	<f:advanced title="OpenText Functional Testing-Specific Settings" align="right">
 		<div id="uftSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
 					<div class="tr help-sibling config-table-top-row">
 						<div colspan="3">
 							<div>
-								<b>UFT-Specific Settings</b>
+								<b>Functional Testing-Specific Settings</b>
 							</div>
 							<span class="setting-no-help"></span>
 						</div>
@@ -210,8 +210,8 @@
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide UFT-Specific Settings" onclick="hideAndMoveAdvancedBody('uftSpecificSection')">
-									Hide UFT-Specific Settings
+								<button type="button" tabindex="0" title="Hide Functional Testing-Specific Settings" onclick="hideAndMoveAdvancedBody('uftSpecificSection')">
+									Hide Functional Testing-Specific Settings
 								</button>
 							</span>
 						</span>
@@ -277,7 +277,7 @@
 	</f:advanced>
 
 	<!-- add MC server and app info starting -->
-	<f:advanced title="OpenText™ Functional Testing Lab (Digital Lab) Options" align="right">
+	<f:advanced title="OpenText Functional Testing Lab (Digital Lab) Options" align="right">
 		<div id="mobileSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">

@@ -414,7 +414,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             cmdLineExeCfg.copyFrom(cmdExeCfgUrl);
         } catch (IOException | InterruptedException e) {
             build.setResult(Result.FAILURE);
-            listener.error("Failed to copy props file or UFT tools to agent machine. " + e);
+            listener.error("Failed to copy props file or Functional Testing tools to agent machine. " + e);
             return;
         }
         try {

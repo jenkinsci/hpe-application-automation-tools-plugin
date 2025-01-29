@@ -215,7 +215,7 @@ namespace HpToolsLauncher
                         runDesc.ReportLocation = GetReportLocation(testinf, testPath);
                     }
 #if DEBUG
-                    Console.WriteLine(string.Format("UFT One version = {0}", qtpVersion));
+                    Console.WriteLine(string.Format("OpenText Functional Testing version = {0}", qtpVersion));
 #endif
                     // Check for required Addins
                     LoadNeededAddins(testPath);

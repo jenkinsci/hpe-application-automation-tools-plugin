@@ -79,7 +79,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Describes a regular jenkins build step from UFT or LR
+ * Describes a regular jenkins build step from Functional Testing or LR
  */
 public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 

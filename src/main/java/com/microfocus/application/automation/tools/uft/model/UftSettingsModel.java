@@ -253,7 +253,7 @@ public class UftSettingsModel extends AbstractDescribableImpl<UftSettingsModel> 
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "UFT Settings Model";
+            return "Functional Testing Settings Model";
         }
 
         public FormValidation doCheckNumberOfReruns(@QueryParameter String value) {

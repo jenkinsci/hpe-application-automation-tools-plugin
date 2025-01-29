@@ -40,7 +40,7 @@
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:hp="/lib/hp-application-automation-tools">
     <f:section title="${instance.displayName}">
-        <f:entry title="Run Result (UFT Report) timestamp format string" field="dateFormat" >
+        <f:entry title="Run Result (OpenText Functional Testing Report) timestamp format string" field="dateFormat" >
             <f:textbox name="mf.dateFormat" value="${instance.dateFormat}" />
         </f:entry>
         <f:entry title="Default branches" field="defaultBranches" >

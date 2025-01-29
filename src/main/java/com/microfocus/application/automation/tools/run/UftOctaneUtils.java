@@ -54,7 +54,7 @@ public class UftOctaneUtils {
 
     /**
      * This step is important for integration with Octane when job is executed as workflow job.
-     * Our plugin can recognize UFT build step when its executed in context of freeStyle job, but its not possible to do it
+     * Our plugin can recognize Functional Testing build step when its executed in context of freeStyle job, but its not possible to do it
      * when this step executed in workflow job.
      * So , in this method we add parameter of RunnerType.UFT to sign this job as UFT runner.
      * @param build
