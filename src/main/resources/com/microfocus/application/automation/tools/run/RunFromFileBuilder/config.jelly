@@ -125,9 +125,7 @@
 		}
 	</style>
 
-    <st:setHeader name="Cross-Origin-Opener-Policy" value="unsafe-none" />
 	<st:bind var="a" value="${descriptor}"/>
-
 	<st:bind var="fsTests" value="${instance.runFromFileModel.fsTests}"/>
 	<st:bind var="cleanupTests" value="${instance.runFromFileModel.cleanupTests}"/>
 
