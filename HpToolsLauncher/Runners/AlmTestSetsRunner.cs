@@ -1853,39 +1853,48 @@ namespace HpToolsLauncher
         /// <param name="prevTest"></param>
         private void WriteTestRunSummary(ITSTest prevTest)
         {
-            if (TdConnection != null)
+            try
             {
-                _tdConnection.KeepConnection = true;
+                if (TdConnection != null)
+                {
+                    _tdConnection.KeepConnection = true;
+                }
+                else
+                {
+                    _tdConnectionOld.KeepConnection = true;
+                }
+
+                int runId = GetTestRunId(prevTest);
+
+                string stepsString = GetTestStepsDescFromQc(prevTest);
+
+                if (string.IsNullOrWhiteSpace(stepsString) && ConsoleWriter.ActiveTestRun.TestState != TestState.Error)
+                    stepsString = GetTestRunLog(prevTest);
+
+                if (!string.IsNullOrWhiteSpace(stepsString))
+                    ConsoleWriter.WriteLine(stepsString);
+
+                string linkStr = GetTestRunLink(runId);
+
+                if (linkStr == string.Empty)
+                {
+                    Console.WriteLine(Resources.OldVersionOfQC);
+                }
+                else
+                {
+                    ConsoleWriter.WriteLine("\n" + string.Format(Resources.AlmRunnerDisplayLink,
+                        "\n" + linkStr + "\n"));
+                }
+
+                ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " + prevTest.Name +
+                                                ", " + Resources.AlmRunnerRunIdCaption + " " + runId
+                                                + "\n-------------------------------------------------------------------------------------------------------");
             }
-            else
+            catch (Exception ex)
             {
-                _tdConnectionOld.KeepConnection = true;
+                string errorMessage = string.Format("{0}: {1}", ex.GetType().FullName, ex.Message);
+                Console.WriteLine(errorMessage);
             }
-
-            int runId = GetTestRunId(prevTest);
-
-            string stepsString = GetTestStepsDescFromQc(prevTest);
-
-            if (string.IsNullOrWhiteSpace(stepsString) && ConsoleWriter.ActiveTestRun.TestState != TestState.Error)
-                stepsString = GetTestRunLog(prevTest);
-
-            if (!string.IsNullOrWhiteSpace(stepsString))
-                ConsoleWriter.WriteLine(stepsString);
-
-            string linkStr = GetTestRunLink(runId);
-
-            if (linkStr == string.Empty)
-            {
-                Console.WriteLine(Resources.OldVersionOfQC);
-            }
-            else
-            {
-                ConsoleWriter.WriteLine("\n" + string.Format(Resources.AlmRunnerDisplayLink, "\n" + linkStr + "\n"));
-            }
-
-            ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " + prevTest.Name +
-                                            ", " + Resources.AlmRunnerRunIdCaption + " " + runId
-                                            + "\n-------------------------------------------------------------------------------------------------------");
         }
 
         /// <summary>
