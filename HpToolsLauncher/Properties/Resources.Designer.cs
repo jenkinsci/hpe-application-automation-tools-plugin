@@ -217,7 +217,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to folder {0} cannot be found in ALM.
+        ///   Looks up a localized string similar to folder {0} cannot be found in Application Quality Management (ALM).
         /// </summary>
         internal static string AlmRunnerNoSuchFolder {
             get {
@@ -379,7 +379,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cloud Browser is not supported in UFT One {0}. Please upgrade to UFT One 23.4 or later..
+        ///   Looks up a localized string similar to Cloud Browser is not supported in OpenText Functional Testing {0}. Please upgrade to UFT One 23.4 or later..
         /// </summary>
         internal static string CloudBrowserNotSupported {
             get {
@@ -559,7 +559,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Input parameter type mismatch (skipped), check your test configuration in UFT. param: &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Input parameter type mismatch (skipped), check your test configuration in OpenText Functional Testing. param: &apos;{0}&apos;.
         /// </summary>
         internal static string GeneralParameterTypeMismatchWith1Type {
             get {
@@ -1352,7 +1352,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to UFT cannot start while the LeanFT engine is running..
+        ///   Looks up a localized string similar to OpenText Functional Testing cannot start while the LeanFT engine is running..
         /// </summary>
         internal static string UFT_LeanFT_Running {
             get {
@@ -1361,7 +1361,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to UFT cannot start while Micro Focus Sprinter is running..
+        ///   Looks up a localized string similar to OpenText Functional Testing cannot start while Micro Focus Sprinter is running..
         /// </summary>
         internal static string UFT_Sprinter_Running {
             get {
@@ -1370,7 +1370,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The installed version of UFT One does not support the LaunchAsUser method. Please use the version 2023 or later..
+        ///   Looks up a localized string similar to The installed version of OpenText Functional Testing does not support the LaunchAsUser method. Please use the version 2023 or later..
         /// </summary>
         internal static string UftLaunchAsUserNotSupported {
             get {
