@@ -59,10 +59,10 @@
            }
     </style>
 
-    <f:section title="Software Delivery Management CI">
-        <f:entry title="Software Delivery Management Server Configuration" description="">
+    <f:section title="OpenText™ Software Delivery Management CI">
+        <f:entry title="OpenText Software Delivery Management Server Configuration" description="">
             <div data-aid="almOctane">
-                <f:repeatable add="Add Software Delivery Management server" var="mqm" items="${descriptor.servers}">
+                <f:repeatable add="Add server" var="mqm" items="${descriptor.servers}">
                     <table width="100%">
                         <f:invisibleEntry>
                             <f:textbox field="internalId" value="${mqm.internalId}"/>

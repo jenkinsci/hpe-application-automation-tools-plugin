@@ -51,7 +51,7 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
-  <f:section title="OpenText Functional Testing Lab (Digital Lab)">
+  <f:section title="OpenText™ Functional Testing Lab (Digital Lab)">
     <f:entry title="Functional Testing Lab server" description="Functional Testing Lab servers list">
       <f:repeatable var="inst" items="${descriptor.installations}" add="Add server">
         <table width="100%">
