@@ -52,15 +52,15 @@
     so it should be straightforward to find them.
   -->
   <f:section title="OpenText™ Application Quality Management">
-    <f:entry title="OpenText Application Quality Management server" description="Servers list">
-      <f:repeatable var="inst" items="${descriptor.installations}" add="Add server">
+    <f:entry title="ALM server" description="ALM servers list">
+      <f:repeatable var="inst" items="${descriptor.installations}" add="Add ALM server">
           <hp:blockWrapperTableWidth>
 
-			<f:entry title="${%Server name}" field="almServerName">
+			<f:entry title="${%ALM server name}" field="almServerName">
 				<f:textbox value="${inst.almServerName}" name="alm.almServerName" />
 			</f:entry>
 
-			<f:entry title="${%Server URL}" field="almServerUrl">
+			<f:entry title="${%ALM server URL}" field="almServerUrl">
 				<f:textbox value="${inst.almServerUrl}" name="alm.almServerUrl" checkMethod="post" />
 			</f:entry>
 
@@ -69,11 +69,11 @@
                         <!--Layout is changed in 2.264 and its not support table element in all places. This choose can be remove after minimal version will be higher than 2.264 -->
                          <j:choose>
                                 <j:when test="${divBasedFormLayout}">
-                                        <f:entry title="Username" field="almUsername">
+                                        <f:entry title="ALM Username" field="almUsername">
                                                <f:textbox value="${credentials.almUsername}" name="almUsername" />
                                            </f:entry>
 
-                                           <f:entry title="Password" field="almPassword">
+                                           <f:entry title="ALM Password" field="almPassword">
                                                <f:password value="${credentials.almPassword}" name="almPassword" />
                                            </f:entry>
 
@@ -85,11 +85,11 @@
                                 </j:when>
                                 <j:otherwise>
                                           <table>
-                                                 <f:entry title="Username" field="almUsername">
+                                                 <f:entry title="ALM Username" field="almUsername">
                                                     <f:textbox value="${credentials.almUsername}" name="almUsername" />
                                                 </f:entry>
 
-                                                <f:entry title="Password" field="almPassword">
+                                                <f:entry title="ALM Password" field="almPassword">
                                                     <f:password value="${credentials.almPassword}" name="almPassword" />
                                                 </f:entry>
 
@@ -108,11 +108,11 @@
               <f:repeatable var="ssoCredentials" items="${inst.almSSOCredentials}" add="Add SSO credentials">
                     <j:choose>
                       <j:when test="${divBasedFormLayout}">
-                              <f:entry title="Client ID" field="almClientID">
+                              <f:entry title="ALM Client ID" field="almClientID">
                                    <f:textbox value="${ssoCredentials.almClientID}" name="almClientID" />
                                </f:entry>
 
-                               <f:entry title="Api Key Secret" field="almApiKeySecret">
+                               <f:entry title="ALM Api Key Secret" field="almApiKeySecret">
                                    <f:password value="${ssoCredentials.almApiKeySecret}" name="almApiKeySecret" />
                                </f:entry>
 
@@ -124,11 +124,11 @@
                       </j:when>
                       <j:otherwise>
                                 <table>
-                                       <f:entry title="Client ID" field="almClientID">
+                                       <f:entry title="ALM Client ID" field="almClientID">
                                             <f:textbox value="${ssoCredentials.almClientID}" name="almClientID" />
                                         </f:entry>
 
-                                        <f:entry title="Api Key Secret" field="almApiKeySecret">
+                                        <f:entry title="ALM Api Key Secret" field="almApiKeySecret">
                                             <f:password value="${ssoCredentials.almApiKeySecret}" name="almApiKeySecret" />
                                         </f:entry>
 
@@ -146,7 +146,7 @@
 
 			<f:entry>
 				<div align="right">
-				<f:repeatableDeleteButton value="Delete server" />
+				<f:repeatableDeleteButton value="Delete ALM server" />
 				</div>
 			</f:entry>
           </hp:blockWrapperTableWidth>

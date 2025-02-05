@@ -217,7 +217,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to folder {0} cannot be found in Application Quality Management (ALM).
+        ///   Looks up a localized string similar to folder {0} cannot be found in OpenText ALM.
         /// </summary>
         internal static string AlmRunnerNoSuchFolder {
             get {

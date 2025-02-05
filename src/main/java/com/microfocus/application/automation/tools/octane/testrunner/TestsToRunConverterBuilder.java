@@ -575,7 +575,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
 
         @Override
         public String getDisplayName() {
-            return "Software Delivery Management testing framework converter";
+            return "OpenText Software Delivery Management testing framework converter";
         }
 
         public FormValidation doTestConvert(

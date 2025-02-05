@@ -188,7 +188,7 @@ Save the test in QuickTest and then run it again.</value>
 {1}</value>
   </data>
   <data name="AlmRunnerNoSuchFolder" xml:space="preserve">
-    <value>folder {0} cannot be found in Application Quality Management (ALM)</value>
+    <value>folder {0} cannot be found in OpenText ALM</value>
   </data>
   <data name="AlmRunnerNumTests" xml:space="preserve">
     <value>Number of tests in set:</value>

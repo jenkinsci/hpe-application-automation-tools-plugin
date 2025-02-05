@@ -176,7 +176,7 @@
 		</f:entry>
 	</f:optionalBlock>
 
-	<f:advanced title="OpenText Functional Testing-Specific Settings" align="right">
+	<f:advanced title="OpenText™ Functional Testing-Specific Settings" align="right">
 		<div id="uftSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
@@ -275,7 +275,7 @@
 	</f:advanced>
 
 	<!-- add MC server and app info starting -->
-	<f:advanced title="OpenText Functional Testing Lab (Digital Lab) Options" align="right">
+	<f:advanced title="OpenText™ Functional Testing Lab (Digital Lab) Options" align="right">
 		<div id="mobileSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
