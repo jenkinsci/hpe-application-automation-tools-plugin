@@ -37,8 +37,10 @@
 package com.microfocus.application.automation.tools.octane.executor;
 
 import com.hp.octane.integrations.OctaneSDK;
+import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginFactory;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginHandler;
+import com.microfocus.application.automation.tools.octane.tests.junit.JUnitXmlIterator;
 import com.microfocus.application.automation.tools.run.RunFromFileBuilder;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -49,6 +51,8 @@ import hudson.model.TaskListener;
 import hudson.scm.NullSCM;
 import hudson.scm.SCM;
 import hudson.tasks.Builder;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
@@ -58,7 +62,8 @@ import java.util.List;
 @Extension
 public class CheckOutSubDirEnvContributor extends EnvironmentContributor {
 
-    public static final String CHECKOUT_SUBDIR_ENV_NAME = "CHECKOUT_SUBDIR";
+    private static final Logger logger                   = SDKBasedLoggerProvider.getLogger(CheckOutSubDirEnvContributor.class);
+    public static final  String CHECKOUT_SUBDIR_ENV_NAME = "CHECKOUT_SUBDIR";
 
     @Override
     public void buildEnvironmentFor(Job j, EnvVars envs, TaskListener listener) {
@@ -75,8 +80,10 @@ public class CheckOutSubDirEnvContributor extends EnvironmentContributor {
         if (j instanceof FreeStyleProject) {
             FreeStyleProject proj = (FreeStyleProject) j;
             SCM scm = proj.getScm();
+
             List<Builder> builders = proj.getBuilders();
             if (scm != null && !(scm instanceof NullSCM) && builders != null) {
+                logger.log(Level.INFO, "scm " + scm.getKey());
                 for (Builder builder : builders) {
                     if (builder instanceof RunFromFileBuilder) {
                         ScmPluginHandler scmPluginHandler = ScmPluginFactory.getScmHandlerByScmPluginName(scm.getClass().getName());
