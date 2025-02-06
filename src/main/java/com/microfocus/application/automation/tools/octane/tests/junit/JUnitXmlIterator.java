@@ -172,7 +172,6 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
     }
 
     private void handleJUnitTest(XMLEvent event) throws XMLStreamException, IOException, InterruptedException {
-        logger.log(Level.INFO,"handleJUnit");
         if (event instanceof StartElement) {
             StartElement element = (StartElement) event;
             String localName = element.getName().getLocalPart();
