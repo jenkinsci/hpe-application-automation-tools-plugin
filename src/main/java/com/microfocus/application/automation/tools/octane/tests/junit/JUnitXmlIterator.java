@@ -60,6 +60,7 @@ import hudson.FilePath;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
 import javax.xml.stream.XMLStreamException;
@@ -171,6 +172,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
     }
 
     private void handleJUnitTest(XMLEvent event) throws XMLStreamException, IOException, InterruptedException {
+        logger.log(Level.INFO,"handleJUnit");
         if (event instanceof StartElement) {
             StartElement element = (StartElement) event;
             String localName = element.getName().getLocalPart();
@@ -193,8 +195,9 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                 id = readNextValue();
             } else if ("case".equals(localName)) { // NON-NLS
                 resetTestData();
-            } else if ("className".equals(localName)) { // NON-NLS
+            } else if ("className".equals(localName)) {// NON-NLS
                 String fqn = readNextValue();
+                logger.log(Level.INFO,"in className fqn " + fqn);
                 int moduleIndex = fqn.indexOf("::");
                 if (moduleIndex > 0) {
                     moduleName = fqn.substring(0, moduleIndex);
@@ -226,6 +229,8 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                 }
 
                 if (hpRunnerType.equals(HPRunnerType.UFT) || hpRunnerType.equals(HPRunnerType.UFT_MBT)) {
+
+                    logger.log(Level.INFO,"Entered testName");
                     if (testName != null && testName.contains("..")) { //resolve existence of ../ - for example c://a/../b => c://b
                         testName = new File(FilenameUtils.separatorsToSystem(testName)).getCanonicalPath();
                     }
@@ -238,7 +243,11 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 
                     // if workspace is prefix of the method name, cut it off
                     // currently this handling is needed for UFT tests
+                    logger.log(Level.INFO,"WS remote: " + workspace.getRemote());
+                    logger.log(Level.INFO,"sharedCheckOutDirectory3: " + sharedCheckOutDirectory);
+                    logger.log(Level.INFO,"testName: " + testName);
                     int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName);
+                    logger.log(Level.INFO,"uftTextIndexStart: " + uftTextIndexStart);
                     if (uftTextIndexStart != -1) {
                         String path = testName.substring(uftTextIndexStart).replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);;
                         boolean isMBT = path.startsWith(MfMBTConverter.MBT_PARENT_SUB_DIR);
@@ -263,18 +272,23 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                             }
                         }
                     }
-
+                    logger.log(Level.INFO,"testName2: " + testName);
+                    logger.log(Level.INFO,"packageName: " + packageName);
+                    logger.log(Level.INFO,"className: " + className);
                     String cleanedTestName = cleanTestName(testName);
                     String nodeName = "";
                     if(!nodeNames.isEmpty()){
                         nodeName = nodeNames.stream().findFirst().get();
                     }
                     boolean testReportCreated = true;
+                    logger.log(Level.INFO,"additionalContext: " + additionalContext);
                     if (additionalContext != null && additionalContext instanceof List) {
                         //test folders are appear in the following format GUITest1[1], while [1] number of test. It possible that tests with the same name executed in the same job
                         //by adding [1] or [2] we can differentiate between different instances.
                         //We assume that test folders are sorted so in this section, once we found the test folder, we remove it from collection , in order to find the second instance in next iteration
                         List<String> createdTests = (List<String>) additionalContext;
+                        logger.log(Level.INFO,"createdTests: " + createdTests);
+                        logger.log(Level.INFO,"nodeNames: " + nodeNames);
                         String searchFor = cleanedTestName + "[";
                         Optional<String> optional = createdTests.stream().filter(str -> str.contains(searchFor)).findFirst();
                         if (optional.isPresent()) {
@@ -682,6 +696,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 			}
 			String pathToTest;
 			if (StringUtils.isEmpty(sharedCheckOutDirectory)) {
+                logger.log(Level.INFO,"Entered empty sharedCD");
 				pathToTest = workspace.getRemote();
 			} else {
 				pathToTest = Paths.get(sharedCheckOutDirectory).isAbsolute() ?
@@ -692,6 +707,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 			}
 
 
+            logger.log(Level.INFO,"pathToTest: " + pathToTest);
 			if (testName.toLowerCase().startsWith(pathToTest.toLowerCase())) {
 				returnIndex = pathToTest.length() + 1;
 			}

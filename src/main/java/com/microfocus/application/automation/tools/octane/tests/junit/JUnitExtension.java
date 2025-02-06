@@ -63,6 +63,7 @@ import hudson.model.*;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.test.AbstractTestResultAction;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;
@@ -220,15 +221,20 @@ public class JUnitExtension extends OctaneTestsExtension {
 			this.hpRunnerType = hpRunnerType;
 			this.jenkinsRootUrl = jenkinsRootUrl;
 			String buildRootDir = build.getRootDir().getCanonicalPath();
+			logger.log(Level.INFO,"build parent: " + build.getParent().getFullName());
 			this.sharedCheckOutDirectory = CheckOutSubDirEnvContributor.getSharedCheckOutDirectory(build.getParent());
+			logger.log(Level.INFO,"sharedCheckOutDirectory1: " + sharedCheckOutDirectory);
+			logger.log(Level.INFO,"hpRunnerType: " + hpRunnerType);
 			if (sharedCheckOutDirectory == null && (HPRunnerType.UFT.equals(hpRunnerType) || HPRunnerType.UFT_MBT.equals(hpRunnerType))) {
 				ParametersAction parameterAction = build.getAction(ParametersAction.class);
 				ParameterValue pv = parameterAction != null ? parameterAction.getParameter(UftConstants.UFT_CHECKOUT_FOLDER) : null;
 				sharedCheckOutDirectory = pv != null && pv instanceof StringParameterValue ?
 						StringUtils.strip((String) pv.getValue(), "\\/") : "";
 			}
+			logger.log(Level.INFO,"sharedCheckOutDirectory2: " + sharedCheckOutDirectory);
 
 			this.jobName = JobProcessorFactory.getFlowProcessor(build.getParent()).getTranslatedJobName();
+			logger.log(Level.INFO,"jobName: " + jobName);
 			this.buildId = build.getId();
 			moduleDetection = Arrays.asList(
 					new MavenBuilderModuleDetection(build),
