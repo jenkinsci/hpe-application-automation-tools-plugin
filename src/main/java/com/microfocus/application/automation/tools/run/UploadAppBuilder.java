@@ -271,7 +271,7 @@ public class UploadAppBuilder extends Builder {
          */
         @SuppressWarnings("squid:S2259")
         @JavaScriptMethod
-        public JSONArray getValidWorkspaces(String mcUrl, String authType, String mcUserName, String mcPassword, String mcTenantId, String mcExecToken,
+        public JSONArray getValidWorkspaces(String mcUrl, String authType, String mcUserName, String mcPassword/*, String mcTenantId*/, String mcExecToken,
                                                       boolean useProxy, String proxyAddress, boolean useAuthentication, String proxyUserName, String proxyPassword) {
             JSONArray workspaces = null;
             for (MCServerSettingsModel mcServer : this.getMcServers()) {
@@ -280,7 +280,7 @@ public class UploadAppBuilder extends Builder {
                     mcUrl = mcServer.getMcServerUrl();
                 }
             }
-            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, mcExecToken, authType);
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword/*, mcTenantId*/, mcExecToken, authType);
             ProxySettings proxySettings =new ProxySettings(useAuthentication, proxyAddress, proxyUserName, proxyPassword);
             try {
                 JobConfigurationProxy job = JobConfigurationProxy.getInstance();

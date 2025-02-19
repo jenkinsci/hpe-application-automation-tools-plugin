@@ -711,9 +711,9 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             if (StringUtils.isNotBlank(authModel.getMcUserName())) {
                 props.put("MobileUserName", authModel.getMcUserName());
             }
-            if (StringUtils.isNotBlank(authModel.getMcTenantId())) {
-                props.put("MobileTenantId", authModel.getMcTenantId());
-            }
+//            if (StringUtils.isNotBlank(authModel.getMcTenantId())) {
+//                props.put("MobileTenantId", authModel.getMcTenantId());
+//            }
         }
       
         return false;

@@ -59,7 +59,6 @@ function getDigitalLab(divMain) {
     if (o.authType == "base") {
         o.userName = dl.querySelector('input[name="mcUserName"]').value;
         o.password = dl.querySelector('input[name="mcPassword"]').value;
-        o.tenantId = dl.querySelector('input[name="mcTenantId"]').value;
     } else {
         o.execToken = dl.querySelector('input[name="mcExecToken"]').value;
     }
@@ -166,7 +165,7 @@ async function loadMobileInfo(a, b, o, err) {
             return;
         }
         let prevJobId = o.recreateJob ? "" : o.jobId;
-        await a.getJobId(baseUrl, o.userName, o.password, o.tenantId, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, prevJobId, async (response) => {
+        await a.getJobId(baseUrl, o.userName, o.password/*, o.tenantId*/, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, prevJobId, async (response) => {
             let map = response.responseObject();
 
             let jobId = '';
@@ -200,7 +199,7 @@ async function loadMobileInfo(a, b, o, err) {
 
             const msgCallback = async (ev) => {
                 if (ev?.data == "mcCloseWizard") {
-                    await a.populateAppAndDevice(baseUrl, o.userName, o.password, o.tenantId, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, jobId, async (app) => {
+                    await a.populateAppAndDevice(baseUrl, o.userName, o.password/*, o.tenantId*/, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, jobId, async (app) => {
                         let jobInfo = app.responseObject();
                         let deviceId = "", OS = "", manufacturerAndModel = "", targetLab = "";
                         if (jobInfo['deviceJSON']) {
