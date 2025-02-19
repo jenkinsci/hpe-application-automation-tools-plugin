@@ -54,7 +54,7 @@ public class UftOctaneUtils {
 
     /**
      * This step is important for integration with Octane when job is executed as workflow job.
-     * Our plugin can recognize UFT build step when its executed in context of freeStyle job, but its not possible to do it
+     * Our plugin can recognize Functional Testing build step when its executed in context of freeStyle job, but its not possible to do it
      * when this step executed in workflow job.
      * So , in this method we add parameter of RunnerType.UFT to sign this job as UFT runner.
      * @param build
@@ -70,8 +70,8 @@ public class UftOctaneUtils {
             build.addOrReplaceAction(newParametersAction);
 
             if (parameterAction == null || parameterAction.getParameter(UftConstants.UFT_CHECKOUT_FOLDER) == null) {
-                listener.getLogger().println("NOTE : If you need to integrate test results with an ALM Octane pipeline, and tests are located outside of the job workspace, define a parameter  " + UftConstants.UFT_CHECKOUT_FOLDER +
-                        " with the path to the repository root in the file system. This enables ALM Octane to display the test name, rather than the full path to your test.");
+                listener.getLogger().println("NOTE : If you need to integrate test results with an Software Delivery Management pipeline, and tests are located outside of the job workspace, define a parameter  " + UftConstants.UFT_CHECKOUT_FOLDER +
+                        " with the path to the repository root in the file system. This enables Software Delivery Management to display the test name, rather than the full path to your test.");
                 listener.getLogger().println("");
             }
         }

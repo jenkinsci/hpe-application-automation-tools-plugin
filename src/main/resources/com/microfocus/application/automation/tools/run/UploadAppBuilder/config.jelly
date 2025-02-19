@@ -152,7 +152,7 @@
 
     </script>
 
-    <f:entry title="Digital Lab Server" field="mcServerName">
+    <f:entry title="Server name" field="mcServerName">
         <select name="uploadApp.mcServerName">
             <j:forEach var="mcServer" items="${descriptor.mcServers}">
                 <f:option selected="${mcServer.mcServerName==instance.mCServerSettingsModel.mcServerName}" value="${mcServer.mcServerName}">

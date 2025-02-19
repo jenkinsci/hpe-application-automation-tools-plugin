@@ -78,7 +78,7 @@ public class EncryptionNodeProperty extends NodeProperty<Node> {
         @NonNull
         @Override
         public String getDisplayName() {
-            return "Encryption for UFT sensitive data";
+            return "Encryption for Functional Testing sensitive data";
         }
 
         @Override

@@ -42,7 +42,7 @@ import hudson.model.Cause;
  * FullSyncRequiredCause
  * Informational class for full sync case.
  * Used for SVN SCM delete action : in this case we don't receive inforamtion about deleted files,
- * therefore full sync required to update ALM Octane entities correctly 
+ * therefore full sync required to update Software Delivery Management entities correctly
  */
 public class FullSyncRequiredCause extends Cause {
 

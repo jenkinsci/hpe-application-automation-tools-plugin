@@ -51,7 +51,7 @@
     tags they use. Views are always organized according to its owner class,
     so it should be straightforward to find them.
   -->
-  <f:section title="Application Lifecycle Management">
+  <f:section title="OpenText™ Application Quality Management">
     <f:entry title="ALM server" description="ALM servers list">
       <f:repeatable var="inst" items="${descriptor.installations}" add="Add ALM server">
           <hp:blockWrapperTableWidth>

@@ -94,7 +94,7 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
     }
 
     /**
-     * Detect result fields for ALM Octane tests
+     * Detect result fields for Software Delivery Management tests
      *
      * @param build
      * @return

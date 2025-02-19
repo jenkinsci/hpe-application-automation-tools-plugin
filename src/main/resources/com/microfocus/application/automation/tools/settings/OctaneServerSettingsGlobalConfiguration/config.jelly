@@ -59,10 +59,10 @@
            }
     </style>
 
-    <f:section title="ALM Octane CI">
-        <f:entry title="ALM Octane Server Configuration" description="">
+    <f:section title="OpenText™ Software Delivery Management CI">
+        <f:entry title="OpenText Software Delivery Management Server Configuration" description="">
             <div data-aid="almOctane">
-                <f:repeatable add="Add ALM Octane server" var="mqm" items="${descriptor.servers}">
+                <f:repeatable add="Add server" var="mqm" items="${descriptor.servers}">
                     <table width="100%">
                         <f:invisibleEntry>
                             <f:textbox field="internalId" value="${mqm.internalId}"/>
@@ -85,7 +85,7 @@
 
                         <f:advanced>
                         <f:section title="Advanced">
-                            <f:entry title="Disable configuration" description="If selected - no data is sent to ALM Octane">
+                            <f:entry title="Disable configuration" description="If selected - no data is sent to Software Delivery Management">
                                 <f:checkbox name="suspend" checked="${mqm.suspend}"/>
                             </f:entry>
 
