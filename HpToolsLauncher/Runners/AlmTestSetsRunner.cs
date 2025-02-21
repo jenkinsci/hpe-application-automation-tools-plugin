@@ -560,6 +560,7 @@ namespace HpToolsLauncher
                     GetAllTestSetsFromDirTree(childFolder);
                 }
             }
+            retVal.Sort();
             return retVal;
         }
 
