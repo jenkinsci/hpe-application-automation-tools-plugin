@@ -123,6 +123,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 
 
 			HPRunnerType hpRunnerType = MFToolsDetectionExtension.getRunnerType(run);
+			logger.log(Level.INFO,"hpRunnerTypeInit: " + hpRunnerType);
 			if(hpRunnerType.equals(HPRunnerType.UFT) || hpRunnerType.equals(HPRunnerType.UFT_MBT)){
 				getResultsOnController = true;
 			}
