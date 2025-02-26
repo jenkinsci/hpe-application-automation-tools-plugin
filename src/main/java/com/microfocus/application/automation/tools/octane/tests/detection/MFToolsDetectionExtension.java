@@ -45,6 +45,7 @@ import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Run;
 import hudson.tasks.Builder;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -124,6 +125,7 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
             }
         } else {
             List<Builder> builders = JobProcessorFactory.getFlowProcessor(run.getParent()).tryGetBuilders();
+            logger.log(Level.INFO, "builders: " + builders.toString());
             if (builders != null) {
                 for (Builder builder : builders) {
                     String builderName = builder.getClass().getSimpleName();
@@ -132,6 +134,12 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
                         break;
                     }
                 }
+            }
+        }
+        if (hpRunnerType == HPRunnerType.NONE) {
+            ParameterValue runnerTypePv = parameterAction != null ? parameterAction.getParameter(HPRunnerType.class.getSimpleName()) : null;
+            if (runnerTypePv != null) {
+                hpRunnerType = HPRunnerType.valueOf((String) runnerTypePv.getValue());
             }
         }
 

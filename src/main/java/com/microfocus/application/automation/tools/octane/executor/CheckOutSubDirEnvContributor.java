@@ -83,7 +83,7 @@ public class CheckOutSubDirEnvContributor extends EnvironmentContributor {
 
             List<Builder> builders = proj.getBuilders();
             if (scm != null && !(scm instanceof NullSCM) && builders != null) {
-                logger.log(Level.INFO, "scm " + scm.getKey());
+//                logger.log(Level.INFO, "scm " + scm.getKey());
                 for (Builder builder : builders) {
                     if (builder instanceof RunFromFileBuilder) {
                         ScmPluginHandler scmPluginHandler = ScmPluginFactory.getScmHandlerByScmPluginName(scm.getClass().getName());
