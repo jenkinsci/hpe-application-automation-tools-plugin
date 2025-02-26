@@ -323,7 +323,7 @@ public class ExecuteTestsInOctaneBuilder extends Builder implements SimpleBuildS
 
         @Override
         public String getDisplayName() {
-            return "Execute tests from OpenText Software Delivery Management (Tech Preview)";
+            return "Execute OpenText functional tests from Software Delivery Management (Tech Preview)";
         }
 
 
