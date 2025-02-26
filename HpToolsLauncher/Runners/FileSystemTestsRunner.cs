@@ -62,6 +62,7 @@ namespace HpToolsLauncher
         private List<ScriptRTSModel> _scriptRTSSet;
         private TimeSpan _timeout = TimeSpan.MaxValue;
         private string _uftRunMode;
+        private bool _uftExportPdf;
         private Stopwatch _stopwatch = null;
         private string _abortFilename = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\stop" + Launcher.UniqueTimeStamp + ".txt";
         private string _encoding;
@@ -104,7 +105,8 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
-                                    bool useUftLicense = false)
+                                    bool useUftLicense = false,
+                                    bool exportPdfConfiguration = false)
         {
             //search if we have any testing tools installed
             if (!Helper.IsTestingToolsInstalled(TestStorageType.FileSystem))
@@ -135,6 +137,7 @@ namespace HpToolsLauncher
             _encoding = encoding;
             _uftRunAsUser = uftRunAsUser;
             _uftRunMode = uftRunMode;
+            _uftExportPdf = exportPdfConfiguration;
 
             if (_digitalLab.ConnectionInfo != null)
                 ConsoleWriter.WriteLine("Functional Testing Lab connection info is - " + _digitalLab.ConnectionInfo.ToString());
@@ -665,7 +668,7 @@ namespace HpToolsLauncher
                     _runner = new ApiTestRunner(this, _timeout - _stopwatch.Elapsed, _encoding, _printInputParams, _uftRunAsUser);
                     break;
                 case TestType.QTP:
-                    _runner = new GuiTestRunner(this, _useUFTLicense, _timeout - _stopwatch.Elapsed, _uftRunMode, _digitalLab, _printInputParams, _uftRunAsUser);
+                    _runner = new GuiTestRunner(this, _useUFTLicense, _timeout - _stopwatch.Elapsed, _uftRunMode, _digitalLab, _printInputParams, _uftExportPdf, _uftRunAsUser);
                     break;
                 case TestType.LoadRunner:
                     AppDomain.CurrentDomain.AssemblyResolve += Helper.HPToolsAssemblyResolver;

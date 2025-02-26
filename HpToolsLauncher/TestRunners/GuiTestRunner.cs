@@ -45,9 +45,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Resources = HpToolsLauncher.Properties.Resources;
+using System.Web;
 using AuthType = HpToolsLauncher.McConnectionInfo.AuthType;
 using DigitalLabType = HpToolsLauncher.McConnectionInfo.DigitalLabType;
+using Resources = HpToolsLauncher.Properties.Resources;
 
 namespace HpToolsLauncher
 {
@@ -92,6 +93,7 @@ namespace HpToolsLauncher
         private readonly object _lockObject = new object();
         private TimeSpan _timeLeftUntilTimeout = TimeSpan.MaxValue;
         private readonly string _uftRunMode;
+        private bool _uftExportPDF;
         private Stopwatch _stopwatch = null;
         private Application _qtpApplication;
         private ParameterDefinitions _qtpParamDefs;
@@ -111,10 +113,11 @@ namespace HpToolsLauncher
         /// <param name="runNotifier"></param>
         /// <param name="useUftLicense"></param>
         /// <param name="timeLeftUntilTimeout"></param>
-        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, RunAsUser uftRunAsUser)
+        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, bool uftExportPdf, RunAsUser uftRunAsUser)
         {
             _timeLeftUntilTimeout = timeLeftUntilTimeout;
             _uftRunMode = uftRunMode;
+            _uftExportPDF = uftExportPdf;
             _stopwatch = Stopwatch.StartNew();
             _runNotifier = runNotifier;
             _useUFTLicense = useUftLicense;
@@ -279,6 +282,18 @@ namespace HpToolsLauncher
                 ConsoleWriter.WriteErrLine(Resources.FsDuplicateParamNames);
                 throw;
             }
+
+            var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+            exportOptions.AutoExportResults = true;
+            exportOptions.StepDetailsReport = true;
+            exportOptions.DataTableReport = true;
+            exportOptions.LogTrackingReport = true;
+            exportOptions.ScreenRecorderReport = true;
+            exportOptions.SystemMonitorReport = false;
+            exportOptions.ExportLocation = "C:\\Documents and Settings\\All Users\\Desktop";
+            exportOptions.UserDefinedXSL = "C:\\Documents and Settings\\All Users\\Desktop\\MyCustXSL.xsl";
+            exportOptions.StepDetailsReportFormat = "UserDefined";
+            exportOptions.ExportForFailedRunsOnly = true;
 
             //if (!HandleDigitalLab(qtpVersion, ref errorReason))
             //{
