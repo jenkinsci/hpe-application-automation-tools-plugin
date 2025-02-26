@@ -300,7 +300,6 @@ Utils.loadMC = function(a, b, prEnv){
 	const dl = divMain.querySelector("#mobileSpecificSection");
     var mcUserName = dl.querySelector('input[name="mcUserName"]')?.value;
     var mcPassword = dl.querySelector('input[name="mcPassword"]')?.value;
-	var mcTenantId = dl.querySelector('input[name="mcTenantId"]')?.value;
     var mcExecToken = dl.querySelector('input[name="mcExecToken"]')?.value;
     var mcAuthType = dl.querySelector('input[name$="authModel"]:checked')?.value;
 	var mcUrl = dl.querySelector('select[name="mcServerName"]')?.value;
@@ -333,7 +332,7 @@ Utils.loadMC = function(a, b, prEnv){
 			b.disabled = false;
 			return;
 		}
-        a.getJobId(baseUrl, mcUserName, mcPassword, mcTenantId, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, previousJobId, function (response) {
+        a.getJobId(baseUrl, mcUserName, mcPassword, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, previousJobId, function (response) {
 			let map = response.responseObject();
 			let jobId = '';
 			let tenantId = '';
@@ -364,7 +363,7 @@ Utils.loadMC = function(a, b, prEnv){
 			}
 			var messageCallBack = function (event) {
 				if (event?.data=="mcCloseWizard") {
-                    a.populateAppAndDevice(baseUrl, mcUserName, mcPassword, mcTenantId, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, jobId, function (app) {
+                    a.populateAppAndDevice(baseUrl, mcUserName, mcPassword, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, jobId, function (app) {
 						var jobInfo = app.responseObject();
 						let deviceId = "", OS = "", manufacturerAndModel = "";
 						if(jobInfo['deviceJSON']){
