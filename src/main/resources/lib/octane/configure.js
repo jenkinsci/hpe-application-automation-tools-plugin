@@ -74,7 +74,7 @@ function octane_job_configuration(target, progress, proxy) {
             if(sharedspaces.responseJSON.results.length===1){
                 loadJobConfigurationFromServer(sharedspaces.responseJSON.results[0]);
             }else{
-                var sharedspaceDiv = $("<div class='mqm'><label><h3>Select ALM Octane server configuration</h3></label><select id='sharedspaceSelect'></select></div>");
+                var sharedspaceDiv = $("<div class='mqm'><label><h3>Select Software Delivery Management server configuration</h3></label><select id='sharedspaceSelect'></select></div>");
                 $(target).append(sharedspaceDiv);
                 $("#sharedspaceSelect").select2({
                     placeholder: 'Select a configuration',
@@ -160,7 +160,7 @@ function octane_job_configuration(target, progress, proxy) {
         function addCheckbox(currPipeline) {
             checkbox1.empty();
             checkbox1.append(status);
-            var ignoreTestCheckbox = $('<input type="checkbox" name="ignoreTestResults" id="ignoreTestResults" />' + 'Ignore test run results (Results are not sent to ALM Octane). ' + '<br /><br />');
+            var ignoreTestCheckbox = $('<input type="checkbox" name="ignoreTestResults" id="ignoreTestResults" />' + 'Ignore test run results (Results are not sent to Software Delivery Management). ' + '<br /><br />');
             checkbox1.append(ignoreTestCheckbox);
             checkbox2.empty();
             pipelineDiv.append(checkbox1);
@@ -204,7 +204,7 @@ function octane_job_configuration(target, progress, proxy) {
             var table = $("<table class='ui-block'><tbody><tr/></tbody></table>");
             pipelineDiv.append(table);
 
-            var releaseMilestoneAlertMessage = "<div id=\"releaseMilestoneAlert\" style=\"color: orange; visibility: hidden; font-style: italic\">Note: When you change a milestone or release, a new set of runs is created on ALM Octane, " +
+            var releaseMilestoneAlertMessage = "<div id=\"releaseMilestoneAlert\" style=\"color: orange; visibility: hidden; font-style: italic\">Note: When you change a milestone or release, a new set of runs is created on Software Delivery Management, " +
                 "with a new run history.</div>";
 
             pipelineDiv.append(releaseMilestoneAlertMessage);
@@ -774,7 +774,7 @@ function octane_job_configuration(target, progress, proxy) {
             var pipelineSelector = undefined;
 
             var selectWorkspaceDiv = $("<div class='mutton rpos'>" +
-                "<div id='configuration-div' class='config-label'>ALM Octane : " + jobConfiguration.currentPipeline.instanceCaption + "</div>" +
+                "<div id='configuration-div' class='config-label'>Software Delivery Management : " + jobConfiguration.currentPipeline.instanceCaption + "</div>" +
                 "<div id='select-workspace-div'><label for='workspace-select'>Workspace:</label><select/>" +
                 "</div></div>");
             var workspaceSelect = selectWorkspaceDiv.find("select");

@@ -37,23 +37,23 @@
 
 -->
 <div>
-    This step is responsible for collecting branches from the SCM tool and injecting them into ALM Octane.
+    This step is responsible for collecting branches from the SCM tool and injecting them into Software Delivery Management.
     <br>
     <br>
-    In addition, this step is used to define the SCM repository templates that are used by ALM Octane to link to your repository viewer. To configure templates in ALM Octane, access Settings > Spaces. Select a workspace and click DevOps > SCM Repositories. Follow the on-screen instructions.
+    In addition, this step is used to define the SCM repository templates that are used by Software Delivery Management to link to your repository viewer. To configure templates in Software Delivery Management, access Settings > Spaces. Select a workspace and click DevOps > SCM Repositories. Follow the on-screen instructions.
     <br>
     <br>
     <br>
-    Supported version of ALM Octane: 15.1.90 and later.
+    Supported version of Software Delivery Management: 15.1.90 and later.
 
 
     <br>
     <br>
     You can change the behaviour of this step by adding the following parameters to the job:
     <ul>
-        <li><b>branches_active_branch_days</b>: Only active branches can be added/updated to ALM Octane. Default is 60 days.</li><br>
-        <li><b>branches_max_branches_to_fill</b>: Relevant for GitHub and GitLab repository only. Max branches to collect data. If data is not collected from a branch, it cannot be added to ALM Octane. Default is 1000.</li><br>
-        <li><b>search_branch_octane_root_repository_id</b>: The plugin will look through the branches that are linked to the SCM Repository with the configured Id. If a branch has the same name as one of those branches, they will be considered as duplicates and new branches won't be created in ALM Octane.</li><br>
+        <li><b>branches_active_branch_days</b>: Only active branches can be added/updated to Software Delivery Management. Default is 60 days.</li><br>
+        <li><b>branches_max_branches_to_fill</b>: Relevant for GitHub and GitLab repository only. Max branches to collect data. If data is not collected from a branch, it cannot be added to Software Delivery Management. Default is 1000.</li><br>
+        <li><b>search_branch_octane_root_repository_id</b>: The plugin will look through the branches that are linked to the SCM Repository with the configured Id. If a branch has the same name as one of those branches, they will be considered as duplicates and new branches won't be created in Software Delivery Management.</li><br>
     </ul>
 
     <br>

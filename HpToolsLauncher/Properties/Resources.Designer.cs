@@ -217,7 +217,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to folder {0} cannot be found in ALM.
+        ///   Looks up a localized string similar to folder {0} cannot be found in OpenText ALM.
         /// </summary>
         internal static string AlmRunnerNoSuchFolder {
             get {
@@ -379,7 +379,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cloud Browser is not supported in UFT One {0}. Please upgrade to UFT One 23.4 or later..
+        ///   Looks up a localized string similar to Cloud Browser is not supported in OpenText Functional Testing {0}. Please upgrade to UFT One 23.4 or later..
         /// </summary>
         internal static string CloudBrowserNotSupported {
             get {
@@ -559,7 +559,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Input parameter type mismatch (skipped), check your test configuration in UFT. param: &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Input parameter type mismatch (skipped), check your test configuration in OpenText Functional Testing. param: &apos;{0}&apos;.
         /// </summary>
         internal static string GeneralParameterTypeMismatchWith1Type {
             get {
@@ -1171,7 +1171,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Empty Digital Lab Server..
+        ///   Looks up a localized string similar to Empty Functional Testing Lab Server..
         /// </summary>
         internal static string McEmptyHostAddress {
             get {
@@ -1189,7 +1189,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Invalid Digital Lab Server URL: &apos;{0}&apos;..
+        ///   Looks up a localized string similar to Invalid Functional Testing Lab Server URL: &apos;{0}&apos;..
         /// </summary>
         internal static string McInvalidUrl {
             get {
@@ -1198,7 +1198,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Malformed execution token for Digital Lab, invalid key value: {0}..
+        ///   Looks up a localized string similar to Malformed execution token for Functional Testing Lab, invalid key value: {0}..
         /// </summary>
         internal static string McMalformedTokenInvalidKey {
             get {
@@ -1207,7 +1207,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Malformed execution token for Digital Lab, key-value pairs are not separated by {0}..
+        ///   Looks up a localized string similar to Malformed execution token for Functional Testing Lab, key-value pairs are not separated by {0}..
         /// </summary>
         internal static string McMalformedTokenInvalidKeyValueSeparator {
             get {
@@ -1216,7 +1216,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Malformed execution token for Digital Lab, token without key-value..
+        ///   Looks up a localized string similar to Malformed execution token for Functional Testing Lab, token without key-value..
         /// </summary>
         internal static string McMalformedTokenMissingKeyValuePair {
             get {
@@ -1352,7 +1352,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to UFT cannot start while the LeanFT engine is running..
+        ///   Looks up a localized string similar to OpenText Functional Testing cannot start while the LeanFT engine is running..
         /// </summary>
         internal static string UFT_LeanFT_Running {
             get {
@@ -1361,7 +1361,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to UFT cannot start while Micro Focus Sprinter is running..
+        ///   Looks up a localized string similar to OpenText Functional Testing cannot start while Micro Focus Sprinter is running..
         /// </summary>
         internal static string UFT_Sprinter_Running {
             get {
@@ -1370,7 +1370,7 @@ namespace HpToolsLauncher.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The installed version of UFT One does not support the LaunchAsUser method. Please use the version 2023 or later..
+        ///   Looks up a localized string similar to The installed version of OpenText Functional Testing does not support the LaunchAsUser method. Please use the version 2023 or later..
         /// </summary>
         internal static string UftLaunchAsUserNotSupported {
             get {

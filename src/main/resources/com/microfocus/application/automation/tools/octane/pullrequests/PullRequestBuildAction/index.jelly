@@ -39,7 +39,7 @@
 <?jelly escape-by-default='true'?>
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:p="/lib/hudson/project" xmlns:s="/lib/samples">
-  <l:layout title="ALM Octane Pull Request Collect Report">
+  <l:layout title="Software Delivery Management Pull Request Collect Report">
     <style type="text/css">
 
     .myTable {
@@ -81,7 +81,7 @@
     <st:include it="${it.build}" page="sidepanel.jelly" />
     <l:main-panel>
        <p>
-       <h1><u>ALM Octane Pull Request Report</u></h1>
+       <h1><u>Software Delivery Management Pull Request Report</u></h1>
        </p>
        <br/>
        <br/>

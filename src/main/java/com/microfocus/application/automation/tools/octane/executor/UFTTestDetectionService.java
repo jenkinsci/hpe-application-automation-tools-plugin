@@ -95,7 +95,7 @@ public class UFTTestDetectionService {
                 printToConsole(buildListener, "This run may not have discovered all updated tests. \n" +
                         "It seems that the changes in this build included filenames with Unicode characters, which Git did not list correctly.\n" +
                         "To make sure Git can properly list such file names, configure Git as follows : git config --global core.quotepath false\n" +
-                        "To discover the updated tests that were missed in this run and send them to ALM Octane, run this job manually with the \"Full sync\" parameter selected.\n");
+                        "To discover the updated tests that were missed in this run and send them to Software Delivery Management, run this job manually with the \"Full sync\" parameter selected.\n");
             }
 
             result.setScmRepositoryId(scmRepositoryId);

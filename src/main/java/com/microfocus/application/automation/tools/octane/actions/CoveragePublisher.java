@@ -200,7 +200,7 @@ public class CoveragePublisher extends Recorder implements SimpleBuildStep {
 		}
 
 		public String getDisplayName() {
-			return "ALM Octane code coverage publisher";
+			return "Software Delivery Management code coverage publisher";
 		}
 
 		public FormValidation doCheckJacocoPathPattern(@AncestorInPath AbstractProject project, @QueryParameter String value) throws IOException {

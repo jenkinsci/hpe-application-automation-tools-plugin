@@ -86,11 +86,7 @@ public class JobConfigurationProxy {
             HttpResponse response;
             AuthType authType = authModel.getAuthType();
             if (authType == AuthType.BASE) {
-                String tempUsername = authModel.getMcUserName();
-                if (!StringUtils.isNullOrEmpty(authModel.getMcTenantId())) {
-                    tempUsername += "#" + authModel.getMcTenantId();
-                }
-                sendObject.put("name", tempUsername);
+                sendObject.put("name", authModel.getMcUserName());
                 sendObject.put("password", authModel.getMcPassword());
                 sendObject.put("accountName", "default");
                 response = doPost(proxy, mcUrl + Constants.LOGIN_URL, headers, sendObject);

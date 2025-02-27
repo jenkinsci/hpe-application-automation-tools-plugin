@@ -49,12 +49,12 @@
       When submitted, it will be passed to the corresponding constructor parameter.
     -->
 
-    <f:entry title="ALM Octane configuration" field="configurationId"
-             description="Select the ALM Octane configuration to work with.">
+    <f:entry title="Software Delivery Management configuration" field="configurationId"
+             description="Select the Software Delivery Management configuration to work with.">
         <f:select/>
     </f:entry>
 
-    <f:entry title="ALM Octane workspace" field="workspaceName"
+    <f:entry title="Software Delivery Management workspace" field="workspaceName"
              description="Select the workspace to assign discovered tests to.">
         <f:select/>
     </f:entry>

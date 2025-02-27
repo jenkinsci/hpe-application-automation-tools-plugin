@@ -56,7 +56,7 @@ import java.util.Collections;
 
 /**
  * *
- * util class for user impersonation, to allow internal access on behalf of the Jenkins user associated with an instance of ALM Octane server.
+ * util class for user impersonation, to allow internal access on behalf of the Jenkins user associated with an instance of Software Delivery Management server.
  */
 
 public class ImpersonationUtil {
