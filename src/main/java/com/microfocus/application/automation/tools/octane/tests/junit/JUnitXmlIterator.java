@@ -70,6 +70,8 @@ import javax.xml.stream.events.XMLEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -297,7 +299,8 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                         final String basePath = ((List<String>) additionalContext).get(0);
                         String nodeNameSubFolder = StringUtils.isNotEmpty(nodeName) ? nodeName +"/" : "";
                         uftResultFilePath = Paths.get(basePath, "archive", "UFTReport", nodeNameSubFolder, cleanedTestName, "/Result/run_results.xml").toFile().getCanonicalPath();
-                        externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/artifact/UFTReport/" + nodeNameSubFolder + cleanedTestName + "/Result/run_results.html";
+                        externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/artifact/UFTReport/" + nodeNameSubFolder
+                                      + URLEncoder.encode(cleanedTestName, StandardCharsets.UTF_8) + "/Result/run_results.html";
                     } else {
                         //if UFT didn't created test results page - add reference to Jenkins test results page
                         externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/testReport/" + myPackageName + "/" + jenkinsTestClassFormat(myClassName) + "/" + jenkinsTestNameFormat(myTestName) + "/";
