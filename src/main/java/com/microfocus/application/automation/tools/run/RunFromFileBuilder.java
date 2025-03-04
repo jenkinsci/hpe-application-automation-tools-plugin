@@ -1055,9 +1055,9 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * @return the job id
          */
         @JavaScriptMethod
-        public Map<String, String> getJobId(String mcUrl, String mcUserName, String mcPassword, String mcTenantId, String accessKey, String authType,
+        public Map<String, String> getJobId(String mcUrl, String mcUserName, String mcPassword, String accessKey, String authType,
                                boolean useProxyAuth, String proxyAddress, String proxyUserName, String proxyPassword, String previousJobId) {
-            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, accessKey, authType);
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, accessKey, authType);
             ProxySettings proxy = new ProxySettings(useProxyAuth, proxyAddress, proxyUserName, proxyPassword);
             Map<String, String> map = new HashMap<>();
             String jobIdKey = "jobId";
@@ -1111,10 +1111,10 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * @return the json object
          */
         @JavaScriptMethod
-        public JSONObject populateAppAndDevice(String mcUrl, String mcUserName, String mcPassword, String mcTenantId, String accessKey, String authType,
+        public JSONObject populateAppAndDevice(String mcUrl, String mcUserName, String mcPassword, String accessKey, String authType,
                                                boolean useProxyAuth, String proxyAddress, String proxyUserName, String proxyPassword,
                                                String jobId) {
-            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, accessKey, authType);
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, accessKey, authType);
             ProxySettings proxy = new ProxySettings(useProxyAuth, proxyAddress, proxyUserName, proxyPassword);
             return instance.getJobJSONData(mcUrl, authModel, proxy, jobId);
         }

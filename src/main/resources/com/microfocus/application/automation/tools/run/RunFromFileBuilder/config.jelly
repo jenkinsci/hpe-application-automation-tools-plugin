@@ -333,9 +333,6 @@
                             <f:entry title="Password" field="mcPassword">
                                 <f:password name="mcPassword" value="${instance.runFromFileModel.authModel.mcPassword}"/>
                             </f:entry>
-                            <f:entry title="Tenant Id" field="mcTenantId">
-                                <f:textbox name="mcTenantId" value="${instance.runFromFileModel.authModel.mcTenantId}"/>
-                            </f:entry>
                         </f:nested>
                     </f:radioBlock>
                 </f:entry>

@@ -194,20 +194,20 @@ To set up a pipeline test job for your OpenText testing tool:
 
 The available Pipeline job types are: loadRunnerTest, uftScenarioLoad, runFromFSBuilder, runFromAlmBuilder, sseBuild, sseBuildAndPublish, pcBuild, svChangeModeStep, svDeployStep, svExportStep, svUndeployStep, and publishMFTestResults
 
-| Product                                                                                | Pipeline step name           | Description                                                             |
-|----------------------------------------------------------------------------------------| ---------------------------- |-------------------------------------------------------------------------|
-| LoadRunner Professional                                                                | loadRunnerTest               | Run LoadRunner Professional tests from a file system scenario file.     |
-| UFT One                                                                                | uftScenarioLoad              | Run a UFT scenario. **Deprecated**, but backwards compatibility exists. |
-| OpenText™ Functional Testing                                                           | runFromFSBuilder             | Execute OpenText Functional Testing Tests from the file system.         |
-| Application Quality Management                                                         | runFromAlmBuilder            | Execute functional tests from ALM.                                      |
-| ALM Lab Management                                                                     | sseBuild                     | Execute tests using ALM Lab Management.                                 |
-| ALM Lab Management                                                                     | sseBuildAndPublish           | Execute tests using ALM Lab Management and publish test results.        |
+| Product                                                                                 | Pipeline step name           | Description                                                             |
+|-----------------------------------------------------------------------------------------| ---------------------------- |-------------------------------------------------------------------------|
+| LoadRunner Professional                                                                 | loadRunnerTest               | Run LoadRunner Professional tests from a file system scenario file.     |
+| UFT One                                                                                 | uftScenarioLoad              | Run a UFT scenario. **Deprecated**, but backwards compatibility exists. |
+| OpenText™ Functional Testing                                                            | runFromFSBuilder             | Execute OpenText Functional Testing Tests from the file system.         |
+| Application Quality Management                                                          | runFromAlmBuilder            | Execute functional tests from ALM.                                      |
+| ALM Lab Management                                                                      | sseBuild                     | Execute tests using ALM Lab Management.                                 |
+| ALM Lab Management                                                                      | sseBuildAndPublish           | Execute tests using ALM Lab Management and publish test results.        |
 | OpenText Enterprise Performance EngineeringOpenText Enterprise Performance Engineering. |
-| Service Virtualization                                                                 | svChangeModeStep             | Change the mode of a virtual service.                                   |
-| Service Virtualization                                                                 | svDeployStep                 | Deploy a virtual service.                                               |
-| Service Virtualization                                                                 | svExportStep                 | Export a virtual service.                                               |
-| Service Virtualization                                                                 | svUndeployStep               | Undeploy a virtual service.                                             |
-| Application Quality Management, ALM, ALM LM                                            | publishMicroFocusTestResults | Publish Test Results for FS, ALM and ALM Lab Management executions.     |                                   |
+| Service Virtualization                                                                  | svChangeModeStep             | Change the mode of a virtual service.                                   |
+| Service Virtualization                                                                  | svDeployStep                 | Deploy a virtual service.                                               |
+| Service Virtualization                                                                  | svExportStep                 | Export a virtual service.                                               |
+| Service Virtualization                                                                  | svUndeployStep               | Undeploy a virtual service.                                             |
+| OpenText Functional Testing, ALM, ALM LM                                                | publishMicroFocusTestResults | Publish Test Results for FS, ALM and ALM Lab Management executions.     |                                   |
 
 Pipeline jobs are not supported for Functional Testing Lab (Digital Lab) uploads, ALM test uploader, and ALM AUT job types.
 
