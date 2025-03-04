@@ -283,17 +283,26 @@ namespace HpToolsLauncher
                 throw;
             }
 
-            var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
-            exportOptions.AutoExportResults = true;
-            exportOptions.StepDetailsReport = true;
-            exportOptions.DataTableReport = true;
-            exportOptions.LogTrackingReport = true;
-            exportOptions.ScreenRecorderReport = true;
-            exportOptions.SystemMonitorReport = false;
-            exportOptions.ExportLocation = "C:\\Documents and Settings\\All Users\\Desktop";
-            exportOptions.UserDefinedXSL = "C:\\Documents and Settings\\All Users\\Desktop\\MyCustXSL.xsl";
-            exportOptions.StepDetailsReportFormat = "UserDefined";
-            exportOptions.ExportForFailedRunsOnly = true;
+            if (_uftExportPDF)
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                exportOptions.AutoExportResults = true;
+                exportOptions.StepDetailsReport = true;
+                exportOptions.DataTableReport = true;
+                exportOptions.LogTrackingReport = true;
+                exportOptions.ScreenRecorderReport = true;
+                exportOptions.SystemMonitorReport = false;
+                exportOptions.ExportLocation = "C:\\Documents and Settings\\All Users\\Desktop";
+                exportOptions.UserDefinedXSL = "C:\\Documents and Settings\\All Users\\Desktop\\MyCustXSL.xsl";
+                exportOptions.StepDetailsReportFormat = "UserDefined";
+                exportOptions.ExportForFailedRunsOnly = true;
+            }
+            else
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                if (exportOptions.AutoExportResults == true)
+                    exportOptions.AutoExportResults = false;
+            }
 
             //if (!HandleDigitalLab(qtpVersion, ref errorReason))
             //{

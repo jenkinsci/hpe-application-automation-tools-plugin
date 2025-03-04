@@ -200,6 +200,16 @@
 				</f:entry>
 
 				<f:entry>
+					<f:checkbox title="Functional Testing Export PDF" name="pdfEnabled" checked="${instance.pdfEnabled}" default="false"/>
+				</f:entry>
+
+<!--				<j:set var="PDFenabled" value="${instance.PDFenabled}" />-->
+<!--				<f:entry field="PDFenabled">-->
+<!--					<f:checkbox title="Functional Testing Export PDF" name="PDFenabled" checked="${instance.PDFenabled}" value="${instance.PDFenabled}"/>-->
+<!--				</f:entry>-->
+
+
+				<f:entry>
 					<f:property field="uftSettingsModel"/>
 				</f:entry>
 			</div>

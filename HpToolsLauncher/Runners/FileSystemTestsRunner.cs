@@ -186,9 +186,11 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
-                                    bool useUftLicense = false)
+                                    bool exportPdf,
+                                    bool useUftLicense = false
+                                    )
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, useUftLicense);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, useUftLicense, exportPdf);
 
             _tests = GetListOfTestInfo(sources, @params, jenkinsEnvVars);
 
@@ -236,9 +238,10 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
+                                    bool UftExportPdf,
                                     bool useUftLicense = false)
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, useUftLicense);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, useUftLicense, UftExportPdf);
 
             _tests = tests;
             if (_tests == null || _tests.Count == 0)

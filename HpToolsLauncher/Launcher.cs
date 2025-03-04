@@ -592,13 +592,16 @@ namespace HpToolsLauncher
                     List<ScriptRTSModel> scriptRTSSet = GetScriptRtsSet();
                     string resultsFilename = _ciParams["resultsFilename"];
                     string uftRunMode = _ciParams.GetOrDefault("fsUftRunMode", "Fast");
-                    if (validTests.Count > 0)
+                    string uftExportPdf = _ciParams.GetOrDefault("fsUftExportPdf", "false");
+                    bool exportPdf;
+                    bool.TryParse(uftExportPdf, out exportPdf);
+                        if (validTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser);
+                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, exportPdf);
                     }
                     else if (cleanupAndRerunTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser);
+                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, exportPdf);
                     }
                     else
                     {
