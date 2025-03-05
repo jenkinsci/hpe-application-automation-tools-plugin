@@ -292,15 +292,13 @@ namespace HpToolsLauncher
                 exportOptions.LogTrackingReport = true;
                 exportOptions.ScreenRecorderReport = true;
                 exportOptions.SystemMonitorReport = false;
-                exportOptions.ExportLocation = "C:\\Documents and Settings\\All Users\\Desktop";
-                exportOptions.UserDefinedXSL = "C:\\Documents and Settings\\All Users\\Desktop\\MyCustXSL.xsl";
                 exportOptions.StepDetailsReportFormat = "UserDefined";
                 exportOptions.ExportForFailedRunsOnly = true;
             }
             else
             {
                 var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
-                if (exportOptions.AutoExportResults == true)
+                if (exportOptions.AutoExportResults)
                     exportOptions.AutoExportResults = false;
             }
 
