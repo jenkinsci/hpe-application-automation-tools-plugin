@@ -86,6 +86,7 @@ namespace HpToolsLauncher
         private const string SYSTEM_PROXY = "System Proxy";
         private const string HTTP_PROXY = "HTTP Proxy";
         private const string DEFAULT_WORKSPACE = "default workspace";
+        private const string ExportOptionsStepDetailsReportFormat = "UserDefined";
 
         private readonly Type _qtType = Type.GetTypeFromProgID("Quicktest.Application");
         private readonly IAssetRunner _runNotifier;
@@ -291,7 +292,7 @@ namespace HpToolsLauncher
                 exportOptions.LogTrackingReport = true;
                 exportOptions.ScreenRecorderReport = true;
                 exportOptions.SystemMonitorReport = false;
-                exportOptions.StepDetailsReportFormat = "UserDefined";
+                exportOptions.StepDetailsReportFormat = ExportOptionsStepDetailsReportFormat;
                 exportOptions.ExportForFailedRunsOnly = true;
             }
             else
