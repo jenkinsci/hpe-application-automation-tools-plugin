@@ -545,8 +545,11 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 							reportMetaData.setIsParallelRunnerReport(isParallelRunnerReport); // we need to handle
 
 							// the type for this report
+							String urlEncodedTestName = URLEncoder.encode(testName, StandardCharsets.UTF_8)
+									.replaceAll("\\+", "%20");
+
 							String resourceUrl = "artifact/UFTReport/" + (StringUtils.isBlank(nodeName) ? "" : nodeName + "/") +
-												 URLEncoder.encode(testName, StandardCharsets.UTF_8) + "/Result";
+												 urlEncodedTestName + "/Result";
 							reportMetaData.setResourceURL(resourceUrl);
 							reportMetaData.setDisPlayName(testName); // use the name, not the full path
 							reportMetaData.computeStResFolders(new FilePath(reportFolder, RUN_RESULTS_XML), listener);
