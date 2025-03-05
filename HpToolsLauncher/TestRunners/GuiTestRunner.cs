@@ -45,10 +45,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Web;
+using Resources = HpToolsLauncher.Properties.Resources;
 using AuthType = HpToolsLauncher.McConnectionInfo.AuthType;
 using DigitalLabType = HpToolsLauncher.McConnectionInfo.DigitalLabType;
-using Resources = HpToolsLauncher.Properties.Resources;
 
 namespace HpToolsLauncher
 {
