@@ -302,7 +302,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                         String urlEncodedTestName = URLEncoder.encode(cleanedTestName, StandardCharsets.UTF_8)
                                 .replaceAll("\\+", "%20");
                         externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/artifact/UFTReport/" + nodeNameSubFolder
-                                      + URLEncoder.encode(urlEncodedTestName, StandardCharsets.UTF_8) + "/Result/run_results.html";
+                                      + urlEncodedTestName + "/Result/run_results.html";
                     } else {
                         //if UFT didn't created test results page - add reference to Jenkins test results page
                         externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/testReport/" + myPackageName + "/" + jenkinsTestClassFormat(myClassName) + "/" + jenkinsTestNameFormat(myTestName) + "/";
