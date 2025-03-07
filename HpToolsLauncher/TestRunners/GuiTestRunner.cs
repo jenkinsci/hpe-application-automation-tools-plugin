@@ -36,7 +36,6 @@
  */
 using HpToolsLauncher.TestRunners;
 using HpToolsLauncher.Utils;
-using Microsoft.VisualBasic.FileIO;
 using Microsoft.Win32;
 using QTObjectModelLib;
 using System;
@@ -45,11 +44,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Policy;
 using System.Threading;
+using Resources = HpToolsLauncher.Properties.Resources;
 using AuthType = HpToolsLauncher.McConnectionInfo.AuthType;
 using DigitalLabType = HpToolsLauncher.McConnectionInfo.DigitalLabType;
-using Resources = HpToolsLauncher.Properties.Resources;
 
 namespace HpToolsLauncher
 {
