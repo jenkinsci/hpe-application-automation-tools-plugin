@@ -36,6 +36,7 @@
  */
 using HpToolsLauncher.TestRunners;
 using HpToolsLauncher.Utils;
+using Microsoft.VisualBasic.FileIO;
 using Microsoft.Win32;
 using QTObjectModelLib;
 using System;
@@ -44,10 +45,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Policy;
 using System.Threading;
-using Resources = HpToolsLauncher.Properties.Resources;
 using AuthType = HpToolsLauncher.McConnectionInfo.AuthType;
 using DigitalLabType = HpToolsLauncher.McConnectionInfo.DigitalLabType;
+using Resources = HpToolsLauncher.Properties.Resources;
 
 namespace HpToolsLauncher
 {
@@ -294,12 +296,18 @@ namespace HpToolsLauncher
                 exportOptions.SystemMonitorReport = false;
                 exportOptions.StepDetailsReportFormat = ExportOptionsStepDetailsReportFormat;
                 exportOptions.ExportForFailedRunsOnly = true;
+
+                Console.WriteLine("The option 'Automatically export run results when run session ends' has been enabled by the Jenkins job.");
             }
             else
             {
                 var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
                 if (exportOptions.AutoExportResults)
+                {
                     exportOptions.AutoExportResults = false;
+                    Console.WriteLine(
+                        "The option 'Automatically export run results when run session ends' has been disabled by the Jenkins job.");
+                }
             }
 
             //if (!HandleDigitalLab(qtpVersion, ref errorReason))

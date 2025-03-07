@@ -198,7 +198,7 @@
 						</j:forEach>
 					</select>
 				</f:entry>
-				<f:entry>
+				<f:entry field="fsUftGeneratePdfReport">
 					<f:checkbox title="Functional Testing Export PDF" name="isPdfEnabled" checked="${instance.isPdfEnabled}" default="false"/>
 				</f:entry>
 				<f:entry>
