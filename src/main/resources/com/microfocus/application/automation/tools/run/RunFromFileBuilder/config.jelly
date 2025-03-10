@@ -198,8 +198,8 @@
 						</j:forEach>
 					</select>
 				</f:entry>
-				<f:entry field="fsUftGeneratePdfReport">
-					<f:checkbox title="Functional Testing Export PDF" name="isPdfEnabled" checked="${instance.isPdfEnabled}" default="false"/>
+				<f:entry field="fsUftExportPdf">
+					<f:checkbox title="Export run results to PDF" name="isPdfEnabled" checked="${instance.isPdfEnabled}" default="false"/>
 				</f:entry>
 				<f:entry>
 					<f:property field="uftSettingsModel"/>

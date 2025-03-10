@@ -593,7 +593,7 @@ namespace HpToolsLauncher
                     string resultsFilename = _ciParams["resultsFilename"];
                     string uftRunMode = _ciParams.GetOrDefault("fsUftRunMode", "Fast");
 
-                    string uftExportPdfParam = _ciParams.GetOrDefault("fsUftGeneratePdfReport", "false");
+                    string uftExportPdfParam = _ciParams.GetOrDefault("fsUftExportPdf", "false");
                     bool uftExportPdf = false;
                     bool.TryParse(uftExportPdfParam, out uftExportPdf);
 

@@ -880,7 +880,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         }
 
         String fsUftExportPdf = Boolean.toString(getIsPdfEnabled());
-        mergedProps.setProperty("fsUftGeneratePdfReport", fsUftExportPdf);
+        mergedProps.setProperty("fsUftExportPdf", fsUftExportPdf);
 
         mergedProps.setProperty("numOfTests", String.valueOf(index - 1));
 

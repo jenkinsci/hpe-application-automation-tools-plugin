@@ -295,7 +295,7 @@ namespace HpToolsLauncher
                 exportOptions.StepDetailsReportFormat = ExportOptionsStepDetailsReportFormat;
                 exportOptions.ExportForFailedRunsOnly = true;
 
-                Console.WriteLine("The option 'Automatically export run results when run session ends' has been enabled by the Jenkins job.");
+                Console.WriteLine("The global Run Sessions option 'Automatically export run results when run session ends' has been enabled by the Jenkins job.");
             }
             else
             {
@@ -304,7 +304,7 @@ namespace HpToolsLauncher
                 {
                     exportOptions.AutoExportResults = false;
                     Console.WriteLine(
-                        "The option 'Automatically export run results when run session ends' has been disabled by the Jenkins job.");
+                        "The global Run Sessions option 'Automatically export run results when run session ends' has been disabled by the Jenkins job.");
                 }
             }
 
