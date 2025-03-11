@@ -465,12 +465,7 @@ namespace HpToolsLauncher
                     }
                     ConsoleWriter.WriteLine("Launcher timeout is " + timeout.ToString(@"dd\:\:hh\:mm\:ss"));
 
-                    bool leaveUftVisibleIfOpen = false;
-                    string leaveUftOpenIfVisibleParam = _ciParams.GetOrDefault("LEAVE_UFT_OPEN_IF_VISIBLE", "0");
-                    if (_ciParams.ContainsKey("LEAVE_UFT_OPEN_IF_VISIBLE") && leaveUftOpenIfVisibleParam.Equals("1"))
-                    {
-                            leaveUftVisibleIfOpen = true;
-                    }
+                    bool leaveUftOpenIfVisible = _ciParams.GetOrDefault("LEAVE_UFT_OPEN_IF_VISIBLE", "0") == "1";
 
                     //LR specific values:
                     //default values are set by JAVA code, in com.hpe.application.automation.tools.model.RunFromFileSystemModel.java
@@ -602,11 +597,11 @@ namespace HpToolsLauncher
                     string uftRunMode = _ciParams.GetOrDefault("fsUftRunMode", "Fast");
                     if (validTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, leaveUftVisibleIfOpen);
+                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, leaveUftOpenIfVisible);
                     }
                     else if (cleanupAndRerunTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, leaveUftVisibleIfOpen);
+                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, leaveUftOpenIfVisible);
                     }
                     else
                     {
