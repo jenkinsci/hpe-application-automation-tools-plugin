@@ -105,7 +105,7 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
-                                    bool leaveUftVisibleIfOpen = false,
+                                    bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
             //search if we have any testing tools installed
@@ -136,7 +136,7 @@ namespace HpToolsLauncher
             _xmlBuilder.XmlName = xmlResultsFullFileName;
             _encoding = encoding;
             _uftRunAsUser = uftRunAsUser;
-            _leaveUftOpenIfVisible = leaveUftVisibleIfOpen;
+            _leaveUftOpenIfVisible = leaveUftOpenIfVisible;
             _uftRunMode = uftRunMode;
 
             if (_digitalLab.ConnectionInfo != null)
