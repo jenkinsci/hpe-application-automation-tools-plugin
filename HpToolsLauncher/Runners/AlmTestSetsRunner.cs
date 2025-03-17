@@ -522,6 +522,8 @@ namespace HpToolsLauncher
                     removeSetsList.Add(testSetOrFolder);
 
                     List<string> setList = GetAllTestSetsFromDirTree(tsFolder);
+                    if (setList.Count > 1) 
+                        setList = FindAllTestSetsIdsAndSort(setList, tsFolder);
                     extraSetsList.AddRange(setList);
                 }
 
@@ -529,6 +531,38 @@ namespace HpToolsLauncher
 
             TestSets.RemoveAll((a) => removeSetsList.Contains(a));
             TestSets.AddRange(extraSetsList);
+        }
+
+        private List<string> FindAllTestSetsIdsAndSort(List<string> setList, ITestSetFolder tsFolder)
+        {
+
+            List testSets = tsFolder.FindTestSets(string.Empty);
+            Dictionary<string, string> map = new Dictionary<string, string>();
+            List<string> retVal = setList;
+
+            if (testSets != null)
+            {
+                foreach (ITestSet childSet in testSets)
+                {
+                    string tsPath = childSet.TestSetFolder.Path;
+                    tsPath = tsPath.Substring(5).Trim(_backSlash);
+                    string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
+                    map[tsFullPath.TrimEnd()] = childSet.ID.ToString();
+                }
+
+                retVal = retVal
+                    .Select(path => Tuple.Create(
+                        path,
+                        string.Join("\\", path.Split('\\').Take(path.Split('\\').Length - 1)),
+                        map.ContainsKey(path.TrimEnd()) ? int.Parse(map[path.TrimEnd()]) : int.MaxValue
+                    ))
+                    .OrderBy(tuple => tuple.Item2)  
+                    .ThenBy(tuple => tuple.Item3) 
+                    .Select(tuple => tuple.Item1) 
+                    .ToList();
+            }
+
+            return retVal;
         }
 
         /// <summary>
@@ -560,7 +594,6 @@ namespace HpToolsLauncher
                     GetAllTestSetsFromDirTree(childFolder);
                 }
             }
-            retVal.Sort();
             return retVal;
         }
 
