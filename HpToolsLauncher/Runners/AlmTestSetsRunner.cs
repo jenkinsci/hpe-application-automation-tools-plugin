@@ -533,11 +533,18 @@ namespace HpToolsLauncher
             TestSets.AddRange(extraSetsList);
         }
 
+        /// <summary>
+        /// Sorts a list of test set paths first by their folder structure and then by their test IDs.
+        /// </summary>
+        /// <param name="setList">The initial list of test set paths to be sorted</param>
+        /// <param name="tsFolder">The test set folder containing the test sets with their IDs</param>
+        /// <returns>A sorted list of test set paths</returns>
         private List<string> FindAllTestSetsIdsAndSort(List<string> setList, ITestSetFolder tsFolder)
         {
 
             List testSets = tsFolder.FindTestSets(string.Empty);
-            Dictionary<string, string> map = new Dictionary<string, string>();
+            // Create a dictionary to map full test paths to their corresponding IDs
+            Dictionary<string, int> map = new Dictionary<string, int>();
             List<string> retVal = setList;
 
             if (testSets != null)
@@ -547,21 +554,23 @@ namespace HpToolsLauncher
                     string tsPath = childSet.TestSetFolder.Path;
                     tsPath = tsPath.Substring(5).Trim(_backSlash);
                     string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
-                    map[tsFullPath.TrimEnd()] = childSet.ID.ToString();
+                    // Store the mapping of full path to test ID
+                    map[tsFullPath.TrimEnd()] = childSet.ID;
                 }
 
-                retVal = retVal
-                    .Select(path => Tuple.Create(
-                        path,
-                        string.Join("\\", path.Split('\\').Take(path.Split('\\').Length - 1)),
-                        map.ContainsKey(path.TrimEnd()) ? int.Parse(map[path.TrimEnd()]) : int.MaxValue
-                    ))
-                    .OrderBy(tuple => tuple.Item2)  
-                    .ThenBy(tuple => tuple.Item3) 
-                    .Select(tuple => tuple.Item1) 
+                // Sort the list and return it:
+                // 1. Primary sort: by folder path (everything except the last segment)
+                // 2. Secondary sort: by test ID from the map, using int.MaxValue as fallback
+                return setList
+                    .OrderBy(path =>
+                    {
+                        int lastBackslash = path.LastIndexOf('\\');
+                        return lastBackslash >= 0 ? path.Substring(0, lastBackslash) : string.Empty;
+                    }).ThenBy(path => map.ContainsKey(path.TrimEnd()) ? map[path.TrimEnd()] : int.MaxValue)
                     .ToList();
             }
 
+            // Return the original list if no test sets were found
             return retVal;
         }
 
