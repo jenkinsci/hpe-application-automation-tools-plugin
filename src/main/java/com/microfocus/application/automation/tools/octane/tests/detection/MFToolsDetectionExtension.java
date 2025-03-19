@@ -136,6 +136,7 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
                 }
             }
         }
+        logger.log(Level.INFO, "runnerType0: " + hpRunnerType);
         if (hpRunnerType == HPRunnerType.NONE) {
             ParameterValue runnerTypePv = parameterAction != null ? parameterAction.getParameter(HPRunnerType.class.getSimpleName()) : null;
             if (runnerTypePv != null) {
