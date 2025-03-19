@@ -37,28 +37,28 @@
 
 -->
 <div>
-    This step is responsible for collecting pull requests from the SCM tool and injecting them to ALM Octane.
-    See help information in  <a target="_blank" href="https://admhelp.microfocus.com/octane/en/latest/Online/Content/UserGuide/articles-pull-requests.htm">ALM Octane Help Center</a>.
+    This step is responsible for collecting pull requests from the SCM tool and injecting them to Software Delivery Management.
+    See help information in  <a target="_blank" href="https://admhelp.microfocus.com/octane/en/latest/Online/Content/UserGuide/articles-pull-requests.htm">Software Delivery Management Help Center</a>.
     <br>
     <br>
-    In addition, this step is used to define the scm repositories templates that are used by ALM Octane to link to your repository viewer. To configure templates in ALM Octane, access Settings > Spaces. Select a workspace and click DevOps > SCM Repositories. Follow the on-screen instructions.
+    In addition, this step is used to define the scm repositories templates that are used by Software Delivery Management to link to your repository viewer. To configure templates in Software Delivery Management, access Settings > Spaces. Select a workspace and click DevOps > SCM Repositories. Follow the on-screen instructions.
     <br>
     <br>
-    Every time pull requests are sent to ALM Octane the last update time is saved. The next time, only pull requests and commits that were updated after this time will be sent to ALM Octane.
+    Every time pull requests are sent to Software Delivery Management the last update time is saved. The next time, only pull requests and commits that were updated after this time will be sent to Software Delivery Management.
 
     <br>
     <br>
-    Supported version of ALM Octane: 15.0.49 and later.
+    Supported version of Software Delivery Management / ALM Octane: 15.0.49 and later.
 
 
     <br>
     <br>
     You can change the behaviour of this step by adding the following parameters to the job:
     <ul>
-        <li><b>pullrequests_min_update_time</b>: Use this parameter to override the last update time that is updated after each successful injection to ALM Octane.</li><br>
+        <li><b>pullrequests_min_update_time</b>: Use this parameter to override the last update time that is updated after each successful injection to Software Delivery Management.</li><br>
         <li><b>pullrequests_max_pr_to_collect</b>: Max number of pull requests to collect. Default is 100.</li><br>
         <li><b>pullrequests_max_commits_to_collect</b>: Max number of commits to collect for each pull request. Default is 100.</li><br>
-        <li><b>search_branch_octane_root_repository_id</b>: The plugin will look through the branches that are linked to the SCM Repository with the configured Id. If a pull request has the source branch or target branch wit hte same name as one of those branches, they will be considered as duplicates and new branches won't be created in ALM Octane.</li><br>
+        <li><b>search_branch_octane_root_repository_id</b>: The plugin will look through the branches that are linked to the SCM Repository with the configured Id. If a pull request has the source branch or target branch wit hte same name as one of those branches, they will be considered as duplicates and new branches won't be created in Software Delivery Management.</li><br>
     </ul>
 
     <br>

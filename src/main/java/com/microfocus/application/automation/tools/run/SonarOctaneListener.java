@@ -236,7 +236,7 @@ public class SonarOctaneListener extends Builder implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "ALM Octane SonarQube listener";
+            return "OpenText Software Delivery Management SonarQube listener";
         }
 
 

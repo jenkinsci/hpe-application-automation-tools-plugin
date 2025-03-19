@@ -90,7 +90,7 @@ public class UploadAppBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
-        // get the Digital Lab server settings
+        // get the Functional Testing Lab server settings
         MCServerSettingsModel mcServerSettingsModel = getMCServerSettingsModel();
         JobConfigurationProxy job = JobConfigurationProxy.getInstance();
         JSONObject app = null;
@@ -102,20 +102,20 @@ public class UploadAppBuilder extends Builder {
         }
         boolean allSuccess = true;
         if (mcServerSettingsModel == null) {
-            out.println("Failed to upload app to Digital Lab server. Cause: Digital Lab URL was not configured.");
+            out.println("Failed to upload app to Functional Testing Lab server. Cause: Functional Testing Lab URL was not configured.");
             return false;
         } else {
             mcServerUrl = mcServerSettingsModel.getProperties().getProperty("MobileHostAddress");
             Map<String, String> headers = job.login(mcServerUrl, uploadAppModel.getAuthModel(), uploadAppModel.getProxySettings());
             if (headers == null || headers.size() == 0) {
                 if (uploadAppModel.isUseProxy()) {
-                    out.println(String.format("Failed to upload app, Cause Digital Lab connection info is incorrect. url:%s, Proxy url:%s",
+                    out.println(String.format("Failed to upload app, Cause Functional Testing Lab connection info is incorrect. url:%s, Proxy url:%s",
                             mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress()));
                 } else if (uploadAppModel.isUseAuthentication()) {
-                    out.println(String.format("Failed to upload app, Cause Digital Lab connection info is incorrect. url:%s, Proxy url:%s, proxy userName:%s",
+                    out.println(String.format("Failed to upload app, Cause Functional Testing Lab connection info is incorrect. url:%s, Proxy url:%s, proxy userName:%s",
                             mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
                 } else {
-                    out.println(String.format("Failed to upload app, Cause Digital Lab connection info is incorrect. url:%s", mcServerUrl));
+                    out.println(String.format("Failed to upload app, Cause Functional Testing Lab connection info is incorrect. url:%s", mcServerUrl));
                 }
                 build.setResult(Result.FAILURE);
                 return false;
@@ -196,7 +196,7 @@ public class UploadAppBuilder extends Builder {
                     }
                     out.println("uploaded app info: " + app.toJSONString());
                 } catch (FileNotFoundException fnf) {
-                    out.println(String.format("Failed to upload app to Digital Lab server. Cause: File: %s is not found.", path));
+                    out.println(String.format("Failed to upload app to Functional Testing Lab server. Cause: File: %s is not found.", path));
                     build.setResult(Result.FAILURE);
                     allSuccess = false;
                     continue;
@@ -252,7 +252,7 @@ public class UploadAppBuilder extends Builder {
         @Override
         public String getDisplayName() {
 
-            return "Upload app to Digital Lab (formerly UFT Mobile) Server";
+            return "Upload app to Functional Testing Lab (Digital Lab) Server";
         }
 
         public boolean hasMCServers() {
@@ -271,7 +271,7 @@ public class UploadAppBuilder extends Builder {
          */
         @SuppressWarnings("squid:S2259")
         @JavaScriptMethod
-        public JSONArray getValidWorkspaces(String mcUrl, String authType, String mcUserName, String mcPassword, String mcTenantId, String mcExecToken,
+        public JSONArray getValidWorkspaces(String mcUrl, String authType, String mcUserName, String mcPassword, String mcExecToken,
                                                       boolean useProxy, String proxyAddress, boolean useAuthentication, String proxyUserName, String proxyPassword) {
             JSONArray workspaces = null;
             for (MCServerSettingsModel mcServer : this.getMcServers()) {
@@ -280,7 +280,7 @@ public class UploadAppBuilder extends Builder {
                     mcUrl = mcServer.getMcServerUrl();
                 }
             }
-            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, mcExecToken, authType);
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcExecToken, authType);
             ProxySettings proxySettings =new ProxySettings(useAuthentication, proxyAddress, proxyUserName, proxyPassword);
             try {
                 JobConfigurationProxy job = JobConfigurationProxy.getInstance();

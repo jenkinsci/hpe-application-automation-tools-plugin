@@ -154,7 +154,7 @@ public class GitFetchUtils {
         try {
             RepoTemplates repoTemplates = fetcherHandler.buildRepoTemplates(repoHttpUrlForTemplates);
             if (pullRequestAndBranchService.updateRepoTemplates(repoUrlForOctane, workspaceId, repoTemplates)) {
-                logConsumer.accept("Repo template are updated successfully in ALM Octane");
+                logConsumer.accept("Repo template are updated successfully in Software Delivery Management");
             }
         } catch (Exception e) {
             logConsumer.accept("Failed to update repo templates : " + e.getMessage());

@@ -81,7 +81,7 @@ import java.util.stream.Collectors;
 import static com.hp.octane.integrations.utils.SdkConstants.JobParameters.OCTANE_CONFIG_ID_PARAMETER_NAME;
 
 /**
- * Converter of Jenkins test report to ALM Octane test report format(junitResult.xml->mqmTests.xml)
+ * Converter of Jenkins test report to Software Delivery Management test report format(junitResult.xml->mqmTests.xml)
  */
 @Extension
 public class JUnitExtension extends OctaneTestsExtension {

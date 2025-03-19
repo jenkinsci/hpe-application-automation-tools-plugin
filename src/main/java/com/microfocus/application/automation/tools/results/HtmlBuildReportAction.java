@@ -91,7 +91,7 @@ public class HtmlBuildReportAction implements Action {
 
     @Override
     public String getDisplayName() {
-		return "UFT Report";
+		return "Functional Testing Report";
     }
 
     @Override

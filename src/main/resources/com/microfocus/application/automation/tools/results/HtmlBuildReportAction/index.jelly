@@ -39,7 +39,7 @@
 <?jelly escape-by-default='true'?>
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:p="/lib/hudson/project" xmlns:s="/lib/samples">
-  <l:layout title="UFT Report">
+  <l:layout title="Functional Testing Report">
     <style type="text/css">
     .bodycell {
       padding: 8px;
@@ -80,7 +80,7 @@
 
     <st:include it="${it.build}" page="sidepanel.jelly" />
     <l:main-panel>
-       <p><h1>UFT Report</h1></p>
+       <p><h1>Functional Testing Report</h1></p>
        <br/>
 
        <p>

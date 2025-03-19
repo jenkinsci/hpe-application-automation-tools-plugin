@@ -117,10 +117,10 @@ public class BranchesPublisher extends Recorder implements SimpleBuildStep {
         LogConsumer logConsumer = new LogConsumer(taskListener.getLogger());
         logConsumer.printLog("BranchPublisher is started ***********************************************************************");
         if (configurationId == null) {
-            throw new IllegalArgumentException("ALM Octane configuration is not defined.");
+            throw new IllegalArgumentException("Software Delivery Management configuration is not defined.");
         }
         if (workspaceId == null) {
-            throw new IllegalArgumentException("ALM Octane workspace is not defined.");
+            throw new IllegalArgumentException("Software Delivery Management workspace is not defined.");
         }
         if (scmTool == null) {
             throw new IllegalArgumentException("SCM Tool is not defined.");
@@ -153,7 +153,7 @@ public class BranchesPublisher extends Recorder implements SimpleBuildStep {
             FetchHandler fetchHandler = FetchFactory.getHandler(ScmTool.fromValue(myScmTool), authenticationStrategy, secret);
 
             OctaneClient octaneClient = OctaneSDK.getClientByInstanceId(myConfigurationId);
-            logConsumer.printLog("ALM Octane " + octaneClient.getConfigurationService().getConfiguration().getLocationForLog() + ", workspace - " + myWorkspaceId);
+            logConsumer.printLog("Software Delivery Management " + octaneClient.getConfigurationService().getConfiguration().getLocationForLog() + ", workspace - " + myWorkspaceId);
             octaneClient.validateOctaneIsActiveAndSupportVersion(PullRequestAndBranchService.BRANCH_COLLECTION_SUPPORTED_VERSION);
             PullRequestAndBranchService service = OctaneSDK.getClientByInstanceId(myConfigurationId).getPullRequestAndBranchService();
             BranchSyncResult result = service.syncBranchesToOctane(fetchHandler, fp, Long.parseLong(myWorkspaceId), GitFetchUtils::getUserIdForCommit, logConsumer::printLog);
@@ -168,17 +168,17 @@ public class BranchesPublisher extends Recorder implements SimpleBuildStep {
             }
 
         } catch (OctaneValidationException e) {
-            logConsumer.printLog("ALM Octane branch collector failed on validation : " + e.getMessage());
+            logConsumer.printLog("Software Delivery Management branch collector failed on validation : " + e.getMessage());
             run.setResult(Result.FAILURE);
         } catch (OctaneBulkException e) {
             //grouping error messages in format : "exception message (count)
             String exceptions = e.getData().getErrors().stream().map(m -> m.getDescriptionTranslated()).collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
                     .entrySet().stream().map(entry -> entry.getKey() + "(" + entry.getValue() + ")")
                     .collect(Collectors.joining(System.lineSeparator() + "  - ", " Exceptions are : " + System.lineSeparator() + "  - ", ""));
-            logConsumer.printLog("ALM Octane branch collector failed : " + e.getMessage() + exceptions);
+            logConsumer.printLog("Software Delivery Management branch collector failed : " + e.getMessage() + exceptions);
             run.setResult(Result.FAILURE);
         } catch (IllegalStateException e) {
-            logConsumer.printLog("ALM Octane branch collector failed : " + e.getMessage());
+            logConsumer.printLog("Software Delivery Management branch collector failed : " + e.getMessage());
             if (e.getMessage() != null && e.getMessage().contains("Duplicate key")) {
                 run.setResult(Result.UNSTABLE);
             } else {
@@ -186,7 +186,7 @@ public class BranchesPublisher extends Recorder implements SimpleBuildStep {
                 e.printStackTrace(taskListener.getLogger());
             }
         } catch (Exception e) {
-            logConsumer.printLog("ALM Octane branch collector failed : " + e.getMessage());
+            logConsumer.printLog("Software Delivery Management branch collector failed : " + e.getMessage());
             e.printStackTrace(taskListener.getLogger());
             run.setResult(Result.FAILURE);
         }
@@ -332,7 +332,7 @@ public class BranchesPublisher extends Recorder implements SimpleBuildStep {
         }
 
         public String getDisplayName() {
-            return "ALM Octane branch collector";
+            return "Software Delivery Management branch collector";
         }
     }
 }

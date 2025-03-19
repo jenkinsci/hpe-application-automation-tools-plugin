@@ -39,7 +39,7 @@
 <?jelly escape-by-default='true'?>
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:p="/lib/hudson/project" xmlns:s="/lib/samples">
-  <l:layout title="ALM Octane UFT Actions Discovery Report">
+  <l:layout title="Software Delivery Management UFT Actions Discovery Report">
     <style type="text/css">
 
     .myTable {
@@ -86,7 +86,7 @@
 
     <st:include it="${it.build}" page="sidepanel.jelly" />
     <l:main-panel>
-       <p><h1><u>ALM Octane UFT Actions Discovery Report</u></h1></p>
+       <p><h1><u>Software Delivery Management Functional Testing Actions Discovery Report</u></h1></p>
        <br/>
        <br/>
         <p>
@@ -197,7 +197,7 @@
                         <b>NOTE</b>: This run may not have discovered all updated actions.
                         <br/>It seems that the changes in this build included filenames with Unicode characters, which Git did not list correctly.
                         <br/>To make sure Git can properly list such file names, configure Git as follows : git config --global core.quotepath false
-                        <br/>To discover the updated actions that were missed in this run and send them to ALM Octane, run this job manually with the "Full sync" parameter selected.
+                        <br/>To discover the updated actions that were missed in this run and send them to Software Delivery Management, run this job manually with the "Full sync" parameter selected.
                     </j:if>
 
         <br/><br/><br/>

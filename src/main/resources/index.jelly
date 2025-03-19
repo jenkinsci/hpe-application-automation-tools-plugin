@@ -41,5 +41,5 @@
 -->
 <?jelly escape-by-default='true'?>
 <div>
-  This plugin enables integration with ALM, ALM Octane, Unified Functional Testing, LoadRunner, and OpenText Enterprise Performance Engineering.
+  This plugin enables integration with ALM, Software Delivery Management, Functional Testing, LoadRunner, and OpenText Enterprise Performance Engineering.
 </div>
