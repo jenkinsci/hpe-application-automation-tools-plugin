@@ -180,6 +180,22 @@ namespace HpToolsLauncher
             Dispose(false);
         }
 
+        // Represents a test with its full path and unique identifier
+        private class TestInfo
+        {
+            public string Path { get; set; }
+            public int Id { get; set; }
+        }
+
+        // Represents a node in the folder hierarchy for organizing tests
+        private class FolderNode
+        {
+            // Dictionary to hold subfolders, keyed by folder name
+            public Dictionary<string, FolderNode> Subfolders = new Dictionary<string, FolderNode>();
+            // List of tests contained within this folder
+            public List<TestInfo> Tests = new List<TestInfo>();
+        }
+
         //------------------------------- Connection to QC --------------------------
 
         /// <summary>
@@ -534,44 +550,81 @@ namespace HpToolsLauncher
         }
 
         /// <summary>
-        /// Sorts a list of test set paths first by their folder structure and then by their test IDs.
+        /// Finds all test sets under the given folder, organizes them into a tree structure,
+        /// and returns a list of test paths sorted in post-order traversal (subfolders first, then tests)
         /// </summary>
         /// <param name="setList">The initial list of test set paths to be sorted</param>
         /// <param name="tsFolder">The test set folder containing the test sets with their IDs</param>
         /// <returns>A sorted list of test set paths</returns>
         private List<string> FindAllTestSetsIdsAndSort(List<string> setList, ITestSetFolder tsFolder)
         {
+            List<string> retVal = new List<string>(setList);
+            Dictionary<string, int> map = new Dictionary<string, int>();
 
             List testSets = tsFolder.FindTestSets(string.Empty);
-            // Create a dictionary to map full test paths to their corresponding IDs
-            Dictionary<string, int> map = new Dictionary<string, int>();
-            List<string> retVal = setList;
-
             if (testSets != null)
             {
                 foreach (ITestSet childSet in testSets)
                 {
-                    string tsPath = childSet.TestSetFolder.Path;
-                    tsPath = tsPath.Substring(5).Trim(_backSlash);
+                    string tsPath = childSet.TestSetFolder.Path.Substring(5).Trim('\\');
                     string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
-                    // Store the mapping of full path to test ID
                     map[tsFullPath.TrimEnd()] = childSet.ID;
-                }
-
-                // Sort the list and return it:
-                // 1. Primary sort: by folder path (everything except the last segment)
-                // 2. Secondary sort: by test ID from the map, using int.MaxValue as fallback
-                return setList
-                    .OrderBy(path =>
+                    if (!retVal.Contains(tsFullPath))
                     {
-                        int lastBackslash = path.LastIndexOf('\\');
-                        return lastBackslash >= 0 ? path.Substring(0, lastBackslash) : string.Empty;
-                    }).ThenBy(path => map.ContainsKey(path.TrimEnd()) ? map[path.TrimEnd()] : int.MaxValue)
-                    .ToList();
+                        retVal.Add(tsFullPath);
+                    }
+                }
             }
 
-            // Return the original list if no test sets were found
-            return retVal;
+            FolderNode root = BuildTree(retVal, map);
+            List<string> sortedList = new List<string>();
+            TraversePostOrder(root, sortedList);
+            return sortedList;
+        }
+
+        /// <summary>
+        /// Traverses the tree in post-order, processing subfolders before adding tests in the current folder.
+        /// </summary>
+        /// <param name="node">The current folder node being traversed</param>
+        /// <param name="result">The list to which sorted test paths are added</param>
+        private void TraversePostOrder(FolderNode node, List<string> result)
+        {
+            foreach (var subfolderName in node.Subfolders.Keys.OrderBy(k => k))
+            {
+                TraversePostOrder(node.Subfolders[subfolderName], result);
+            }
+            foreach (var test in node.Tests.OrderBy(t => t.Id))
+            {
+                result.Add(test.Path);
+            }
+        }
+
+        /// <summary>
+        /// Builds a tree structure from a list of test paths and their corresponding IDs.
+        /// </summary>
+        /// <param name="paths">The list of test set paths to be organized into the tree</param>
+        /// <param name="idMap">A dictionary mapping test set paths to their IDs</param>
+        /// <returns>The root node of the constructed tree</returns>
+        private FolderNode BuildTree(List<string> paths, Dictionary<string, int> idMap)
+        {
+            FolderNode root = new FolderNode();
+            foreach (string path in paths)
+            {
+                string[] segments = path.Split('\\');
+                FolderNode current = root;
+                for (int i = 0; i < segments.Length - 1; i++)
+                {
+                    string seg = segments[i];
+                    if (!current.Subfolders.ContainsKey(seg))
+                    {
+                        current.Subfolders[seg] = new FolderNode();
+                    }
+                    current = current.Subfolders[seg];
+                }
+                string testName = segments[segments.Length - 1];
+                current.Tests.Add(new TestInfo { Path = path, Id = idMap[path] });
+            }
+            return root;
         }
 
         /// <summary>
