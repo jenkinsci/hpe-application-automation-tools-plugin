@@ -43,6 +43,7 @@ import com.microfocus.application.automation.tools.octane.configuration.Configur
 import hudson.util.Secret;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.rules.Timeout;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import java.util.UUID;
@@ -53,8 +54,10 @@ public abstract class OctanePluginTestBase {
 	protected static String ssp;
 
 	@ClassRule
-	public static final JenkinsRule rule = new LoggedJenkinsRule();
-	public static final JenkinsRule.WebClient client = rule.createWebClient();
+	public static final JenkinsRule           rule          = new LoggedJenkinsRule();
+	@ClassRule
+	public static       Timeout               globalTimeout = Timeout.seconds(240);
+	public static final JenkinsRule.WebClient client        = rule.createWebClient();
 
 	@BeforeClass
 	public static void init() {
