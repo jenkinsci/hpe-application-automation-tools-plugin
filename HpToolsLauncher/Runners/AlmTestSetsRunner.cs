@@ -75,7 +75,7 @@ namespace HpToolsLauncher
         private const string _DLL = ".dll";
         private const string _EXE = ".exe";
         private const string SOFTWARE_WOW6432_CLASSES_CLSID_0 = @"Software\WOW6432Node\Classes\CLSID\{0}";
-        private const string FILE_ISNT_REGISTERED = "{0} is not registered {1}.";
+        private const string FILE_ISNT_REGISTERED = @"{0} is not registered / found in HKLM\{1}.";
 
         public ITDConnection13 TdConnection
         {
