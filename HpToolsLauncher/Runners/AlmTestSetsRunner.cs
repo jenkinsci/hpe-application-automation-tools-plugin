@@ -185,60 +185,80 @@ namespace HpToolsLauncher
             public static List<string> SortPaths(List<string> paths)
             {
                 // Build the tree
-                var root = new Node("");
-                foreach (var path in paths)
+                Node root = new Node("");
+                foreach (string path in paths)
                 {
                     root.AddPath(path.Split('\\'));
                 }
 
                 // Sort and flatten
-                var result = new List<string>();
+                List<string> result = new List<string>();
                 root.SortAndFlatten(result, "");
                 return result;
             }
 
             private class Node
             {
-                public string Name { get; }
-                public Dictionary<string, Node> Children { get; } = new Dictionary<string, Node>();
-                public List<string> Leaves { get; } = new List<string>();
+                private readonly string name; // Backing field for Name
+                private readonly Dictionary<string, Node> children; // Backing field for Children
+                private readonly List<string> leaves; // Backing field for Leaves
+
+                public string Name
+                {
+                    get { return name; }
+                }
+
+                public Dictionary<string, Node> Children
+                {
+                    get { return children; }
+                }
+
+                public List<string> Leaves
+                {
+                    get { return leaves; }
+                }
 
                 public Node(string name)
                 {
-                    Name = name;
+                    this.name = name;
+                    this.children = new Dictionary<string, Node>();
+                    this.leaves = new List<string>();
                 }
 
                 public void AddPath(string[] segments, int index = 0)
                 {
                     if (index == segments.Length - 1)
                     {
-                        Leaves.Add(segments[index]);
+                        leaves.Add(segments[index]);
                         return;
                     }
 
                     string nextSegment = segments[index];
-                    if (!Children.ContainsKey(nextSegment))
+                    if (!children.ContainsKey(nextSegment))
                     {
-                        Children[nextSegment] = new Node(nextSegment);
+                        children[nextSegment] = new Node(nextSegment);
                     }
-                    Children[nextSegment].AddPath(segments, index + 1);
+
+                    children[nextSegment].AddPath(segments, index + 1);
                 }
 
                 public void SortAndFlatten(List<string> result, string currentPath)
                 {
                     // Sort subfolders first
-                    var sortedChildren = Children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
-                    foreach (var child in sortedChildren)
+                    List<Node> sortedChildren = children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
+                    foreach (Node child in sortedChildren)
                     {
-                        string childPath = string.IsNullOrEmpty(currentPath) ? child.Name : $"{currentPath}\\{child.Name}";
+                        string childPath = string.IsNullOrEmpty(currentPath)
+                            ? child.Name
+                            : currentPath + "\\" + child.Name;
                         child.SortAndFlatten(result, childPath);
                     }
 
                     // Then add leaves, sorted
-                    var sortedLeaves = Leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
-                    foreach (var leaf in sortedLeaves)
+                    List<string> sortedLeaves = leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
+                    foreach (string leaf in sortedLeaves)
                     {
-                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : $"{currentPath}\\{leaf}");
+                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + "\\" + leaf);
                     }
                 }
             }
