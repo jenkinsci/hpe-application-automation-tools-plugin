@@ -437,19 +437,19 @@ namespace HpToolsLauncher
                 return false;
             }
 
-            Console.WriteLine($"ConnectToProject: {qcServerUrl} {qcDomain} {qcProject}");
+            Console.WriteLine("ConnectToProject: {qcServerUrl} {qcDomain} {qcProject}");
             if (TdConnection != null)
             {
                 try
                 {
                     if (!SSOEnabled)
                     {
-                        Console.WriteLine($"TdConnection.InitConnectionEx ...");
+                        Console.WriteLine("TdConnection.InitConnectionEx ...");
                         TdConnection.InitConnectionEx(qcServerUrl);
                     }
                     else
                     {
-                        Console.WriteLine($"TdConnection.InitConnectionWithApiKey ...");
+                        Console.WriteLine("TdConnection.InitConnectionWithApiKey ...");
                         TdConnection.InitConnectionWithApiKey(qcServerUrl, qcClientID, qcApiKey);
                     }
                 }
