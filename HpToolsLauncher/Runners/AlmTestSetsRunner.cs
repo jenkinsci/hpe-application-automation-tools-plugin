@@ -437,7 +437,7 @@ namespace HpToolsLauncher
                 return false;
             }
 
-            Console.WriteLine("ConnectToProject: {qcServerUrl} {qcDomain} {qcProject}");
+            Console.WriteLine(string.Format("ConnectToProject: {0} {1} {2}", qcServerUrl, qcDomain, qcProject));
             if (TdConnection != null)
             {
                 try
