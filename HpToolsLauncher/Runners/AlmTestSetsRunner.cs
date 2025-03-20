@@ -75,7 +75,7 @@ namespace HpToolsLauncher
         private const string _DLL = ".dll";
         private const string _EXE = ".exe";
         private const string SOFTWARE_WOW6432_CLASSES_CLSID_0 = @"Software\WOW6432Node\Classes\CLSID\{0}";
-        private const string FILE_ISNT_REGISTERED = @"{0} is not registered / found in HKLM\{1}.";
+        private const string FILE_ISNT_REGISTERED = @"{0} is not registered in HKLM\{1}.";
 
         public ITDConnection13 TdConnection
         {
@@ -190,16 +190,16 @@ namespace HpToolsLauncher
                 string workDir = GetAlmClientPath().TrimEnd(BACK_SLASH);
                 if (!string.IsNullOrEmpty(workDir))
                 {
-                    Console.WriteLine("Registering ALM client components...");
-                    foreach (string file in _filesToRegister)
+                    ConsoleWriter.WriteLine("Registering ALM client components...");
+                    foreach (string f in _filesToRegister)
                     {
-                        DoRegisterDll(workDir, Path.Combine(workDir, file));
+                        DoRegisterDll(workDir, f);
                     }
                 }
             }
             catch (Exception ex)
             {
-                ConsoleWriter.WriteLine("Error trying to register ALM client components: " + ex.Message);
+                ConsoleWriter.WriteErrLine("Error trying to register ALM client components: " + ex.Message);
             }
 
             Console.WriteLine("Checking ALM client components...");
@@ -211,14 +211,11 @@ namespace HpToolsLauncher
 
         private static bool DoRegisterDll(string workDir, string fileName)
         {
-            if (string.IsNullOrEmpty(fileName))
+            string fileFullPath = Path.Combine(workDir, fileName);
+            if (!File.Exists(fileFullPath))
             {
-                throw new ArgumentException("DLL path cannot be null or empty.", "dllPath");
-            }
-
-            if (!File.Exists(fileName))
-            {
-                throw new FileNotFoundException("The specified DLL file was not found.", fileName);
+                ConsoleWriter.WriteErrLine(string.Format("DLL file not found: {0}", fileFullPath));
+                return false;
             }
 
             try
@@ -237,7 +234,7 @@ namespace HpToolsLauncher
                 }
                 else
                 {
-                    Console.WriteLine("Warning: Unsupported file type: " + fileName);
+                    ConsoleWriter.WriteErrLine("Warning: Unsupported file type: " + fileName);
                     return false;
                 }
 
@@ -258,7 +255,7 @@ namespace HpToolsLauncher
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error registering DLL: " + ex.Message);
+                ConsoleWriter.WriteErrLine("Error registering DLL: " + ex.Message);
                 return false;
             }
         }
@@ -276,8 +273,9 @@ namespace HpToolsLauncher
             }
             catch (SecurityException)
             {
-                throw new UnauthorizedAccessException("Insufficient permissions to read system environment variables.");
+                ConsoleWriter.WriteErrLine("Insufficient permissions to read system environment variables.");
             }
+            return null;
         }
 
         private static void CheckIfClsidIsRegistered(string clsid, string filename)
