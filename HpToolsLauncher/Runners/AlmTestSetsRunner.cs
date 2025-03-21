@@ -182,15 +182,13 @@ namespace HpToolsLauncher
 
         private class PathSorter
         {
-            private static readonly char[] BackSlash = { '\\' };
-
             public static List<string> SortPaths(List<string> paths)
             {
                 // Build the tree
                 Node root = new Node(String.Empty);
                 foreach (string path in paths)
                 {
-                    root.AddPath(path.Split(BackSlash));
+                    root.AddPath(path.Split('\\'));
                 }
 
                 // Sort and flatten
@@ -252,7 +250,7 @@ namespace HpToolsLauncher
                     {
                         string childPath = string.IsNullOrEmpty(currentPath)
                             ? child.Name
-                            : currentPath + BackSlash[0] + child.Name;
+                            : currentPath + '\\' + child.Name;
                         child.SortAndFlatten(result, childPath);
                     }
 
@@ -260,7 +258,7 @@ namespace HpToolsLauncher
                     List<string> sortedLeaves = leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
                     foreach (string leaf in sortedLeaves)
                     {
-                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + BackSlash[0] + leaf);
+                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + '\\' + leaf);
                     }
                 }
             }
