@@ -54,6 +54,7 @@ namespace HpToolsLauncher
     public class AlmTestSetsRunner : RunnerBase, IDisposable
     {
         private readonly char[] _backSlash = new char[] { '\\' };
+        private const char BackSlash = '\\';
 
         private ITDConnection13 _tdConnection;
         private ITDConnection2 _tdConnectionOld;
@@ -188,7 +189,7 @@ namespace HpToolsLauncher
                 Node root = new Node(String.Empty);
                 foreach (string path in paths)
                 {
-                    root.AddPath(path.Split('\\'));
+                    root.AddPath(path.Split(BackSlash));
                 }
 
                 // Sort and flatten
@@ -199,66 +200,66 @@ namespace HpToolsLauncher
 
             private class Node
             {
-                private readonly string name; // Backing field for Name
-                private readonly Dictionary<string, Node> children; // Backing field for Children
-                private readonly List<string> leaves; // Backing field for Leaves
+                private readonly string _name; // Backing field for Name
+                private readonly Dictionary<string, Node> _children; // Backing field for Children
+                private readonly List<string> _leaves; // Backing field for Leaves
 
                 public string Name
                 {
-                    get { return name; }
+                    get { return _name; }
                 }
 
                 public Dictionary<string, Node> Children
                 {
-                    get { return children; }
+                    get { return _children; }
                 }
 
                 public List<string> Leaves
                 {
-                    get { return leaves; }
+                    get { return _leaves; }
                 }
 
                 public Node(string name)
                 {
-                    this.name = name;
-                    this.children = new Dictionary<string, Node>();
-                    this.leaves = new List<string>();
+                    this._name = name;
+                    this._children = new Dictionary<string, Node>();
+                    this._leaves = new List<string>();
                 }
 
                 public void AddPath(string[] segments, int index = 0)
                 {
                     if (index == segments.Length - 1)
                     {
-                        leaves.Add(segments[index]);
+                        _leaves.Add(segments[index]);
                         return;
                     }
 
                     string nextSegment = segments[index];
-                    if (!children.ContainsKey(nextSegment))
+                    if (!_children.ContainsKey(nextSegment))
                     {
-                        children[nextSegment] = new Node(nextSegment);
+                        _children[nextSegment] = new Node(nextSegment);
                     }
 
-                    children[nextSegment].AddPath(segments, index + 1);
+                    _children[nextSegment].AddPath(segments, index + 1);
                 }
 
                 public void SortAndFlatten(List<string> result, string currentPath)
                 {
                     // Sort subfolders first
-                    List<Node> sortedChildren = children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
+                    List<Node> sortedChildren = _children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
                     foreach (Node child in sortedChildren)
                     {
                         string childPath = string.IsNullOrEmpty(currentPath)
                             ? child.Name
-                            : currentPath + '\\' + child.Name;
+                            : currentPath + BackSlash + child.Name;
                         child.SortAndFlatten(result, childPath);
                     }
 
                     // Then add leaves, sorted
-                    List<string> sortedLeaves = leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
+                    List<string> sortedLeaves = _leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
                     foreach (string leaf in sortedLeaves)
                     {
-                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + '\\' + leaf);
+                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + BackSlash + leaf);
                     }
                 }
             }
