@@ -182,7 +182,7 @@ namespace HpToolsLauncher
 
         private class PathSorter
         {
-            private static readonly char[] BackSlash = new char[] { '\\' };
+            private static readonly char[] BackSlash = { '\\' };
 
             public static List<string> SortPaths(List<string> paths)
             {
