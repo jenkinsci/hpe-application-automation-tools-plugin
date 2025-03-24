@@ -54,6 +54,7 @@ namespace HpToolsLauncher
     public class AlmTestSetsRunner : RunnerBase, IDisposable
     {
         private readonly char[] _backSlash = new char[] { '\\' };
+        private const char BackSlash = '\\';
 
         private ITDConnection13 _tdConnection;
         private ITDConnection2 _tdConnectionOld;
@@ -178,6 +179,90 @@ namespace HpToolsLauncher
         ~AlmTestSetsRunner()
         {
             Dispose(false);
+        }
+
+        private class PathSorter
+        {
+            public static List<string> SortPaths(List<string> paths)
+            {
+                // Build the tree
+                Node root = new Node(String.Empty);
+                foreach (string path in paths)
+                {
+                    root.AddPath(path.Split(BackSlash));
+                }
+
+                // Sort and flatten
+                List<string> result = new List<string>();
+                root.SortAndFlatten(result, String.Empty);
+                return result;
+            }
+
+            private class Node
+            {
+                private readonly string _name; // Backing field for Name
+                private readonly Dictionary<string, Node> _children; // Backing field for Children
+                private readonly List<string> _leaves; // Backing field for Leaves
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public Dictionary<string, Node> Children
+                {
+                    get { return _children; }
+                }
+
+                public List<string> Leaves
+                {
+                    get { return _leaves; }
+                }
+
+                public Node(string name)
+                {
+                    this._name = name;
+                    this._children = new Dictionary<string, Node>();
+                    this._leaves = new List<string>();
+                }
+
+                public void AddPath(string[] segments, int index = 0)
+                {
+                    if (index == segments.Length - 1)
+                    {
+                        _leaves.Add(segments[index]);
+                        return;
+                    }
+
+                    string nextSegment = segments[index];
+                    if (!_children.ContainsKey(nextSegment))
+                    {
+                        _children[nextSegment] = new Node(nextSegment);
+                    }
+
+                    _children[nextSegment].AddPath(segments, index + 1);
+                }
+
+                public void SortAndFlatten(List<string> result, string currentPath)
+                {
+                    // Sort subfolders first
+                    List<Node> sortedChildren = _children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
+                    foreach (Node child in sortedChildren)
+                    {
+                        string childPath = string.IsNullOrEmpty(currentPath)
+                            ? child.Name
+                            : currentPath + BackSlash + child.Name;
+                        child.SortAndFlatten(result, childPath);
+                    }
+
+                    // Then add leaves, sorted
+                    List<string> sortedLeaves = _leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
+                    foreach (string leaf in sortedLeaves)
+                    {
+                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + BackSlash + leaf);
+                    }
+                }
+            }
         }
 
         //------------------------------- Connection to QC --------------------------
@@ -522,6 +607,11 @@ namespace HpToolsLauncher
                     removeSetsList.Add(testSetOrFolder);
 
                     List<string> setList = GetAllTestSetsFromDirTree(tsFolder);
+                    if (setList.Count > 1)
+                    {
+                        // Sort the setList: post-order traversal (deepest first), then alphabetically
+                        setList = PathSorter.SortPaths(setList);
+                    }
                     extraSetsList.AddRange(setList);
                 }
 
