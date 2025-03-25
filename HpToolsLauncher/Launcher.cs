@@ -602,11 +602,11 @@ namespace HpToolsLauncher
 
                         if (validTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, leaveUftOpenIfVisible, uftExportPdf);
+                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible);
                     }
                     else if (cleanupAndRerunTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, leaveUftOpenIfVisible, uftExportPdf);
+                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible);
                     }
                     else
                     {

@@ -106,8 +106,7 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
-                                    bool useUftLicense = false,
-                                    bool exportPdfConfiguration = false)
+                                    bool exportPdfConfiguration = false,
                                     bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
@@ -194,7 +193,7 @@ namespace HpToolsLauncher
                                     bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, leaveUftOpenIfVisible, useUftLicense, uftExportPdf);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible, useUftLicense);
 
             _tests = GetListOfTestInfo(sources, @params, jenkinsEnvVars);
 
@@ -242,11 +241,11 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
-                                    bool leaveUftOpenIfVisible = false,
                                     bool uftExportPdf,
+                                    bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, leaveUftOpenIfVisible, useUftLicense, uftExportPdf);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible, useUftLicense);
 
             _tests = tests;
             if (_tests == null || _tests.Count == 0)
