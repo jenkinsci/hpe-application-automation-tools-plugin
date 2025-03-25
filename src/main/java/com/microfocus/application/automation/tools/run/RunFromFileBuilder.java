@@ -78,6 +78,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.microfocus.application.automation.tools.uft.utils.Constants.LEAVE_UFT_OPEN_IF_VISIBLE;
+
 /**
  * Describes a regular jenkins build step from Functional Testing or LR
  */
@@ -761,10 +763,16 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         boolean isPrintTestParams = UftToolUtils.isPrintTestParams(build, listener);
         mergedProps.put("printTestParams", isPrintTestParams ? "1" : "0");
 
+        boolean isLeaveUftOpenIfVisible = UftToolUtils.leaveUftOpenIfVisible(build, listener);
+        mergedProps.put((LEAVE_UFT_OPEN_IF_VISIBLE), isLeaveUftOpenIfVisible ? "1" : "0");
+
         UftRunAsUser uftRunAsUser;
         try {
             uftRunAsUser = UftToolUtils.getRunAsUser(build, listener);
             if (uftRunAsUser != null) {
+                if (isLeaveUftOpenIfVisible) {
+                    out.println("Warning: If LEAVE_UFT_OPEN_IF_VISIBLE is set, FT will not be relaunched under the specified user if it is already running and visible.");
+                }
                 mergedProps.put("uftRunAsUserName", uftRunAsUser.getUsername());
                 if (StringUtils.isNotBlank(uftRunAsUser.getEncodedPassword())) {
                     mergedProps.put("uftRunAsUserEncodedPassword", uftRunAsUser.getEncodedPasswordAsEncrypted(currNode));
