@@ -86,12 +86,14 @@ namespace HpToolsLauncher
         private const string SYSTEM_PROXY = "System Proxy";
         private const string HTTP_PROXY = "HTTP Proxy";
         private const string DEFAULT_WORKSPACE = "default workspace";
+        private const string ExportOptionsStepDetailsReportFormat = "UserDefined";
 
         private readonly Type _qtType = Type.GetTypeFromProgID("Quicktest.Application");
         private readonly IAssetRunner _runNotifier;
         private readonly object _lockObject = new object();
         private TimeSpan _timeLeftUntilTimeout = TimeSpan.MaxValue;
         private readonly string _uftRunMode;
+        private bool _uftExportPDF;
         private Stopwatch _stopwatch = null;
         private Application _qtpApplication;
         private ParameterDefinitions _qtpParamDefs;
@@ -112,10 +114,12 @@ namespace HpToolsLauncher
         /// <param name="runNotifier"></param>
         /// <param name="useUftLicense"></param>
         /// <param name="timeLeftUntilTimeout"></param>
-        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, RunAsUser uftRunAsUser, bool leaveUftOpenIfVisible)
+
+        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, bool uftExportPdf, RunAsUser uftRunAsUser, bool leaveUftOpenIfVisible)
         {
             _timeLeftUntilTimeout = timeLeftUntilTimeout;
             _uftRunMode = uftRunMode;
+            _uftExportPDF = uftExportPdf;
             _stopwatch = Stopwatch.StartNew();
             _runNotifier = runNotifier;
             _useUFTLicense = useUftLicense;
@@ -289,6 +293,31 @@ namespace HpToolsLauncher
             {
                 ConsoleWriter.WriteErrLine(Resources.FsDuplicateParamNames);
                 throw;
+            }
+
+            if (_uftExportPDF)
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                exportOptions.AutoExportResults = true;
+                exportOptions.StepDetailsReport = true;
+                exportOptions.DataTableReport = true;
+                exportOptions.LogTrackingReport = true;
+                exportOptions.ScreenRecorderReport = true;
+                exportOptions.SystemMonitorReport = false;
+                exportOptions.StepDetailsReportFormat = ExportOptionsStepDetailsReportFormat;
+                exportOptions.ExportForFailedRunsOnly = true;
+
+                Console.WriteLine("The global Run Sessions option 'Automatically export run results when run session ends' has been enabled by the Jenkins job.");
+            }
+            else
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                if (exportOptions.AutoExportResults)
+                {
+                    exportOptions.AutoExportResults = false;
+                    Console.WriteLine(
+                        "The global Run Sessions option 'Automatically export run results when run session ends' has been disabled by the Jenkins job.");
+                }
             }
 
             //if (!HandleDigitalLab(qtpVersion, ref errorReason))

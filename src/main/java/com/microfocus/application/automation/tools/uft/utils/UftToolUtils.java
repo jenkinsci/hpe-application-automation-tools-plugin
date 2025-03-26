@@ -399,15 +399,15 @@ public class UftToolUtils {
     public static boolean leaveUftOpenIfVisible(@Nonnull Run<?, ?> build, @Nonnull TaskListener listener) {
         ParametersAction parameterAction = build.getAction(ParametersAction.class);
         String msg = "Parameter LEAVE_UFT_OPEN_IF_VISIBLE is not set.";
-        boolean leaveUftOpen = true;
+        boolean leaveUftOpen = false;
         if (parameterAction == null) {
             listener.getLogger().println(msg);
         } else {
-            ParameterValue uftPrintTestParams = parameterAction.getParameter(LEAVE_UFT_OPEN_IF_VISIBLE);
-            if (uftPrintTestParams == null) {
+            ParameterValue leaveUFTOpenIfVisibleParam = parameterAction.getParameter(LEAVE_UFT_OPEN_IF_VISIBLE);
+            if (leaveUFTOpenIfVisibleParam == null) {
                 listener.getLogger().println(msg);
             } else {
-                leaveUftOpen = (boolean) uftPrintTestParams.getValue();
+                leaveUftOpen = (boolean) leaveUFTOpenIfVisibleParam.getValue();
                 listener.getLogger().println(String.format(KEY_VALUE_FORMAT, LEAVE_UFT_OPEN_IF_VISIBLE, leaveUftOpen ? "1" : "0")) ;
             }
         }

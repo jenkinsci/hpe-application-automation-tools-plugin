@@ -62,6 +62,7 @@ namespace HpToolsLauncher
         private List<ScriptRTSModel> _scriptRTSSet;
         private TimeSpan _timeout = TimeSpan.MaxValue;
         private string _uftRunMode;
+        private bool _uftExportPdf;
         private Stopwatch _stopwatch = null;
         private string _abortFilename = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\stop" + Launcher.UniqueTimeStamp + ".txt";
         private string _encoding;
@@ -105,6 +106,7 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
+                                    bool exportPdfConfiguration = false,
                                     bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
@@ -138,6 +140,7 @@ namespace HpToolsLauncher
             _uftRunAsUser = uftRunAsUser;
             _leaveUftOpenIfVisible = leaveUftOpenIfVisible;
             _uftRunMode = uftRunMode;
+            _uftExportPdf = exportPdfConfiguration;
 
             if (_digitalLab.ConnectionInfo != null)
                 ConsoleWriter.WriteLine("Functional Testing Lab connection info is - " + _digitalLab.ConnectionInfo.ToString());
@@ -186,10 +189,11 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
+                                    bool uftExportPdf,
                                     bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, leaveUftOpenIfVisible, useUftLicense);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible, useUftLicense);
 
             _tests = GetListOfTestInfo(sources, @params, jenkinsEnvVars);
 
@@ -237,10 +241,11 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
+                                    bool uftExportPdf,
                                     bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, leaveUftOpenIfVisible, useUftLicense);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible, useUftLicense);
 
             _tests = tests;
             if (_tests == null || _tests.Count == 0)
@@ -670,7 +675,7 @@ namespace HpToolsLauncher
                     _runner = new ApiTestRunner(this, _timeout - _stopwatch.Elapsed, _encoding, _printInputParams, _uftRunAsUser);
                     break;
                 case TestType.QTP:
-                    _runner = new GuiTestRunner(this, _useUFTLicense, _timeout - _stopwatch.Elapsed, _uftRunMode, _digitalLab, _printInputParams, _uftRunAsUser, _leaveUftOpenIfVisible);
+                    _runner = new GuiTestRunner(this, _useUFTLicense, _timeout - _stopwatch.Elapsed, _uftRunMode, _digitalLab, _printInputParams, _uftExportPdf, _uftRunAsUser, _leaveUftOpenIfVisible);
                     break;
                 case TestType.LoadRunner:
                     AppDomain.CurrentDomain.AssemblyResolve += Helper.HPToolsAssemblyResolver;
