@@ -88,6 +88,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.microfocus.application.automation.tools.results.projectparser.performance.XmlParserUtil.getNode;
@@ -543,7 +545,11 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 							reportMetaData.setIsParallelRunnerReport(isParallelRunnerReport); // we need to handle
 
 							// the type for this report
-							String resourceUrl = "artifact/UFTReport/" + (StringUtils.isBlank(nodeName) ? "" : nodeName + "/") + testName + "/Result";
+							String urlEncodedTestName = URLEncoder.encode(testName, StandardCharsets.UTF_8)
+									.replaceAll("\\+", "%20");
+
+							String resourceUrl = "artifact/UFTReport/" + (StringUtils.isBlank(nodeName) ? "" : nodeName + "/") +
+												 urlEncodedTestName + "/Result";
 							reportMetaData.setResourceURL(resourceUrl);
 							reportMetaData.setDisPlayName(testName); // use the name, not the full path
 							reportMetaData.computeStResFolders(new FilePath(reportFolder, RUN_RESULTS_XML), listener);
