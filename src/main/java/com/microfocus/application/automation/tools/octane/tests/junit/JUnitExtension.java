@@ -61,6 +61,7 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.model.*;
 import hudson.remoting.VirtualChannel;
+import hudson.tasks.Builder;
 import hudson.tasks.test.AbstractTestResultAction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.Level;
@@ -205,7 +206,8 @@ public class JUnitExtension extends OctaneTestsExtension {
 		private boolean stripPackageAndClass;
 		private String sharedCheckOutDirectory;
 		private Pattern testParserRegEx;
-		private boolean octaneSupportsSteps;
+		private boolean       octaneSupportsSteps;
+		private List<Builder> builders;
 
 		//this class is run on master and JUnitXmlIterator is runnning on slave.
 		//this object pass some master2slave data
@@ -241,6 +243,8 @@ public class JUnitExtension extends OctaneTestsExtension {
 					new MavenBuilderModuleDetection(build),
 					new MavenSetModuleDetection(build),
 					new ModuleDetection.Default());
+
+			this.builders = JobProcessorFactory.getFlowProcessor(build.getParent()).tryGetBuilders();
 
 
 			if (HPRunnerType.UFT.equals(hpRunnerType) || HPRunnerType.UFT_MBT.equals(hpRunnerType)) {
@@ -317,7 +321,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 				for (FilePath report : reports) {
 					JUnitXmlIterator iterator = new JUnitXmlIterator(report.read(), moduleDetection, workspace, sharedCheckOutDirectory, jobName,
 									buildId, buildStarted, stripPackageAndClass, hpRunnerType, jenkinsRootUrl, additionalContext,
-									testParserRegEx, octaneSupportsSteps, nodeNames);
+									testParserRegEx, octaneSupportsSteps, nodeNames, builders);
 					while (iterator.hasNext()) {
 						oos.writeObject(iterator.next());
 					}
