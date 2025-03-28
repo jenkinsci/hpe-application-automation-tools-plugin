@@ -48,16 +48,18 @@ import com.hp.octane.integrations.uft.ufttestresults.schema.UftResultIterationDa
 import com.hp.octane.integrations.uft.ufttestresults.schema.UftResultStepData;
 import com.hp.octane.integrations.uft.ufttestresults.schema.UftResultStepParameter;
 import com.hp.octane.integrations.utils.SdkConstants;
-import com.microfocus.application.automation.tools.JenkinsUtils;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.octane.tests.HPRunnerType;
+import com.microfocus.application.automation.tools.octane.tests.detection.MFToolsDetectionExtension;
 import com.microfocus.application.automation.tools.octane.tests.junit.codeless.CodelessResult;
 import com.microfocus.application.automation.tools.octane.tests.junit.codeless.CodelessResultParameter;
 import com.microfocus.application.automation.tools.octane.tests.junit.codeless.CodelessResultUnit;
 import com.microfocus.application.automation.tools.octane.tests.xml.AbstractXmlIterator;
 import hudson.FilePath;
+import hudson.tasks.Builder;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileSystem;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.Logger;
@@ -126,12 +128,14 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
     private ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private Map<String, CodelessResult> testNameToCodelessResultMap = new HashMap<>();
     private Set<String> nodeNames;
+    private List<Builder> builders;
 
     private final int ERROR_MESSAGE_MAX_SIZE = System.getProperty("octane.sdk.tests.error_message_max_size") != null ? Integer.parseInt(System.getProperty("octane.sdk.tests.error_message_max_size")) : 512*512;
     private final int ERROR_DETAILS_MAX_SIZE = System.getProperty("octane.sdk.tests.error_details_max_size") != null ? Integer.parseInt(System.getProperty("octane.sdk.tests.error_details_max_size")) : 512*512;
 
 
-    public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String sharedCheckOutDirectory, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext, Pattern testParserRegEx, boolean octaneSupportsSteps,Set<String> nodeNames) throws XMLStreamException {
+    public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String sharedCheckOutDirectory, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext, Pattern testParserRegEx, boolean octaneSupportsSteps,Set<String> nodeNames,
+            List<Builder> builders) throws XMLStreamException {
 		super(read);
 		this.stripPackageAndClass = stripPackageAndClass;
 		this.moduleDetection = moduleDetection;
@@ -146,6 +150,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 		this.testParserRegEx = testParserRegEx;
 		this.octaneSupportsSteps = octaneSupportsSteps;
 		this.nodeNames = nodeNames;
+        this.builders = builders;
 	}
 
 	private static long parseTime(String timeString) {
@@ -240,7 +245,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 
                     // if workspace is prefix of the method name, cut it off
                     // currently this handling is needed for UFT tests
-                    int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName);
+                    int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName, builders);
                     if (uftTextIndexStart != -1) {
                         String path = testName.substring(uftTextIndexStart).replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);;
                         boolean isMBT = path.startsWith(MfMBTConverter.MBT_PARENT_SUB_DIR);
@@ -679,7 +684,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 		return result;
 	}
 
-	private int getUftTestIndexStart(FilePath workspace, String sharedCheckOutDirectory, String testName) {
+	private int getUftTestIndexStart(FilePath workspace, String sharedCheckOutDirectory, String testName, List<Builder> builders) {
 		int returnIndex = -1;
 		try {
 			if (sharedCheckOutDirectory == null) {
@@ -696,6 +701,18 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 							 .toFile().getCanonicalPath();
 			}
 
+            if (FileSystem.getCurrent().equals(FileSystem.LINUX) || FileSystem.getCurrent().equals(FileSystem.MAC_OSX)) {
+                if (builders != null) {
+                    List<String> buildersNames =
+                            builders.stream().map(builder -> builder.getClass().getSimpleName()).collect(Collectors.toList());
+                    if (!buildersNames.isEmpty() && buildersNames.contains(MFToolsDetectionExtension.RUN_FROM_FILE_BUILDER)) {
+                        if (pathToTest.startsWith("/")) {
+                            pathToTest = pathToTest.substring(1);
+                            pathToTest = pathToTest.replaceAll("/", "\\\\");
+                        }
+                    }
+                }
+            }
 
 			if (testName.toLowerCase().startsWith(pathToTest.toLowerCase())) {
 				returnIndex = pathToTest.length() + 1;

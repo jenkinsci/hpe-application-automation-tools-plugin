@@ -62,7 +62,7 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
     private static final String STORMRUNNER_LOAD_TEST_RUNNER_CLASS = "StormTestRunner";
     private static final String STORMRUNNER_TEST_RUN_TEST_RUNNER_CLASS = "TestRunBuilder";
     private static final String PERFORMANCE_CENTER_TEST_RUNNER_CLASS = "PcBuilder";
-    private static final String RUN_FROM_FILE_BUILDER = "RunFromFileBuilder";
+    public static final String RUN_FROM_FILE_BUILDER = "RunFromFileBuilder";
     private static final String RUN_FROM_ALM_BUILDER = "RunFromAlmBuilder";
 
     private static final String UFT = "UFT";
