@@ -62,6 +62,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileSystem;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
 import javax.xml.stream.XMLStreamException;
@@ -245,7 +246,10 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 
                     // if workspace is prefix of the method name, cut it off
                     // currently this handling is needed for UFT tests
+                    logger.log(Level.INFO, "testName: " + testName);
+                    logger.log(Level.INFO, "hpRunnerType: " + hpRunnerType);
                     int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName, builders);
+                    logger.log(Level.INFO, "uftTextIndexStart: " + uftTextIndexStart);
                     if (uftTextIndexStart != -1) {
                         String path = testName.substring(uftTextIndexStart).replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);;
                         boolean isMBT = path.startsWith(MfMBTConverter.MBT_PARENT_SUB_DIR);
@@ -701,6 +705,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 							 .toFile().getCanonicalPath();
 			}
 
+            logger.log(Level.INFO, "pathToTest1: " + pathToTest);
             if (FileSystem.getCurrent().equals(FileSystem.LINUX) || FileSystem.getCurrent().equals(FileSystem.MAC_OSX)) {
                 if (builders != null) {
                     List<String> buildersNames =
@@ -713,6 +718,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                     }
                 }
             }
+            logger.log(Level.INFO, "pathToTest2: " + pathToTest);
 
 			if (testName.toLowerCase().startsWith(pathToTest.toLowerCase())) {
 				returnIndex = pathToTest.length() + 1;
