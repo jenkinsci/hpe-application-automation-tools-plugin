@@ -232,7 +232,7 @@ namespace HpToolsLauncher
                 }
                 else if (extension == _EXE)
                 {
-                    dllOrExeFileName = fileName;
+                    dllOrExeFileName = fileFullPath;
                     args = "/regserver";
                 }
                 else
@@ -258,7 +258,7 @@ namespace HpToolsLauncher
             }
             catch (Exception ex)
             {
-                ConsoleWriter.WriteErrLine("Error registering DLL: " + ex.Message);
+                ConsoleWriter.WriteErrLine(string.Format("Failed to register [{0}] : {1}", fileFullPath, ex.Message));
                 return false;
             }
         }
