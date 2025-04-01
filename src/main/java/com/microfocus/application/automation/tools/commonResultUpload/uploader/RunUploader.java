@@ -73,11 +73,9 @@ public class RunUploader {
     private RestService restService;
     private CustomizationService customizationService;
 
-    public void upload(Map<String, String> testset,
-                       Map<String, String> test,
-                       Map<String, String> testconfig,
-                       Map<String, String> testinstance,
-                       Map<String, String> run)  {
+    public RunUploader(CommonUploadLogger logger, Map<String, String> params,
+                       RestService restService, CustomizationService customizationService,
+                       Map<String, String> runStatusMapping) {
         this.logger = logger;
         this.params = params;
         this.restService = restService;
@@ -85,8 +83,10 @@ public class RunUploader {
         this.runStatusMapping = runStatusMapping;
     }
 
-    public void upload(Map<String, String> testset, Map<String, String> test,
-                       Map<String, String> testconfig, Map<String, String> testinstance,
+    public void upload(Map<String, String> testset,
+                       Map<String, String> test,
+                       Map<String, String> testconfig,
+                       Map<String, String> testinstance,
                        Map<String, String> run,
                        boolean isCreateDesStep) {
 
