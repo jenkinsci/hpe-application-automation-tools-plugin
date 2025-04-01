@@ -77,8 +77,7 @@ public class RunUploader {
                        Map<String, String> test,
                        Map<String, String> testconfig,
                        Map<String, String> testinstance,
-                       Map<String, String> run,
-                       boolean isCreateDesStep)  {
+                       Map<String, String> run)  {
         this.logger = logger;
         this.params = params;
         this.restService = restService;
@@ -88,7 +87,8 @@ public class RunUploader {
 
     public void upload(Map<String, String> testset, Map<String, String> test,
                        Map<String, String> testconfig, Map<String, String> testinstance,
-                       Map<String, String> run) {
+                       Map<String, String> run,
+                       boolean isCreateDesStep) {
 
         // Get attachment info and remove
         String attachment = run.get("attachment");
