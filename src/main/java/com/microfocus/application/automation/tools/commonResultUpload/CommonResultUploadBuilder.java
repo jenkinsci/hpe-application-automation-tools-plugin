@@ -49,12 +49,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.AbstractProject;
-import hudson.model.Item;
-import hudson.model.Queue;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.model.queue.Tasks;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
@@ -86,7 +81,8 @@ public class CommonResultUploadBuilder extends Recorder implements SimpleBuildSt
             String clientType, String almProject, String almTestFolder,
             String almTestSetFolder, String testingResultFile,
             String runStatusMapping, String fieldMapping,
-            boolean createNewTest) {
+            boolean createNewTest,
+            boolean updateDesSteps) {
 
         this.almServerName = almServerName;
         this.credentialsId = credentialsId;
@@ -99,6 +95,7 @@ public class CommonResultUploadBuilder extends Recorder implements SimpleBuildSt
         this.runStatusMapping = runStatusMapping;
         this.fieldMapping = fieldMapping;
         this.createNewTest = createNewTest;
+        this.updateDesSteps = updateDesSteps;
     }
 
     @Override
@@ -123,12 +120,13 @@ public class CommonResultUploadBuilder extends Recorder implements SimpleBuildSt
         params.put(ALM_DOMAIN, Util.replaceMacro(almDomain, varResolver));
         params.put(CLIENT_TYPE, clientType);
         params.put(ALM_PROJECT, Util.replaceMacro(almProject, varResolver));
-        params.put(ALM_TEST_FOLDER, almTestFolder);
-        params.put(ALM_TESTSET_FOLDER, almTestSetFolder);
+        params.put(ALM_TEST_FOLDER, Util.replaceMacro(almTestFolder, varResolver));
+        params.put(ALM_TESTSET_FOLDER, Util.replaceMacro(almTestSetFolder, varResolver));
         params.put(RUN_STATUS_MAPPING, Util.replaceMacro(runStatusMapping, varResolver));
         params.put(TESTING_RESULT_FILE, Util.replaceMacro(testingResultFile, varResolver));
         params.put(FIELD_MAPPING, Util.replaceMacro(fieldMapping, varResolver));
         params.put(CREATE_NEW_TEST, String.valueOf(createNewTest));
+        params.put(UPDATE_DESSTEPS, String.valueOf(updateDesSteps));
 
         Uploader uploader = new Uploader(run, workspace, logger, params);
         uploader.upload();
@@ -311,7 +309,7 @@ public class CommonResultUploadBuilder extends Recorder implements SimpleBuildSt
             return "status:\n" +
                     "  Passed: \"==True\" # If status attribute is \"True\" in report, the run in ALM will be marked as \"Passed\". Else will be \"Failed\".\n" +
                     "  #Failed: \">=0\" # If status attribute value greater or equals than 0, then run in ALM will be marked as \"Failed\".  \n" +
-                    "  #Passed condition and Failed condition are mutural exclusion." ;
+                    "  #Passed condition and Failed condition are mutual exclusion." ;
         }
     }
 
@@ -326,6 +324,15 @@ public class CommonResultUploadBuilder extends Recorder implements SimpleBuildSt
     private String runStatusMapping;
     private String fieldMapping;
     private boolean createNewTest;
+    private boolean updateDesSteps;
+
+    public boolean isUpdateDesSteps() {
+        return updateDesSteps;
+    }
+
+    public void setUpdateDesSteps(boolean updateDesSteps) {
+        this.updateDesSteps = updateDesSteps;
+    }
 
     public String getAlmServerName() {
         return almServerName;
