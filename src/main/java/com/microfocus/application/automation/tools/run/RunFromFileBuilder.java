@@ -96,6 +96,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     private SpecifyParametersModel specifyParametersModel;
     private boolean isParallelRunnerEnabled;
     private boolean areParametersEnabled;
+    private boolean isPdfEnabled;
     private SummaryDataLogModel summaryDataLogModel;
 
     private ScriptRTSSetModel scriptRTSSetModel;
@@ -113,6 +114,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     public RunFromFileBuilder(String fsTests,
                               boolean isParallelRunnerEnabled,
                               boolean areParametersEnabled,
+                              boolean isPdfEnabled,
                               SpecifyParametersModel specifyParametersModel,
                               FileSystemTestSetModel fileSystemTestSetModel,
                               SummaryDataLogModel summaryDataLogModel,
@@ -122,6 +124,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         this.specifyParametersModel = specifyParametersModel;
         this.fileSystemTestSetModel = fileSystemTestSetModel;
         this.isParallelRunnerEnabled = isParallelRunnerEnabled;
+        this.isPdfEnabled = isPdfEnabled;
         this.areParametersEnabled = areParametersEnabled;
         this.summaryDataLogModel = summaryDataLogModel;
         this.scriptRTSSetModel = scriptRTSSetModel;
@@ -180,8 +183,9 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                               String analysisTemplate, String mcServerName, AuthModel authModel, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
                               String fsOs, String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics,
                               String fsInstrumented, String fsExtraApps, String fsJobId, ProxySettings proxySettings,
-                              boolean useSSL, boolean isParallelRunnerEnabled, String fsReportPath, CloudBrowserModel cloudBrowserModel) {
+                              boolean useSSL, boolean isPdfEnabled, boolean isParallelRunnerEnabled, String fsReportPath, CloudBrowserModel cloudBrowserModel) {
         this.isParallelRunnerEnabled = isParallelRunnerEnabled;
+        this.isPdfEnabled = isPdfEnabled;
         runFromFileModel = new RunFromFileSystemModel(fsTests, fsTimeout, fsUftRunMode, controllerPollingInterval,
                 perScenarioTimeOut, ignoreErrorStrings, displayController, analysisTemplate, mcServerName,
                 authModel, fsDeviceId, fsTargetLab, fsManufacturerAndModel, fsOs,
@@ -275,6 +279,25 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     private void setIsParallelRunnerEnabled(boolean isParallelRunnerEnabled) {
         this.isParallelRunnerEnabled = isParallelRunnerEnabled;
+    }
+
+    /**
+     * Gets the export pdf flag.
+     *
+     * @return the current export pdf flag state(enabled/disabled)
+     */
+    public boolean getIsPdfEnabled() {
+        return isPdfEnabled;
+    }
+
+    /**
+     * Sets the export pdf flag
+     *
+     * @param enablePDF the export pdf flag
+     */
+    @DataBoundSetter
+    private void setIsPdfEnabled(boolean enablePDF) {
+        this.isPdfEnabled = enablePDF;
     }
 
     public String getAnalysisTemplate() {
@@ -863,6 +886,9 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
             }
             index++;
         }
+
+        String fsUftExportPdf = Boolean.toString(getIsPdfEnabled());
+        mergedProps.setProperty("fsUftExportPdf", fsUftExportPdf);
 
         mergedProps.setProperty("numOfTests", String.valueOf(index - 1));
 
