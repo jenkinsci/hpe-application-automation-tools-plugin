@@ -100,7 +100,7 @@ public class MigrateAlmCredentialsBuilder extends Recorder implements Serializab
                                 if (model.getAlmServerName().equals(almBuilder.getAlmServerName())) {
                                     if (!StringUtils.isNullOrEmpty(almUsername) && !serverUsernames.get(model.getAlmServerName()).contains(almUsername) &&
                                         !almUsername.equals(UftConstants.NO_USERNAME_DEFINED) && almBuilder.runFromAlmModel.getAlmPassword() != null) {
-                                        String almPassword = almBuilder.runFromAlmModel.getAlmPassword().getPlainText();
+                                        Secret almPassword = almBuilder.runFromAlmModel.getAlmPassword();
                                         serverUsernames.put(model.getAlmServerName(), almUsername);
                                         model.set_almCredentials(Arrays.asList(new CredentialsModel(almUsername, almPassword)));
                                         listener.getLogger().println("Migrating username '" + almUsername + "' 'for server: " + model.getAlmServerName() + ", " + model.getAlmServerUrl());
