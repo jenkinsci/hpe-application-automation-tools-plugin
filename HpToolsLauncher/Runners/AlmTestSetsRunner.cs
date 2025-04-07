@@ -190,8 +190,8 @@ namespace HpToolsLauncher
             {
                 try
                 {
-                    string workDir = GetAlmClientPath().TrimEnd(BACK_SLASH);
-                    if (!string.IsNullOrEmpty(workDir))
+                    string workDir = GetAlmClientPath();
+                    if (!workDir.IsNullOrEmpty())
                     {
                         ConsoleWriter.WriteLine("Registering ALM client components...");
                         foreach (string f in _filesToRegister)
@@ -202,7 +202,7 @@ namespace HpToolsLauncher
                 }
                 catch (Exception ex)
                 {
-                    ConsoleWriter.WriteErrLine("Error trying to register ALM client components: " + ex.Message);
+                    ConsoleWriter.WriteErrLine("Failed to register ALM client components: " + ex.Message);
                 }
 
                 Console.WriteLine("Checking ALM client components...");
@@ -238,7 +238,7 @@ namespace HpToolsLauncher
                 }
                 else
                 {
-                    ConsoleWriter.WriteErrLine("Warning: Unsupported file type: " + fileName);
+                    ConsoleWriter.WriteErrLine("Unsupported file type: " + fileName);
                     return false;
                 }
 
@@ -266,20 +266,20 @@ namespace HpToolsLauncher
 
         private string GetAlmClientPath()
         {
+            string val = null;
             try
             {
-                string val = Environment.GetEnvironmentVariable(ALM_CLIENT_PATH, EnvironmentVariableTarget.User);
+                val = Environment.GetEnvironmentVariable(ALM_CLIENT_PATH, EnvironmentVariableTarget.User);
                 if (string.IsNullOrEmpty(val))
                 {
                     val = Environment.GetEnvironmentVariable(ALM_CLIENT_PATH, EnvironmentVariableTarget.Machine);
                 }
-                return val;
             }
             catch (SecurityException)
             {
                 ConsoleWriter.WriteErrLine("Insufficient permissions to read system environment variables.");
             }
-            return null;
+            return val.IsNullOrWhiteSpace() ? null : val.Trim().TrimEnd(BackSlash);
         }
 
         private static void CheckIfClsidIsRegistered(string clsid, string filename)
