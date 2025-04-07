@@ -323,10 +323,12 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                 } else if (hpRunnerType.equals(HPRunnerType.PerformanceCenter)) {
                     externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/artifact/performanceTestsReports/pcRun/Report.html";
                 } else if (hpRunnerType.equals(HPRunnerType.StormRunnerLoad)) {
+                    logger.log(Level.INFO,"entered StormRunnerLoad if");
                     externalURL = tryGetStormRunnerReportURLFromJunitFile(filePath);
                     if (StringUtils.isEmpty(externalURL) && additionalContext != null && additionalContext instanceof Collection) {
                         externalURL = tryGetStormRunnerReportURLFromLog((Collection) additionalContext);
                     }
+                    logger.log(Level.INFO, "StormRunnerLoad externalURL: " + externalURL);
                 }
             } else if ("duration".equals(localName)) { // NON-NLS
                 testDuration = parseTime(readNextValue());
@@ -666,9 +668,11 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 			String srUrl = null;
 			File srReport = new File(path);
 			if (srReport.exists()) {
+                logger.log(Level.INFO, "report exists");
 				TestSuite testSuite = DTOFactory.getInstance().dtoFromXmlFile(srReport, TestSuite.class);
 				for (Property property : testSuite.getProperties()) {
 					if (property.getPropertyName().equals(SRL_REPORT_URL)) {
+                        logger.log(Level.INFO, "reportURL exists in report");
 						srUrl = property.getPropertyValue();
 						break;
 					};
