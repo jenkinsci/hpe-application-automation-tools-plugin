@@ -91,6 +91,10 @@
         <f:checkbox checked="${instance.createNewTest}" title="Create new test if no match"/>
     </f:entry>
 
+    <f:entry field="updateDesSteps">
+        <f:checkbox checked="${instance.updateDesSteps}" title="Keep test case steps updated with execution result"/>
+    </f:entry>
+
     <f:entry title="Run status mapping" field="runStatusMapping">
         <f:textarea name="runStatusMapping" value="${instance.runStatusMapping}" default="${descriptor.defaultRunStatusMapping()}"/>
     </f:entry>

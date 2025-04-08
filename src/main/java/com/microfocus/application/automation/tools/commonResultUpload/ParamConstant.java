@@ -51,4 +51,5 @@ public final class ParamConstant {
     public static final String FIELD_MAPPING = "fieldMapping";
     public static final String ACTUAL_USER = "actualUser";
     public static final String CREATE_NEW_TEST = "createNewTest";
+    public static final String UPDATE_DESSTEPS = "updateDesSteps";
 }

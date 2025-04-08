@@ -37,13 +37,15 @@ import java.util.Map;
 public class RunStatusMap {
 
     private Map<String, String> status;
+    private Map<String, String> stepstatus;
     public Map<String, String> getStatus() {
         return status;
     }
     public void setStatus(Map<String, String> status) {
         this.status = status;
     }
-
+    public Map<String, String> getStepStatus() {return stepstatus;}
+    public void setStepstatus(Map<String, String> stepstatus) {this.stepstatus = stepstatus;}
     private RunStatusMap() {
 
     }

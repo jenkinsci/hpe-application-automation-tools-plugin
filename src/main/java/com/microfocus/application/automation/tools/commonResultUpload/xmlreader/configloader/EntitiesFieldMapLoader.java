@@ -40,7 +40,9 @@ import com.microfocus.application.automation.tools.commonResultUpload.service.UD
 import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.model.EntitiesFieldMap;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static com.microfocus.application.automation.tools.results.service.almentities.AlmTest.TEST_TYPE;
 import static com.microfocus.application.automation.tools.results.service.almentities.AlmTestSet.TESTSET_SUB_TYPE_ID;
@@ -51,6 +53,7 @@ public class EntitiesFieldMapLoader {
     private static final String[] TEST_SET_REQUIRED_FIELDS = new String[]{"root", "name", TESTSET_SUB_TYPE_ID};
     private static final String[] RUN_REQUIRED_FIELDS = new String[]{"root"};
     private static String[] testRquiredFields;
+    private static Set<String> exceptionalFields = new HashSet<String>();
 
     private EntitiesFieldMapLoader() {
 
@@ -153,7 +156,10 @@ public class EntitiesFieldMapLoader {
         Map<String, String> entityFields = cs.getEntityFields(entityName);
         for (String fieldName : fieldMap.keySet()) {
             // Check if field name exists
-            if (!containsValue(fieldName, entityFields) && !fieldName.equals("root") && !fieldName.contains("|")) {
+            if (!containsValue(fieldName, entityFields)
+                    && !fieldName.equals("root")
+                    && !fieldName.contains("|")
+                    && !isExceptionalFields(fieldName)) {
                 logger.error(ILLEGAL + entityName + " field name: " + fieldName);
                 return false;
             }
@@ -168,6 +174,15 @@ public class EntitiesFieldMapLoader {
             }
         }
         return true;
+    }
+
+    static {
+        exceptionalFields.add("stepMessage");
+        exceptionalFields.add("stepRegEx");
+    }
+
+    private static boolean isExceptionalFields(String filedName) {
+        return exceptionalFields.contains(filedName);
     }
 
     private static boolean containsValue(String value, Map<String, String> map) {

@@ -249,6 +249,20 @@ public class RestClient implements Client {
         return ret;
     }
 
+    @Override
+    public Response httpDelete(String url, String queryString, Map<String, String> headers, ResourceAccessLevel resourceAccessLevel) {
+        Response ret = null;
+        try {
+            ret = doHttp("DELETE", url, queryString, null, headers, resourceAccessLevel);
+        } catch (Exception cause) {
+            throw new SSEException(cause);
+        }
+
+        return ret;
+    }
+
+
+
     /**
      * Get server url
      */

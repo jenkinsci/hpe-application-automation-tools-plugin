@@ -35,27 +35,92 @@ package com.microfocus.application.automation.tools.commonResultUpload.service;
 import com.microfocus.application.automation.tools.results.service.almentities.IAlmConsts;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public final class RunStatusResolver {
-
+    private static Set<String> operators = new HashSet();
+    private static Set<String> ALM_STATUS = new HashSet();
     private RunStatusResolver() { }
 
     public static String getRunStatus(String status, Map<String, String> runStatusMapping) {
-        String passCondition = runStatusMapping.get(IAlmConsts.IStatuses.PASSED.value());
-        String failedCondition = runStatusMapping.get(IAlmConsts.IStatuses.FAILED.value());
+        String passCondition = null;
+        String failedCondition = null;
+        boolean containsOperator = false;
 
-        if (!StringUtils.isEmpty(passCondition)) {
-            return resolveCondition(status, passCondition)
-                    ? IAlmConsts.IStatuses.PASSED.value() : IAlmConsts.IStatuses.FAILED.value();
-        }
-        if (!StringUtils.isEmpty(failedCondition)) {
-            return resolveCondition(status, failedCondition)
-                    ? IAlmConsts.IStatuses.FAILED.value() : IAlmConsts.IStatuses.PASSED.value();
+        for(Map.Entry<String,String> entry : runStatusMapping.entrySet()) {
+            if (containsOperator(entry.getKey())) {
+                containsOperator = true;
+                if (IAlmConsts.IStatuses.PASSED.value().equalsIgnoreCase(entry.getValue())) {
+                    passCondition = entry.getKey();
+                    break;
+                }
+                if (IAlmConsts.IStatuses.FAILED.value().equalsIgnoreCase(entry.getValue())) {
+                    failedCondition = entry.getKey();
+                    break;
+                }
+            }
+
+            if (containsOperator(entry.getValue())) {
+                containsOperator = true;
+                if (IAlmConsts.IStatuses.PASSED.value().equalsIgnoreCase(entry.getKey())) {
+                    passCondition = entry.getValue();
+                    break;
+                }
+                if (IAlmConsts.IStatuses.FAILED.value().equalsIgnoreCase(entry.getKey())) {
+                    failedCondition = entry.getValue();
+                    break;
+                }
+            }
         }
 
-        return IAlmConsts.IStatuses.NO_RUN.value();
+        if (containsOperator) {
+            if (!StringUtils.isEmpty(passCondition)) {
+                return resolveCondition(status, passCondition)
+                        ? IAlmConsts.IStatuses.PASSED.value() : IAlmConsts.IStatuses.FAILED.value();
+            }
+            if (!StringUtils.isEmpty(failedCondition)) {
+                return resolveCondition(status, failedCondition)
+                        ? IAlmConsts.IStatuses.FAILED.value() : IAlmConsts.IStatuses.PASSED.value();
+            }
+            throw new RuntimeException("Run Status is not configured correctly.");
+        }
+
+        if (StringUtils.isEmpty(status)) {
+            throw new RuntimeException("The value of 'status' is null or empty.");
+        }
+
+        if (runStatusMapping.get(status) == null || !ALM_STATUS.contains(runStatusMapping.get(status))) {
+            throw new RuntimeException("'" + status + "' is not configured correctly in Run Status Mapping.");
+        }
+
+        return runStatusMapping.get(status);
+    }
+
+    private static boolean containsOperator(String mapping) {
+        for (String operator : operators) {
+            if (mapping.startsWith(operator)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static {
+        operators.add("==");
+        operators.add("!=");
+        operators.add(">>");
+        operators.add(">=");
+        operators.add("<<");
+        operators.add("<=");
+    }
+
+    static {
+        ALM_STATUS.add("No Run");
+        ALM_STATUS.add("Passed");
+        ALM_STATUS.add("Failed");
+        ALM_STATUS.add("Blocked");
+        ALM_STATUS.add("Not Completed");
     }
 
     private static boolean resolveCondition(String statusValue, String condition) {
@@ -73,15 +138,26 @@ public final class RunStatusResolver {
             }
         }
 
+        if (!operators.contains(mark)) {
+            throw new IllegalArgumentException("Condition mark is incorrect.");
+        }
+
+        if (!mark.equals("==") && !mark.equals("!=")) {
+            if (!isNumeric(conditionValue) || !isNumeric(statusValue)) {
+                throw new IllegalArgumentException("'" + statusValue + "' or '" + conditionValue + "' is not numerical.");
+            }
+        }
+
+
         switch (mark)  {
             case "==":
-                if (isNumeric(conditionValue)) {
+                if (isNumeric(conditionValue) && isNumeric(statusValue)) {
                     return Double.parseDouble(statusValue) == Double.parseDouble(conditionValue);
                 } else {
                     return statusValue.equals(conditionValue);
                 }
             case "!=":
-                if (isNumeric(conditionValue)) {
+                if (isNumeric(conditionValue) && isNumeric(statusValue)) {
                     return Double.parseDouble(statusValue) != Double.parseDouble(conditionValue);
                 } else {
                     return !statusValue.equals(conditionValue);

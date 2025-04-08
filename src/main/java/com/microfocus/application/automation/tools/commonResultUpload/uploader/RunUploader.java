@@ -36,24 +36,26 @@ import com.microfocus.application.automation.tools.commonResultUpload.CommonUplo
 import com.microfocus.application.automation.tools.commonResultUpload.service.CustomizationService;
 import com.microfocus.application.automation.tools.commonResultUpload.service.RestService;
 import com.microfocus.application.automation.tools.commonResultUpload.service.RunStatusResolver;
+import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.configloader.RunStatusMapLoader;
 import com.microfocus.application.automation.tools.results.service.AttachmentUploadService;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmCommonProperties;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmRun;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmTestInstance;
 import com.microfocus.application.automation.tools.results.service.almentities.IAlmConsts;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import com.microfocus.application.automation.tools.sse.sdk.Base64Encoder;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static com.microfocus.application.automation.tools.commonResultUpload.ParamConstant.ACTUAL_USER;
+import static com.microfocus.application.automation.tools.commonResultUpload.ParamConstant.RUN_STATUS_MAPPING;
 
 public class RunUploader {
 
     public static final String RUN_PREFIX = "runs";
+    public static final String RUN_STEP_PREFIX = "run-steps";
+    public static final String DESSTEP_REST_PREFIX = "design-steps";
     private static final String RUN_VERSION_MAP_NAME = "udf|Run On Version";
     private static final String VC_VERSION_NUMBER = "vc-version-number";
 
@@ -73,13 +75,27 @@ public class RunUploader {
         this.runStatusMapping = runStatusMapping;
     }
 
-    public void upload(Map<String, String> testset, Map<String, String> test,
-                       Map<String, String> testconfig, Map<String, String> testinstance,
-                       Map<String, String> run) {
+    public void upload(Map<String, String> testset,
+                       Map<String, String> test,
+                       Map<String, String> testconfig,
+                       Map<String, String> testinstance,
+                       Map<String, String> run,
+                       boolean isCreateDesStep) {
 
         // Get attachment info and remove
         String attachment = run.get("attachment");
         run.remove("attachment");
+
+        boolean containsStep = false;
+        if (run.containsKey("stepMessage")) {
+            containsStep = true;
+        }
+
+        String stepMessage = run.get("stepMessage");
+        run.remove("stepMessage");
+
+        String stepRegEx = run.get("stepRegEx");
+        run.remove("stepRegEx");
 
         // Set relations
         run.put(AlmRun.RUN_CONFIG_ID, testconfig.get(AlmCommonProperties.ID));
@@ -102,14 +118,29 @@ public class RunUploader {
             return;
         }
 
+        if (isCreateDesStep) {//delete existing design steps then create new ones.
+            String query = String.format("fields=id,name&query={parent-id[%s]}",test.get(AlmCommonProperties.ID));
+            List<Map<String, String>> steps = restService.get(null, DESSTEP_REST_PREFIX, query);
+            if (steps!=null && steps.size()>0) {
+                List<String> ids = new ArrayList<>();
+                for (Map<String, String> step : steps) {
+                    ids.add(step.get("id"));
+                }
+                query = "ids-to-delete=" + String.join(",",ids);
+                restService.bulkDelete(DESSTEP_REST_PREFIX, query);
+            }
+        }
+
         // Update test instance status
         String runstatus = RunStatusResolver.getRunStatus(run.get(AlmRun.RUN_STATUS), runStatusMapping);
+
+        String runId = null;
 
         if (StringUtils.isNotEmpty(runstatus)) {
             // Create a run without status
             run.remove(AlmRun.RUN_STATUS);
             Map<String, String> createdRun = restService.create(RUN_PREFIX, run);
-
+            runId = createdRun.get(AlmCommonProperties.ID);
             // Update status of the run
             Map<String, String> updateRun = new HashMap<>();
             updateRun.put(AlmCommonProperties.ID, createdRun.get(AlmCommonProperties.ID));
@@ -137,10 +168,87 @@ public class RunUploader {
 
         } else {
             Map<String, String> createdRun = restService.create(RUN_PREFIX, run);
+            runId = createdRun.get(AlmCommonProperties.ID);
             if (StringUtils.isNotEmpty(attachment)) {
                 AttachmentUploadService.getInstance().upload(attachment, RUN_PREFIX, createdRun.get("id"));
             }
         }
+        if (containsStep) {
+            Map<String,String> stepStatus = RunStatusMapLoader.load(this.params.get(RUN_STATUS_MAPPING),logger).getStepStatus();
+            if (stepStatus == null || stepStatus.size() == 0) {
+                throw new RuntimeException("Please configure 'stepstatus' mapping.");
+            }
+            if (StringUtils.isEmpty(stepRegEx)) {
+                throw new RuntimeException("Please configure 'stepRegEx' mapping.");
+            }
+            List<StepBean> stepBeans = new UploaderHelper(stepMessage, stepRegEx, stepStatus).parseMessage();
+
+            if (stepBeans ==null || stepBeans.size()==0) {
+                logger.info("No any new run steps to be detected.");
+            } else {
+                restService.bulkCreate(RUN_STEP_PREFIX, buildRunStepBody(stepBeans,runId));
+                if (isCreateDesStep) {
+                    restService.bulkCreate(DESSTEP_REST_PREFIX, buildDesStepBody(stepBeans,test.get(AlmCommonProperties.ID)));
+                }
+            }
+        }
+    }
+
+    private Map<String, Map<String, String>> buildDesStepBody(List<StepBean> stepBeans, String testId) {
+        Map<String, Map<String, String>> stepBody = new LinkedHashMap<String, Map<String, String>>();
+        for (StepBean stepBean : stepBeans) {
+            Map<String,String> step = new HashMap<>();
+            step.put("step-order","" + stepBean.getOrder());
+            step.put("name","Step " + stepBean.getOrder());
+            step.put("parent-id",testId);
+            step.put("expected","n/a");
+            step.put("description",stepBean.getStepName());
+            stepBody.put(stepBean.getStepName(), step);
+        }
+        return stepBody;
+    }
+
+    private Map<String, Map<String, String>> buildRunStepBody(List<StepBean> stepBeans, String runId) {
+        Map<String, Map<String, String>> stepBody = new LinkedHashMap<String, Map<String, String>>();
+        for (StepBean stepBean : stepBeans) {
+            Map<String,String> step = new HashMap<>();
+            step.put("step-order","" + stepBean.getOrder());
+            step.put("name","Step " + stepBean.getOrder());
+            step.put("parent-id",runId);
+            step.put("expected","n/a");
+            step.put("description",stepBean.getStepName());
+            step.put("status",stepBean.getStatus());
+            step.put("actual",escapeHTML(stepBean.getActualValue()));
+            stepBody.put(stepBean.getStepName(), step);
+        }
+        return stepBody;
+    }
+
+    private String escapeHTML(String actualValue) {
+        if (StringUtils.isEmpty(actualValue)) {
+            return "";
+        }
+        actualValue = StringEscapeUtils.escapeHtml(actualValue);
+        String [] lines = actualValue.split("(\\r?\\n)");
+        StringBuilder htmlBodyBuilder = new StringBuilder();
+        for (String line : lines) {
+            String replacedLine = line.replaceAll(" ", "&nbsp;");
+            htmlBodyBuilder.append(generateHtmlBody(replacedLine));
+        }
+        return "<html>\n<body>\n" + htmlBodyBuilder + "</body>\n</html>";
+    }
+
+    private String generateHtmlBody(String body) {
+        StringBuilder htmlBuilder = new StringBuilder();
+        htmlBuilder.append("<div align=\"left\" style=\"min-height: 9pt;\">");
+        htmlBuilder.append("<font face=\"Arial\">");
+        htmlBuilder.append("<span dir=\"ltr\" style=\"font-size:8pt;\">");
+        htmlBuilder.append(body);
+        htmlBuilder.append("</span>");
+        htmlBuilder.append("</font>");
+        htmlBuilder.append("</div>");
+        htmlBuilder.append("\n");
+        return htmlBuilder.toString();
     }
 
     private String convertDetail(String detail) {

@@ -106,4 +106,7 @@ public abstract class BasicPostEntityRequest {
             return null;
         }
     }
+    protected Map<String, Map<String, String>> bulkCreate(String restPrefix, Map<String, Map<String, String>> valueMap) {
+        return null;
+    }
 }

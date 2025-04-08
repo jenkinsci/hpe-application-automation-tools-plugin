@@ -32,6 +32,7 @@
 
 package com.microfocus.application.automation.tools.commonResultUpload.service;
 
+import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
 import com.microfocus.application.automation.tools.common.SSEException;
 import com.microfocus.application.automation.tools.commonResultUpload.CommonUploadLogger;
 import com.microfocus.application.automation.tools.commonResultUpload.rest.CreateAlmEntityEntityRequest;
@@ -45,6 +46,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +71,32 @@ public class RestService {
     public Map<String, String> create(String restPrefix, Map<String, String> valueMap) {
         udt.translate(restPrefix, valueMap);
         return createAlmEntityRequest.perform(restPrefix, valueMap);
+    }
+
+    public Map<String, Map<String, String>> bulkCreate(String restPrefix, Map<String, Map<String, String>> valueMap) {
+        //udt.translate(restPrefix, valueMap);
+        return createAlmEntityRequest.bulkCreate(restPrefix, valueMap);
+    }
+
+    public Response bulkDelete(String restPrefix, String queryString) {
+        String url = restClient.buildRestRequest(restPrefix);
+        Response response = restClient.httpDelete(url,queryString,getHeaders(),ResourceAccessLevel.PROTECTED);
+        return handleBulkResult(response);
+    }
+
+    private Response handleBulkResult(Response response) {
+        if (response.getFailure() !=null) {
+            throw new RuntimeException("Got invalid response from Server, see details: [" + response + "]");
+        }
+        return null;
+    }
+
+    protected Map<String, String> getHeaders() {
+        Map<String, String> ret = new HashMap<>();
+        ret.put(RESTConstants.CONTENT_TYPE, RESTConstants.APP_XML_BULK);
+        ret.put(RESTConstants.ACCEPT, RESTConstants.APP_XML);
+        ret.put("X-XSRF-TOKEN", restClient.getXsrfTokenValue());
+        return ret;
     }
 
     public List<Map<String, String>> get(String id, String restPrefix, String queryString) {

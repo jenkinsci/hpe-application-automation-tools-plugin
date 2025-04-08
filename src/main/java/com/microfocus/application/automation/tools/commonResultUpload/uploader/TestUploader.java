@@ -42,11 +42,13 @@ import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.
 import com.microfocus.application.automation.tools.results.service.almentities.AlmCommonProperties;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static com.microfocus.application.automation.tools.commonResultUpload.ParamConstant.ALM_TEST_FOLDER;
-import static com.microfocus.application.automation.tools.commonResultUpload.ParamConstant.CREATE_NEW_TEST;
+import static com.microfocus.application.automation.tools.commonResultUpload.ParamConstant.*;
+import static com.microfocus.application.automation.tools.results.service.AlmRestTool.getEncodedString;
 
 public class TestUploader {
 
@@ -56,6 +58,7 @@ public class TestUploader {
             "LEANFT-TEST", "LR-SCENARIO", "QAINSPECT-TEST"};
     private static final String VC_VERSION_NUMBER = "vc-version-number";
     private static final String SUB_TYPE_ID = "subtype-id";
+    private static final int triedTimes = 30;
 
     private Map<String, String> params;
     private CommonUploadLogger logger;
@@ -83,10 +86,13 @@ public class TestUploader {
         logger.info("Test upload start.");
         for (XmlResultEntity xmlResultEntity : xmlResultEntities) {
             Map<String, String> test = xmlResultEntity.getValueMap();
-            Map<String, String> newTest;
+            Map<String, String> newTest = null;
 
             String attachment = test.get("attachment");
             test.remove("attachment");
+
+            boolean isNew = false;
+            boolean isUpdate = false;
 
             if (!StringUtils.isEmpty(params.get(ALM_TEST_FOLDER))) {
                 // Create or find a exists folder
@@ -102,8 +108,22 @@ public class TestUploader {
                         new String[]{"id", "name", SUB_TYPE_ID, VC_VERSION_NUMBER});
                 if (existsTest != null) {
                     // If exists, update the test.
-                    existsTest.putAll(test);
-                    newTest = restService.update(TEST_REST_PREFIX, existsTest);
+                    if (xmlResultEntity.getSubEntities().size() > 0) {
+                        Map<String,String> runFieldsMap = xmlResultEntity.getSubEntities().get(0).getValueMap();
+                        if (runFieldsMap != null && runFieldsMap.containsKey("stepMessage")) {
+                            if (params.get(UPDATE_DESSTEPS).equals("true")) {
+                                isUpdate = true;
+                            } else {
+                                test.put(AlmCommonProperties.PARENT_ID, folder.get(AlmCommonProperties.ID));
+                                newTest = createNewTest(test);
+                                isNew = true;
+                            }
+                        }
+                    }
+                    if (!isNew) {
+                        existsTest.putAll(test);
+                        newTest = restService.update(TEST_REST_PREFIX, existsTest);
+                    }
                 } else {
                     logger.log("Test not found by criteria:");
                     for (Map.Entry<String, String> entry : test.entrySet()) {
@@ -116,6 +136,7 @@ public class TestUploader {
                     test.put(AlmCommonProperties.PARENT_ID, folder.get(AlmCommonProperties.ID));
                     if (params.get(CREATE_NEW_TEST).equals("true")) {
                         newTest = restService.create(TEST_REST_PREFIX, test);
+                        isNew = true;
                     } else {
                         newTest = null;
                         logger.log("Test not found and not created: " + test.toString());
@@ -126,6 +147,7 @@ public class TestUploader {
                 test.put(AlmCommonProperties.PARENT_ID, "0");
                 if (params.get(CREATE_NEW_TEST).equals("true")) {
                     newTest = restService.create(TEST_REST_PREFIX, test);
+                    isNew = true;
                 } else {
                     newTest = null;
                     logger.log("Test not found and not created: " + test.toString());
@@ -138,9 +160,45 @@ public class TestUploader {
                 // upload test instance
                 getVersionNumberForVC(newTest);
                 test.putAll(newTest);
-                testInstanceUploader.upload(testset, xmlResultEntity, attachment);
+                testInstanceUploader.upload(testset, xmlResultEntity, attachment, isNew||isUpdate);
             }
         }
+    }
+
+    private Map<String, String> createNewTest(Map<String, String> test) {
+        Map<String, String> newTest = null;
+        String testName = test.get(AlmCommonProperties.NAME);
+        for (int i = 0; i < triedTimes; i++) {
+            String query = String.format("fields=id,name&query={parent-id[%s];name[%s]}",test.get(AlmCommonProperties.PARENT_ID),getEncodedString(testName));
+            List<Map<String, String>> tests = restService.get(null, TEST_REST_PREFIX, query);
+            if (tests != null && tests.size() > 0) {
+                logger.log("Test[" + testName + "] already exists.");
+                testName = buildNewTestName(testName);
+            } else {
+                test.put(AlmCommonProperties.NAME,testName);
+                newTest = restService.create(TEST_REST_PREFIX, test);
+                break;
+            }
+        }
+        return newTest;
+    }
+
+    private String buildNewTestName(String testName) {
+        Date currentDate = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
+        String formattedDate = formatter.format(currentDate);
+
+        String suffixPattern = "_Copy_(\\d+)_" + formattedDate + "$";
+        Pattern pattern = Pattern.compile(suffixPattern);
+        Matcher matcher = pattern.matcher(testName);
+        if (matcher.find()) {
+            int index = Integer.parseInt(matcher.group(1)) + 1;
+            String newSuffix = "_Copy_" + index + "_" + formattedDate;
+            testName = testName.replace(matcher.group(0), newSuffix);
+        } else {
+            testName = testName + "_Copy_0_" + formattedDate;
+        }
+        return testName;
     }
 
     private void getVersionNumberForVC(Map<String, String> newTest) {

@@ -60,6 +60,12 @@ public interface Client {
             Map<String, String> headers,
             ResourceAccessLevel resourceAccessLevel);
 
+    Response httpDelete(
+            String url,
+            String queryString,
+            Map<String, String> headers,
+            ResourceAccessLevel resourceAccessLevel);
+
     String build(String suffix);
 
     String buildRestRequest(String suffix);
