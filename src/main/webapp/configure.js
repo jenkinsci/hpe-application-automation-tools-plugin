@@ -259,8 +259,19 @@ async function loadMobileInfo(a, b, o, err) {
 function hideAndMoveAdvancedBody(_id) {
     const tBody = document.querySelector("#" + _id).parentNode; // initial advanced block content
     const initialAdvancedBlock = tBody.previousSibling; // advanced link button block and here was hidden the initial advanced block content
+    const advancedLink = initialAdvancedBlock.querySelector(".advancedLink");
     initialAdvancedBlock.querySelector(".advancedBody").appendChild(tBody); // moves the initial advanced block content back to the hidden block
-    initialAdvancedBlock.querySelector(".advancedLink").style.display = ""; // enables once again the advanced link
+    initialAdvancedBlock.querySelector(".advancedLink").style = ""; // enables once again the advanced link
+
+    const advancedButton = advancedLink.querySelector(".advancedLink .jenkins-button.advanced-button.advancedButton");
+    if (advancedButton) {
+        advancedButton.removeAttribute("data-expanded");
+    }
+
+    const dropdownContainer = initialAdvancedBlock.querySelector(".advancedBody .tbody.dropdownList-container");
+    if (dropdownContainer) {
+        dropdownContainer.removeAttribute("style");
+    }
 }
 
 async function loadRegionDDL(dlg, regions) {
