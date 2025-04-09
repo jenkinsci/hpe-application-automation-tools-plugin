@@ -700,9 +700,9 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 			} else {
 				pathToTest = Paths.get(sharedCheckOutDirectory).isAbsolute() ?
 						sharedCheckOutDirectory :
-                             Paths.get(FilenameUtils.separatorsToSystem(workspace.getRemote()))
-                                     .resolve(FilenameUtils.separatorsToSystem(sharedCheckOutDirectory))
-                                     .normalize().toString();
+                                Paths.get(FilenameUtils.separatorsToSystem(workspace.getRemote()),
+                                        FilenameUtils.separatorsToSystem(sharedCheckOutDirectory))
+                                     .toFile().getCanonicalPath();
 			}
 
             logger.log(Level.INFO, "pathToTest1: " + pathToTest);
