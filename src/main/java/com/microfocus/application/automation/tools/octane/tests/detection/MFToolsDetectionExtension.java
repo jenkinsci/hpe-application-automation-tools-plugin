@@ -135,6 +135,13 @@ public class MFToolsDetectionExtension extends ResultFieldsDetectionExtension {
             }
         }
 
+        if (hpRunnerType == HPRunnerType.NONE) {
+            ParameterValue runnerTypePv = parameterAction != null ? parameterAction.getParameter(HPRunnerType.class.getSimpleName()) : null;
+            if (runnerTypePv != null) {
+                hpRunnerType = HPRunnerType.valueOf((String) runnerTypePv.getValue());
+            }
+        }
+
         if (hpRunnerType == HPRunnerType.UFT) {
             ParameterValue octaneFramework = parameterAction != null ? parameterAction.getParameter("octaneTestRunnerFramework") : null;
             if(octaneFramework!=null && octaneFramework.getValue().toString().equalsIgnoreCase("MBT")){
