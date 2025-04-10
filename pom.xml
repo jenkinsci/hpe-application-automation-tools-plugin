@@ -48,7 +48,7 @@
     </parent>
 
     <artifactId>hp-application-automation-tools-plugin</artifactId>
-    <version>24.4.1-beta</version>
+    <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <name>OpenText Application Automation Tools</name>
     <description>The plugin integrates Jenkins with the following OpenText products - Service Virtualization,
@@ -67,7 +67,7 @@
     </licenses>
 
     <properties>
-        <revision>25.2</revision>
+        <revision>24.4</revision>
         <changelist>-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
         <concurrency>1</concurrency>
