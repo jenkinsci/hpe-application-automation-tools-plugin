@@ -46,7 +46,9 @@ import hudson.tasks.Maven;
 import hudson.tasks.junit.JUnitResultArchiver;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.jvnet.hudson.test.ToolInstallations;
 
 import java.io.File;
@@ -59,6 +61,9 @@ import java.util.UUID;
 public class JUnitResultsTest extends OctanePluginTestBase {
 
 	private static Set<String> helloWorld2Tests = new HashSet<>();
+
+	@ClassRule
+	public static Timeout globalTimeout = Timeout.seconds(240);
 
 	static {
 		helloWorld2Tests.add(TestUtils.testSignature("helloWorld2", "hello", "HelloWorld2Test", "testOnce",

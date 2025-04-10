@@ -49,8 +49,10 @@ import hudson.model.Result;
 import hudson.tasks.Maven;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -74,6 +76,9 @@ import java.util.UUID;
 public class GherkinResultsTest extends OctanePluginTestBase {
 
     private static String mavenName;
+
+    @ClassRule
+    public static Timeout globalTimeout = Timeout.seconds(240);
 
 
     private static Set<String> tests = new HashSet<>();
