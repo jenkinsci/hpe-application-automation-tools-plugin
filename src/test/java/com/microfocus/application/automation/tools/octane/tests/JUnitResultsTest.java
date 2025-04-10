@@ -104,6 +104,7 @@ public class JUnitResultsTest extends OctanePluginTestBase {
 
 	@Test
 	public void testJUnitResultsPom() throws Exception {
+		Thread.sleep(30000);
 		String projectName = "root-job-" + UUID.randomUUID().toString();
 		FreeStyleProject project = rule.createFreeStyleProject(projectName);
 
