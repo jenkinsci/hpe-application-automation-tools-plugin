@@ -36,10 +36,13 @@
  */
 package com.microfocus.application.automation.tools.commonResultUpload.rest;
 
+import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
 import com.microfocus.application.automation.tools.commonResultUpload.CommonUploadLogger;
 import com.microfocus.application.automation.tools.rest.RestClient;
+import com.microfocus.application.automation.tools.sse.common.RestXmlUtils;
 import com.microfocus.application.automation.tools.sse.sdk.ResourceAccessLevel;
 import com.microfocus.application.automation.tools.sse.sdk.Response;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.util.Map;
 
@@ -58,5 +61,43 @@ public class CreateAlmEntityEntityRequest extends BasicPostEntityRequest {
                 getHeaders(),
                 ResourceAccessLevel.PROTECTED);
         return handleResult(response, valueMap, restPrefix);
+    }
+
+    @Override
+    public Map<String, Map<String, String>> bulkCreate(String restPrefix, Map<String, Map<String, String>> valueMap) {
+        String url = client.buildRestRequest(restPrefix);
+
+        Map<String,String> headers = getHeaders();
+        headers.put(RESTConstants.CONTENT_TYPE,RESTConstants.APP_XML_BULK);
+
+        Response response = client.httpPost(
+                url,
+                getBulkDataBytes(valueMap),
+                headers,
+                ResourceAccessLevel.PROTECTED);
+
+        return handleBulkResult(response);
+    }
+
+    private byte[] getBulkDataBytes(Map<String, Map<String, String>> valueMap) {
+        StringBuilder builder = new StringBuilder("<Entities>");
+        for (Map.Entry<String, Map<String, String>> entry : valueMap.entrySet()) {
+            StringBuilder entityBuilder = new StringBuilder("<Entity><Fields>");
+            for (Map.Entry<String, String> entity : entry.getValue().entrySet()) {
+                entityBuilder.append(RestXmlUtils.fieldXml(entity.getKey(), StringEscapeUtils.escapeXml10(entity.getValue())));
+            }
+            entityBuilder.append("</Fields></Entity>");
+            builder.append(entityBuilder.toString());
+        }
+        builder.append("</Entities>");
+        logger.info("Request body: " + builder.toString());
+        return builder.toString().getBytes();
+    }
+
+    private Map<String, Map<String, String>> handleBulkResult(Response response) {
+        if (response.getFailure() !=null) {
+            throw new RuntimeException("Got invalid response from Server, see details: [" + response.toString() + "]");
+        }
+        return null;
     }
 }
