@@ -424,8 +424,8 @@
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide Digital Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
-									Hide Digital Lab Options
+								<button type="button" tabindex="0" title="Hide Functional Testing Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
+									Hide Functional Testing Lab Options
 								</button>
 							</span>
 						</span>
