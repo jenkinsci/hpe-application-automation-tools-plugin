@@ -46,9 +46,7 @@ import hudson.tasks.Maven;
 import hudson.tasks.junit.JUnitResultArchiver;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.jvnet.hudson.test.ToolInstallations;
 
 import java.io.File;
@@ -102,7 +100,6 @@ public class JUnitResultsTest extends OctanePluginTestBase {
 
 	@Test
 	public void testJUnitResultsPom() throws Exception {
-		Thread.sleep(30000);
 		String projectName = "root-job-" + UUID.randomUUID().toString();
 		FreeStyleProject project = rule.createFreeStyleProject(projectName);
 

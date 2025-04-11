@@ -96,7 +96,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <reportsDirectory>${project.build.directory}/foo/bar/custom-report-location</reportsDirectory>
-
                         </configuration>
                     </plugin>
                 </plugins>
