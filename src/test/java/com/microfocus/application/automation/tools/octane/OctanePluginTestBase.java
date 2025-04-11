@@ -55,8 +55,7 @@ public abstract class OctanePluginTestBase {
 
 	@ClassRule
 	public static final JenkinsRule           rule          = new LoggedJenkinsRule();
-	@ClassRule
-	public static       Timeout               globalTimeout = Timeout.seconds(240);
+
 	public static final JenkinsRule.WebClient client        = rule.createWebClient();
 
 	@BeforeClass

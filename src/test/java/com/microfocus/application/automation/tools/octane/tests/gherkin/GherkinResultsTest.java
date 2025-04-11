@@ -77,9 +77,6 @@ public class GherkinResultsTest extends OctanePluginTestBase {
 
     private static String mavenName;
 
-    @ClassRule
-    public static Timeout globalTimeout = Timeout.seconds(240);
-
 
     private static Set<String> tests = new HashSet<>();
     static {

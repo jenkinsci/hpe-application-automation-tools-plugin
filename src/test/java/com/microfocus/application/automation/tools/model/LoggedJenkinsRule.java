@@ -48,7 +48,7 @@ public class LoggedJenkinsRule extends JenkinsRule {
     public LoggedJenkinsRule() {
         String timeoutStr = System.getProperty("jenkins.test.timeout", "240");
         try {
-            this.timeout = Integer.parseInt(timeoutStr); // or call a method to apply it, depending on the API
+            this.timeout = Integer.parseInt(timeoutStr);
         } catch (NumberFormatException ignored) {}
     }
 

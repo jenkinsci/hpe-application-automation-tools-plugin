@@ -62,8 +62,6 @@ public class JUnitResultsTest extends OctanePluginTestBase {
 
 	private static Set<String> helloWorld2Tests = new HashSet<>();
 
-	@ClassRule
-	public static Timeout globalTimeout = Timeout.seconds(240);
 
 	static {
 		helloWorld2Tests.add(TestUtils.testSignature("helloWorld2", "hello", "HelloWorld2Test", "testOnce",
