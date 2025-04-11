@@ -60,7 +60,6 @@ public class JUnitResultsTest extends OctanePluginTestBase {
 
 	private static Set<String> helloWorld2Tests = new HashSet<>();
 
-
 	static {
 		helloWorld2Tests.add(TestUtils.testSignature("helloWorld2", "hello", "HelloWorld2Test", "testOnce",
 				TestResultStatus.PASSED));

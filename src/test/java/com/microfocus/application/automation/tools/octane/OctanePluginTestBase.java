@@ -54,9 +54,9 @@ public abstract class OctanePluginTestBase {
 	protected static String ssp;
 
 	@ClassRule
-	public static final JenkinsRule           rule          = new LoggedJenkinsRule();
+	public static final JenkinsRule rule = new LoggedJenkinsRule();
 
-	public static final JenkinsRule.WebClient client        = rule.createWebClient();
+	public static final JenkinsRule.WebClient client = rule.createWebClient();
 
 	@BeforeClass
 	public static void init() {
