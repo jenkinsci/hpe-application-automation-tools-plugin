@@ -44,6 +44,14 @@ import java.util.logging.Logger;
 public class LoggedJenkinsRule extends JenkinsRule {
     private static final Logger logger = Logger.getLogger(LoggedJenkinsRule.class.getName());
 
+
+    public LoggedJenkinsRule() {
+        String timeoutStr = System.getProperty("jenkins.test.timeout", "240");
+        try {
+            this.timeout = Integer.parseInt(timeoutStr);
+        } catch (NumberFormatException ignored) {}
+    }
+
     @Override
     public void after() {
         try {
