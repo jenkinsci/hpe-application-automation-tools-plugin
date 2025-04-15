@@ -3,7 +3,15 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
-See the [Changelog ](https://wiki.jenkins.io/display/JENKINS/Changelog)for information about beta versions and recent patches.
+[What&#39;s New in version CE 24.3](#what&#39;s-new-in-version-CE-24&#46;3)
+
+[What&#39;s New in version CE 24.2](#what&#39;s-new-in-version-CE-24&#46;2)
+
+[What&#39;s New in version CE 24.1.0](#what&#39;s-new-in-version-CE-24&#46;1&#46;0)
+
+[What&#39;s New in version CE 23.4 ](#what&#39;s-new-in-version-CE-23&#46;4)
+
+[What&#39;s New in version 23.3.0 ](#what&#39;s-new-in-version-23&#46;3&#46;0)
 
 [What&#39;s New in version 8.0 ](#what&#39;s-new-in-version-8&#46;0)
 
@@ -38,6 +46,81 @@ See the [Changelog ](https://wiki.jenkins.io/display/JENKINS/Changelog)for infor
 [What&#39;s New in version 6.0 ](#what&#39;s-new-in-version-6.0)
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
+
+
+## What&#39;s New in version CE 24&#46;3
+
+**Java 21**
+- Starting with version 24.3 version fo the plugin, Java 21 will be required to run
+
+**ALM Octane**
+- Bug fixes
+
+## What&#39;s New in version CE 24&#46;2
+
+**UFT One**
+- Added permission checks in ALM jobs configurations on all <doFill*Items> methods (CVE-2024-4211).
+- Added Job/ExtendedRead permission handing for FS / ALM / ALM Lab job configurations.
+- Fixed unexpected Test Suites Rerun Behavior related to reports for FS jobs.
+
+**UFT Digital Lab**
+- Admins can configure whether apps can be uploaded to the Shared assets. If it is not allowed, in the "Upload app to Digital Lab Server" build step there is no option to select Shared assets in the workspace selection menu.
+
+**ALM Octane**
+- Bug fixes
+  - Fixed nga.log that unexpectedly stopped writing data
+  - Fixed the 'Test Run Report URL' field population when running tests on different machines in the same job
+  - Other fixes
+
+**Service Virtualization**
+- Added permission checks in SV jobs for the server enumeration field (CVE-2024-4692)
+
+**Security Improvements**
+- fixed XXE vulnerabilities: CVE-2024-4189, CVE-2024-4184, CVE-2024-4690
+
+## What&#39;s New in version CE 24&#46;1&#46;0
+
+**UFT One**
+- Added support for Cloud browser.
+- Fixed proxy issue for Digital Lab connections.
+
+**UFT Digital Lab**
+- Added ability to open the ValueEdge Digital Lab wizard from Jenkins via an access key only.
+
+**ALM Octane**
+- Newly discovered units will automatically be allocated to a runner. A new folder will be created for each runner.
+- Bug fixes.
+
+## What&#39;s New in version CE 23&#46;4
+
+Version CE 23.4 introduced the following enhancements and fixes:
+
+**UFT One**
+ - Support for access key authentication to run parallel mobile tests.
+ - Ability to run tests on public devices hosted by ValueEdge Digital Lab.
+
+**UFT Digital Lab**
+ - Ability to upload an application to a specific workspace during a Jenkins pipeline cycle.
+
+**ALM Octane**
+- Bug fixes.
+
+**OpenText Enterprise Performance Engineering**
+ - Parameterization support for the Timeslot duration.
+
+## What&#39;s New in version 23&#46;3&#46;0
+
+Version 23.3.0 introduced the following enhancements and fixes:
+
+**ALM Octane**
+- Bug fixes.
+
+**UFT One**
+ - Company name rebranded to OpenText.
+ - UFT Mobile renamed to Digital Lab.
+ - Enhancement of File System jobs to work correctly inside Docker.
+ - Bug fixes and optimizations.
+
 
 ## What&#39;s New in version 8&#46;0
 
@@ -171,9 +254,9 @@ Version 7.1 introduced the following enhancements:
 
 - More user-friendly layout
 
-**LoadRunner Entrerprise**
+**OpenText Enterprise Performance Engineering**
 
-- Security fix: Beginning with Jenkins version 2.303.3, the LoadRunner Enterprise build step requires the security fix introduced in this release
+- Security fix: Beginning with Jenkins version 2.303.3, the OpenText Enterprise Performance Engineering build step requires the security fix introduced in this release
 
 **ALM Octane**
 
@@ -208,7 +291,7 @@ Version 7.0 introduced the following enhancements:
 - Run Results enhancements, including the use of MTBX files for test execution
 - Defect fix - Layout issues were handled
 
-**LoadRunner Enterprise**
+**OpenText Enterprise Performance Engineering**
 
 - Defect fix - It is now possible to browse for the Test ID in the Jenkins plugin.
 
@@ -247,9 +330,9 @@ Versions 6.7 and 6.8 introduced the following enhancements:
 - Added the option to inject pull requests to ALM Octane with repository in SSH format.
 - Auto-fill: After injection of pull-requests, templates related to SCM repositories are auto-filled in ALM Octane (Settings > Spaces-> DevOps > SCM Repositories).
 
-**LRE (LoadRunner Enterprise)**
+**OpenText Enterprise Performance Engineering**
 
-- The build step “Execute performance test using LoadRunner Enterprise” can authenticate to LoadRunner Enterprise using an access key (available from LoadRunner Enterprise 2021 R1).
+- The build step “Execute performance test using OpenText Enterprise Performance Engineering” can authenticate to LoadRunner Enterprise using an access key (available from LoadRunner Enterprise 2021 R1).
 
 ## What&#39;s New in version 6.6
 

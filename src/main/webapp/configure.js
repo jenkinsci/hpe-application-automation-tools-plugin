@@ -1,33 +1,38 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
 if (typeof RUN_FROM_FS_BUILDER_SELECTOR == "undefined") {
 	RUN_FROM_FS_BUILDER_SELECTOR = 'div[name="builder"][descriptorid="com.microfocus.application.automation.tools.run.RunFromFileBuilder"]';
@@ -47,7 +52,6 @@ function getDigitalLab(divMain) {
         useProxyAuth: false,
         proxyUserName: "",
         proxyPassword: "",
-        err: dl.querySelector("#errorMessage"),
         recreateJob: dl.querySelector('input[name="recreateJob"]').checked,
         jobId: dl.querySelector('input[name="fsJobId"]').value,
         deviceInfo: dl.querySelector(".device-info-section")
@@ -55,7 +59,6 @@ function getDigitalLab(divMain) {
     if (o.authType == "base") {
         o.userName = dl.querySelector('input[name="mcUserName"]').value;
         o.password = dl.querySelector('input[name="mcPassword"]').value;
-        o.tenantId = dl.querySelector('input[name="mcTenantId"]').value;
     } else {
         o.execToken = dl.querySelector('input[name="mcExecToken"]').value;
     }
@@ -71,24 +74,8 @@ function getDigitalLab(divMain) {
     return o;
 }
 
-function setupDigitalLab() {
-	let divMain = null;
-	if (document.location.href.indexOf("pipeline-syntax")>0) { // we are on pipeline-syntax page, where runFromFileBuilder step can be selected only once
-		divMain = document;
-	} else if (document.currentScript) { // this block is used for non-IE browsers, for the first FS build step only, it finds very fast the parent DIV
-		divMain = document.currentScript.parentElement.closest(RUN_FROM_FS_BUILDER_SELECTOR);
-	}
-	setTimeout(function() { prepareDigitalLab(divMain)}, 100);
-}
-function prepareDigitalLab(divMain) {
-/*	if (divMain == null) { // this block is needed for IE, but also for non-IE browsers when adding more than one FS build step
-		let divs = document.querySelectorAll(RUN_FROM_FS_BUILDER_SELECTOR);
-		divMain = divs[divs.length - 1];
-	}*/
-}
-
-async function startLoadInfo(a, b, path) {
-    await triggerBtnState(b, true);
+function startLoadInfo(a, b, path) {
+    triggerBtnState(b, true);
     setTimeout( async () => {
         await loadInfo(a, b, path)}, 100);
 }
@@ -107,26 +94,27 @@ async function loadInfo(a, b, path) {
     let dl = {};
     try {
         const divMain = b.parentElement.closest(RUN_FROM_FS_BUILDER_SELECTOR);
+        const err = b.parentElement.querySelector(".error-msg");
         dl = getDigitalLab(divMain);
-        dl.err.style.display = "none";
+        err.style.display = "none";
         const isMcCredentialMissing = ("base" == dl.authType ? (dl.userName.trim() == "" || dl.password.trim() == "") : dl.execToken.trim() == "");
 
         const isProxyAddressRequiredButMissing = dl.useProxy && dl.proxyAddress.trim() == "";
         const isProxyCredentialRequiredButMissing = dl.useProxyAuth && (dl.proxyUserName.trim() == "" || dl.proxyPassword.trim() == "");
         if (isMcCredentialMissing || isProxyAddressRequiredButMissing || isProxyCredentialRequiredButMissing) {
-            dl.err.style.display = "block";
+            err.style.display = "inline-block";
             await triggerBtnState(b, false);
             return;
         }
 
         if (b.name == "cloudBrowserLab") {
-            await loadBrowserLabInfo(a, b, dl, path);
+            await loadBrowserLabInfo(a, b, dl, path, err);
         } else if (b.name == "digitalLabWizard") {
-            await loadMobileInfo(a, b, dl);
+            await loadMobileInfo(a, b, dl, err);
         }
     } catch (e) {
         console.error(e);
-        dl && (dl.err.style.display = "block");
+        err.style.display = "inline-block";
         await triggerBtnState(b, false);
     }
  }
@@ -138,7 +126,7 @@ async function fillAndShowDDLs(b, div, dlg) {
     await triggerBtnState(b, false);
     dlg.style.display = "block";
 }
-async function loadBrowserLabInfo(a, b, o, path) {
+async function loadBrowserLabInfo(a, b, o, path, err) {
     const div = b.parentElement.closest("#mobileSpecificSection");
     const dlg = await generateModalDialog(path);
     div.appendChild(dlg);
@@ -154,7 +142,7 @@ async function loadBrowserLabInfo(a, b, o, path) {
                     div.regions = json.regions;
                     await fillAndShowDDLs(b, div, dlg);
                 } else {
-                    o.err.style.display = "block";
+                    err.style.display = "inline-block";
                     await triggerBtnState(b, false);
                 }
             } catch (e) {
@@ -165,34 +153,53 @@ async function loadBrowserLabInfo(a, b, o, path) {
     }
 }
 
-async function loadMobileInfo(a, b, o) {
+async function loadMobileInfo(a, b, o, err) {
     let baseUrl = "";
-
     await a.getMcServerUrl(o.serverName, async (r) => {
         baseUrl = r.responseObject();
         if (baseUrl) {
             baseUrl = baseUrl.trim().replace(/[\/]+$/, "");
         } else {
-            o.err.style.display = "block";
+            err.style.display = "inline-block";
             await triggerBtnState(b, false);
             return;
         }
         let prevJobId = o.recreateJob ? "" : o.jobId;
-        await a.getJobId(baseUrl, o.userName, o.password, o.tenantId, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, prevJobId, async (response) => {
-            let jobId = response.responseObject();
+        await a.getJobId(baseUrl, o.userName, o.password, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, prevJobId, async (response) => {
+            let map = response.responseObject();
+
+            let jobId = '';
+            let tenantId = '';
+            let isSaaS = false;
+            //First need to check the return type(not sure if java map can automatically covert to js map)
+            if(map.hasOwnProperty("jobId")) {
+                jobId = map["jobId"];
+            }
+            if(map.hasOwnProperty("TENANT_ID_COOKIE")) {
+                tenantId = map["TENANT_ID_COOKIE"];
+            }
+            if(map.hasOwnProperty("isSaaS")) {
+                isSaaS = map["isSaaS"];
+            }
+
             if (jobId == null) {
-                o.err.style.display = "block";
+                err.style.display = "inline-block";
                 await triggerBtnState(b, false);
                 return;
             }
             //hide the error message after success login
-            o.err.style.display = "none";
+            err.style.display = "none";
             let openedWindow = window.open('/', 'test parameters', 'height=820,width=1130');
             openedWindow.location.href = 'about:blank';
-            openedWindow.location.href = baseUrl + "/integration/#/login?jobId=" + jobId + "&displayUFTMode=true";
+            if (isSaaS) {
+                openedWindow.location.href = baseUrl + "/integration8/en/#/main/wizard?TENANTID=" + tenantId + "&jobId=" +  jobId + "&displayUFTMode=true";
+            } else {
+                openedWindow.location.href = baseUrl + "/integration8/en/#/login?jobId=" + jobId + "&displayUFTMode=true";
+            }
+
             const msgCallback = async (ev) => {
                 if (ev?.data == "mcCloseWizard") {
-                    await a.populateAppAndDevice(baseUrl, o.userName, o.password, o.tenantId, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, jobId, async (app) => {
+                    await a.populateAppAndDevice(baseUrl, o.userName, o.password, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, jobId, async (app) => {
                         let jobInfo = app.responseObject();
                         let deviceId = "", OS = "", manufacturerAndModel = "", targetLab = "";
                         if (jobInfo['deviceJSON']) {
@@ -229,7 +236,7 @@ async function loadMobileInfo(a, b, o) {
                         div.querySelector('textarea[name="fsExtraApps"]').value = jobInfo['extraApps'] ?? "";
                         div.querySelector('input[name="fsJobId"]').value = jobInfo['jobUUID'];
                         await triggerBtnState(b, false);
-                        o.err.style.display = "none";
+                        err.style.display = "none";
                         window.removeEventListener("message", msgCallback, false);
                         openedWindow.close();
                     });
@@ -252,8 +259,16 @@ async function loadMobileInfo(a, b, o) {
 function hideAndMoveAdvancedBody(_id) {
     const tBody = document.querySelector("#" + _id).parentNode; // initial advanced block content
     const initialAdvancedBlock = tBody.previousSibling; // advanced link button block and here was hidden the initial advanced block content
-    initialAdvancedBlock.querySelector(".advancedBody").appendChild(tBody); // moves the initial advanced block content back to the hidden block
-    initialAdvancedBlock.querySelector(".advancedLink").style.display = ""; // enables once again the advanced link
+    const advancedLink = initialAdvancedBlock.querySelector(".advancedLink");
+    const advancedBlock = initialAdvancedBlock.querySelector(".advancedBody");
+    advancedBlock?.appendChild(tBody); // moves the initial advanced block content back to the hidden block
+    advancedLink && (advancedLink.style = ""); // enables once again the advanced link
+
+    const advancedButton = advancedLink.querySelector(".jenkins-button.advanced-button.advancedButton");
+    advancedButton?.removeAttribute("data-expanded");
+
+    const dropdownContainer = advancedBlock.querySelector(".tbody.dropdownList-container");
+    dropdownContainer?.removeAttribute("style");
 }
 
 async function loadRegionDDL(dlg, regions) {

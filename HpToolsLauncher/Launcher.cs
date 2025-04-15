@@ -1,35 +1,39 @@
-/*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+/**
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 using HpToolsLauncher.Properties;
 using HpToolsLauncher.RTS;
 using HpToolsLauncher.TestRunners;
@@ -65,6 +69,7 @@ namespace HpToolsLauncher
         private const string RERUN_FAILED_TESTS = "Rerun only failed tests";
         private const string ONE = "1";
         private const string CLEANUP_TEST = "CleanupTest";
+        private const string LEAVE_UFT_OPEN_IF_VISIBLE = "leaveUftOpenIfVisible";
 
         public const string ClassName = "HPToolsFileSystemRunner";
 
@@ -215,10 +220,8 @@ namespace HpToolsLauncher
                         reruntests = FileSystemTestsRunner.GetListOfTestInfo(specificTests);
                     }
 
-                    // save the initial XmlBuilder because it contains testcases already created, in order to speed up the report building
-                    JunitXmlBuilder initialXmlBuilder = ((RunnerBase)_runner).XmlBuilder;
                     //create the runner according to type
-                    _runner = CreateRunner(false, reruntests);
+                    _runner = CreateRunner(false, reruntests, (RunnerBase)_runner);
 
                     //runner instantiation failed (no tests to run or other problem)
                     if (_runner == null)
@@ -226,8 +229,6 @@ namespace HpToolsLauncher
                         Environment.Exit((int)ExitCodeEnum.Failed);
                         return;
                     }
-
-                    ((RunnerBase)_runner).XmlBuilder = initialXmlBuilder; // reuse the populated initialXmlBuilder because it contains testcases already created, in order to speed up the report building
                     TestSuiteRunResults rerunResults = _runner.Run();
 
                     RunSummary(resultsFilename, results, rerunResults);
@@ -240,7 +241,7 @@ namespace HpToolsLauncher
         /// creates the correct runner according to the given type
         /// </summary>
         /// <param name="isFirstRun"></param>
-        private IAssetRunner CreateRunner(bool isFirstRun, List<TestInfo> reruntests = null)
+        private IAssetRunner CreateRunner(bool isFirstRun, List<TestInfo> reruntests = null, RunnerBase initialRunnerBase = null)
         {
             IAssetRunner runner = null;
 
@@ -464,6 +465,8 @@ namespace HpToolsLauncher
                     }
                     ConsoleWriter.WriteLine("Launcher timeout is " + timeout.ToString(@"dd\:\:hh\:mm\:ss"));
 
+                    bool leaveUftOpenIfVisible = _ciParams.GetOrDefault("LEAVE_UFT_OPEN_IF_VISIBLE", "0") == "1";
+
                     //LR specific values:
                     //default values are set by JAVA code, in com.hpe.application.automation.tools.model.RunFromFileSystemModel.java
 
@@ -503,7 +506,7 @@ namespace HpToolsLauncher
                     }
                     catch(NoMcConnectionException)
                     {
-                        // no action, the Test will use the default UFT One settings
+                        // no action, the Test will use the default Functional Testing settings
                     }
                     catch (Exception ex)
                     {
@@ -592,13 +595,18 @@ namespace HpToolsLauncher
                     List<ScriptRTSModel> scriptRTSSet = GetScriptRtsSet();
                     string resultsFilename = _ciParams["resultsFilename"];
                     string uftRunMode = _ciParams.GetOrDefault("fsUftRunMode", "Fast");
-                    if (validTests.Count > 0)
+
+                    string uftExportPdfParam = _ciParams.GetOrDefault("fsUftExportPdf", "false");
+                    bool uftExportPdf = false;
+                    bool.TryParse(uftExportPdfParam, out uftExportPdf);
+
+                        if (validTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser);
+                        runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible);
                     }
                     else if (cleanupAndRerunTests.Count > 0)
                     {
-                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser);
+                        runner = new FileSystemTestsRunner(cleanupAndRerunTests, printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible);
                     }
                     else
                     {
@@ -637,6 +645,12 @@ namespace HpToolsLauncher
                 default:
                     runner = null;
                     break;
+            }
+            if (runner != null && !isFirstRun)
+            {
+                RunnerBase rbase = (RunnerBase)runner;
+                rbase.XmlBuilder =  initialRunnerBase.XmlBuilder; // reuse the populated initialXmlBuilder because it contains testcases already created, in order to speed up the report building
+                rbase.IndexOfRptDirsByTestPath = initialRunnerBase.IndexOfRptDirsByTestPath;
             }
             return runner;
         }

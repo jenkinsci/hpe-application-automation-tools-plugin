@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 package com.microfocus.application.automation.tools.run;
 
 import com.microfocus.application.automation.tools.mc.Constants;
@@ -86,7 +90,7 @@ public class UploadAppBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener)
             throws InterruptedException, IOException {
-        // get the Digital Lab server settings
+        // get the Functional Testing Lab server settings
         MCServerSettingsModel mcServerSettingsModel = getMCServerSettingsModel();
         JobConfigurationProxy job = JobConfigurationProxy.getInstance();
         JSONObject app = null;
@@ -98,20 +102,20 @@ public class UploadAppBuilder extends Builder {
         }
         boolean allSuccess = true;
         if (mcServerSettingsModel == null) {
-            out.println("Failed to upload app to Digital Lab server. Cause: Digital Lab URL was not configured.");
+            out.println("Failed to upload app to Functional Testing Lab server. Cause: Functional Testing Lab URL was not configured.");
             return false;
         } else {
             mcServerUrl = mcServerSettingsModel.getProperties().getProperty("MobileHostAddress");
             Map<String, String> headers = job.login(mcServerUrl, uploadAppModel.getAuthModel(), uploadAppModel.getProxySettings());
             if (headers == null || headers.size() == 0) {
                 if (uploadAppModel.isUseProxy()) {
-                    out.println(String.format("Failed to upload app, Cause Digital Lab connection info is incorrect. url:%s, Proxy url:%s",
+                    out.println(String.format("Failed to upload app, Cause Functional Testing Lab connection info is incorrect. url:%s, Proxy url:%s",
                             mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress()));
                 } else if (uploadAppModel.isUseAuthentication()) {
-                    out.println(String.format("Failed to upload app, Cause Digital Lab connection info is incorrect. url:%s, Proxy url:%s, proxy userName:%s",
+                    out.println(String.format("Failed to upload app, Cause Functional Testing Lab connection info is incorrect. url:%s, Proxy url:%s, proxy userName:%s",
                             mcServerUrl, uploadAppModel.getProxySettings().getFsProxyAddress(), uploadAppModel.getProxySettings().getFsProxyUserName()));
                 } else {
-                    out.println(String.format("Failed to upload app, Cause Digital Lab connection info is incorrect. url:%s", mcServerUrl));
+                    out.println(String.format("Failed to upload app, Cause Functional Testing Lab connection info is incorrect. url:%s", mcServerUrl));
                 }
                 build.setResult(Result.FAILURE);
                 return false;
@@ -192,7 +196,7 @@ public class UploadAppBuilder extends Builder {
                     }
                     out.println("uploaded app info: " + app.toJSONString());
                 } catch (FileNotFoundException fnf) {
-                    out.println(String.format("Failed to upload app to Digital Lab server. Cause: File: %s is not found.", path));
+                    out.println(String.format("Failed to upload app to Functional Testing Lab server. Cause: File: %s is not found.", path));
                     build.setResult(Result.FAILURE);
                     allSuccess = false;
                     continue;
@@ -248,7 +252,7 @@ public class UploadAppBuilder extends Builder {
         @Override
         public String getDisplayName() {
 
-            return "Upload app to Digital Lab (formerly UFT Mobile) Server";
+            return "Upload app to Functional Testing Lab (Digital Lab) Server";
         }
 
         public boolean hasMCServers() {
@@ -260,14 +264,14 @@ public class UploadAppBuilder extends Builder {
         }
 
         /**
-         * Gets mc workspace list.
+         * Gets all valid workspace list.
          *
          * @param mcUrl the server name
          * @return the mc workspace list
          */
         @SuppressWarnings("squid:S2259")
         @JavaScriptMethod
-        public JSONArray getMcWorkspaces(String mcUrl, String authType, String mcUserName, String mcPassword, String mcTenantId, String mcExecToken,
+        public JSONArray getValidWorkspaces(String mcUrl, String authType, String mcUserName, String mcPassword, String mcExecToken,
                                                       boolean useProxy, String proxyAddress, boolean useAuthentication, String proxyUserName, String proxyPassword) {
             JSONArray workspaces = null;
             for (MCServerSettingsModel mcServer : this.getMcServers()) {
@@ -276,11 +280,11 @@ public class UploadAppBuilder extends Builder {
                     mcUrl = mcServer.getMcServerUrl();
                 }
             }
-            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, mcExecToken, authType);
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcExecToken, authType);
             ProxySettings proxySettings =new ProxySettings(useAuthentication, proxyAddress, proxyUserName, proxyPassword);
             try {
                 JobConfigurationProxy job = JobConfigurationProxy.getInstance();
-                workspaces = job.getAllMcWorkspaces(mcUrl, authModel, proxySettings);
+                workspaces = job.getAllValidWorkspaces(mcUrl, authModel, proxySettings);
             } catch (Exception e) {
                 e.printStackTrace();
             }

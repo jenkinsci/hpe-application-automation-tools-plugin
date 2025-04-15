@@ -1,88 +1,71 @@
 <!--
- ~ Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- ~ This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- ~ Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- ~ __________________________________________________________________
- ~ MIT License
- ~
- ~ Copyright 2012-2023 Open Text
- ~
- ~ The only warranties for products and services of Open Text and
- ~ its affiliates and licensors ("Open Text") are as may be set forth
- ~ in the express warranty statements accompanying such products and services.
- ~ Nothing herein should be construed as constituting an additional warranty.
- ~ Open Text shall not be liable for technical or editorial errors or
- ~ omissions contained herein. The information contained herein is subject
- ~ to change without notice.
- ~
- ~ Except as specifically indicated otherwise, this document contains
- ~ confidential information and a valid license is required for possession,
- ~ use or copying. If this work is provided to the U.S. Government,
- ~ consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- ~ Computer Software Documentation, and Technical Data for Commercial Items are
- ~ licensed to the U.S. Government under vendor's standard commercial license.
- ~
- ~ Unless required by applicable law or agreed to in writing, software
- ~ distributed under the License is distributed on an "AS IS" BASIS,
- ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- ~ See the License for the specific language governing permissions and
- ~ limitations under the License.
- ~ ___________________________________________________________________
-  -->
 
+     Certain versions of software accessible here may contain branding from
+     Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+     This software was acquired by Micro Focus on September 1, 2017, and is now
+     offered by OpenText.
+     Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+     in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+     property of their respective owners.
+     OpenText is a trademark of Open Text.
+     __________________________________________________________________
+     MIT License
+
+     Copyright 2012-2025 Open Text.
+
+     The only warranties for products and services of Open Text and
+     its affiliates and licensors ("Open Text") are as may be set forth
+     in the express warranty statements accompanying such products and services.
+     Nothing herein should be construed as constituting an additional warranty.
+     Open Text shall not be liable for technical or editorial errors or
+     omissions contained herein. The information contained herein is subject
+     to change without notice.
+
+     Except as specifically indicated otherwise, this document contains
+     confidential information and a valid license is required for possession,
+     use or copying. If this work is provided to the U.S. Government,
+     consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+     Computer Software Documentation, and Technical Data for Commercial Items are
+     licensed to the U.S. Government under vendor's standard commercial license.
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+     ___________________________________________________________________
+
+-->
 <div>
-    <p>Run status mapping field is for mapping the test result's status values to ALM run status value.
-        Yaml key represents the ALM run status values. Only one of the following status can be set here:<br>
-    Passed<br>
-    Failed<br>
-        Yaml value represents the condition that sustains the status. Ten kinds of conditions can be set here:<br>
-        ==StringValue<br>
-        !=StringValue<br>
+    <b>Run Status Mapping Hint</b>
+    <br>
+    <br>Define how test statuses from the XML report map to ALM using &nbsp;<b>YAML format.</b>
+    <br>
+    <br><b>Do not use Explicit and Implicit mapping together. Choose one.</b>
+    <br>
+    <br><div> <b>Explicit Mapping:</b>&nbsp;Use when the XML report explicitly states a status (e.g., &lt;testcase status="Success"/&gt;).</div>
+    <div> status:</div>
+    <div> &nbsp;&nbsp;&nbsp;&nbsp;Success: &nbsp;&nbsp;Passed</div>
+    <div> &nbsp;&nbsp;&nbsp;&nbsp;"In Progress": &nbsp;&nbsp;"Not Completed"</div>
+    <div> &nbsp;&nbsp;&nbsp;&nbsp;Failure: &nbsp;&nbsp;Failed</div>
+    <br>
+    <div style="width:5px;height:5px;background-color:transparent;border:0.5px solid black;border-radius:50%;display:inline-block;"></div><b>&nbsp;&nbsp;&nbsp;&nbsp;All possible XML statuses must be mapped, </b>&nbsp;or the test run won’t be created.
+    <br>
+    <div style="width:5px;height:5px;background-color:transparent;border:0.5px solid black;border-radius:50%;display:inline-block;"></div>&nbsp;&nbsp;&nbsp;&nbsp;If an unmapped status is found, the <b>Jenkins job will fail</b>.
+    <br><br><br>
 
-        ==0 (Or any numeric value)<br>
-        !=0 (Or any numeric value)<br>
-
-        >>0 (Or any numeric value)<br>
-        <<0 (Or any numeric value)<br>
-
-        <=0 (Or any numeric value)<br>
-        >=0 (Or any numeric value)<br>
-
-        ==NULL<br>
-        !=NULL<br>
-
-        You should first set the status field in field mapping.<br>
-    </p>
-
-<xmp>
-Take following test result as example:
-<test-case name="ExampleTestOfNUnit.TestMultiplicationFail" executed="True" result="Failure" success="False" time="0.122" asserts="1">
-</xmp>
-
-<b>Sample field mapping:</b>
-<xmp>run:
-  status: "x: success"
-</xmp>
-<b>Sample status mapping:</b>
-<xmp>status:
-    Passed: "==true"
-</xmp>
-
-    <xmp>
-Take following test result as example:
-<case>
-    <duration>0.041</duration>
-    <className>SomeClass</className>
-    <testName>SomeTest-1</testName>
-    <skipped>false</skipped>
-    <failedSince>0</failedSince>
-</case>
-    </xmp>
-    <b>Sample field mapping:</b>
-    <xmp>run:
-  status: "x: failedSince"</xmp>
-        <b>Sample status mapping:</b>
-    <xmp>status:
-  Failed: ">=0"
-    </xmp>
+    <div> <b>Implicit Mapping:</b>&nbsp;Use when the XML does not explicitly state "Passed" or "Failed."</div>
+    <div> run:</div>
+    <div> &nbsp;&nbsp;&nbsp;&nbsp;status: &nbsp;&nbsp;"x:failedSince"</div>
+    <div> </div>
+    <div> status:</div>
+    <div> &nbsp;&nbsp;&nbsp;&nbsp;Failed: &nbsp;&nbsp;">0"</div>
+    <br>
+    <div style="width:5px;height:5px;background-color:transparent;border:0.5px solid black;border-radius:50%;display:inline-block;"></div>&nbsp;&nbsp;&nbsp;&nbsp;<b>Set either a "Passed" or "Failed" condition, not both</b>.
+    <br>
+    <div style="width:5px;height:5px;background-color:transparent;border:0.5px solid black;border-radius:50%;display:inline-block;"></div>&nbsp;&nbsp;&nbsp;&nbsp;If neither condition is met, the test run won’t be created.
+    <br>
+    <br>Use <b>spaces (not tabs) </b>&nbsp;for YAML indentation (2-space recommended).
+    <br>
+    <br><b>For full details, refer to the online help</b>.
 </div>

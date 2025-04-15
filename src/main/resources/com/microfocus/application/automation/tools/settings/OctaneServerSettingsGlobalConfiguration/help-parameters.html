@@ -1,35 +1,41 @@
 <!--
- ~ Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- ~ This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- ~ Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- ~ __________________________________________________________________
- ~ MIT License
- ~
- ~ Copyright 2012-2023 Open Text
- ~
- ~ The only warranties for products and services of Open Text and
- ~ its affiliates and licensors ("Open Text") are as may be set forth
- ~ in the express warranty statements accompanying such products and services.
- ~ Nothing herein should be construed as constituting an additional warranty.
- ~ Open Text shall not be liable for technical or editorial errors or
- ~ omissions contained herein. The information contained herein is subject
- ~ to change without notice.
- ~
- ~ Except as specifically indicated otherwise, this document contains
- ~ confidential information and a valid license is required for possession,
- ~ use or copying. If this work is provided to the U.S. Government,
- ~ consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- ~ Computer Software Documentation, and Technical Data for Commercial Items are
- ~ licensed to the U.S. Government under vendor's standard commercial license.
- ~
- ~ Unless required by applicable law or agreed to in writing, software
- ~ distributed under the License is distributed on an "AS IS" BASIS,
- ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- ~ See the License for the specific language governing permissions and
- ~ limitations under the License.
- ~ ___________________________________________________________________
-  -->
 
+     Certain versions of software accessible here may contain branding from
+     Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+     This software was acquired by Micro Focus on September 1, 2017, and is now
+     offered by OpenText.
+     Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+     in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+     property of their respective owners.
+     OpenText is a trademark of Open Text.
+     __________________________________________________________________
+     MIT License
+
+     Copyright 2012-2025 Open Text.
+
+     The only warranties for products and services of Open Text and
+     its affiliates and licensors ("Open Text") are as may be set forth
+     in the express warranty statements accompanying such products and services.
+     Nothing herein should be construed as constituting an additional warranty.
+     Open Text shall not be liable for technical or editorial errors or
+     omissions contained herein. The information contained herein is subject
+     to change without notice.
+
+     Except as specifically indicated otherwise, this document contains
+     confidential information and a valid license is required for possession,
+     use or copying. If this work is provided to the U.S. Government,
+     consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+     Computer Software Documentation, and Technical Data for Commercial Items are
+     licensed to the U.S. Government under vendor's standard commercial license.
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+     ___________________________________________________________________
+
+-->
 <div>
     Define additional parameters
     <br/>
@@ -52,27 +58,27 @@
         <tr>
             <td>ENCODE_CI_JOB_BASE64</td>
             <td>true/false</td>
-            <td>ALM Octane includes a built-in Jetty web server, but there is a possibility to add an external web server such as Apache HTTP server or similar.
+            <td>Software Delivery Management includes a built-in Jetty web server, but there is a possibility to add an external web server such as Apache HTTP server or similar.
                 This is usually done to add one more security layer. Some such servers might not allow receiving requests with encoded slashes (%2F).
-                As a job name might contain a slash, this parameter allows base64 encoding for job IDs during sending test results, build logs, coverage and vulnerabilities data to ALM Octane.
+                As a job name might contain a slash, this parameter allows base64 encoding for job IDs during sending test results, build logs, coverage and vulnerabilities data to Software Delivery Management.
                 <br/>
-                Default is false. Supported ALM Octane version 15.1.20 and above.</td>
+                Default is false. Supported Software Delivery Management version 15.1.20 and above.</td>
         </tr>
         <tr>
             <td>FORTIFY_SSC_TOKEN</td>
             <td>authentication token</td>
             <td>
                 Token for integration with Fortify Software Security Center (SSC).
-                See help information in  <a target="_blank" href="https://admhelp.microfocus.com/octane/en/latest/Online/Content/AdminGuide/how-setup-FoD-integration.htm">ALM Octane Help Center</a>.
+                See help information in  <a target="_blank" href="https://admhelp.microfocus.com/octane/en/latest/Online/Content/AdminGuide/how-setup-FoD-integration.htm">Software Delivery Management Help Center</a>.
             </td>
         </tr>
         <tr>
             <td>JOB_LIST_CACHE_ALLOWED</td>
             <td>true/false</td>
             <td>
-                Allow to cache the list of Jenkins jobs that is used to show available jobs when creating pipelines or test runners in ALM Octane. Use this option only if it takes more than 1 minute to show existing jobs.
+                Allow to cache the list of Jenkins jobs that is used to show available jobs when creating pipelines or test runners in Software Delivery Management. Use this option only if it takes more than 1 minute to show existing jobs.
                 <br/>
-                The cache is updated only if required by ALM Octane, and the previous cache was updated more than one hour ago. The cache is not updated when adding/removing/renaming jobs.
+                The cache is updated only if required by Software Delivery Management, and the previous cache was updated more than one hour ago. The cache is not updated when adding/removing/renaming jobs.
                 <br/>
                 For manual update of cache, call to the following URL: &lt;jenkins_url&gt;/nga/api/v1/clear-job-list-cache
                 <br/>
@@ -84,14 +90,14 @@
         <tr>
             <td>SCM_REST_API</td>
             <td>true/false</td>
-            <td>The plugin uses a dedicated REST API in order to send data on SCM commits to ALM Octane. This parameter allows to use the events mechanism instead of REST API.
+            <td>The plugin uses a dedicated REST API in order to send data on SCM commits to Software Delivery Management. This parameter allows to use the events mechanism instead of REST API.
                 <br/>
-                Default is true (Rest API). Supported ALM Octane version 15.1.21 and above.</td>
+                Default is true (Rest API). Supported Software Delivery Management / ALM Octane version 15.1.21 and above.</td>
         </tr>
         <tr>
             <td>UFT_TEST_RUNNER_FOLDER</td>
             <td>folder path</td>
-            <td>ALM Octane allows generation of discovery and execution jobs for UFT test runner. By default, those jobs are created in Jenkins root. This parameter allow to define the folder
+            <td>Software Delivery Management allows generation of discovery and execution jobs for UFT test runner. By default, those jobs are created in Jenkins root. This parameter allow to define the folder
                 in which those jobs will be created. <br/>For example : my_team_folder/uft</td>
         </tr>
         <tr>
@@ -102,7 +108,7 @@
         <tr>
             <td>ADD_GLOBAL_PARAMETERS_TO_TESTS</td>
             <td>true/false</td>
-            <td>Used for UFT test runners. Use this parameter if you need to pass ALM Octane details to UFT tests. These will then be used in future updates of ALM Octane entities by UFT tests (for example updating UDF fields).
+            <td>Used for UFT test runners. Use this parameter if you need to pass Software Delivery Management details to UFT tests. These will then be used in future updates of Software Delivery Management entities by Functional Testing tests (for example updating UDF fields).
                 <br> The MTBX format will contain additional parameters, as follows:
                 runId, suiteRunId, suiteId, octaneWorkspaceId, octaneSpaceId, octaneRunByUsername, octaneUrl, octaneConfigId. In addition, if your job contains other parameters that contains "octane"(case insensitive) in the name of parameter - they will be added.
 

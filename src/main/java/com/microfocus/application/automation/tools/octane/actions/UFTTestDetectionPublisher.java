@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 package com.microfocus.application.automation.tools.octane.actions;
 
 import com.hp.octane.integrations.OctaneClient;
@@ -108,11 +112,11 @@ public class UFTTestDetectionPublisher extends Recorder {
         try {
             //validate configuration id
             if (configurationId == null || JellyUtils.NONE.equals(configurationId)) {
-                throw new IllegalArgumentException("ALM Octane configuration is missing.");
+                throw new IllegalArgumentException("Software Delivery Management configuration is missing.");
             }
 
             if (workspaceName == null || JellyUtils.NONE.equals(workspaceName)) {
-                throw new IllegalArgumentException("ALM Octane workspace is missing.");
+                throw new IllegalArgumentException("Software Delivery Management workspace is missing.");
             }
 
             //validate scm repository id
@@ -200,7 +204,7 @@ public class UFTTestDetectionPublisher extends Recorder {
         List<Entity> foundEntities = entitiesService.getEntities(workspaceId, collectionName, conditions, Collections.singletonList(EntityConstants.Base.ID_FIELD));
         if (!foundEntities.isEmpty()) {
             scmRepoId = foundEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is already exist in ALM Octane with id=" + scmRepoId);
+            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is already exist in Software Delivery Management with id=" + scmRepoId);
         } else {
             //create a new scm repository
             Entity newScmRepository = buildNewRepoEntity(scmPluginHandler, url, "scm_repository");
@@ -209,7 +213,7 @@ public class UFTTestDetectionPublisher extends Recorder {
 
             List<Entity> createEntities = entitiesService.postEntities(workspaceId, collectionName, Collections.singletonList(newScmRepository));
             scmRepoId = createEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is created in ALM Octane with id=" + scmRepoId);
+            UFTTestDetectionService.printToConsole(listener, "SCM repository " + url + " is created in Software Delivery Management with id=" + scmRepoId);
         }
         return scmRepoId;
     }
@@ -227,13 +231,13 @@ public class UFTTestDetectionPublisher extends Recorder {
         List<Entity> foundEntities = entitiesService.getEntities(workspaceId, rootCollectionName, conditions, Collections.singletonList(EntityConstants.Base.ID_FIELD));
         if (!foundEntities.isEmpty()) {
             scmRootId = foundEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s is already exist in ALM Octane with id=%s", url, scmRootId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s is already exist in Software Delivery Management with id=%s", url, scmRootId));
         } else {
             //create a new scm repository root
             Entity newScmRepositoryRoot = buildNewRepoEntity(scmPluginHandler, url, EntityConstants.ScmRepositoryRoot.ENTITY_NAME);
             List<Entity> createEntities = entitiesService.postEntities(workspaceId, rootCollectionName, Collections.singletonList(newScmRepositoryRoot));
             scmRootId = createEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s  is created in ALM Octane with id=%s", url, scmRootId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM repository root %s  is created in Software Delivery Management with id=%s", url, scmRootId));
         }
 
         //find branch
@@ -245,7 +249,7 @@ public class UFTTestDetectionPublisher extends Recorder {
                 Arrays.asList(EntityConstants.ScmRepository.ID_FIELD, EntityConstants.ScmRepository.BRANCH_FIELD));
         if (!foundEntities.isEmpty()) {
             scmBranchId = foundEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is already exist in ALM Octane with id=%s", name, scmBranchId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is already exist in Software Delivery Management with id=%s", name, scmBranchId));
         } else {
             //create a new branch
             Entity newBranch = buildNewRepoEntity(scmPluginHandler, url, "scm_repository");
@@ -260,7 +264,7 @@ public class UFTTestDetectionPublisher extends Recorder {
             newBranch.setField(EntityConstants.ScmRepository.PARENT_FIELD, scmRoot);
             List<Entity> createEntities = entitiesService.postEntities(workspaceId, branchCollectionName, Collections.singletonList(newBranch));
             scmBranchId = createEntities.get(0).getId();
-            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is created in ALM Octane with id=%s", name, scmBranchId));
+            UFTTestDetectionService.printToConsole(listener, String.format("SCM branch %s is created in Software Delivery Management with id=%s", name, scmBranchId));
         }
 
         return scmBranchId;

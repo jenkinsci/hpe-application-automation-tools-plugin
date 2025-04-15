@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 package com.microfocus.application.automation.tools.octane.tests.junit;
 
 import com.google.inject.Inject;
@@ -57,6 +61,7 @@ import hudson.maven.MavenModule;
 import hudson.maven.MavenModuleSetBuild;
 import hudson.model.*;
 import hudson.remoting.VirtualChannel;
+import hudson.tasks.Builder;
 import hudson.tasks.test.AbstractTestResultAction;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.Logger;
@@ -71,11 +76,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.hp.octane.integrations.utils.SdkConstants.JobParameters.OCTANE_CONFIG_ID_PARAMETER_NAME;
 
 /**
- * Converter of Jenkins test report to ALM Octane test report format(junitResult.xml->mqmTests.xml)
+ * Converter of Jenkins test report to Software Delivery Management test report format(junitResult.xml->mqmTests.xml)
  */
 @Extension
 public class JUnitExtension extends OctaneTestsExtension {
@@ -194,21 +200,24 @@ public class JUnitExtension extends OctaneTestsExtension {
 		private List<ModuleDetection> moduleDetection;
 		private long buildStarted;
 		private FilePath workspace;
+		private Set<FilePath> allWorkspaces;
 		private boolean stripPackageAndClass;
 		private String sharedCheckOutDirectory;
 		private Pattern testParserRegEx;
 		private boolean octaneSupportsSteps;
+		private List<Builder> builders;
 
 		//this class is run on master and JUnitXmlIterator is runnning on slave.
 		//this object pass some master2slave data
-		private Object additionalContext;
-		private String nodeName;
+		private       Object      additionalContext;
+		private final Set<String> nodeNames = new HashSet<>();
 
 		public GetJUnitTestResults(Run<?, ?> build, HPRunnerType hpRunnerType, List<FilePath> reports, boolean stripPackageAndClass, String jenkinsRootUrl) throws IOException, InterruptedException {
 			this.reports = reports;
 			this.filePath = new FilePath(build.getRootDir()).createTempFile(TEMP_TEST_RESULTS_FILE_NAME_PREFIX, null);
 			this.buildStarted = build.getStartTimeInMillis();
 			this.workspace = BuildHandlerUtils.getWorkspace(build);
+			this.allWorkspaces = BuildHandlerUtils.getWorkspaces(build);
 			this.stripPackageAndClass = stripPackageAndClass;
 			this.hpRunnerType = hpRunnerType;
 			this.jenkinsRootUrl = jenkinsRootUrl;
@@ -228,24 +237,35 @@ public class JUnitExtension extends OctaneTestsExtension {
 					new MavenSetModuleDetection(build),
 					new ModuleDetection.Default());
 
+			this.builders = JobProcessorFactory.getFlowProcessor(build.getParent()).tryGetBuilders();
+
 
 			if (HPRunnerType.UFT.equals(hpRunnerType) || HPRunnerType.UFT_MBT.equals(hpRunnerType)) {
-				Node node = JenkinsUtils.getCurrentNode(workspace);
-				this.nodeName = node != null && !node.getNodeName().isEmpty() ? node.getNodeName() : "";
+
+				List<Node> nodes = allWorkspaces.stream()
+						.map(JenkinsUtils::getCurrentNode)
+						.collect(Collectors.toList());
+				nodes.forEach(node -> this.nodeNames.add(node != null && !node.getNodeName().isEmpty() ? node.getNodeName() : ""));
 				//extract folder names for created tests
-				String reportFolder = buildRootDir + "/archive/UFTReport" +
-						(StringUtils.isNotEmpty(this.nodeName) ? "/" + this.nodeName : "");
+
+				List<String> reportFolders = new ArrayList<>();
+				this.nodeNames.forEach(nodeName ->
+						reportFolders.add(buildRootDir + "/archive/UFTReport" + (StringUtils.isNotEmpty(nodeName) ? "/" + nodeName : "")));
+
 				List<String> testFolderNames = new ArrayList<>();
 				testFolderNames.add(build.getRootDir().getAbsolutePath());
-				File reportFolderFile = new File(reportFolder);
-				if (reportFolderFile.exists()) {
-					File[] children = reportFolderFile.listFiles();
-					if (children != null) {
-						for (File child : children) {
-							testFolderNames.add(child.getName());
+				reportFolders.forEach(reportFolder ->{
+					File reportFolderFile = new File(reportFolder);
+					if (reportFolderFile.exists()) {
+						File[] children = reportFolderFile.listFiles();
+						if (children != null) {
+							for (File child : children) {
+								testFolderNames.add(child.getParentFile().getName() + "/" + child.getName());
+                            }
 						}
 					}
-				}
+				});
+
 				additionalContext = testFolderNames;
 			}
 			if (HPRunnerType.StormRunnerLoad.equals(hpRunnerType)) {
@@ -292,7 +312,9 @@ public class JUnitExtension extends OctaneTestsExtension {
 
 			try {
 				for (FilePath report : reports) {
-					JUnitXmlIterator iterator = new JUnitXmlIterator(report.read(), moduleDetection, workspace, sharedCheckOutDirectory, jobName, buildId, buildStarted, stripPackageAndClass, hpRunnerType, jenkinsRootUrl, additionalContext,testParserRegEx, octaneSupportsSteps,nodeName);
+					JUnitXmlIterator iterator = new JUnitXmlIterator(report.read(), moduleDetection, workspace, sharedCheckOutDirectory, jobName,
+									buildId, buildStarted, stripPackageAndClass, hpRunnerType, jenkinsRootUrl, additionalContext,
+									testParserRegEx, octaneSupportsSteps, nodeNames, builders);
 					while (iterator.hasNext()) {
 						oos.writeObject(iterator.next());
 					}

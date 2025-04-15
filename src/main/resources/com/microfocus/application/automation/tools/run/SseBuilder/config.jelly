@@ -1,81 +1,86 @@
 <!--
- ~ Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- ~ This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- ~ Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- ~ __________________________________________________________________
- ~ MIT License
- ~
- ~ Copyright 2012-2023 Open Text
- ~
- ~ The only warranties for products and services of Open Text and
- ~ its affiliates and licensors ("Open Text") are as may be set forth
- ~ in the express warranty statements accompanying such products and services.
- ~ Nothing herein should be construed as constituting an additional warranty.
- ~ Open Text shall not be liable for technical or editorial errors or
- ~ omissions contained herein. The information contained herein is subject
- ~ to change without notice.
- ~
- ~ Except as specifically indicated otherwise, this document contains
- ~ confidential information and a valid license is required for possession,
- ~ use or copying. If this work is provided to the U.S. Government,
- ~ consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- ~ Computer Software Documentation, and Technical Data for Commercial Items are
- ~ licensed to the U.S. Government under vendor's standard commercial license.
- ~
- ~ Unless required by applicable law or agreed to in writing, software
- ~ distributed under the License is distributed on an "AS IS" BASIS,
- ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- ~ See the License for the specific language governing permissions and
- ~ limitations under the License.
- ~ ___________________________________________________________________
-  -->
+
+     Certain versions of software accessible here may contain branding from
+     Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+     This software was acquired by Micro Focus on September 1, 2017, and is now
+     offered by OpenText.
+     Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+     in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+     property of their respective owners.
+     OpenText is a trademark of Open Text.
+     __________________________________________________________________
+     MIT License
+
+     Copyright 2012-2025 Open Text.
+
+     The only warranties for products and services of Open Text and
+     its affiliates and licensors ("Open Text") are as may be set forth
+     in the express warranty statements accompanying such products and services.
+     Nothing herein should be construed as constituting an additional warranty.
+     Open Text shall not be liable for technical or editorial errors or
+     omissions contained herein. The information contained herein is subject
+     to change without notice.
+
+     Except as specifically indicated otherwise, this document contains
+     confidential information and a valid license is required for possession,
+     use or copying. If this work is provided to the U.S. Government,
+     consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+     Computer Software Documentation, and Technical Data for Commercial Items are
+     licensed to the U.S. Government under vendor's standard commercial license.
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+     ___________________________________________________________________
+
+-->
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <j:set var="hasConfigPermission" value="${descriptor.hasConfigurePermission}" />
+    <style>
+        #testName {
+            width: 300px;
+            margin-bottom: 10px;
+        }
 
- <script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/almUtils.js"/>
+        table tr td div.help {
+            margin-left: 12px;
+            background: none;
+            border: none;
+        }
 
-       <style>
-            #testName {
-                width: 300px;
-                margin-bottom: 10px;
-            }
+       input[name="sse.cdaDetails"]{
+            margin-left: 35px;
+       }
 
-            table tr td div.help {
-                margin-left: 12px;
-                background: none;
-                border: none;
-            }
+        .help {
+            border: none;
+            background: none !important;
+            background-color: transparent;
+        }
 
-           input[name="sse.cdaDetails"]{
-                margin-left: 35px;
-           }
+        table td .help {
+            background: none;
+        }
 
-            .help {
-                border: none;
-                background: none !important;
-                background-color: transparent;
-            }
+        table tr[nameref^="rowSetStart"] {
+            background: none;
+        }
 
-            table td .help {
-                background: none;
-            }
+        table tr[nameref^="cb29"] {
+          background: none;
+        }
 
-            table tr[nameref^="rowSetStart"] {
-                background: none;
-            }
+        textarea.jenkins-input, textarea.setting-input {
+            resize: vertical;
+        }
 
-            table tr[nameref^="cb29"] {
-              background: none;
-            }
-
-            textarea.jenkins-input, textarea.setting-input {
-                resize: vertical;
-            }
-
-            div[descriptorid="com.microfocus.application.automation.tools.run.SseBuilder"] > table tr {
-                background: none;
-            }
-       </style>
+        div[descriptorid="com.microfocus.application.automation.tools.run.SseBuilder"] > table tr {
+            background: none;
+        }
+    </style>
 
     <!--
       ~ [JENKINS-64639]: This table is only for drawing information. Also, the tr and td are removed by Jenkins core and the generated HTML doesn't contain it.
@@ -89,7 +94,7 @@
         </div>
       </td>
       <td/>
-    </tr>  
+    </tr>
 	</j:if>
 
 	<tr>
@@ -100,7 +105,7 @@
         </div>
       </td>
       <td/>
-    </tr>   
+    </tr>
     <tr>
       <td/>
       <td colspan="2">
@@ -111,122 +116,129 @@
       <td/>
     </tr>
 
-        <f:entry>
-           <label>ALM server</label>
-           <f:entry field="almServerName">
-                <select name="sse.almServerName">
+    <f:entry>
+        <label>ALM server</label>
+        <f:entry field="almServerName">
+            <j:choose>
+                <j:when test="${hasConfigPermission}">
+                    <select name="sse.almServerName">
                     <j:forEach var="almServer" items="${descriptor.almServers}">
                         <f:option selected="${almServer.almServerName==instance.almServerName}" value="${almServer.almServerName}">
                             ${almServer.almServerName}
                         </f:option>
                     </j:forEach>
-                </select>
-            </f:entry>
+                    </select>
+               </j:when>
+               <j:otherwise>
+                   <f:textbox value="${instance.almServerName}"/>
+               </j:otherwise>
+            </j:choose>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>ALM Credentials</label>
-            <f:entry name="sse.credentialsId" field="credentialsId">
-              <c:select/>
-            </f:entry>
-	    </f:entry>
-
-        <f:entry>
-            <label>Domain</label>
-            <f:entry field="almDomain">
-                <f:textbox name="sse.almDomain" value="${instance.sseModel.almDomain}"/>
-            </f:entry>
+    <f:entry>
+        <label>ALM Credentials</label>
+        <f:entry name="sse.credentialsId" field="credentialsId">
+            <c:select/>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>Project</label>
-            <f:entry field="almProject">
-                <f:textbox name="sse.almProject" value="${instance.sseModel.almProject}"/>
-            </f:entry>
+    <f:entry>
+        <label>Domain</label>
+        <f:entry field="almDomain">
+            <f:textbox name="sse.almDomain" value="${instance.sseModel.almDomain}"/>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>Client type</label>
-            <f:entry field="clientType">
-                <f:textbox name="sse.clientType" value="${instance.sseModel.clientType}"/>
-            </f:entry>
+    <f:entry>
+        <label>Project</label>
+        <f:entry field="almProject">
+            <f:textbox name="sse.almProject" value="${instance.sseModel.almProject}"/>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>Run type</label>
-            <f:entry field="runType">
-                <select name="sse.runType" >
-                    <j:forEach var="runType" items="${descriptor.runTypes}">
-                        <f:option selected="${runType.value == instance.runType}" value="${runType.value}">
-                          ${runType.description}
-                        </f:option>
-                    </j:forEach>
-                </select>
-            </f:entry>
+    <f:entry>
+        <label>Client type</label>
+        <f:entry field="clientType">
+            <f:textbox name="sse.clientType" value="${instance.sseModel.clientType}"/>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>Test Set/Build Verification Suite ID</label>
-            <f:entry field="almEntityId">
-                <f:textbox name="sse.almEntityId" value="${instance.sseModel.almEntityId}"/>
-            </f:entry>
+    <f:entry>
+        <label>Run type</label>
+        <f:entry field="runType">
+            <select name="sse.runType" >
+                <j:forEach var="runType" items="${descriptor.runTypes}">
+                    <f:option selected="${runType.value == instance.runType}" value="${runType.value}">
+                      ${runType.description}
+                    </f:option>
+                </j:forEach>
+            </select>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>Description</label>
-            <f:entry field="description">
-                <f:textbox name="sse.description" value="${instance.sseModel.description}"/>
-            </f:entry>
+    <f:entry>
+        <label>Test Set/Build Verification Suite ID</label>
+        <f:entry field="almEntityId">
+            <f:textbox name="sse.almEntityId" value="${instance.sseModel.almEntityId}"/>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>Timeslot Duration (in minutes, minimum = 30)</label>
-            <f:entry field="timeslotDuration">
-                <f:textbox name="sse.timeslotDuration" value="${instance.sseModel.timeslotDuration}"/>
-            </f:entry>
+    <f:entry>
+        <label>Description</label>
+        <f:entry field="description">
+            <f:textbox name="sse.description" value="${instance.sseModel.description}"/>
         </f:entry>
+    </f:entry>
 
-        <f:entry>
-            <label>Environment Configuration ID</label>
-            <f:entry field="environmentConfigurationId">
-                <f:textbox name="sse.environmentConfigurationId" value="${instance.sseModel.environmentConfigurationId}"/>
-            </f:entry>
+    <f:entry>
+        <label>Timeslot Duration (in minutes, minimum = 30)</label>
+        <f:entry field="timeslotDuration">
+            <f:textbox name="sse.timeslotDuration" value="${instance.sseModel.timeslotDuration}"/>
         </f:entry>
+    </f:entry>
 
-        <f:block>
-			<f:optionalBlock name="sse.cdaDetails" title="Use CDA for provisioning and deployment" checked="${instance.cdaDetailsChecked}">
-    			<f:entry>
-                    <label>Deployment Action</label>
-                    <f:entry field="deploymentAction">
-                        <select name="sse.deploymentAction" >
-                            <j:forEach var="deploymentAction" items="${descriptor.deploymentActions}">
-                                <f:option selected="${deploymentAction.value == instance.cdaDetails.deploymentAction}" value="${deploymentAction.value}">
-                                  ${deploymentAction.description}
+    <f:entry>
+        <label>Environment Configuration ID</label>
+        <f:entry field="environmentConfigurationId">
+            <f:textbox name="sse.environmentConfigurationId" value="${instance.sseModel.environmentConfigurationId}"/>
+        </f:entry>
+    </f:entry>
+
+    <f:block>
+        <f:optionalBlock name="sse.cdaDetails" title="Use CDA for provisioning and deployment" checked="${instance.cdaDetailsChecked}">
+            <f:entry>
+                <label>Deployment Action</label>
+                <f:entry field="deploymentAction">
+                    <select name="sse.deploymentAction" >
+                        <j:forEach var="deploymentAction" items="${descriptor.deploymentActions}">
+                            <f:option selected="${deploymentAction.value == instance.cdaDetails.deploymentAction}" value="${deploymentAction.value}">
+                              ${deploymentAction.description}
+                            </f:option>
+                        </j:forEach>
+                    </select>
+                </f:entry>
+            </f:entry>
+
+            <f:entry>
+                <label>Deployed environment name</label>
+                <f:entry field="deployedEnvironmentName">
+                    <f:textbox name="sse.deployedEnvironmentName" value="${instance.cdaDetails.deployedEnvironmentName}"/>
+                </f:entry>
+            </f:entry>
+
+            <f:entry>
+                <label>Deprovisioning Action</label>
+                <f:entry field="deprovisioningAction">
+                        <select name="sse.deprovisioningAction" >
+                            <j:forEach var="deprovisioningAction" items="${descriptor.deprovisioningActions}">
+                                <f:option selected="${deprovisioningAction.value == instance.cdaDetails.deprovisioningAction}" value="${deprovisioningAction.value}">
+                                  ${deprovisioningAction.description}
                                 </f:option>
                             </j:forEach>
                         </select>
-                    </f:entry>
-    			</f:entry>
-
-    			<f:entry>
-    			    <label>Deployed environment name</label>
-                    <f:entry field="deployedEnvironmentName">
-                        <f:textbox name="sse.deployedEnvironmentName" value="${instance.cdaDetails.deployedEnvironmentName}"/>
-                    </f:entry>
-    			</f:entry>
-
-    			<f:entry>
-                    <label>Deprovisioning Action</label>
-                    <f:entry field="deprovisioningAction">
-                            <select name="sse.deprovisioningAction" >
-                                <j:forEach var="deprovisioningAction" items="${descriptor.deprovisioningActions}">
-                                    <f:option selected="${deprovisioningAction.value == instance.cdaDetails.deprovisioningAction}" value="${deprovisioningAction.value}">
-                                      ${deprovisioningAction.description}
-                                    </f:option>
-                                </j:forEach>
-                            </select>
-                    </f:entry>
-		        </f:entry>
-			</f:optionalBlock>
-  		</f:block>
-   </j:jelly>
+                </f:entry>
+            </f:entry>
+        </f:optionalBlock>
+    </f:block>
+</j:jelly>

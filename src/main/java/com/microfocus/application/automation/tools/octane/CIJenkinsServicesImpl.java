@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 package com.microfocus.application.automation.tools.octane;
 
 import com.cloudbees.plugins.credentials.CredentialsNameProvider;
@@ -86,9 +90,6 @@ import hudson.security.ACLContext;
 import hudson.util.IOUtils;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileItemFactory;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.Logger;
@@ -245,27 +246,30 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
     public PipelineNode getPipeline(String rootJobCiId) {
         ACLContext securityContext = startImpersonation();
         try {
-            PipelineNode result;
-            boolean hasRead = Jenkins.get().hasPermission(Item.READ);
-            if (!hasRead) {
+            Item item = getItemByRefId(rootJobCiId);
+
+            if (item == null) {
+                logger.warn("Failed to get project from jobRefId: '" + rootJobCiId + "' check plugin user Job Read/" +
+                        "Overall Read permissions / project name");
+                throw new ConfigurationException(HttpStatus.SC_NOT_FOUND);
+            }
+
+            // Verify that the user has permission to access the job(Read permission for a specific job or global read)
+            if (!Jenkins.get().hasPermission(Item.READ) && !item.hasPermission(Item.READ)) {
+                logger.warn("Insufficient permissions to access jobRefId: '{}'.", rootJobCiId);
                 throw new PermissionException(HttpStatus.SC_FORBIDDEN);
             }
 
-            Item item = getItemByRefId(rootJobCiId);
-            if (item == null) {
-                logger.warn("Failed to get project from jobRefId: '" + rootJobCiId + "' check plugin user Job Read/Overall Read permissions / project name");
-                throw new ConfigurationException(HttpStatus.SC_NOT_FOUND);
-            } else if (item instanceof Job) {
-                result = ModelFactory.createStructureItem((Job) item);
-            } else {
-                result = createPipelineNodeFromJobName(item.getFullName());
-                if (item.getClass().getName().equals(JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME)) {
-                    WorkflowMultiBranchProject parentItem = (WorkflowMultiBranchProject) item;
-                    if(!parentItem.isDisabled()) {
-                        addParametersAndDefaultBranchFromConfig(item, result);
-                        result.setMultiBranchType(MultiBranchType.MULTI_BRANCH_PARENT);
-                    } else result = null;
-                }
+            if (item instanceof Job) {
+                return ModelFactory.createStructureItem((Job) item);
+            }
+            PipelineNode result = createPipelineNodeFromJobName(item.getFullName());
+            if (item.getClass().getName().equals(JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME)) {
+                WorkflowMultiBranchProject parentItem = (WorkflowMultiBranchProject) item;
+                if (!parentItem.isDisabled()) {
+                    addParametersAndDefaultBranchFromConfig(item, result);
+                    result.setMultiBranchType(MultiBranchType.MULTI_BRANCH_PARENT);
+                } else result = null;
             }
             return result;
         } finally {
@@ -810,15 +814,18 @@ public class CIJenkinsServicesImpl extends CIPluginServices {
             }
             if (!parameterHandled) {
                 if (paramDef instanceof FileParameterDefinition) {
-                    FileItemFactory fif = new DiskFileItemFactory();
-                    FileItem fi = fif.createItem(paramDef.getName(), "text/plain", false, "");
+                    File file = new File("");
                     try {
-                        fi.getOutputStream().write(new byte[0]);
+                        try (OutputStream outputStream = Files.newOutputStream(file.toPath())) {
+                            outputStream.write(new byte[0]);
+                        }
                     } catch (IOException ioe) {
                         logger.error("failed to create default value for file parameter '" + paramDef.getName() + "'", ioe);
                     }
-                    tmpValue = new FileParameterValue(paramDef.getName(), fi);
+                    tmpValue = new FileParameterValue(paramDef.getName(), file, file.getName());
                     result.add(tmpValue);
+
+
                 } else {
                     result.add(paramDef.getDefaultParameterValue());
                 }

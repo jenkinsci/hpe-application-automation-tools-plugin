@@ -1,37 +1,43 @@
 <!--
- ~ Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- ~ This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- ~ Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- ~ __________________________________________________________________
- ~ MIT License
- ~
- ~ Copyright 2012-2023 Open Text
- ~
- ~ The only warranties for products and services of Open Text and
- ~ its affiliates and licensors ("Open Text") are as may be set forth
- ~ in the express warranty statements accompanying such products and services.
- ~ Nothing herein should be construed as constituting an additional warranty.
- ~ Open Text shall not be liable for technical or editorial errors or
- ~ omissions contained herein. The information contained herein is subject
- ~ to change without notice.
- ~
- ~ Except as specifically indicated otherwise, this document contains
- ~ confidential information and a valid license is required for possession,
- ~ use or copying. If this work is provided to the U.S. Government,
- ~ consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- ~ Computer Software Documentation, and Technical Data for Commercial Items are
- ~ licensed to the U.S. Government under vendor's standard commercial license.
- ~
- ~ Unless required by applicable law or agreed to in writing, software
- ~ distributed under the License is distributed on an "AS IS" BASIS,
- ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- ~ See the License for the specific language governing permissions and
- ~ limitations under the License.
- ~ ___________________________________________________________________
-  -->
 
+     Certain versions of software accessible here may contain branding from
+     Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+     This software was acquired by Micro Focus on September 1, 2017, and is now
+     offered by OpenText.
+     Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+     in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+     property of their respective owners.
+     OpenText is a trademark of Open Text.
+     __________________________________________________________________
+     MIT License
+
+     Copyright 2012-2025 Open Text.
+
+     The only warranties for products and services of Open Text and
+     its affiliates and licensors ("Open Text") are as may be set forth
+     in the express warranty statements accompanying such products and services.
+     Nothing herein should be construed as constituting an additional warranty.
+     Open Text shall not be liable for technical or editorial errors or
+     omissions contained herein. The information contained herein is subject
+     to change without notice.
+
+     Except as specifically indicated otherwise, this document contains
+     confidential information and a valid license is required for possession,
+     use or copying. If this work is provided to the U.S. Government,
+     consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+     Computer Software Documentation, and Technical Data for Commercial Items are
+     licensed to the U.S. Government under vendor's standard commercial license.
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+     ___________________________________________________________________
+
+-->
 <div>
-    This build step is intended to support execution of automated tests from ALM Octane.</br>
+    This build step is intended to support execution of automated tests from Software Delivery Management.</br>
     There are several modes of execution :
 
     <table border="1" width="100%" style="border-collapse: collapse;border: 1px solid black;">
@@ -43,8 +49,8 @@
         </thead>
         <tbody>
         <tr>
-            <td>Execute suite runs in ALM Octane</td>
-            <td>Execute suites according to specified suite IDs. New suite runs will be created and executed in ALM Octane.
+            <td>Execute suite runs in Software Delivery Management</td>
+            <td>Execute suites according to specified suite IDs. New suite runs will be created and executed in Software Delivery Management.
                 Jenkins job is finished after triggering the suite runs. The job does not wait
                 until the suite runs are finished. This method is useful if you want to schedule suite execution in ALM
                 Octane. 
@@ -63,7 +69,7 @@
                 assumes that tests are assigned to test runner jobs from the current Jenkins.) Tests are send to
                 execution by their assigned test runner jobs. The main job is finished after the test runner jobs are
                 finished.
-                This method is useful if you intend to add your job to the ALM Octane Pipeline module.
+                This method is useful if you intend to add your job to the Software Delivery Management Pipeline module.
             </td>
         </tr>
         </tbody>

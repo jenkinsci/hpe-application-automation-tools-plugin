@@ -1,35 +1,39 @@
-/*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+/**
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -58,6 +62,7 @@ namespace HpToolsLauncher
         private List<ScriptRTSModel> _scriptRTSSet;
         private TimeSpan _timeout = TimeSpan.MaxValue;
         private string _uftRunMode;
+        private bool _uftExportPdf;
         private Stopwatch _stopwatch = null;
         private string _abortFilename = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\stop" + Launcher.UniqueTimeStamp + ".txt";
         private string _encoding;
@@ -76,6 +81,7 @@ namespace HpToolsLauncher
         private DigitalLab _digitalLab;
         private bool _printInputParams;
         private RunAsUser _uftRunAsUser;
+        private bool _leaveUftOpenIfVisible;
         private IFileSysTestRunner _runner = null;
 
         private const string REPORT = "Report";
@@ -100,6 +106,8 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
+                                    bool exportPdfConfiguration = false,
+                                    bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
             //search if we have any testing tools installed
@@ -130,10 +138,12 @@ namespace HpToolsLauncher
             _xmlBuilder.XmlName = xmlResultsFullFileName;
             _encoding = encoding;
             _uftRunAsUser = uftRunAsUser;
+            _leaveUftOpenIfVisible = leaveUftOpenIfVisible;
             _uftRunMode = uftRunMode;
+            _uftExportPdf = exportPdfConfiguration;
 
             if (_digitalLab.ConnectionInfo != null)
-                ConsoleWriter.WriteLine("Digital Lab connection info is - " + _digitalLab.ConnectionInfo.ToString());
+                ConsoleWriter.WriteLine("Functional Testing Lab connection info is - " + _digitalLab.ConnectionInfo.ToString());
 
             if (reportPath != null)
             {
@@ -179,9 +189,11 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
+                                    bool uftExportPdf,
+                                    bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, useUftLicense);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible, useUftLicense);
 
             _tests = GetListOfTestInfo(sources, @params, jenkinsEnvVars);
 
@@ -229,9 +241,11 @@ namespace HpToolsLauncher
                                     string xmlResultsFullFileName,
                                     string encoding,
                                     RunAsUser uftRunAsUser,
+                                    bool uftExportPdf,
+                                    bool leaveUftOpenIfVisible = false,
                                     bool useUftLicense = false)
         {
-            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, useUftLicense);
+            InitCommonFields(printInputParams, timeout, uftRunMode, controllerPollingInterval, perScenarioTimeOutMinutes, ignoreErrMsgs, digitalLab, parallelRunnerEnvs, displayController, analysisTemplate, summaryDataLogger, scriptRtsSet, reportPath, xmlResultsFullFileName, encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible, useUftLicense);
 
             _tests = tests;
             if (_tests == null || _tests.Count == 0)
@@ -366,10 +380,10 @@ namespace HpToolsLauncher
             {
                 var start = DateTime.Now;
 
-                Dictionary<string, int> indexList = new Dictionary<string, int>();
                 foreach (var test in _tests)
                 {
-                    indexList[test.TestPath] = 0;
+                    if (!_idxOfRptDirsByTestPath.ContainsKey(test.TestPath))
+                        _idxOfRptDirsByTestPath[test.TestPath] = 0;
                 }
 
                 Exception dcomEx = null;
@@ -380,9 +394,9 @@ namespace HpToolsLauncher
                 for (int x = 0; x < _tests.Count; x++)
                 {
                     var test = _tests[x];
-                    if (indexList[test.TestPath] == 0)
+                    if (_idxOfRptDirsByTestPath[test.TestPath] == 0)
                     {
-                        indexList[test.TestPath] = 1;
+                        _idxOfRptDirsByTestPath[test.TestPath]++;
                     }
 
                     if (RunCancelled()) break;
@@ -489,7 +503,7 @@ namespace HpToolsLauncher
                         rerunList[test.TestPath]--;
                         if (Directory.Exists(Path.Combine(test.TestPath, REPORT1)))
                         {
-                            indexList[test.TestPath]++;
+                            _idxOfRptDirsByTestPath[test.TestPath]++;
                         }
                     }
 
@@ -500,7 +514,7 @@ namespace HpToolsLauncher
                     else
                     {
                         string uftReportDir = Path.Combine(test.TestPath, REPORT);
-                        string uftReportDirNew = Path.Combine(test.TestPath, string.Format("Report{0}", indexList[test.TestPath]));
+                        string uftReportDirNew = Path.Combine(test.TestPath, string.Format("Report{0}", _idxOfRptDirsByTestPath[test.TestPath]));
                         UpdateUftReportDir(uftReportDir, uftReportDirNew);
                     }
                     // Create or update the xml report. This function is called after each test execution in order to have a report available in case of job interruption
@@ -661,7 +675,7 @@ namespace HpToolsLauncher
                     _runner = new ApiTestRunner(this, _timeout - _stopwatch.Elapsed, _encoding, _printInputParams, _uftRunAsUser);
                     break;
                 case TestType.QTP:
-                    _runner = new GuiTestRunner(this, _useUFTLicense, _timeout - _stopwatch.Elapsed, _uftRunMode, _digitalLab, _printInputParams, _uftRunAsUser);
+                    _runner = new GuiTestRunner(this, _useUFTLicense, _timeout - _stopwatch.Elapsed, _uftRunMode, _digitalLab, _printInputParams, _uftExportPdf, _uftRunAsUser, _leaveUftOpenIfVisible);
                     break;
                 case TestType.LoadRunner:
                     AppDomain.CurrentDomain.AssemblyResolve += Helper.HPToolsAssemblyResolver;

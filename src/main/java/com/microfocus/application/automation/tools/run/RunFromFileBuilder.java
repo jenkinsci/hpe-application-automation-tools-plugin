@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 package com.microfocus.application.automation.tools.run;
 
 import com.hp.octane.integrations.executor.TestsToRunConverter;
@@ -39,6 +43,7 @@ import com.microfocus.application.automation.tools.EncryptionUtils;
 import com.microfocus.application.automation.tools.Messages;
 import com.microfocus.application.automation.tools.lr.model.ScriptRTSSetModel;
 import com.microfocus.application.automation.tools.lr.model.SummaryDataLogModel;
+import com.microfocus.application.automation.tools.mc.Constants;
 import com.microfocus.application.automation.tools.mc.JobConfigurationProxy;
 import com.microfocus.application.automation.tools.model.*;
 import com.microfocus.application.automation.tools.settings.MCServerSettingsGlobalConfiguration;
@@ -71,9 +76,12 @@ import java.nio.charset.StandardCharsets;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.microfocus.application.automation.tools.uft.utils.Constants.LEAVE_UFT_OPEN_IF_VISIBLE;
 
 /**
- * Describes a regular jenkins build step from UFT or LR
+ * Describes a regular jenkins build step from Functional Testing or LR
  */
 public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
 
@@ -88,6 +96,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     private SpecifyParametersModel specifyParametersModel;
     private boolean isParallelRunnerEnabled;
     private boolean areParametersEnabled;
+    private boolean isPdfEnabled;
     private SummaryDataLogModel summaryDataLogModel;
 
     private ScriptRTSSetModel scriptRTSSetModel;
@@ -105,6 +114,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     public RunFromFileBuilder(String fsTests,
                               boolean isParallelRunnerEnabled,
                               boolean areParametersEnabled,
+                              boolean isPdfEnabled,
                               SpecifyParametersModel specifyParametersModel,
                               FileSystemTestSetModel fileSystemTestSetModel,
                               SummaryDataLogModel summaryDataLogModel,
@@ -114,6 +124,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         this.specifyParametersModel = specifyParametersModel;
         this.fileSystemTestSetModel = fileSystemTestSetModel;
         this.isParallelRunnerEnabled = isParallelRunnerEnabled;
+        this.isPdfEnabled = isPdfEnabled;
         this.areParametersEnabled = areParametersEnabled;
         this.summaryDataLogModel = summaryDataLogModel;
         this.scriptRTSSetModel = scriptRTSSetModel;
@@ -172,13 +183,14 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                               String analysisTemplate, String mcServerName, AuthModel authModel, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
                               String fsOs, String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics,
                               String fsInstrumented, String fsExtraApps, String fsJobId, ProxySettings proxySettings,
-                              boolean useSSL, boolean isParallelRunnerEnabled, String fsReportPath) {
+                              boolean useSSL, boolean isPdfEnabled, boolean isParallelRunnerEnabled, String fsReportPath, CloudBrowserModel cloudBrowserModel) {
         this.isParallelRunnerEnabled = isParallelRunnerEnabled;
+        this.isPdfEnabled = isPdfEnabled;
         runFromFileModel = new RunFromFileSystemModel(fsTests, fsTimeout, fsUftRunMode, controllerPollingInterval,
                 perScenarioTimeOut, ignoreErrorStrings, displayController, analysisTemplate, mcServerName,
                 authModel, fsDeviceId, fsTargetLab, fsManufacturerAndModel, fsOs,
                 fsAutActions, fsLaunchAppName, fsDevicesMetrics, fsInstrumented, fsExtraApps, fsJobId,
-                proxySettings, useSSL, fsReportPath);
+                proxySettings, useSSL, fsReportPath, cloudBrowserModel);
     }
 
     /**
@@ -267,6 +279,25 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     private void setIsParallelRunnerEnabled(boolean isParallelRunnerEnabled) {
         this.isParallelRunnerEnabled = isParallelRunnerEnabled;
+    }
+
+    /**
+     * Gets the export pdf flag.
+     *
+     * @return the current export pdf flag state(enabled/disabled)
+     */
+    public boolean getIsPdfEnabled() {
+        return isPdfEnabled;
+    }
+
+    /**
+     * Sets the export pdf flag
+     *
+     * @param enablePDF the export pdf flag
+     */
+    @DataBoundSetter
+    private void setIsPdfEnabled(boolean enablePDF) {
+        this.isPdfEnabled = enablePDF;
     }
 
     public String getAnalysisTemplate() {
@@ -697,7 +728,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                 mergedProps.put("MobilePassword", encPassword);
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);
-                listener.fatalError("Problem in Digital Lab password encryption: " + e.getMessage() + ".");
+                listener.fatalError("Problem in Functional Testing Lab password encryption: " + e.getMessage() + ".");
                 return;
             }
         } else if (StringUtils.isNotBlank(plainTextToken)) {
@@ -706,7 +737,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
                 mergedProps.put("MobileExecToken", encToken);
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);
-                listener.fatalError("Problem in Digital Lab execution token encryption: " + e.getMessage() + ".");
+                listener.fatalError("Problem in Functional Testing Lab execution token encryption: " + e.getMessage() + ".");
                 return;
             }
         }
@@ -732,10 +763,16 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         boolean isPrintTestParams = UftToolUtils.isPrintTestParams(build, listener);
         mergedProps.put("printTestParams", isPrintTestParams ? "1" : "0");
 
+        boolean isLeaveUftOpenIfVisible = UftToolUtils.leaveUftOpenIfVisible(build, listener);
+        mergedProps.put((LEAVE_UFT_OPEN_IF_VISIBLE), isLeaveUftOpenIfVisible ? "1" : "0");
+
         UftRunAsUser uftRunAsUser;
         try {
             uftRunAsUser = UftToolUtils.getRunAsUser(build, listener);
             if (uftRunAsUser != null) {
+                if (isLeaveUftOpenIfVisible) {
+                    out.println("Warning: If LEAVE_UFT_OPEN_IF_VISIBLE is set, FT will not be relaunched under the specified user if it is already running and visible.");
+                }
                 mergedProps.put("uftRunAsUserName", uftRunAsUser.getUsername());
                 if (StringUtils.isNotBlank(uftRunAsUser.getEncodedPassword())) {
                     mergedProps.put("uftRunAsUserEncodedPassword", uftRunAsUser.getEncodedPasswordAsEncrypted(currNode));
@@ -849,6 +886,9 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
             }
             index++;
         }
+
+        String fsUftExportPdf = Boolean.toString(getIsPdfEnabled());
+        mergedProps.setProperty("fsUftExportPdf", fsUftExportPdf);
 
         mergedProps.setProperty("numOfTests", String.valueOf(index - 1));
 
@@ -1023,19 +1063,52 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * @return the job id
          */
         @JavaScriptMethod
-        public String getJobId(String mcUrl, String mcUserName, String mcPassword, String mcTenantId, String accessKey, String authType,
+        public Map<String, String> getJobId(String mcUrl, String mcUserName, String mcPassword, String accessKey, String authType,
                                boolean useProxyAuth, String proxyAddress, String proxyUserName, String proxyPassword, String previousJobId) {
-            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, accessKey, authType);
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, accessKey, authType);
             ProxySettings proxy = new ProxySettings(useProxyAuth, proxyAddress, proxyUserName, proxyPassword);
-            if (null != previousJobId && !previousJobId.isEmpty()) {
-                JSONObject jobJSON = instance.getJobById(mcUrl, authModel, proxy, previousJobId);
-                if (jobJSON != null && previousJobId.equals(jobJSON.getAsString("id"))) {
-                    return previousJobId;
+            Map<String, String> map = new HashMap<>();
+            String jobIdKey = "jobId";
+
+            try {
+                JSONObject loginJson = instance.loginToMC(mcUrl, authModel, proxy);
+                Map<String, String> initHeaders = instance.initHeaders(authModel, loginJson);
+                if (initHeaders != null) {
+                    map = initHeaders;
+                    boolean serverOnSaaS = instance.isServerOnSaaS(initHeaders, mcUrl, proxy);
+                    map.put("isSaaS", String.valueOf(serverOnSaaS));
+                    if (!StringUtils.isEmpty(accessKey)) {
+                            AtomicReference<String> tenantIdValue = new AtomicReference<>("");
+                            Arrays.stream(accessKey.split(";")).forEach(str -> {
+                                if (str.toLowerCase().contains("tenant")) {
+                                    tenantIdValue.set(str.substring(8));
+                                }
+                            });
+
+                            if (tenantIdValue.get() != null) {
+                                map.put(Constants.TENANT_ID_COOKIE, tenantIdValue.get());
+                            }
+                        }
+                    }
+
+                String jobId;
+                if (null != previousJobId && !previousJobId.isEmpty()) {
+                    JSONObject jobJSON = instance.getJobByIdWithHeaders(mcUrl, proxy, previousJobId, initHeaders);
+                    if (jobJSON != null && previousJobId.equals(jobJSON.getAsString("id"))) {
+                        jobId = previousJobId;
+                    } else {
+                        jobId = instance.createTempJobWithHeaders(mcUrl, proxy, initHeaders);
+                    }
                 } else {
-                    return instance.createTempJob(mcUrl, authModel, proxy);
+                    jobId = instance.createTempJobWithHeaders(mcUrl, proxy, initHeaders);
                 }
+
+                map.put(jobIdKey, jobId);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            return instance.createTempJob(mcUrl, authModel, proxy);
+
+            return map;
         }
 
         /**
@@ -1046,10 +1119,10 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
          * @return the json object
          */
         @JavaScriptMethod
-        public JSONObject populateAppAndDevice(String mcUrl, String mcUserName, String mcPassword, String mcTenantId, String accessKey, String authType,
+        public JSONObject populateAppAndDevice(String mcUrl, String mcUserName, String mcPassword, String accessKey, String authType,
                                                boolean useProxyAuth, String proxyAddress, String proxyUserName, String proxyPassword,
                                                String jobId) {
-            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcTenantId, accessKey, authType);
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, accessKey, authType);
             ProxySettings proxy = new ProxySettings(useProxyAuth, proxyAddress, proxyUserName, proxyPassword);
             return instance.getJobJSONData(mcUrl, authModel, proxy, jobId);
         }
@@ -1230,6 +1303,8 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         }
 
         public List<String> getEncodings() { return RunFromFileSystemModel.encodings; }
+
+        public boolean getHasConfigurePermission() { return JenkinsUtils.hasItemConfigurePermission(); }
     }
 
 }

@@ -1,35 +1,39 @@
-/*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+/**
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 using HpToolsLauncher.Properties;
 using Mercury.TD.Client.Ota.QC9;
 using System;
@@ -44,12 +48,15 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Security;
 using HpToolsLauncher.Utils;
+using Microsoft.Win32;
 
 namespace HpToolsLauncher
 {
     public class AlmTestSetsRunner : RunnerBase, IDisposable
     {
-        private readonly char[] _backSlash = new char[] { '\\' };
+        private static readonly char[] BACK_SLASH = new char[] { '\\' };
+        private static readonly char[] COMMA = new char[] { ',' };
+        private const char BackSlash = '\\';
 
         private ITDConnection13 _tdConnection;
         private ITDConnection2 _tdConnectionOld;
@@ -58,11 +65,18 @@ namespace HpToolsLauncher
         private const string XML_PARAM_NAME_VALUE = "<Parameter><Name><![CDATA[{0}]]></Name><Value><![CDATA[{1}]]></Value></Parameter>";
         private const string XML_PARAM_NAME_VALUE_TYPE = "<Parameter><Name><![CDATA[{0}]]></Name><Value><![CDATA[{1}]]></Value><Type><![CDATA[{2}]]></Type></Parameter>";
         private const string XML_PARAMS_END_TAG = "</Parameters>";
-        private readonly char[] COMMA = new char[] { ',' };
+        private const string ALM_CLIENT_PATH = "ALM_CLIENT_PATH";
         private const string API_TEST = "SERVICE-TEST";
         private const string GUI_TEST = "QUICKTEST_TEST";
         private List<TestParameter> _params;
         private const string PASSWORD = "password";
+        private const string REGSVR32_EXE = "regsvr32.exe";
+        private static readonly string[] _filesToRegister = new string[] { "OTAClient.dll", "SharedLoginModule.dll", "WebClient.dll", "wexectrl.exe" };
+        private static readonly string[] _CLSIDs = new string[] { "{C5CBD7B2-490C-45f5-8C40-B8C3D108E6D7}", "{DA0D834A-2BA1-4565-9E79-2BBC2B45AC9E}", "{52596835-C6ED-41A1-8713-E2F7CD2EBE8B}", "{F9A09099-1CF7-4965-8616-A5E69288BA8A}" };
+        private const string _DLL = ".dll";
+        private const string _EXE = ".exe";
+        private const string SOFTWARE_WOW6432_CLASSES_CLSID_0 = @"Software\WOW6432Node\Classes\CLSID\{0}";
+        private const string FILE_ISNT_REGISTERED = @"{0} is not registered in HKLM\{1}.";
 
         public ITDConnection13 TdConnection
         {
@@ -157,6 +171,8 @@ namespace HpToolsLauncher
             ClientID = qcClientId;
             ApiKey = qcApiKey;
 
+            RegisterAlmComponents(enmQcRunMode);
+
             Connected = ConnectToProject(MQcServer, MQcUser, qcPassword, MQcDomain, MQcProject, SSOEnabled, ClientID, ApiKey);
             TestSets = qcTestSets;
             _params = @params;
@@ -168,12 +184,226 @@ namespace HpToolsLauncher
             }
         }
 
+        private void RegisterAlmComponents(QcRunMode runMode)
+        {
+            if (runMode == QcRunMode.RUN_LOCAL)
+            {
+                try
+                {
+                    string workDir = GetAlmClientPath();
+                    if (!workDir.IsNullOrEmpty())
+                    {
+                        ConsoleWriter.WriteLine("Registering ALM client components...");
+                        foreach (string f in _filesToRegister)
+                        {
+                            DoRegisterDll(workDir, f);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ConsoleWriter.WriteErrLine("Failed to register ALM client components: " + ex.Message);
+                }
+
+                Console.WriteLine("Checking ALM client components...");
+                for (int x = 0; x < _CLSIDs.Length; x++)
+                {
+                    CheckIfClsidIsRegistered(_CLSIDs[x], _filesToRegister[x]);
+                }
+            }
+        }
+
+        private static bool DoRegisterDll(string workDir, string fileName)
+        {
+            string fileFullPath = Path.Combine(workDir, fileName);
+            if (!File.Exists(fileFullPath))
+            {
+                ConsoleWriter.WriteErrLine(string.Format("DLL file not found: {0}", fileFullPath));
+                return false;
+            }
+
+            try
+            {
+                string extension = Path.GetExtension(fileName).ToLower();
+                string dllOrExeFileName, args;
+                if (extension == _DLL)
+                {
+                    dllOrExeFileName = REGSVR32_EXE;
+                    args = string.Format(@"/s {0}", fileName);
+                }
+                else if (extension == _EXE)
+                {
+                    dllOrExeFileName = fileFullPath;
+                    args = "/regserver";
+                }
+                else
+                {
+                    ConsoleWriter.WriteErrLine("Unsupported file type: " + fileName);
+                    return false;
+                }
+
+                ProcessStartInfo psi = new ProcessStartInfo();
+                psi.FileName = dllOrExeFileName;
+                psi.Arguments = args;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                psi.WorkingDirectory = workDir;
+
+                using (Process process = Process.Start(psi))
+                {
+                    process.WaitForExit();
+                    return process.ExitCode == 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                ConsoleWriter.WriteErrLine(string.Format("Failed to register [{0}] : {1}", fileFullPath, ex.Message));
+                return false;
+            }
+        }
+
+        private string GetAlmClientPath()
+        {
+            string val = null;
+            try
+            {
+                val = Environment.GetEnvironmentVariable(ALM_CLIENT_PATH, EnvironmentVariableTarget.User);
+                if (string.IsNullOrEmpty(val))
+                {
+                    val = Environment.GetEnvironmentVariable(ALM_CLIENT_PATH, EnvironmentVariableTarget.Machine);
+                }
+            }
+            catch (SecurityException)
+            {
+                ConsoleWriter.WriteErrLine("Insufficient permissions to read system environment variables.");
+            }
+            return val.IsNullOrWhiteSpace() ? null : val.Trim().TrimEnd(BackSlash);
+        }
+
+        private static void CheckIfClsidIsRegistered(string clsid, string filename)
+        {
+            try
+            { 
+                string registryPath = string.Format(SOFTWARE_WOW6432_CLASSES_CLSID_0, clsid);
+                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(registryPath))
+                {
+                    bool isRegistered = key != null && key.SubKeyCount > 0;
+                    if (!isRegistered)
+                    {
+                        Console.WriteLine(FILE_ISNT_REGISTERED, filename, registryPath);
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.WriteLine("Access denied to registry: " + ex.Message);
+            }
+            catch (SecurityException ex)
+            {
+                Console.WriteLine("Security exception: " + ex.Message);
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine("IO exception occurred: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An unexpected error occurred: " + ex.Message);
+            }
+        }
+
         /// <summary>
         /// destructor - ensures dispose of connection
         /// </summary>
         ~AlmTestSetsRunner()
         {
             Dispose(false);
+        }
+
+        private class PathSorter
+        {
+            public static List<string> SortPaths(List<string> paths)
+            {
+                // Build the tree
+                Node root = new Node(String.Empty);
+                foreach (string path in paths)
+                {
+                    root.AddPath(path.Split(BackSlash));
+                }
+
+                // Sort and flatten
+                List<string> result = new List<string>();
+                root.SortAndFlatten(result, String.Empty);
+                return result;
+            }
+
+            private class Node
+            {
+                private readonly string _name; // Backing field for Name
+                private readonly Dictionary<string, Node> _children; // Backing field for Children
+                private readonly List<string> _leaves; // Backing field for Leaves
+
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public Dictionary<string, Node> Children
+                {
+                    get { return _children; }
+                }
+
+                public List<string> Leaves
+                {
+                    get { return _leaves; }
+                }
+
+                public Node(string name)
+                {
+                    this._name = name;
+                    this._children = new Dictionary<string, Node>();
+                    this._leaves = new List<string>();
+                }
+
+                public void AddPath(string[] segments, int index = 0)
+                {
+                    if (index == segments.Length - 1)
+                    {
+                        _leaves.Add(segments[index]);
+                        return;
+                    }
+
+                    string nextSegment = segments[index];
+                    if (!_children.ContainsKey(nextSegment))
+                    {
+                        _children[nextSegment] = new Node(nextSegment);
+                    }
+
+                    _children[nextSegment].AddPath(segments, index + 1);
+                }
+
+                public void SortAndFlatten(List<string> result, string currentPath)
+                {
+                    // Sort subfolders first
+                    List<Node> sortedChildren = _children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
+                    foreach (Node child in sortedChildren)
+                    {
+                        string childPath = string.IsNullOrEmpty(currentPath)
+                            ? child.Name
+                            : currentPath + BackSlash + child.Name;
+                        child.SortAndFlatten(result, childPath);
+                    }
+
+                    // Then add leaves, sorted
+                    List<string> sortedLeaves = _leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
+                    foreach (string leaf in sortedLeaves)
+                    {
+                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + BackSlash + leaf);
+                    }
+                }
+            }
         }
 
         //------------------------------- Connection to QC --------------------------
@@ -183,11 +413,12 @@ namespace HpToolsLauncher
         /// </summary>
         private void CreateTdConnection()
         {
+            Console.WriteLine("CreateTdConnection ...");
             Type type = Type.GetTypeFromProgID("TDApiOle80.TDConnection");
 
             if (type == null)
             {
-                ConsoleWriter.WriteLine(GetAlmNotInstalledError());
+                ConsoleWriter.WriteLine("Type.GetTypeFromProgID(\"TDApiOle80.TDConnection\") failed");
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
 
@@ -199,7 +430,7 @@ namespace HpToolsLauncher
             }
             catch (FileNotFoundException ex)
             {
-                ConsoleWriter.WriteLine(GetAlmNotInstalledError());
+                ConsoleWriter.WriteLine("Activator.CreateInstance(type) failed");
                 ConsoleWriter.WriteLine(ex.Message);
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
@@ -210,11 +441,12 @@ namespace HpToolsLauncher
         /// </summary>
         private void CreateTdConnectionOld()
         {
+            Console.WriteLine("CreateTdConnectionOld ...");
             Type type = Type.GetTypeFromProgID("TDApiOle80.TDConnection");
 
             if (type == null)
             {
-                ConsoleWriter.WriteLine(GetAlmNotInstalledError());
+                ConsoleWriter.WriteLine("Type.GetTypeFromProgID(\"TDApiOle80.TDConnection\") failed");
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
 
@@ -225,7 +457,7 @@ namespace HpToolsLauncher
             }
             catch (FileNotFoundException ex)
             {
-                ConsoleWriter.WriteLine(GetAlmNotInstalledError());
+                ConsoleWriter.WriteLine("Activator.CreateInstance(type) failed");
                 ConsoleWriter.WriteLine(ex.Message);
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
@@ -291,16 +523,19 @@ namespace HpToolsLauncher
                 return false;
             }
 
+            Console.WriteLine(string.Format("ConnectToProject: {0} {1} {2}", qcServerUrl, qcDomain, qcProject));
             if (TdConnection != null)
             {
                 try
                 {
                     if (!SSOEnabled)
                     {
+                        Console.WriteLine("TdConnection.InitConnectionEx ...");
                         TdConnection.InitConnectionEx(qcServerUrl);
                     }
                     else
                     {
+                        Console.WriteLine("TdConnection.InitConnectionWithApiKey ...");
                         TdConnection.InitConnectionWithApiKey(qcServerUrl, qcClientID, qcApiKey);
                     }
                 }
@@ -510,7 +745,7 @@ namespace HpToolsLauncher
             foreach (string testSetOrFolder in TestSets)
             {
                 //try getting the folder
-                ITestSetFolder tsFolder = GetFolder("Root\\" + testSetOrFolder.TrimEnd(_backSlash));
+                ITestSetFolder tsFolder = GetFolder("Root\\" + testSetOrFolder.TrimEnd(BACK_SLASH));
 
                 //if it exists it's a folder and should be traversed to find all sets
                 if (tsFolder != null)
@@ -518,6 +753,11 @@ namespace HpToolsLauncher
                     removeSetsList.Add(testSetOrFolder);
 
                     List<string> setList = GetAllTestSetsFromDirTree(tsFolder);
+                    if (setList.Count > 1)
+                    {
+                        // Sort the setList: post-order traversal (deepest first), then alphabetically
+                        setList = PathSorter.SortPaths(setList);
+                    }
                     extraSetsList.AddRange(setList);
                 }
 
@@ -543,7 +783,7 @@ namespace HpToolsLauncher
                 foreach (ITestSet childSet in testSets)
                 {
                     string tsPath = childSet.TestSetFolder.Path;
-                    tsPath = tsPath.Substring(5).Trim(_backSlash);
+                    tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
                     string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
                     retVal.Add(tsFullPath.TrimEnd());
                 }
@@ -836,7 +1076,7 @@ namespace HpToolsLauncher
                 {
                     if (childSet.ID != testSetId) continue;
                     string tsPath = childSet.TestSetFolder.Path;
-                    tsPath = tsPath.Substring(5).Trim(_backSlash);
+                    tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
                     string tsFullPath = tsPath + "\\" + childSet.Name;
                     testSuiteName = childSet.Name;
                     return tsFullPath.TrimEnd();
@@ -1038,7 +1278,7 @@ namespace HpToolsLauncher
             //run all the TestSets
             foreach (string testSetItem in TestSets)
             {
-                string testSet = testSetItem.TrimEnd(_backSlash);
+                string testSet = testSetItem.TrimEnd(BACK_SLASH);
                 string tsName = testSet;
                 int pos = testSetItem.LastIndexOf('\\');
 
@@ -1048,26 +1288,26 @@ namespace HpToolsLauncher
                 if (pos != -1)
                 {
                     // check for inline params
-                    testSetDir = testSet.Substring(0, pos).Trim(_backSlash);
+                    testSetDir = testSet.Substring(0, pos).Trim(BACK_SLASH);
                     if (testSetItem.IndexOf(" ", StringComparison.Ordinal) != -1 && testSet.Count(x => x == ' ') >= 1)
                     {
                         if (!testSet.Contains(':'))//test has no parameters attached
                         {
-                            tsName = testSet.Substring(pos, testSet.Length - pos).Trim(_backSlash);
+                            tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
                         }
                         else
                         {
                             int quotationMarkIndex = testSet.IndexOf("\"", StringComparison.Ordinal);
                             if (quotationMarkIndex > pos)
                             {
-                                tsName = testSet.Substring(pos, quotationMarkIndex - pos).Trim(_backSlash).TrimEnd(' ');
-                                inlineTestParams = testSet.Substring(quotationMarkIndex, testSet.Length - quotationMarkIndex).Trim(_backSlash);
+                                tsName = testSet.Substring(pos, quotationMarkIndex - pos).Trim(BACK_SLASH).TrimEnd(' ');
+                                inlineTestParams = testSet.Substring(quotationMarkIndex, testSet.Length - quotationMarkIndex).Trim(BACK_SLASH);
                             }
                         }
                     }
                     else
                     {
-                        tsName = testSet.Substring(pos, testSet.Length - pos).Trim(_backSlash);
+                        tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
                     }
                 }
 
@@ -1849,39 +2089,48 @@ namespace HpToolsLauncher
         /// <param name="prevTest"></param>
         private void WriteTestRunSummary(ITSTest prevTest)
         {
-            if (TdConnection != null)
+            try
             {
-                _tdConnection.KeepConnection = true;
+                if (TdConnection != null)
+                {
+                    _tdConnection.KeepConnection = true;
+                }
+                else
+                {
+                    _tdConnectionOld.KeepConnection = true;
+                }
+
+                int runId = GetTestRunId(prevTest);
+
+                string stepsString = GetTestStepsDescFromQc(prevTest);
+
+                if (string.IsNullOrWhiteSpace(stepsString) && ConsoleWriter.ActiveTestRun.TestState != TestState.Error)
+                    stepsString = GetTestRunLog(prevTest);
+
+                if (!string.IsNullOrWhiteSpace(stepsString))
+                    ConsoleWriter.WriteLine(stepsString);
+
+                string linkStr = GetTestRunLink(runId);
+
+                if (linkStr == string.Empty)
+                {
+                    Console.WriteLine(Resources.OldVersionOfQC);
+                }
+                else
+                {
+                    ConsoleWriter.WriteLine("\n" + string.Format(Resources.AlmRunnerDisplayLink,
+                        "\n" + linkStr + "\n"));
+                }
+
+                ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " + prevTest.Name +
+                                                ", " + Resources.AlmRunnerRunIdCaption + " " + runId
+                                                + "\n-------------------------------------------------------------------------------------------------------");
             }
-            else
+            catch (Exception ex)
             {
-                _tdConnectionOld.KeepConnection = true;
+                string errorMessage = string.Format("{0}: {1}", ex.GetType().FullName, ex.Message);
+                Console.WriteLine(errorMessage);
             }
-
-            int runId = GetTestRunId(prevTest);
-
-            string stepsString = GetTestStepsDescFromQc(prevTest);
-
-            if (string.IsNullOrWhiteSpace(stepsString) && ConsoleWriter.ActiveTestRun.TestState != TestState.Error)
-                stepsString = GetTestRunLog(prevTest);
-
-            if (!string.IsNullOrWhiteSpace(stepsString))
-                ConsoleWriter.WriteLine(stepsString);
-
-            string linkStr = GetTestRunLink(runId);
-
-            if (linkStr == string.Empty)
-            {
-                Console.WriteLine(Resources.OldVersionOfQC);
-            }
-            else
-            {
-                ConsoleWriter.WriteLine("\n" + string.Format(Resources.AlmRunnerDisplayLink, "\n" + linkStr + "\n"));
-            }
-
-            ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " + prevTest.Name +
-                                            ", " + Resources.AlmRunnerRunIdCaption + " " + runId
-                                            + "\n-------------------------------------------------------------------------------------------------------");
         }
 
         /// <summary>

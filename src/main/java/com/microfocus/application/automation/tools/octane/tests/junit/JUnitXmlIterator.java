@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 package com.microfocus.application.automation.tools.octane.tests.junit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,18 +48,21 @@ import com.hp.octane.integrations.uft.ufttestresults.schema.UftResultIterationDa
 import com.hp.octane.integrations.uft.ufttestresults.schema.UftResultStepData;
 import com.hp.octane.integrations.uft.ufttestresults.schema.UftResultStepParameter;
 import com.hp.octane.integrations.utils.SdkConstants;
-import com.microfocus.application.automation.tools.JenkinsUtils;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.octane.tests.HPRunnerType;
+import com.microfocus.application.automation.tools.octane.tests.detection.MFToolsDetectionExtension;
 import com.microfocus.application.automation.tools.octane.tests.junit.codeless.CodelessResult;
 import com.microfocus.application.automation.tools.octane.tests.junit.codeless.CodelessResultParameter;
 import com.microfocus.application.automation.tools.octane.tests.junit.codeless.CodelessResultUnit;
 import com.microfocus.application.automation.tools.octane.tests.xml.AbstractXmlIterator;
 import hudson.FilePath;
+import hudson.tasks.Builder;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileSystem;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 
 import javax.xml.stream.XMLStreamException;
@@ -66,6 +73,8 @@ import javax.xml.stream.events.XMLEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -119,13 +128,15 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
     private String stepName;
     private ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private Map<String, CodelessResult> testNameToCodelessResultMap = new HashMap<>();
-    private String nodeName;
+    private Set<String> nodeNames;
+    private List<Builder> builders;
 
     private final int ERROR_MESSAGE_MAX_SIZE = System.getProperty("octane.sdk.tests.error_message_max_size") != null ? Integer.parseInt(System.getProperty("octane.sdk.tests.error_message_max_size")) : 512*512;
     private final int ERROR_DETAILS_MAX_SIZE = System.getProperty("octane.sdk.tests.error_details_max_size") != null ? Integer.parseInt(System.getProperty("octane.sdk.tests.error_details_max_size")) : 512*512;
 
 
-    public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String sharedCheckOutDirectory, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext, Pattern testParserRegEx, boolean octaneSupportsSteps,String nodeName) throws XMLStreamException {
+    public JUnitXmlIterator(InputStream read, List<ModuleDetection> moduleDetection, FilePath workspace, String sharedCheckOutDirectory, String jobName, String buildId, long buildStarted, boolean stripPackageAndClass, HPRunnerType hpRunnerType, String jenkinsRootUrl, Object additionalContext, Pattern testParserRegEx, boolean octaneSupportsSteps,Set<String> nodeNames,
+            List<Builder> builders) throws XMLStreamException {
 		super(read);
 		this.stripPackageAndClass = stripPackageAndClass;
 		this.moduleDetection = moduleDetection;
@@ -139,7 +150,8 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 		this.additionalContext = additionalContext;
 		this.testParserRegEx = testParserRegEx;
 		this.octaneSupportsSteps = octaneSupportsSteps;
-		this.nodeName = nodeName;
+		this.nodeNames = nodeNames;
+        this.builders = builders;
 	}
 
 	private static long parseTime(String timeString) {
@@ -234,7 +246,10 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 
                     // if workspace is prefix of the method name, cut it off
                     // currently this handling is needed for UFT tests
-                    int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName);
+                    logger.log(Level.DEBUG, "testName: " + testName);
+                    logger.log(Level.DEBUG, "hpRunnerType: " + hpRunnerType);
+                    int uftTextIndexStart = getUftTestIndexStart(workspace, sharedCheckOutDirectory, testName, builders);
+                    logger.log(Level.DEBUG, "uftTextIndexStart: " + uftTextIndexStart);
                     if (uftTextIndexStart != -1) {
                         String path = testName.substring(uftTextIndexStart).replace(SdkConstants.FileSystem.LINUX_PATH_SPLITTER, SdkConstants.FileSystem.WINDOWS_PATH_SPLITTER);;
                         boolean isMBT = path.startsWith(MfMBTConverter.MBT_PARENT_SUB_DIR);
@@ -261,6 +276,10 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                     }
 
                     String cleanedTestName = cleanTestName(testName);
+                    String nodeName = "";
+                    if(!nodeNames.isEmpty()){
+                        nodeName = nodeNames.stream().findFirst().get();
+                    }
                     boolean testReportCreated = true;
                     if (additionalContext != null && additionalContext instanceof List) {
                         //test folders are appear in the following format GUITest1[1], while [1] number of test. It possible that tests with the same name executed in the same job
@@ -268,19 +287,31 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
                         //We assume that test folders are sorted so in this section, once we found the test folder, we remove it from collection , in order to find the second instance in next iteration
                         List<String> createdTests = (List<String>) additionalContext;
                         String searchFor = cleanedTestName + "[";
-                        Optional<String> optional = createdTests.stream().filter(str -> str.startsWith(searchFor)).findFirst();
+                        Optional<String> optional = createdTests.stream().filter(str -> str.contains(searchFor)).findFirst();
                         if (optional.isPresent()) {
-                            cleanedTestName = optional.get();
-                            createdTests.remove(cleanedTestName);
+                            String nodeTestString = optional.get();
+                            if(nodeTestString.contains("/")){
+                                String node = nodeTestString.split("/")[0];
+                                if (nodeNames.contains(node)) {
+                                    nodeName = node;
+                                }
+
+                                cleanedTestName = nodeTestString.split("/")[1];
+                                createdTests.remove(nodeTestString);
+                            }
+
                         }
                         testReportCreated = optional.isPresent();
                     }
 
                     if (testReportCreated) {
                         final String basePath = ((List<String>) additionalContext).get(0);
-                        String nodeNameSubFolder = StringUtils.isNotEmpty(this.nodeName) ? nodeName +"/" : "";
+                        String nodeNameSubFolder = StringUtils.isNotEmpty(nodeName) ? nodeName +"/" : "";
                         uftResultFilePath = Paths.get(basePath, "archive", "UFTReport", nodeNameSubFolder, cleanedTestName, "/Result/run_results.xml").toFile().getCanonicalPath();
-                        externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/artifact/UFTReport/" + nodeNameSubFolder + cleanedTestName + "/Result/run_results.html";
+                        String urlEncodedTestName = URLEncoder.encode(cleanedTestName, StandardCharsets.UTF_8)
+                                .replaceAll("\\+", "%20");
+                        externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/artifact/UFTReport/" + nodeNameSubFolder
+                                      + urlEncodedTestName + "/Result/run_results.html";
                     } else {
                         //if UFT didn't created test results page - add reference to Jenkins test results page
                         externalURL = jenkinsRootUrl + "job/" + jobName + "/" + buildId + "/testReport/" + myPackageName + "/" + jenkinsTestClassFormat(myClassName) + "/" + jenkinsTestNameFormat(myTestName) + "/";
@@ -482,6 +513,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
         externalURL = "";
         description = "";
         uftResultFilePath = "";
+        externalRunId = "";
         moduleName = moduleNameFromFile;
         uftResultData = null;
     }
@@ -656,7 +688,7 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 		return result;
 	}
 
-	private int getUftTestIndexStart(FilePath workspace, String sharedCheckOutDirectory, String testName) {
+	private int getUftTestIndexStart(FilePath workspace, String sharedCheckOutDirectory, String testName, List<Builder> builders) {
 		int returnIndex = -1;
 		try {
 			if (sharedCheckOutDirectory == null) {
@@ -668,11 +700,21 @@ public class JUnitXmlIterator extends AbstractXmlIterator<JUnitTestResult> {
 			} else {
 				pathToTest = Paths.get(sharedCheckOutDirectory).isAbsolute() ?
 						sharedCheckOutDirectory :
-						Paths.get(FilenameUtils.separatorsToSystem(workspace.getRemote()),
-								FilenameUtils.separatorsToSystem(sharedCheckOutDirectory))
-							 .toFile().getCanonicalPath();
+                             Paths.get(FilenameUtils.separatorsToSystem(workspace.getRemote()))
+                                     .resolve(FilenameUtils.separatorsToSystem(sharedCheckOutDirectory))
+                                     .normalize().toString();
 			}
 
+            if (FileSystem.getCurrent().equals(FileSystem.LINUX) || FileSystem.getCurrent().equals(FileSystem.MAC_OSX)) {
+                if (builders != null) {
+                    List<String> buildersNames =
+                            builders.stream().map(builder -> builder.getClass().getSimpleName()).collect(Collectors.toList());
+                    if (!buildersNames.isEmpty() && buildersNames.contains(MFToolsDetectionExtension.RUN_FROM_FILE_BUILDER)) {
+                        pathToTest = FilenameUtils.separatorsToWindows(pathToTest);
+                    }
+                }
+            }
+            logger.log(Level.DEBUG, "pathToTest " + pathToTest);
 
 			if (testName.toLowerCase().startsWith(pathToTest.toLowerCase())) {
 				returnIndex = pathToTest.length() + 1;

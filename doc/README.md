@@ -1,7 +1,7 @@
 # OpenText Application Automation Tools
 
 
-This [OpenText Application Automation Tools plugin](https://plugins.jenkins.io/hp-application-automation-tools-plugin) integrates OpenText products with Jenkins. Using the plugin, you can create and use virtual services, run LoadRunner Enterprise or LoadRunner Professional tests, run UFT functional tests, run tests in your lab, and run tests on mobile devices. This plugin also lets you upload test results to ALM. In addition, ALM Octane users can track and trigger Jenkins pipelines from within the user interface.
+This [OpenText Application Automation Tools plugin](https://plugins.jenkins.io/hp-application-automation-tools-plugin) integrates OpenText™ products with Jenkins. Using the plugin, you can create and use virtual services, run LoadRunner Enterprise or LoadRunner Professional tests, run Functional Testing tests, run tests in your lab, and run tests on mobile devices. This plugin also lets you upload test results to Application Quality Management. In addition, Software Delivery Management users can track and trigger Jenkins pipelines from within the user interface.
 
 ### Jenkins versions
 
@@ -19,8 +19,6 @@ A list of known bugs is available [here](https://issues.jenkins-ci.org/issues/?j
 [New Features and Enhancements](#new-features-and-enhancements)
 
 [Release notes](#release-notes)
-
-[Changelog](#changelog)
 
 [Supported Integrations](#supported-integrations)
 
@@ -53,53 +51,36 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version 23.3.0 introduced the following enhancements and fixes:
+Version CE 24.4 introduced the following enhancements and fixes:
 
 **ALM Octane**
-- Bug fixes.
+- Support SCM Data injection from GitLab
+- Bug fixes
 
-**UFT One**
- - Company name rebranded to OpenText.
- - UFT Mobile renamed to Digital Lab.
- - Enhancement of File System jobs to work correctly inside Docker.
- - Bug fixes and optimizations.
-  
-For information about enhancements introduced in previous versions, see [What's new in earlier versions](WhatsNewEarlier.md). 
+**OpenText Enterprise Performance(LoadRunner Enterprise)**
+- LoadRunner Enterprise has been rebranded to OpenText Enterprise Performance
 
-## Changelog
-
-The [Changelog ](https://wiki.jenkins.io/display/JENKINS/Changelog)page lists the bug fix changes in the versions of the plugin.
-
-
-- [Version 5.6.2](https://wiki.jenkins.io/display/JENKINS/Changelog#Version5.6.2(Dec19,2018))
-
-- [Version 5.6.1](https://wiki.jenkins.io/display/JENKINS/Changelog#Version5.6.1(Dec18,2018))
-
-- [Version 5.5.2](https://wiki.jenkins.io/display/JENKINS/Changelog#Version5.5.2Beta(Oct2,2018))
-
-- [Version 5.5.1](https://wiki.jenkins.io/display/JENKINS/Changelog#Version5.5.1(Sept12,2018))
-
+For information about enhancements introduced in previous versions, see [What's new in earlier versions](https://github.com/jenkinsci/hpe-application-automation-tools-plugin/blob/latest/doc/WhatsNewEarlier.md). 
 
 
 ## Supported Integrations
 
 
-
 This plugin supports the following OpenText product versions:
 
-| OpenText tool                                    | Supported versions                                           | Find more information...                                     |
-| :-------------------------------------------------- | :----------------------------------------------------------- | ------------------------------------------------------------ |
-| ALM (Application Lifecycle Management)              | 12.xx, 15.x, 16.x, 17.x                                                  | [ALM Integration  page](https://admhelp.microfocus.com/alm/en/latest/online_help/Content/jenkins-integration.htm)                  |
-| ALM Lab Management                                  | 12.xx, 15.x, 16.x, 17.x                                                 | [ALM Integration page](https://admhelp.microfocus.com/alm/en/latest/online_help/Content/jenkins-integration.htm#mt-item-3) |
-| ALM Octane                                          | 12.53.20 and higher (12.55.4 or later required for direct UFT One integration and for LoadRunner Enterprise integration using pipelines) | [ALM Octane Help Center](https://admhelp.microfocus.com/octane/en/latest/Online/Content/AdminGuide/jenkins-integration.htm) |
-| LoadRunner Enterprise                               | 12.xx (12.53 or higher required for trend reports), 2020 and higher     | [LoadRunner Enterprise Help Center](https://admhelp.microfocus.com/lre/en/latest/online_help/Content/PC/Continuous-Integration-Jenkins.htm) |
-| LoadRunner Professional                             | 12.xx, 2020 and higher                                       | [LoadRunner Professional Integration page](https://admhelp.microfocus.com/lr/en/latest/help/WebHelp/Content/Controller/c_jenkins.htm)             |
-| Model-based Testing                                 | 16.0.300 and higher  | [Model-Based Testing Help Center](https://admhelp.microfocus.com/mbt) |
-| Service Virtualization                              | 3.80 and higher                                              | [Service Virtualization Help Center](https://admhelp.microfocus.com/sv/en/latest/Help/Content/UG/c_continuous_integration.htm) |
-| UFT Developer                                       | 14.03 and higher                                             | [UFT Developer Help Center](https://admhelp.microfocus.com/uftdev/en/latest/HelpCenter/Content/HowTo/CI_Tools.htm)<br />Blog: [Integrate LeanFT with Jenkins in just a few simple steps](https://community.microfocus.com/adtd/b/sws-alm/posts/integrating-leanft-with-jenkins-in-just-a-few-simple-steps) |
-| Digital Lab (UFT Mobile)                                          | 2.0 and higher                                               | [Digital Lab Integration page](https://admhelp.microfocus.com/digitallab/en/latest/Content/CI_jenkins.htm) |
-| UFT One                                             | 12.xx and 14.03 and higher                                   | [UFT One Help Center](https://admhelp.microfocus.com/uft/en/latest/UFT_Help/Content/User_Guide/Jenkins.htm) |
-| ValueEdge                                             |                               | [ValueEdge Help Center](https://admhelp.microfocus.com/valuedge) |
+| OpenText™ tool                              | Supported versions                                                                                                                       | Find more information...                                                                                                                                                                                                                                                                                   |
+|:--------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Application Quality Management (ALM)        | 12.xx, 15.x, 16.x, 17.x, 24.x                                                                                                            | [ALM Integration  page](https://admhelp.microfocus.com/alm/en/latest/online_help/Content/jenkins-integration.htm)                                                                                                                                                                                          |
+| ALM Lab Management                          | 12.xx, 15.x, 16.x, 17.x, 24.x                                                                                                            | [ALM Integration page](https://admhelp.microfocus.com/alm/en/latest/online_help/Content/jenkins-integration.htm#mt-item-3)                                                                                                                                                                                 |
+| Software Delivery Management                | 12.53.20 and higher (12.55.4 or later required for direct UFT One integration and for LoadRunner Enterprise integration using pipelines) | [ALM Octane Help Center](https://admhelp.microfocus.com/octane/en/latest/Online/Content/AdminGuide/jenkins-integration.htm)                                                                                                                                                                                |
+| OpenText Enterprise Performance Engineering | 12.xx (12.53 or higher required for trend reports), 2020 and higher                                                                      | [LoadRunner Enterprise Help Center](https://admhelp.microfocus.com/lre/en/latest/online_help/Content/PC/Continuous-Integration-Jenkins.htm)                                                                                                                                                                |
+| LoadRunner Professional                     | 12.xx, 2020 and higher                                                                                                                   | [LoadRunner Professional Integration page](https://admhelp.microfocus.com/lr/en/latest/help/WebHelp/Content/Controller/c_jenkins.htm)                                                                                                                                                                      |
+| Model-based Testing                         | 16.0.300 and higher                                                                                                                      | [Model-Based Testing Help Center](https://admhelp.microfocus.com/mbt)                                                                                                                                                                                                                                      |
+| Service Virtualization                      | 3.80 and higher                                                                                                                          | [Service Virtualization Help Center](https://admhelp.microfocus.com/sv/en/latest/Help/Content/UG/c_continuous_integration.htm)                                                                                                                                                                             |
+| Functional Testing for Developers           | 14.03 and higher                                                                                                                         | [UFT Developer Help Center](https://admhelp.microfocus.com/uftdev/en/latest/HelpCenter/Content/HowTo/CI_Tools.htm)<br />Blog: [Integrate LeanFT with Jenkins in just a few simple steps](https://community.microfocus.com/adtd/b/sws-alm/posts/integrating-leanft-with-jenkins-in-just-a-few-simple-steps) |
+| Functional Testing Lab (Digital Lab)        | 2.0 and higher                                                                                                                           | [Digital Lab Integration page](https://admhelp.microfocus.com/digitallab/en/latest/Content/CI_jenkins.htm)                                                                                                                                                                                                 |
+| Functional Testing                          | 12.xx and 14.03 and higher                                                                                                               | [UFT One Help Center](https://admhelp.microfocus.com/uft/en/latest/UFT_Help/Content/User_Guide/Jenkins.htm)                                                                                                                                                                                                |
+| ValueEdge                                   |                                                                                                                                          | [ValueEdge Help Center](https://admhelp.microfocus.com/valuedge)                                                                                                                                                                                                                                           |
 
 ## Prerequisites
 
@@ -114,27 +95,27 @@ This plugin supports the following OpenText product versions:
    b. Navigate to the **Manage Jenkins > Manage Plugins > Advanced** tab. 
    
    c. In the **Upload Plugin** section, upload the .hpi file.
-4. **For working with ALM and Quality Center,** make sure the ALM/Quality Center client  is installed on the machine that will run the tests. To check if the client installed, follow the instructions on:   http://<your\_server>:8080/qcbin/TDConnectivity\_index.html
+4. **For working with Application Quality Management,** make sure the ALM/Quality Center client  is installed on the machine that will run the tests. To check if the client installed, follow the instructions on:   http://<your\_server>:8080/qcbin/TDConnectivity\_index.html
 
-5. **For running UFT One tests from ALM**  install the ALMClient in common registration mode by accessing the following link from an Internet Explorer browser on the UFT One  machine: http://<your\_server>:8080/qcbin/start\_a.jsp?Common=true
+5. **For running FT tests from OpenText Application Quality Management**  install the ALMClient in common registration mode by accessing the following link from an Internet Explorer browser on the OpenText™ Functional Testing  machine: http://<your\_server>:8080/qcbin/start\_a.jsp?Common=true
 
-6. **For running file system scenarios with LoadRunner Professional or UFT One**  set up a node in Jenkins. For details, see [Create an execution node](#create-an-execution-node).
+6. **For running file system scenarios with LoadRunner Professional or OpenText™ Functional Testing**  set up a node in Jenkins. For details, see [Create an execution node](#create-an-execution-node).
 
-7. **For building and tracking pipelines on ALM Octane:**
+7. **For building and tracking pipelines on Software Delivery Management:**
 
    *  JQuery Plugin 1.7.2-1 or later (Required to enable the integration)
-   *  A plugin that enables publishing test results. For example, JUnit Plugin 1.10 or later, NUnit plugin, and so on (Required to enable ALM Octane to collect your automated test results).
+   *  A plugin that enables publishing test results. For example, JUnit Plugin 1.10 or later, NUnit plugin, and so on (Required to enable Software Delivery Management/ValueEdge  to collect your automated test results).
 
-8. **For ALM Octane integration with UFT One**, make sure you have version 2.4.4 or higher of the Git plugin.
+8. **For OpenText Software Delivery Management/ValueEdge integration with OpenText Functional Testing**, make sure you have version 2.4.4 or higher of the Git plugin.
 
 # User Guide
 
-You can run client side-or server-side (Default or Functional) test sets and build verification suites from Application Lifecycle Management (ALM) or functional tests from the file system. You can create and configure ALM Octane pipelines from the ALM Octane user interface, or on Jenkins.
+You can run client side-or server-side (Default or Functional) test sets and build verification suites from Application Quality Management (ALM) or functional tests from the file system. You can create and configure Software Delivery Management pipelines from the Software Delivery Management user interface, or on Jenkins.
 
 
 ## Create an execution node
 
-1. Creating an execution node is only required when running scenarios from LoadRunner Professional or UFT One, that are stored on the file system. You only need to set an execution node if the Jenkins master machine is  **not**  the executing machine. If you are running LoadRunner Professional or UFT One on the master machine, you do not need to set and select a node.
+1. Creating an execution node is only required when running scenarios from LoadRunner Professional or OpenText Functional Testing, that are stored on the file system. You only need to set an execution node if the Jenkins master machine is  **not**  the executing machine. If you are running LoadRunner Professional or OpenText Functional Testing on the master machine, you do not need to set and select a node.
 
 2. Go to the Jenkins Server home page.
 
@@ -213,22 +194,22 @@ To set up a pipeline test job for your OpenText testing tool:
 
 The available Pipeline job types are: loadRunnerTest, uftScenarioLoad, runFromFSBuilder, runFromAlmBuilder, sseBuild, sseBuildAndPublish, pcBuild, svChangeModeStep, svDeployStep, svExportStep, svUndeployStep, and publishMFTestResults
 
-| Product                | Pipeline step name           | Description                                                        |
-| ---------------------- | ---------------------------- | ------------------------------------------------------------------ |
-| LoadRunner Professional| loadRunnerTest               | Run LoadRunner Professional tests from a file system scenario file.|
-| UFT One                | uftScenarioLoad              | Run a UFT scenario. **Deprecated**, but backwards compatibility exists.|
-| UFT One                | runFromFSBuilder             | Execute UFT One Tests from the file system.                        |
-| ALM                    | runFromAlmBuilder            | Execute functional tests from ALM.                                 |
-| ALM Lab Management     | sseBuild                     | Execute tests using ALM Lab Management.                            |
-| ALM Lab Management     | sseBuildAndPublish           | Execute tests using ALM Lab Management and publish test results.   |
-| LoadRunner Enterprise  | pcBuild                      | Execute tests using LoadRunner Enterprise.                         |
-| Service Virtualization | svChangeModeStep             | Change the mode of a virtual service.                              |
-| Service Virtualization | svDeployStep                 | Deploy a virtual service.                                          |
-| Service Virtualization | svExportStep                 | Export a virtual service.                                          |
-| Service Virtualization | svUndeployStep               | Undeploy a virtual service.                                        |
-| UFT One, ALM, ALM LM   | publishMicroFocusTestResults | Publish Test Results for FS, ALM and ALM Lab Management executions. |                                   |
+| Product                                                                                 | Pipeline step name           | Description                                                             |
+|-----------------------------------------------------------------------------------------| ---------------------------- |-------------------------------------------------------------------------|
+| LoadRunner Professional                                                                 | loadRunnerTest               | Run LoadRunner Professional tests from a file system scenario file.     |
+| UFT One                                                                                 | uftScenarioLoad              | Run a UFT scenario. **Deprecated**, but backwards compatibility exists. |
+| OpenText™ Functional Testing                                                            | runFromFSBuilder             | Execute OpenText Functional Testing Tests from the file system.         |
+| Application Quality Management                                                          | runFromAlmBuilder            | Execute functional tests from ALM.                                      |
+| ALM Lab Management                                                                      | sseBuild                     | Execute tests using ALM Lab Management.                                 |
+| ALM Lab Management                                                                      | sseBuildAndPublish           | Execute tests using ALM Lab Management and publish test results.        |
+| OpenText Enterprise Performance EngineeringOpenText Enterprise Performance Engineering. |
+| Service Virtualization                                                                  | svChangeModeStep             | Change the mode of a virtual service.                                   |
+| Service Virtualization                                                                  | svDeployStep                 | Deploy a virtual service.                                               |
+| Service Virtualization                                                                  | svExportStep                 | Export a virtual service.                                               |
+| Service Virtualization                                                                  | svUndeployStep               | Undeploy a virtual service.                                             |
+| OpenText Functional Testing, ALM, ALM LM                                                | publishMicroFocusTestResults | Publish Test Results for FS, ALM and ALM Lab Management executions.     |                                   |
 
-Pipeline jobs are not supported for Digital Lab (formerly UFT Mobile) uploads, ALM test uploader, and ALM AUT job types.
+Pipeline jobs are not supported for Functional Testing Lab (Digital Lab) uploads, ALM test uploader, and ALM AUT job types.
 
 
 
@@ -313,17 +294,17 @@ On the Jenkins slave machine, make sure the the Jenkins Slave service is not log
 
 ### Content Security Policy Header
 
-Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Security-Policy**  header. This prevents some of the links that appear in the integration to become inoperable. For example, the links to the LoadRunner Performance and UFT One HTML reports will not work.
+Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Security-Policy**  header. This prevents some of the links that appear in the integration to become inoperable. For example, the links to the LoadRunner Performance and Functional Testing HTML reports will not work.
 
-For workarounds to enable viewing UFT One HTML Reports, see the [UFT One Help Center](https://admhelp.microfocus.com/uft/en/latest/UFT_Help/Content/User_Guide/Jenkins.htm#mt-item-5).
+For workarounds to enable viewing Functional Testing HTML Reports, see the [UFT One Help Center](https://admhelp.microfocus.com/uft/en/latest/UFT_Help/Content/User_Guide/Jenkins.htm#mt-item-5).
 
 
 
 ### Integration Issues
 
-- If your job includes UFT One, QTP, or Service Test tests running on a remote ALM/QC machine (run mode = Run Remotely), you should manually stop the test execution.
+- If your job includes Functional Testing, QTP, or Service Test tests running on a remote OpenText Application Quality Management machine (run mode = Run Remotely), you should manually stop the test execution.
 
-- When UFT is installed on the slave machine (node), the LoadRunner test job will fail in the  **Analyze Result**  stage.  **Workaround:**  Add the path of the LoadRunner  **bin**  folder ( **%LR\_PATH%/bin** ) to the  **PATH**  environment variable.
+- When OpenText Functional Testing is installed on the slave machine (node), the LoadRunner test job will fail in the  **Analyze Result**  stage.  **Workaround:**  Add the path of the LoadRunner  **bin**  folder ( **%LR\_PATH%/bin** ) to the  **PATH**  environment variable.
 
 
 
@@ -351,7 +332,7 @@ Follow these workarounds to enable the viewing LoadRunner Performance reports:
 The following limitations apply to the inline parameter specification feature of the **Test Sets** input field:
 
    - The double quote and space character sequence (` "`) is used to separate the path and parameter list specification.  As a result, if you specify the test set path with double quotes, the line won't parse correctly. **Tip:** never specify paths with double quotes when using inline parameters. **Note:** If the path contains whitespaces, the path will be parsed correctly without the quotes.
-   - The parameter list's delimiter is a comma. Therefore, neither the path, nor the parameter names or values should contain commas. **Tip:** if you have a complex parameter value (e.g. `"param1"="value1,value2"`), specify separate parameters for this within the respective UFT One test.
+   - The parameter list's delimiter is a comma. Therefore, neither the path, nor the parameter names or values should contain commas. **Tip:** if you have a complex parameter value (e.g. `"param1"="value1,value2"`), specify separate parameters for this within the respective Functional Testing test.
    - The parameter-value key-value pair is separated by a colon. Therefore, neither the parameter name, nor the value should contain a colon. **Note:** Currently, due to this limitation, **links** cannot be used in the inline parameter definitions.
 
 **Note**: If any of the above limitations appears within your inline parameter definition, the line will not be parsed correctly, resulting in unexpected behavior in the job execution.

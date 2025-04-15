@@ -1,11 +1,16 @@
-﻿/*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
+/**
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
  * __________________________________________________________________
  * MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
  * The only warranties for products and services of Open Text and
  * its affiliates and licensors ("Open Text") are as may be set forth
@@ -29,7 +34,6 @@
  * limitations under the License.
  * ___________________________________________________________________
  */
-
 using System;
 using System.IO;
 using System.Security;
@@ -40,22 +44,21 @@ namespace HpToolsLauncher.Utils
 {
     public static class Encrypter
     {
-        private const string KeyPath = @"secrets/.hptoolslaunchersecret.key";
-        private static readonly string SecretKey;
-        private static readonly RSACryptoServiceProvider Rsa;
+        private const string KEY_PATH = @"secrets/.hptoolslaunchersecret.key";
+        private static readonly RSACryptoServiceProvider _rsa;
 
         static Encrypter()
         {
-#if DEBUG
-            return;
-#else
-            SecretKey = Environment.GetEnvironmentVariable("hptoolslauncher.key");
-            var keyPath = Environment.GetEnvironmentVariable("hptoolslauncher.rootpath");
+            string secretKey = Environment.GetEnvironmentVariable("hptoolslauncher.key");
+            string keyPath = Environment.GetEnvironmentVariable("hptoolslauncher.rootpath");
 
-            if (string.IsNullOrEmpty(SecretKey) || string.IsNullOrEmpty(keyPath))
-                throw new ArgumentException("Invalid environment, no secretkey or root path was set, aborting.");
+            if (string.IsNullOrEmpty(secretKey) || string.IsNullOrEmpty(keyPath))
+            {
+                ConsoleWriter.WriteErrLine("No secretkey or root path was set. Any encrypt / decrypt action will be bypassed.");
+                return;
+            }
 
-            keyPath += Path.DirectorySeparatorChar + KeyPath;
+            keyPath += Path.DirectorySeparatorChar + KEY_PATH;
 
             string cnt;
             try
@@ -79,11 +82,11 @@ namespace HpToolsLauncher.Utils
                 throw new ArgumentException("Check the permissions for the secret key in the secrets directory or the existence of the file.");
             }
 
-            var pkXml = DecryptWithPwd(cnt);
+            var pkXml = DecryptWithPwd(cnt, secretKey);
             try
             {
-                Rsa = new RSACryptoServiceProvider();
-                Rsa.FromXmlString(pkXml); // init
+                _rsa = new RSACryptoServiceProvider();
+                _rsa.FromXmlString(pkXml); // init
             }
             catch (CryptographicException)
             {
@@ -95,7 +98,6 @@ namespace HpToolsLauncher.Utils
                 ConsoleWriter.WriteErrLine("No valid private key were provided for cryptography.");
                 throw new ArgumentException("Try forcing a new key pair generation.");
             }
-#endif
         }
 
         /// <summary>
@@ -105,23 +107,22 @@ namespace HpToolsLauncher.Utils
         /// <returns></returns>
         public static string Decrypt(string textToDecrypt)
         {
-#if DEBUG
-            return textToDecrypt;
-#else
+            if (_rsa == null)
+                return textToDecrypt;
+
             var encryptedBytes = Convert.FromBase64String(textToDecrypt);
             byte[] text;
             try
             {
-                text = Rsa.Decrypt(encryptedBytes, false);
+                text = _rsa.Decrypt(encryptedBytes, false);
             }
             catch (CryptographicException)
-            {  
+            {
                 ConsoleWriter.WriteErrLine("Failed to decrypt data using private key, try forcing a new public-private key pair.");
                 throw new ArgumentException("Decryption failed using private key.");
             }
 
             return Encoding.UTF8.GetString(text);
-#endif
         }
 
         /// <summary>
@@ -129,11 +130,8 @@ namespace HpToolsLauncher.Utils
         /// </summary>
         /// <param name="textToDecrypt"></param>
         /// <returns></returns>
-        private static string DecryptWithPwd(string textToDecrypt)
+        private static string DecryptWithPwd(string textToDecrypt, string secretKey)
         {
-#if DEBUG
-            return textToDecrypt;
-#else
             var rijndaelCipher = new RijndaelManaged
             {
                 BlockSize = 0x80,
@@ -143,7 +141,7 @@ namespace HpToolsLauncher.Utils
             };
 
             var encryptedData = Convert.FromBase64String(textToDecrypt);
-            var pwdBytes = Encoding.UTF8.GetBytes(SecretKey);
+            var pwdBytes = Encoding.UTF8.GetBytes(secretKey);
 
             var ivBytes = new byte[0x10];
             Array.Copy(encryptedData, ivBytes, 16);
@@ -166,7 +164,6 @@ namespace HpToolsLauncher.Utils
             }
 
             return Encoding.UTF8.GetString(plainText);
-#endif
         }
     }
 }

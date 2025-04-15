@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 package com.microfocus.application.automation.tools.mc;
 
 import com.microfocus.adm.performancecenter.plugins.common.rest.RESTConstants;
@@ -82,11 +86,7 @@ public class JobConfigurationProxy {
             HttpResponse response;
             AuthType authType = authModel.getAuthType();
             if (authType == AuthType.BASE) {
-                String tempUsername = authModel.getMcUserName();
-                if (!StringUtils.isNullOrEmpty(authModel.getMcTenantId())) {
-                    tempUsername += "#" + authModel.getMcTenantId();
-                }
-                sendObject.put("name", tempUsername);
+                sendObject.put("name", authModel.getMcUserName());
                 sendObject.put("password", authModel.getMcPassword());
                 sendObject.put("accountName", "default");
                 response = doPost(proxy, mcUrl + Constants.LOGIN_URL, headers, sendObject);
@@ -281,12 +281,40 @@ public class JobConfigurationProxy {
         return null;
     }
 
-    //get all workspaces from MC
-    public JSONArray getAllMcWorkspaces(String mcUrl, AuthModel authModel, ProxySettings proxy) throws IOException {
+    //checking admin setting if prevent uploading to shared assert
+    public String isAllowUploadToSharedAssert(Map<String, String> headers, String mcUrl, ProxySettings proxy) throws IOException {
+        if (null == proxy) {
+            proxy = new ProxySettings();
+        }
+        String getAdminSettingUrl = mcUrl + Constants.GET_ADMIN_SETTINGS_URL;
+        if(!StringUtils.isNullOrEmpty(getAdminSettingUrl)){
+            getAdminSettingUrl += (String.format("/%s",Constants.USER_PERMISSION_CATEGORY));
+        }
+        HttpUtils.ProxyInfo proxyInfo = HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword());
+        HttpResponse response = HttpUtils.doGet(proxyInfo, getAdminSettingUrl, headers, null);
+        if (response != null && response.getJsonArray() != null) {
+            for (int i = 0; i < response.getJsonArray().size(); i++) {
+                JSONObject setting = (JSONObject) response.getJsonArray().get(i);
+                if(setting.getAsString("name").equals(Constants.UPLOAD_APP_TO_SHARED_ASSETS)){
+                    return setting.getAsString("value");
+                }
+            }
+        }
+        return null;
+    }
+
+    //get all valid workspaces from app upload
+    public JSONArray getAllValidWorkspaces(String mcUrl, AuthModel authModel, ProxySettings proxy) throws IOException {
         try {
             Map<String, String> headers = login(mcUrl, authModel, proxy);
             HttpUtils.ProxyInfo proxyInfo = proxy == null ? null : HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword());
-            HttpResponse response = HttpUtils.doGet(proxyInfo, mcUrl + Constants.GET_ALL_WORKSPACES_URL, headers, "includeSharedAssets=true");
+            String queryString = "includeSharedAssets=true";
+            //Default value is true, so only update when setting exist and value is false.
+            String strAllowUploadToSharedAssert = isAllowUploadToSharedAssert(headers,mcUrl,proxy);
+            if(!StringUtils.isNullOrEmpty(strAllowUploadToSharedAssert) && strAllowUploadToSharedAssert.equalsIgnoreCase("false")){
+                queryString = "includeSharedAssets=false";
+            }
+            HttpResponse response = HttpUtils.doGet(proxyInfo, mcUrl + Constants.GET_ALL_WORKSPACES_URL, headers, queryString);
             if (response != null && response.getJsonArray() != null) {
                 return response.getJsonArray();
             }
@@ -296,13 +324,7 @@ public class JobConfigurationProxy {
         return null;
     }
 
-
-    //create one temp job
-    public String createTempJob(String mcUrl, AuthModel authModel, ProxySettings proxy) {
-        try {
-            JSONObject loginJson = loginToMC(mcUrl, authModel, proxy);
-
-            Map<String, String> headers = initHeaders(authModel,loginJson);
+    public String createTempJobWithHeaders (String mcUrl, ProxySettings proxy, Map<String, String> headers) {
             if (headers != null) {
                 HttpUtils.ProxyInfo proxyInfo = proxy == null ? null : HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword());
                 HttpResponse response = HttpUtils.doGet(proxyInfo, mcUrl + Constants.CREATE_JOB_URL, headers, null);
@@ -315,35 +337,39 @@ public class JobConfigurationProxy {
                     }
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
         return null;
     }
 
     //get one job by id
     public JSONObject getJobById(String mcUrl, AuthModel authModel, ProxySettings proxy, String jobUUID) {
         JSONObject jobJsonObject = null;
-
         try {
             JSONObject loginJson = loginToMC(mcUrl, authModel, proxy);
 
             Map<String, String> headers = initHeaders(authModel,loginJson);
-            if (!StringUtils.isNullOrEmpty(jobUUID) && headers != null) {
-                HttpUtils.ProxyInfo proxyInfo = proxy == null ? null : HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword());
-                HttpResponse response = HttpUtils.doGet(proxyInfo, mcUrl + Constants.GET_JOB_UEL + jobUUID, headers, null);
-
-                if (response != null && response.getJsonObject() != null) {
-                    jobJsonObject = response.getJsonObject();
-                }
-                if (jobJsonObject != null) {
-                    jobJsonObject = (JSONObject) jobJsonObject.get(Constants.DATA);
-                }
-            }
+            jobJsonObject = getJobByIdWithHeaders(mcUrl, proxy, jobUUID, headers);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return removeIcon(jobJsonObject);
+    }
+
+    public JSONObject getJobByIdWithHeaders(String mcUrl, ProxySettings proxy, String jobUUID, Map<String, String> headers) {
+        JSONObject jobJsonObject = null;
+        if (!StringUtils.isNullOrEmpty(jobUUID) && headers != null) {
+            HttpUtils.ProxyInfo proxyInfo = proxy == null ? null : HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword());
+            HttpResponse response = HttpUtils.doGet(proxyInfo, mcUrl + Constants.GET_JOB_UEL + jobUUID, headers, null);
+
+            if (response != null && response.getJsonObject() != null) {
+                jobJsonObject = response.getJsonObject();
+            }
+            if (jobJsonObject != null) {
+                jobJsonObject = (JSONObject) jobJsonObject.get(Constants.DATA);
+            }
+        }
+
+        return jobJsonObject;
     }
 
     public JSONObject getBrowserLab(String mcUrl, String accessKey, ProxySettings proxy) {
@@ -512,6 +538,22 @@ public class JobConfigurationProxy {
         return returnJSON;
     }
 
+    public boolean isServerOnSaaS(Map<String, String> headers, String mcUrl, ProxySettings proxy) {
+        if (null == proxy) {
+            proxy = new ProxySettings();
+        }
+        String isDLServerOnSaaSURL = mcUrl + Constants.IS_DL_SERVER_ON_SAAS_URL;
+        HttpUtils.ProxyInfo proxyInfo = HttpUtils.setProxyCfg(proxy.getFsProxyAddress(), proxy.getFsProxyUserName(), proxy.getFsProxyPassword());
+        HttpResponse response = HttpUtils.doGet(proxyInfo, isDLServerOnSaaSURL, headers, null);
+        if (response.getJsonObject() != null ) {
+            boolean isError = Boolean.parseBoolean(response.getJsonObject().get("error").toString());
+            return !isError;
+
+        }
+
+        return false;
+    }
+
     private JSONObject parseJSONString(String jsonString) {
         JSONObject jsonObject = null;
         try {
@@ -575,7 +617,7 @@ public class JobConfigurationProxy {
     }
 
 
-    private Map<String, String> initHeaders(AuthModel authModel, JSONObject loginJson) {
+    public Map<String, String> initHeaders(AuthModel authModel, JSONObject loginJson) {
         Map<String, String> headers = new HashMap<>();
         if (loginJson != null) {
             String hp4mSecret = loginJson.getAsString(Constants.LOGIN_SECRET);

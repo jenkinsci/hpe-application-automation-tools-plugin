@@ -1,33 +1,38 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
 if (typeof RUN_FROM_FS_BUILDER_SELECTOR == "undefined") {
 	RUN_FROM_FS_BUILDER_SELECTOR = 'div[name="builder"][descriptorid="com.microfocus.application.automation.tools.run.RunFromFileBuilder"]';
@@ -295,7 +300,6 @@ Utils.loadMC = function(a, b, prEnv){
 	const dl = divMain.querySelector("#mobileSpecificSection");
     var mcUserName = dl.querySelector('input[name="mcUserName"]')?.value;
     var mcPassword = dl.querySelector('input[name="mcPassword"]')?.value;
-	var mcTenantId = dl.querySelector('input[name="mcTenantId"]')?.value;
     var mcExecToken = dl.querySelector('input[name="mcExecToken"]')?.value;
     var mcAuthType = dl.querySelector('input[name$="authModel"]:checked')?.value;
 	var mcUrl = dl.querySelector('select[name="mcServerName"]')?.value;
@@ -328,8 +332,23 @@ Utils.loadMC = function(a, b, prEnv){
 			b.disabled = false;
 			return;
 		}
-        a.getJobId(baseUrl, mcUserName, mcPassword, mcTenantId, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, previousJobId, function (response) {
-			var jobId = response.responseObject();
+        a.getJobId(baseUrl, mcUserName, mcPassword, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, previousJobId, function (response) {
+			let map = response.responseObject();
+			let jobId = '';
+			let tenantId = '';
+			let isSaaS = false;
+			//First need to check the return type(not sure if java map can automatically covert to js map)
+			if(map.hasOwnProperty("jobId")) {
+				jobId = map["jobId"];
+			}
+			if(map.hasOwnProperty("TENANT_ID_COOKIE")) {
+				tenantId = map["TENANT_ID_COOKIE"];
+			}
+			if(map.hasOwnProperty("isSaaS")) {
+				isSaaS = map["isSaaS"];
+			}
+
+			// var jobId = response.responseObject();
 			if(jobId == null) {
 				ParallelRunnerEnv.setEnvironmentError(prEnv,true);
 				b.disabled = false;
@@ -337,10 +356,14 @@ Utils.loadMC = function(a, b, prEnv){
 			}
 			var openedWindow = window.open('/','test parameters','height=820,width=1130');
 			openedWindow.location.href = 'about:blank';
-			openedWindow.location.href = baseUrl+"/integration/#/login?jobId="+jobId+"&displayUFTMode=true&deviceOnly=true";
+			if (isSaaS) {
+				openedWindow.location.href = baseUrl + "/integration8/en/#/main/wizard?TENANTID=" + tenantId + "&jobId=" +  jobId + "&displayUFTMode=true&deviceOnly=true";
+			} else {
+				openedWindow.location.href = baseUrl+"/integration8/en/#/login?jobId="+jobId+"&displayUFTMode=true&deviceOnly=true";
+			}
 			var messageCallBack = function (event) {
 				if (event?.data=="mcCloseWizard") {
-                    a.populateAppAndDevice(baseUrl, mcUserName, mcPassword, mcTenantId, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, jobId, function (app) {
+                    a.populateAppAndDevice(baseUrl, mcUserName, mcPassword, mcExecToken, mcAuthType, useProxyAuth, proxyAddress, proxyUserName, proxyPassword, jobId, function (app) {
 						var jobInfo = app.responseObject();
 						let deviceId = "", OS = "", manufacturerAndModel = "";
 						if(jobInfo['deviceJSON']){
@@ -603,7 +626,7 @@ function updateFsView(panel, chkParallelRunner) {
 	//this panel should be automatically shown/hidden, so comment-out it for now to see if all works fine
 	//ParallelRunnerEnv.setEnvironmentsVisibility(panel, isParallelRun);
 }
-function setupFsTask() {
+function setupFsTask(hasConfigPermission) {
 	let divMain = null;
 	if (document.location.href.indexOf("pipeline-syntax")>0) { // we are on pipeline-syntax page, where runFromFileBuilder step can be selected only once
 		divMain = document;
@@ -611,12 +634,26 @@ function setupFsTask() {
 		divMain = document.currentScript.parentElement.closest(RUN_FROM_FS_BUILDER_SELECTOR);
 	}
 	setTimeout(function() {
-		prepareFsTask(divMain)}, 100);
+		prepareFsTask(divMain, hasConfigPermission)}, 100);
 }
-function prepareFsTask(divMain) {
+function prepareFsTask(divMain, hasConfigPermission) {
 	if (divMain == null) { // this block is needed for IE, but also for non-IE browsers when adding more than one FS build step
 		let divs = document.querySelectorAll(RUN_FROM_FS_BUILDER_SELECTOR);
 		divMain = divs[divs.length - 1];
 	}
-	setViewVisibility(divMain);
+	if (hasConfigPermission) {
+		setViewVisibility(divMain);
+	} else {
+		const chkParallelRunner = divMain.querySelector("input[type=checkbox][name=isParallelRunnerEnabled]");
+		if (chkParallelRunner.checked) {
+			const buttons = chkParallelRunner.closest("div.optionalBlock-container").querySelectorAll("input[type=button], button");
+			buttons.forEach(function (btn) {
+				if (!btn.disabled) {
+					btn.disabled = true;
+					btn.style.cursor = "not-allowed";
+					btn.style.pointerEvents = "auto";
+				}
+			});
+		}
+	}
 }

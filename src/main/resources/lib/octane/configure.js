@@ -1,35 +1,39 @@
 /*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 function octane_job_configuration(target, progress, proxy) {
 
     if (typeof jQuery === 'undefined') {
@@ -70,7 +74,7 @@ function octane_job_configuration(target, progress, proxy) {
             if(sharedspaces.responseJSON.results.length===1){
                 loadJobConfigurationFromServer(sharedspaces.responseJSON.results[0]);
             }else{
-                var sharedspaceDiv = $("<div class='mqm'><label><h3>Select ALM Octane server configuration</h3></label><select id='sharedspaceSelect'></select></div>");
+                var sharedspaceDiv = $("<div class='mqm'><label><h3>Select Software Delivery Management server configuration</h3></label><select id='sharedspaceSelect'></select></div>");
                 $(target).append(sharedspaceDiv);
                 $("#sharedspaceSelect").select2({
                     placeholder: 'Select a configuration',
@@ -156,7 +160,7 @@ function octane_job_configuration(target, progress, proxy) {
         function addCheckbox(currPipeline) {
             checkbox1.empty();
             checkbox1.append(status);
-            var ignoreTestCheckbox = $('<input type="checkbox" name="ignoreTestResults" id="ignoreTestResults" />' + 'Ignore test run results (Results are not sent to ALM Octane). ' + '<br /><br />');
+            var ignoreTestCheckbox = $('<input type="checkbox" name="ignoreTestResults" id="ignoreTestResults" />' + 'Ignore test run results (Results are not sent to Software Delivery Management). ' + '<br /><br />');
             checkbox1.append(ignoreTestCheckbox);
             checkbox2.empty();
             pipelineDiv.append(checkbox1);
@@ -200,7 +204,7 @@ function octane_job_configuration(target, progress, proxy) {
             var table = $("<table class='ui-block'><tbody><tr/></tbody></table>");
             pipelineDiv.append(table);
 
-            var releaseMilestoneAlertMessage = "<div id=\"releaseMilestoneAlert\" style=\"color: orange; visibility: hidden; font-style: italic\">Note: When you change a milestone or release, a new set of runs is created on ALM Octane, " +
+            var releaseMilestoneAlertMessage = "<div id=\"releaseMilestoneAlert\" style=\"color: orange; visibility: hidden; font-style: italic\">Note: When you change a milestone or release, a new set of runs is created on Software Delivery Management, " +
                 "with a new run history.</div>";
 
             pipelineDiv.append(releaseMilestoneAlertMessage);
@@ -770,7 +774,7 @@ function octane_job_configuration(target, progress, proxy) {
             var pipelineSelector = undefined;
 
             var selectWorkspaceDiv = $("<div class='mutton rpos'>" +
-                "<div id='configuration-div' class='config-label'>ALM Octane : " + jobConfiguration.currentPipeline.instanceCaption + "</div>" +
+                "<div id='configuration-div' class='config-label'>Software Delivery Management : " + jobConfiguration.currentPipeline.instanceCaption + "</div>" +
                 "<div id='select-workspace-div'><label for='workspace-select'>Workspace:</label><select/>" +
                 "</div></div>");
             var workspaceSelect = selectWorkspaceDiv.find("select");

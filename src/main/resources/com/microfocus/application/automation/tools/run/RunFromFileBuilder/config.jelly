@@ -1,40 +1,52 @@
 <!--
- ~ Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- ~ This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- ~ Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- ~ __________________________________________________________________
- ~ MIT License
- ~
- ~ Copyright 2012-2023 Open Text
- ~
- ~ The only warranties for products and services of Open Text and
- ~ its affiliates and licensors ("Open Text") are as may be set forth
- ~ in the express warranty statements accompanying such products and services.
- ~ Nothing herein should be construed as constituting an additional warranty.
- ~ Open Text shall not be liable for technical or editorial errors or
- ~ omissions contained herein. The information contained herein is subject
- ~ to change without notice.
- ~
- ~ Except as specifically indicated otherwise, this document contains
- ~ confidential information and a valid license is required for possession,
- ~ use or copying. If this work is provided to the U.S. Government,
- ~ consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- ~ Computer Software Documentation, and Technical Data for Commercial Items are
- ~ licensed to the U.S. Government under vendor's standard commercial license.
- ~
- ~ Unless required by applicable law or agreed to in writing, software
- ~ distributed under the License is distributed on an "AS IS" BASIS,
- ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- ~ See the License for the specific language governing permissions and
- ~ limitations under the License.
- ~ ___________________________________________________________________
-  -->
 
+     Certain versions of software accessible here may contain branding from
+     Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+     This software was acquired by Micro Focus on September 1, 2017, and is now
+     offered by OpenText.
+     Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+     in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+     property of their respective owners.
+     OpenText is a trademark of Open Text.
+     __________________________________________________________________
+     MIT License
+
+     Copyright 2012-2025 Open Text.
+
+     The only warranties for products and services of Open Text and
+     its affiliates and licensors ("Open Text") are as may be set forth
+     in the express warranty statements accompanying such products and services.
+     Nothing herein should be construed as constituting an additional warranty.
+     Open Text shall not be liable for technical or editorial errors or
+     omissions contained herein. The information contained herein is subject
+     to change without notice.
+
+     Except as specifically indicated otherwise, this document contains
+     confidential information and a valid license is required for possession,
+     use or copying. If this work is provided to the U.S. Government,
+     consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+     Computer Software Documentation, and Technical Data for Commercial Items are
+     licensed to the U.S. Government under vendor's standard commercial license.
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+     ___________________________________________________________________
+
+-->
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:cv="/lib/custom">
-	<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/configure.js"/>
-	<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/parallelRunnerEnvironment.js"/>
-	<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/fileSystemUtils.js"/>
+	<j:set var="hasConfigPermission" value="${descriptor.hasConfigurePermission}" />
+	<st:once>
+		<j:if test="${hasConfigPermission}">
+			<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/configure.js"/>
+		</j:if>
+		<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/parallelRunnerEnvironment.js"/>
+		<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/fileSystemUtils.js"/>
+	</st:once>
+
 	<style>
 		#testsTable {
 			border: 1px;
@@ -75,7 +87,7 @@
 			background: none;
 		}
 		textarea.jenkins-input, textarea.setting-input{
-			height: 5em;
+			height:5em;
 			resize: vertical;
 		}
 		div.setting-main {
@@ -87,15 +99,33 @@
 		div.repeated-container {
 			width:100%;
 		}
+		.cloud-browser-section {
+			width:50%;
+			margin-bottom: 10px;
+			--section-padding: 5px;
+		}
+		input[name="cloudBrowserLab"] {
+			display: inline-block;
+			margin-bottom: 10px;
+			width: 140px;
+		}
+		input[name="digitalLabWizard"] {
+			display: inline-block;
+			margin-bottom: 10px;
+			width: 140px;
+		}
 		.device-info-section {
 			width:100%;
 			margin-bottom: 10px;
 			--section-padding: 5px;
 		}
+		.error-msg {
+			color:red;
+			display:none;
+		}
 	</style>
 
 	<st:bind var="a" value="${descriptor}"/>
-
 	<st:bind var="fsTests" value="${instance.runFromFileModel.fsTests}"/>
 	<st:bind var="cleanupTests" value="${instance.runFromFileModel.cleanupTests}"/>
 
@@ -136,24 +166,24 @@
 
 	<f:optionalBlock name="areParametersEnabled" title="Specify test parameters" inline="true" checked="${instance.areParametersEnabled}">
 		<f:entry field="specifyParametersModel">
-			<f:property field="specifyParametersModel"/>
+			<f:property field="specifyParametersModel" hasConfigPermission="${hasConfigPermission}"/>
 		</f:entry>
 	</f:optionalBlock>
 
-	<f:optionalBlock name="isParallelRunnerEnabled" title="UFT parallel running mode" inline="true" checked="${instance.isParallelRunnerEnabled}">
+	<f:optionalBlock name="isParallelRunnerEnabled" title="Functional Testing parallel running mode" inline="true" checked="${instance.isParallelRunnerEnabled}">
 		<f:entry field="fileSystemTestSetModel">
-			<f:property field="fileSystemTestSetModel"/>
+			<f:property field="fileSystemTestSetModel" hasConfigPermission="${hasConfigPermission}"/>
 		</f:entry>
 	</f:optionalBlock>
 
-	<f:advanced title="UFT-Specific Settings" align="right">
+	<f:advanced title="OpenText™ Functional Testing-Specific Settings" align="right">
 		<div id="uftSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
 					<div class="tr help-sibling config-table-top-row">
 						<div colspan="3">
 							<div>
-								<b>UFT-Specific Settings</b>
+								<b>Functional Testing-Specific Settings</b>
 							</div>
 							<span class="setting-no-help"></span>
 						</div>
@@ -168,7 +198,9 @@
 						</j:forEach>
 					</select>
 				</f:entry>
-
+				<f:entry field="fsUftExportPdf">
+					<f:checkbox title="Export run results to PDF" name="isPdfEnabled" checked="${instance.isPdfEnabled}" default="false"/>
+				</f:entry>
 				<f:entry>
 					<f:property field="uftSettingsModel"/>
 				</f:entry>
@@ -178,8 +210,8 @@
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide UFT-Specific Settings" onclick="hideAndMoveAdvancedBody('uftSpecificSection')">
-									Hide UFT-Specific Settings
+								<button type="button" tabindex="0" title="Hide Functional Testing-Specific Settings" onclick="hideAndMoveAdvancedBody('uftSpecificSection')">
+									Hide Functional Testing-Specific Settings
 								</button>
 							</span>
 						</span>
@@ -245,30 +277,37 @@
 	</f:advanced>
 
 	<!-- add MC server and app info starting -->
-	<f:advanced title="Digital Lab (formerly UFT Mobile) Options" align="right">
+	<f:advanced title="OpenText™ Functional Testing Lab (Digital Lab) Options" align="right">
 		<div id="mobileSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
 					<div class="tr help-sibling config-table-top-row">
 						<div colspan="3">
 							<div>
-								<b>Digital Lab Options</b>
+								<b>Functional Testing Lab Options</b>
 							</div>
 							<span class="setting-no-help"></span>
 						</div>
 					</div>
 				</div>
-				<f:entry title="Digital Lab Server" field="mcServerName">
-					 <select name="mcServerName">
-						 <j:forEach var="mcServer" items="${descriptor.mcServers}">
-							 <f:option selected="${mcServer.mcServerName==instance.mCServerSettingsModel.mcServerName}" value="${mcServer.mcServerName}">
-								 ${mcServer.mcServerName}
-							 </f:option>
-						 </j:forEach>
-					 </select>
+				<f:entry title="Server name" field="mcServerName">
+					<j:choose>
+						<j:when test="${hasConfigPermission}">
+							<select name="mcServerName">
+								<j:forEach var="mcServer" items="${descriptor.mcServers}">
+									<f:option selected="${mcServer.mcServerName==instance.mCServerSettingsModel.mcServerName}" value="${mcServer.mcServerName}">
+										${mcServer.mcServerName}
+									</f:option>
+								</j:forEach>
+							</select>
+						</j:when>
+						<j:otherwise>
+							<f:textbox value="${instance.mCServerSettingsModel.mcServerName}"/>
+						</j:otherwise>
+					</j:choose>
 				 </f:entry>
 				<f:entry>
-					 <f:checkbox title="Use SSL" name="useSSL" checked="${instance.runFromFileModel.useSSL}" default="true"/>
+				 	<f:checkbox title="Use SSL" name="useSSL" checked="${instance.runFromFileModel.useSSL}" default="true"/>
 				 </f:entry>
 				<f:entry field="authModel">
                     <f:radioBlock name="authModel" value="token" checked="${instance.runFromFileModel.authType == 'token' || instance.runFromFileModel.authType == null}" title="Execution Token Authentication">
@@ -285,9 +324,6 @@
                             </f:entry>
                             <f:entry title="Password" field="mcPassword">
                                 <f:password name="mcPassword" value="${instance.runFromFileModel.authModel.mcPassword}"/>
-                            </f:entry>
-                            <f:entry title="Tenant Id" field="mcTenantId">
-                                <f:textbox name="mcTenantId" value="${instance.runFromFileModel.authModel.mcTenantId}"/>
                             </f:entry>
                         </f:nested>
                     </f:radioBlock>
@@ -307,63 +343,89 @@
 						</f:optionalBlock>
 					 </f:optionalBlock>
 				 </f:entry>
-
-				<div class="tr device-info-section" style="width: 100%">
-					<f:advanced title="Device Options" align="right">
-						<f:entry title="DEVICE INFORMATION:" />
-						<f:entry title="Device ID" field="fsDeviceId">
-							<f:readOnlyTextbox name="fsDeviceId" value="${instance.runFromFileModel.fsDeviceId}"/>
-						</f:entry>
-						<f:entry title="OS" field="fsOs">
-							<f:readOnlyTextbox name="fsOs" value="${instance.runFromFileModel.fsOs}"/>
-						</f:entry>
-						<f:entry title="Manufacturer and model" field="fsManufacturerAndModel">
-							<f:readOnlyTextbox name="fsManufacturerAndModel" value="${instance.runFromFileModel.fsManufacturerAndModel}"/>
-						</f:entry>
-						<f:entry title="Target lab" field="fsTargetLab">
-							<f:readOnlyTextbox name="fsTargetLab" value="${instance.runFromFileModel.fsTargetLab}"/>
-						</f:entry>
-						<f:entry title="APPLICATION UNDER TEST" field="fsExtraApps">
-							<f:textarea name="fsExtraApps" readonly="true" value="${instance.runFromFileModel.fsExtraApps}"/>
-						</f:entry>
-
-						<f:entry title="TEST DEFINITIONS:"/>
-						<f:entry/>
-						<f:entry title="Launch on start" field="fsLaunchAppName">
-							<f:readOnlyTextbox name="fsLaunchAppName" value="${instance.runFromFileModel.fsLaunchAppName}"/>
-						</f:entry>
-						<f:entry title="AUT packaging" field="fsInstrumented">
-							<f:readOnlyTextbox name="fsInstrumented" value="${instance.runFromFileModel.fsInstrumented}"/>
-						</f:entry>
-						<f:entry title="AUT actions" field="fsAutActions">
-							<f:readOnlyTextbox name="fsAutActions" value="${instance.runFromFileModel.fsAutActions}"/>
-						</f:entry>
-						<f:entry title="Device metrics" field="fsDevicesMetrics">
-							<f:readOnlyTextbox name="fsDevicesMetrics" value="${instance.runFromFileModel.fsDevicesMetrics}"/>
-						</f:entry>
-						<f:entry title="Job Id">
-							<f:readOnlyTextbox name="fsJobId" value="${instance.runFromFileModel.fsJobId}"/>
-						</f:entry>
+				<j:set var="hasJobId" value="${instance.runFromFileModel.fsJobId == null ? false : instance.runFromFileModel.fsJobId != ''}"/>
+				<f:optionalBlock name="useMobileDevice" title="Use Device Lab" checked="${hasJobId}" inline="true">
+					<div class="tr device-info-section">
+						<div class="repeated-chunk">
+							<f:entry title="Device ID" field="fsDeviceId">
+								<f:readOnlyTextbox name="fsDeviceId" value="${instance.runFromFileModel.fsDeviceId}"/>
+							</f:entry>
+							<f:entry title="OS" field="fsOs">
+								<f:readOnlyTextbox name="fsOs" value="${instance.runFromFileModel.fsOs}"/>
+							</f:entry>
+							<f:entry title="Manufacturer and model" field="fsManufacturerAndModel">
+								<f:readOnlyTextbox name="fsManufacturerAndModel" value="${instance.runFromFileModel.fsManufacturerAndModel}"/>
+							</f:entry>
+							<f:entry title="Target lab" field="fsTargetLab">
+								<f:readOnlyTextbox name="fsTargetLab" value="${instance.runFromFileModel.fsTargetLab}"/>
+							</f:entry>
+							<f:entry title="APPLICATION UNDER TEST" field="fsExtraApps">
+								<f:textarea name="fsExtraApps" readonly="true" value="${instance.runFromFileModel.fsExtraApps}"/>
+							</f:entry>
+							<f:entry title="TEST DEFINITIONS:"/>
+							<f:entry/>
+							<f:entry title="Launch on start" field="fsLaunchAppName">
+								<f:readOnlyTextbox name="fsLaunchAppName" value="${instance.runFromFileModel.fsLaunchAppName}"/>
+							</f:entry>
+							<f:entry title="AUT packaging" field="fsInstrumented">
+								<f:readOnlyTextbox name="fsInstrumented" value="${instance.runFromFileModel.fsInstrumented}"/>
+							</f:entry>
+							<f:entry title="AUT actions" field="fsAutActions">
+								<f:readOnlyTextbox name="fsAutActions" value="${instance.runFromFileModel.fsAutActions}"/>
+							</f:entry>
+							<f:entry title="Device metrics" field="fsDevicesMetrics">
+								<f:readOnlyTextbox name="fsDevicesMetrics" value="${instance.runFromFileModel.fsDevicesMetrics}"/>
+							</f:entry>
+							<f:entry title="Job Id">
+								<f:readOnlyTextbox name="fsJobId" value="${instance.runFromFileModel.fsJobId}"/>
+							</f:entry>
+						</div>
 						<f:entry>
-							<f:checkbox title="Recreate Digital Lab job if this job is copied from another job" name="recreateJob" checked="false"/>
+							<f:checkbox title="Recreate Functional Testing Lab job if this job is copied from another job" name="recreateJob" checked="false"/>
 						</f:entry>
-						<f:entry>
-							<input name="digitalLabWizard" type="button" value="Wizard" onClick="startLoadInfo(a, this)"/>
-						</f:entry>
-					</f:advanced>
-				</div>
+						<j:if test="${hasConfigPermission}">
+							<f:entry>
+								<input name="digitalLabWizard" type="button" value="Wizard" onClick="startLoadInfo(a, this)"/>
+								<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
+							</f:entry>
+						</j:if>
+					</div>
+				</f:optionalBlock>
+				<j:set var="isCloudBrowserLab" value="${instance.runFromFileModel.cloudBrowserModel != null}"/>
+				<f:optionalBlock name="cloudBrowserModel" title="Use Cloud Browser Lab" checked="${isCloudBrowserLab}" >
+					<div class="tr cloud-browser-section">
+						<f:nested>
+							<j:if test="${hasConfigPermission}">
+								<input type="button" name="cloudBrowserLab" value="Browser settings" onclick="startLoadInfo(a, this,'${rootURL}');" />
+							</j:if>
+							<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
+							<f:textbox name="cloudBrowserUrl" value="${instance.runFromFileModel.cloudBrowserModel.url}" placeholder="URL"/>
+							<div class="repeated-chunk">
+								<f:entry title="Operating System" field="cloudBrowserOs">
+									<f:readOnlyTextbox name="cloudBrowserOs" value="${instance.runFromFileModel.cloudBrowserModel.os}"/>
+								</f:entry>
+								<f:entry title="Browser name" field="cloudBrowserType">
+									<f:readOnlyTextbox name="cloudBrowserType" value="${instance.runFromFileModel.cloudBrowserModel.type}"/>
+								</f:entry>
+								<f:entry title="Browser version" field="cloudBrowserVersion">
+									<f:readOnlyTextbox name="cloudBrowserVersion" value="${instance.runFromFileModel.cloudBrowserModel.version}"/>
+								</f:entry>
+								<f:entry title="Location" field="cloudBrowserRegion">
+									<f:readOnlyTextbox name="cloudBrowserRegion" value="${instance.runFromFileModel.cloudBrowserModel.region}"/>
+								</f:entry>
+							</div>
+						</f:nested>
+					</div>
+				</f:optionalBlock>
 
-				<f:entry>
-					<div id="errorMessage" style="color:red;display:none">Digital Lab login information or proxy is incorrect.</div>
-				</f:entry>
 		 	</div>
 			<div class="tr config-table-top-row">
 				<div colspan="4">
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide Digital Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
-									Hide Digital Lab Options
+								<button type="button" tabindex="0" title="Hide Functional Testing Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
+									Hide Functional Testing Lab Options
 								</button>
 							</span>
 						</span>
@@ -375,7 +437,6 @@
 
 	<script type="text/javascript">
 		checkIfPipelineAndUpdateHelpMsg("${%DontForgetThePublisherPipeline}");
-		setupFsTask();
-		setupDigitalLab();
+		setupFsTask(${hasConfigPermission});
 	</script>
 </j:jelly>

@@ -1,35 +1,39 @@
-/*
- * Certain versions of software accessible here may contain branding from Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
- * This software was acquired by Micro Focus on September 1, 2017, and is now offered by OpenText.
- * Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the property of their respective owners.
- * __________________________________________________________________
- * MIT License
+/**
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
  *
- * Copyright 2012-2023 Open Text
+ *  Copyright 2012-2025 Open Text.
  *
- * The only warranties for products and services of Open Text and
- * its affiliates and licensors ("Open Text") are as may be set forth
- * in the express warranty statements accompanying such products and services.
- * Nothing herein should be construed as constituting an additional warranty.
- * Open Text shall not be liable for technical or editorial errors or
- * omissions contained herein. The information contained herein is subject
- * to change without notice.
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
  *
- * Except as specifically indicated otherwise, this document contains
- * confidential information and a valid license is required for possession,
- * use or copying. If this work is provided to the U.S. Government,
- * consistent with FAR 12.211 and 12.212, Commercial Computer Software,
- * Computer Software Documentation, and Technical Data for Commercial Items are
- * licensed to the U.S. Government under vendor's standard commercial license.
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ___________________________________________________________________
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
  */
-
 using HpToolsLauncher.TestRunners;
 using HpToolsLauncher.Utils;
 using Microsoft.Win32;
@@ -43,6 +47,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Resources = HpToolsLauncher.Properties.Resources;
 using AuthType = HpToolsLauncher.McConnectionInfo.AuthType;
+using DigitalLabType = HpToolsLauncher.McConnectionInfo.DigitalLabType;
 
 namespace HpToolsLauncher
 {
@@ -80,12 +85,15 @@ namespace HpToolsLauncher
         private const string CLOUD_BROWSER = "CloudBrowser";
         private const string SYSTEM_PROXY = "System Proxy";
         private const string HTTP_PROXY = "HTTP Proxy";
+        private const string DEFAULT_WORKSPACE = "default workspace";
+        private const string ExportOptionsStepDetailsReportFormat = "UserDefined";
 
         private readonly Type _qtType = Type.GetTypeFromProgID("Quicktest.Application");
         private readonly IAssetRunner _runNotifier;
         private readonly object _lockObject = new object();
         private TimeSpan _timeLeftUntilTimeout = TimeSpan.MaxValue;
         private readonly string _uftRunMode;
+        private bool _uftExportPDF;
         private Stopwatch _stopwatch = null;
         private Application _qtpApplication;
         private ParameterDefinitions _qtpParamDefs;
@@ -97,6 +105,7 @@ namespace HpToolsLauncher
         private CloudBrowser _cloudBrowser;
         private bool _printInputParams;
         private bool _isCancelledByUser;
+        private readonly bool _leaveUftOpenIfVisible = false;
         private RunAsUser _uftRunAsUser;
 
         /// <summary>
@@ -105,10 +114,12 @@ namespace HpToolsLauncher
         /// <param name="runNotifier"></param>
         /// <param name="useUftLicense"></param>
         /// <param name="timeLeftUntilTimeout"></param>
-        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, RunAsUser uftRunAsUser)
+
+        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, bool uftExportPdf, RunAsUser uftRunAsUser, bool leaveUftOpenIfVisible)
         {
             _timeLeftUntilTimeout = timeLeftUntilTimeout;
             _uftRunMode = uftRunMode;
+            _uftExportPDF = uftExportPdf;
             _stopwatch = Stopwatch.StartNew();
             _runNotifier = runNotifier;
             _useUFTLicense = useUftLicense;
@@ -117,6 +128,7 @@ namespace HpToolsLauncher
             _cloudBrowser = digitalLab.CloudBrowser;
             _printInputParams = printInputParams;
             _uftRunAsUser = uftRunAsUser;
+            _leaveUftOpenIfVisible = leaveUftOpenIfVisible;
         }
 
         #region QTP
@@ -178,7 +190,11 @@ namespace HpToolsLauncher
                 lock (_lockObject)
                 {
                     _qtpApplication = Activator.CreateInstance(_qtType) as Application;
-                    if (_uftRunAsUser != null)
+                    if (_leaveUftOpenIfVisible && (_qtpApplication.Launched && _qtpApplication.Visible) && _uftRunAsUser != null)
+                    {
+                        _uftRunAsUser = null;
+                    }
+                    else if (_uftRunAsUser != null)
                     {
                         try
                         {
@@ -208,11 +224,18 @@ namespace HpToolsLauncher
                     {
                         runDesc.ReportLocation = GetReportLocation(testinf, testPath);
                     }
+#if DEBUG
+                    Console.WriteLine(string.Format("OpenText Functional Testing version = {0}", qtpVersion));
+#endif
                     // Check for required Addins
-                    LoadNeededAddins(testPath);
+                    if (_qtpApplication.Launched && _qtpApplication.Visible && _leaveUftOpenIfVisible)
+                    {
+                        //QTPTestCleanup();
+                    }
+                    else
+                        LoadNeededAddins(testPath);
 
-                    // set Mc connection and other mobile info into rack if neccesary
-                    SetMobileInfo();
+                    SetMobileInfo(qtpVersion);
 
                     if (!_qtpApplication.Launched)
                     {
@@ -272,6 +295,38 @@ namespace HpToolsLauncher
                 throw;
             }
 
+            if (_uftExportPDF)
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                exportOptions.AutoExportResults = true;
+                exportOptions.StepDetailsReport = true;
+                exportOptions.DataTableReport = true;
+                exportOptions.LogTrackingReport = true;
+                exportOptions.ScreenRecorderReport = true;
+                exportOptions.SystemMonitorReport = false;
+                exportOptions.StepDetailsReportFormat = ExportOptionsStepDetailsReportFormat;
+                exportOptions.ExportForFailedRunsOnly = true;
+
+                Console.WriteLine("The global Run Sessions option 'Automatically export run results when run session ends' has been enabled by the Jenkins job.");
+            }
+            else
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                if (exportOptions.AutoExportResults)
+                {
+                    exportOptions.AutoExportResults = false;
+                    Console.WriteLine(
+                        "The global Run Sessions option 'Automatically export run results when run session ends' has been disabled by the Jenkins job.");
+                }
+            }
+
+            //if (!HandleDigitalLab(qtpVersion, ref errorReason))
+            //{
+            //    runDesc.TestState = TestState.Error;
+            //    runDesc.ErrorDesc = errorReason;
+            //    return runDesc;
+            //}
+
             if (!HandleInputParameters(testPath, ref errorReason, paramDict, testinf))
             {
                 runDesc.TestState = TestState.Error;
@@ -311,7 +366,7 @@ namespace HpToolsLauncher
         private string GetReportLocation(TestInfo testinf, string testPath)
         {
             // use the defined report path if provided
-            string rptLocation = string.IsNullOrEmpty(testinf.ReportPath) ? 
+            string rptLocation = string.IsNullOrEmpty(testinf.ReportPath) ?
                             Path.Combine(testPath, REPORT) :
                             Path.Combine(testinf.ReportPath, REPORT);
 
@@ -326,15 +381,15 @@ namespace HpToolsLauncher
             return rptLocation;
         }
 
-        private void SetMobileInfo()
+        private void SetMobileInfo(Version qtpVersion)
         {
-            if (_mcConnection == null) return;
+            if (_mcConnection == null || _mcConnection.HostAddress.IsNullOrEmpty())
+                return;
 
             #region Mc connection and other mobile info
 
             ITDPierToTulip tulip = _qtpApplication.TDPierToTulip;
-            // Mc Address, username and password
-            if (!_mcConnection.HostAddress.IsNullOrEmpty())
+            //if (qtpVersion < new Version(2023, 4)) // for version >= 23.4 use the method HandleDigitalLab
             {
                 tulip.SetTestOptionsVal(MC_TYPE, (int)_mcConnection.LabType);
 
@@ -345,36 +400,25 @@ namespace HpToolsLauncher
                 }
 
                 AuthType mcAuthType = _mcConnection.MobileAuthType;
+                tulip.SetTestOptionsVal(MOBILE_AUTH_TYPE, mcAuthType);
                 switch (mcAuthType)
                 {
                     case AuthType.AuthToken:
                         var token = _mcConnection.GetAuthToken();
-
                         tulip.SetTestOptionsVal(MOBILE_CLIENTID, token.ClientId);
                         tulip.SetTestOptionsVal(MOBILE_SECRET, token.SecretKey);
-
                         break;
                     case AuthType.UsernamePassword:
                         if (!_mcConnection.UserName.IsNullOrEmpty())
                         {
                             tulip.SetTestOptionsVal(MOBILE_USER, _mcConnection.UserName);
-                        }
-
-                        if (!_mcConnection.Password.IsNullOrEmpty())
-                        {
-                            string encriptedMcPassword = WinUserNativeMethods.ProtectBSTRToBase64(_mcConnection.Password);
-                            if (encriptedMcPassword == null)
+                            if (!_mcConnection.Password.IsNullOrEmpty())
                             {
-                                ConsoleWriter.WriteLine(string.Format(PROTECT_BstrToBase64_FAILED, "DL Password"));
-                                throw new Exception(string.Format(PROTECT_BstrToBase64_FAILED, "DL Password"));
+                                tulip.SetTestOptionsVal(MOBILE_PASSWORD, GetEncryptedPassword(_mcConnection.Password));
                             }
-                            tulip.SetTestOptionsVal(MOBILE_PASSWORD, encriptedMcPassword);
                         }
                         break;
                 }
-
-                // set authentication type
-                tulip.SetTestOptionsVal(MOBILE_AUTH_TYPE, mcAuthType);
 
                 // set tenantID
                 if (!_mcConnection.TenantId.IsNullOrEmpty())
@@ -388,27 +432,35 @@ namespace HpToolsLauncher
                 if (_mcConnection.UseProxy)
                 {
                     tulip.SetTestOptionsVal(MOBILE_USE_PROXY, _mcConnection.UseProxyAsInt);
-                    tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING, _mcConnection.ProxyType == 1 ? SYSTEM_PROXY : HTTP_PROXY);
+                    tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING, _mcConnection.ProxyType);
                     tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_ADDRESS, _mcConnection.ProxyAddress);
                     tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_PORT, _mcConnection.ProxyPort);
-                    tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_AUTHENTICATION, _mcConnection.UseProxyAuthAsInt);
-                    tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_USERNAME, _mcConnection.ProxyUserName);
-                    string encMcProxyPassword = WinUserNativeMethods.ProtectBSTRToBase64(_mcConnection.ProxyPassword);
-                    if (encMcProxyPassword == null)
+                    if (_mcConnection.UseProxyAuth)
                     {
-                        ConsoleWriter.WriteLine(string.Format(PROTECT_BstrToBase64_FAILED, "DL Proxy Password"));
-                        throw new Exception(string.Format(PROTECT_BstrToBase64_FAILED, "DL Proxy Password"));
+                        tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_AUTHENTICATION, 1);
+                        tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_USERNAME, _mcConnection.ProxyUserName);
+                        tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_PASSWORD, GetEncryptedPassword(_mcConnection.ProxyPassword));
                     }
-                    tulip.SetTestOptionsVal(MOBILE_PROXY_SETTING_PASSWORD, encMcProxyPassword);
-                }
-
-                // Mc info (device, app, launch and terminate data)
-                if (!string.IsNullOrEmpty(_mobileInfo))
-                {
-                    tulip.SetTestOptionsVal(MOBILE_INFO, _mobileInfo);
                 }
             }
+
+            if (!string.IsNullOrEmpty(_mobileInfo))
+            {
+                tulip.SetTestOptionsVal(MOBILE_INFO, _mobileInfo);
+            }
+
             #endregion
+        }
+
+        private string GetEncryptedPassword(string clearPassword)
+        {
+            string encPassword = WinUserNativeMethods.ProtectBSTRToBase64(clearPassword);
+            if (encPassword == null)
+            {
+                ConsoleWriter.WriteLine(string.Format(PROTECT_BstrToBase64_FAILED, "DL Password"));
+                throw new Exception(string.Format(PROTECT_BstrToBase64_FAILED, "DL Password"));
+            }
+            return encPassword;
         }
 
         /// <summary>
@@ -426,7 +478,8 @@ namespace HpToolsLauncher
                         _qtpApplication = Activator.CreateInstance(_qtType) as Application;
                     }
 
-                    _qtpApplication.Quit();
+                    if (_qtpApplication.Launched && !(_qtpApplication.Visible && _leaveUftOpenIfVisible))
+                        _qtpApplication.Quit();
                 }
             }
             catch
@@ -684,15 +737,83 @@ namespace HpToolsLauncher
 
         private void CleanUpAndKillQtp()
         {
-            //error during run, process may have crashed (need to cleanup, close QTP and qtpRemote for next test to run correctly)
-            CleanUp();
-
-            //kill the qtp automation, to make sure it will run correctly next time
-            Process[] processes = Process.GetProcessesByName("qtpAutomationAgent");
-            Process qtpAuto = processes.Where(p => p.SessionId == Process.GetCurrentProcess().SessionId).FirstOrDefault();
-            if (qtpAuto != null)
+            if (_qtpApplication == null)
             {
-                qtpAuto.Kill();
+                var type = Type.GetTypeFromProgID("Quicktest.Application");
+                _qtpApplication = Activator.CreateInstance(type) as Application;
+            }
+
+            if (_qtpApplication.Launched && _qtpApplication.Visible && _leaveUftOpenIfVisible)
+            {
+                //leave UFT open, the user can close it manually if needed
+            }
+            else
+            {
+                //error during run, process may have crashed (need to cleanup, close QTP and qtpRemote for next test to run correctly)
+                CleanUp();
+
+                //kill the qtp automation, to make sure it will run correctly next time
+                Process[] processes = Process.GetProcessesByName("qtpAutomationAgent");
+                Process qtpAuto = processes.Where(p => p.SessionId == Process.GetCurrentProcess().SessionId)
+                    .FirstOrDefault();
+                if (qtpAuto != null)
+                {
+                    qtpAuto.Kill();
+                }
+            }
+        }
+        private bool HandleDigitalLab(Version qtpVersion, ref string errorReason)
+        {
+            if (_mcConnection == null || _mcConnection.HostAddress.IsNullOrEmpty() || qtpVersion < new Version(2023, 4))
+                return true;
+
+            return SetDLOptions(_qtpApplication.Options.DLConnection, ref errorReason);
+        }
+
+        private bool SetDLOptions(DLConnectionOptions opt, ref string errorReason)
+        {
+            try
+            {
+                int type = (int)DigitalLabType.UFT; // TODO set and get it from props
+                opt.Type = type.ToString();
+                if (_mcConnection.MobileAuthType == AuthType.AuthToken)
+                {
+                    opt.AuthType = AuthType.AuthToken.GetEnumDescription();
+                    opt.AccessKey = _mcConnection.ExecToken;
+                }
+                else if (!_mcConnection.UserName.IsNullOrEmpty())
+                {
+                    opt.AuthType = AuthType.UsernamePassword.GetEnumDescription();
+                    opt.UserName = _mcConnection.UserName;
+                    opt.Password = _mcConnection.Password;
+                }
+                opt.Server = _mcConnection.HostAddress;
+                opt.Port = _mcConnection.HostPort;
+                opt.UseSSL = _mcConnection.UseSSL;
+                if (_mcConnection.UseProxy)
+                {
+                    opt.UseProxySettings = true;
+                    opt.ProxyType = _mcConnection.ProxyType == 1 ? SYSTEM_PROXY : HTTP_PROXY;
+                    opt.ProxyAddress = _mcConnection.ProxyAddress;
+                    opt.ProxyPort = _mcConnection.ProxyPort.ToString();
+                    if (_mcConnection.UseProxyAuth)
+                    {
+                        opt.SpecifyAuthentication = true;
+                        opt.ProxyUserName = _mcConnection.ProxyUserName;
+                        opt.ProxyPassword = _mcConnection.ProxyPassword;
+                    }
+                }
+                opt.ShowRemoteWndOnRun = true;
+                opt.WorkSpace = DEFAULT_WORKSPACE;
+                return true;
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                Console.WriteLine(ex.Message);
+#endif
+                errorReason = ex.Message;
+                return false;
             }
         }
 
@@ -781,9 +902,10 @@ namespace HpToolsLauncher
                     launcher.CloudBrowser.BrowserVersion = _cloudBrowser.Version;
                     launcher.CloudBrowser.Location = _cloudBrowser.Region;
                 }
-                catch (Exception ex) 
+                catch (Exception e)
                 {
-                    errorReason = ex.Message;
+                    ConsoleWriter.WriteLine(string.Format(Resources.GeneralErrorWithStack, e.Message, e.StackTrace));
+                    errorReason = e.Message;
                     return false;
                 }
             }
@@ -945,7 +1067,7 @@ namespace HpToolsLauncher
             return localKey;
         }
 
-#endregion
+        #endregion
 
         /// <summary>
         /// holds the resutls for a GUI test
