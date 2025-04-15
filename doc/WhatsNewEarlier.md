@@ -3,6 +3,8 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
+[What&#39;s New in version CE 24.4](#what&#39;s-new-in-version-CE-24&#46;4)
+
 [What&#39;s New in version CE 24.3](#what&#39;s-new-in-version-CE-24&#46;3)
 
 [What&#39;s New in version CE 24.2](#what&#39;s-new-in-version-CE-24&#46;2)
@@ -47,6 +49,15 @@ This page shows a history of the enhancements made to the OpenText Application A
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
 
+
+## What&#39;s New in version CE 24&#46;4
+
+**ALM Octane**
+- Support SCM Data injection from GitLab
+- Bug fixes
+
+**OpenText Enterprise Performance(LoadRunner Enterprise)**
+- LoadRunner Enterprise has been rebranded to OpenText Enterprise Performance
 
 ## What&#39;s New in version CE 24&#46;3
 
