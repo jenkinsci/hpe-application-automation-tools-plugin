@@ -51,14 +51,28 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version CE 24.4 introduced the following enhancements and fixes:
+Version CE 25.2 introduced the following enhancements and fixes:
 
-**ALM Octane**
-- Support SCM Data injection from GitLab
+**Rebranding for OpenText family products**
+- Functional Testing Lab renaming: Digital Lab is now Functional Testing Lab
+- Functional Testing renaming: UFT One is now Functional Testing
+- Application Quality Management renaming: Application Lifecycle Management is now Application Quality Management
+- Software Delivery Management renaming: ALM Octane is now Software Delivery Management
+- Enterprise Performance Engineering renaming: LoadRunner Enterprise is now Enterprise Performance Engineering
+
+**Functional Testing**
+- Enable using the open Functional Testing visible instance, instead of opening a new Functional Testing instance for each run
+- Export run results to PDF – supported from Functional Testing 25.2
 - Bug fixes
 
-**OpenText Enterprise Performance(LoadRunner Enterprise)**
-- LoadRunner Enterprise has been rebranded to OpenText Enterprise Performance
+**Functional Testing Lab**
+- Remove the unused Tenant ID field / control and validation logic
+
+**Application Quality Management**
+- Add support for automatic ALM client components registering
+
+**Software Delivery Management**
+- Bug fixes
 
 For information about enhancements introduced in previous versions, see [What's new in earlier versions](https://github.com/jenkinsci/hpe-application-automation-tools-plugin/blob/latest/doc/WhatsNewEarlier.md). 
 
