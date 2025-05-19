@@ -41,7 +41,7 @@
   <l:layout norefresh="true">
     <st:include it="${it.build}" page="sidepanel.jelly" />
     <l:main-panel>
-      <h2>LoadRunner Performance Result</h2>
+      <h2>OpenText Professional Performance Engineering Result</h2>
       <h3>${it.name}</h3>
       <iframe SRC="./${it.name}/HTML.html" width="100%" height="800px" frameBorder="0"></iframe>
     </l:main-panel>

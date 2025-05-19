@@ -1600,7 +1600,7 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 		@Override
 		public String getDisplayName() {
 
-			return "Publish OpenText tests result";
+			return "Publish OpenText test results";
 		}
 
 		@Override

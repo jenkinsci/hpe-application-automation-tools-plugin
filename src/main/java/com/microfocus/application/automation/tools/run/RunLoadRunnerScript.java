@@ -82,7 +82,7 @@ import java.nio.charset.StandardCharsets;
  */
 
 /**
- * This step enables to run LoadRunner scripts directly and collecting their results by converting them to JUnit
+ * This step enables to run Performance Engineering scripts directly and collecting their results by converting them to JUnit
  */
 public class RunLoadRunnerScript extends Builder implements SimpleBuildStep {
     public static final String LR_SCRIPT_HTML_REPORT_CSS = "PResults.css";
@@ -330,7 +330,7 @@ public class RunLoadRunnerScript extends Builder implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "Run LoadRunner script";
+            return "Run Performance Engineering script";
         }
 
         @Override

@@ -81,11 +81,11 @@ public class LrScenarioLoadStepExecution extends AbstractSynchronousNonBlockingS
 
     @Override
     protected Void run() throws InterruptedException {
-        listener.getLogger().println("Running LoadRunner Scenario step");
+        listener.getLogger().println("Running OpenText Performance Engineering Scenario step");
          try {
                 step.getRunFromFileBuilder().perform(build, ws, launcher, listener);
             } catch (IOException e) {
-                listener.fatalError("LoadRunnner scenario run stage encountered an IOException " + e);
+                listener.fatalError("OpenText Performance Engineering scenario run stage encountered an IOException " + e);
                 build.setResult(Result.FAILURE);
                 return null;
          }

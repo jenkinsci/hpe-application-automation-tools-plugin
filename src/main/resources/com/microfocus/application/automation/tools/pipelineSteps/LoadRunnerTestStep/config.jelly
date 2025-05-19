@@ -54,8 +54,8 @@
             </j:forEach>
         </select>
     </f:entry>
-    <f:section title="LoadRunner advanced Settings">
-        <f:advanced title="LoadRunner advanced Settings">
+    <f:section title="OpenText Performance Engineering advanced Settings">
+        <f:advanced title="Performance Engineering advanced Settings">
             <f:entry title="Timeout" field="fsTimeout">
                 <f:textbox name="runPipeline.fsTimeout" value="${instance.fsTimeout}" default=""/>
             </f:entry>

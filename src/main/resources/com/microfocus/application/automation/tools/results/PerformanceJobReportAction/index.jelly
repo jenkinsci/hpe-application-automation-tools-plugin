@@ -39,7 +39,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:p="/lib/hudson/project">
-  <l:layout title="LoadRunner Job Performance Graphs">
+  <l:layout title="OpenText Performance Engineering Job Performance Graphs">
     <st:include it="${it.build}" page="sidepanel.jelly" />
     <l:main-panel>
       <h2>Job Performance Result</h2>

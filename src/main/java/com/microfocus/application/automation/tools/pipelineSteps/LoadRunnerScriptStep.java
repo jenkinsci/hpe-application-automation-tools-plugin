@@ -101,7 +101,7 @@ public class LoadRunnerScriptStep extends AbstractStepImpl {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Run LoadRunner script";
+            return "Run Performance Engineering script";
         }
 
     }
@@ -145,12 +145,12 @@ public class LoadRunnerScriptStep extends AbstractStepImpl {
         @Override
         protected Void run() throws Exception {
 
-            listener.getLogger().println("Running LoadRunner Script Runner step");
+            listener.getLogger().println("Running OpenText Performance Engineering Script Runner step");
 
             try {
                 step.getRunLoadRunnerScript().perform(build, ws, launcher, listener, env);
             } catch (IOException e) {
-                listener.fatalError("LoadRunner script runner stage encountered an IOException " + e);
+                listener.fatalError("OpenText Performance Engineering script runner stage encountered an IOException " + e);
                 build.setResult(Result.FAILURE);
                 return null;
             }

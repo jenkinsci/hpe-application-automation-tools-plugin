@@ -39,7 +39,7 @@
 <?jelly escape-by-default='true'?>
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout">
-  <l:layout title="LoadRunner Script Report">
+  <l:layout title="Performance Engineering Script Report">
     <style type="text/css">
     .bodycell {
       border-width: 0px;
@@ -75,7 +75,7 @@
 
     <st:include it="${it.build}" page="sidepanel.jelly" />
     <l:main-panel>
-       <p><h1>LoadRunner Vugen Script Reports</h1></p>
+       <p><h1>OpenText Performance Engineering Vugen Script Reports</h1></p>
        <br/>
 
        <p>

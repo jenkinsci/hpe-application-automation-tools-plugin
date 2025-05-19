@@ -39,7 +39,7 @@
 <?jelly escape-by-default='true'?>
 
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="LoadRunner script path" field="scriptsPath">
+    <f:entry title="Performance Engineering script path" field="scriptsPath">
         <f:textbox name="runPipeline.scriptsPath" value="${instance.scriptsPath}"/>
     </f:entry>
 </j:jelly>
