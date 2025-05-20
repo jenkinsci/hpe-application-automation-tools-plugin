@@ -330,7 +330,7 @@ public class RunLoadRunnerScript extends Builder implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "Run Performance Engineering script";
+            return "Run OpenText Performance Engineering script";
         }
 
         @Override
