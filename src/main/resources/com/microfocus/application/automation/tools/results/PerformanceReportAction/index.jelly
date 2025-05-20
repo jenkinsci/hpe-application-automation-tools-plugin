@@ -41,7 +41,7 @@
   <l:layout norefresh="true" title="">
     <st:include it="${it.build}" page="sidepanel.jelly" />
     <l:main-panel>
-      <h2>OpenText Professional Performance Engineering Result</h2>
+      <h2>OpenText Performance Engineering Result</h2>
       <!--
         ~ [JENKINS-64639]: This table is only for drawing information.
         -->

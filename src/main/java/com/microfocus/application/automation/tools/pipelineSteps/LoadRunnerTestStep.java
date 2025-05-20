@@ -261,7 +261,7 @@ public class LoadRunnerTestStep extends AbstractStepImpl {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Run OpenText Professional Performance Engineering scenario tests";
+            return "Run OpenText Performance Engineering scenario tests";
         }
 
         /**

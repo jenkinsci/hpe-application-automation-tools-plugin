@@ -87,7 +87,7 @@ To set up a Pipeline job:
 
 4.  Click **Pipeline Syntax**.
 
-5.  In **Sample Step** select **LoadRunnerTest:** **Run OpenText Professional Performance Engineering scenario tests.**
+5.  In **Sample Step** select **LoadRunnerTest:** **Run OpenText Performance Engineering scenario tests.**
     
 6.  In the **Tests** box, enter a test with its full absolute path, or a folder or MTB containing one or more tests or LoadRunner scenarios. To specify multiple entries, click the down arrow on the right of the field and enter each test path on a separate line. Make sure that the paths are accessible from all machines in the local network.
     
