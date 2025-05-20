@@ -101,7 +101,7 @@ public class LoadRunnerScriptStep extends AbstractStepImpl {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Run Performance Engineering script";
+            return "Run OpenText Performance Engineering script";
         }
 
     }
