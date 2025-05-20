@@ -41,5 +41,5 @@
 -->
 <?jelly escape-by-default='true'?>
 <div>
-  This plugin enables integration with ALM, Software Delivery Management, Functional Testing, OpenText Performance Engineering, and OpenText Enterprise Performance Engineering.
+  This plugin enables integration with OpenText Application Quality Management, OpenText Software Delivery Management, OpenText Functional Testing, OpenText Performance Engineering, and OpenText Enterprise Performance Engineering.
 </div>
