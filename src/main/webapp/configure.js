@@ -54,7 +54,8 @@ function getDigitalLab(divMain) {
         proxyPassword: "",
         recreateJob: dl.querySelector('input[name="recreateJob"]').checked,
         jobId: dl.querySelector('input[name="fsJobId"]').value,
-        deviceInfo: dl.querySelector(".device-info-section")
+        deviceInfo: dl.querySelector(".device-info-section"),
+        workspaceInfo: dl.querySelector(".workspace-section")
     };
     if (o.authType == "base") {
         o.userName = dl.querySelector('input[name="mcUserName"]').value;
@@ -88,6 +89,8 @@ async function triggerBtnState(b, disabled) {
         b.value = disabled ? "Loading ..." : "Wizard";
     } else if (b.name == "env-wizard") {
         b.value = disabled ? "Loading ..." : "Environment wizard";
+    } else if (b.name == "workspaceList") {
+        b.value = disabled ? "Loading ..." : "Workspace update";
     }
 }
 async function loadInfo(a, b, path) {
@@ -111,6 +114,8 @@ async function loadInfo(a, b, path) {
             await loadBrowserLabInfo(a, b, dl, path, err);
         } else if (b.name == "digitalLabWizard") {
             await loadMobileInfo(a, b, dl, err);
+        } else if (b.name == "workspaceList") {
+            await loadWorkspaceInfo(a, b, dl, err);
         }
     } catch (e) {
         console.error(e);
@@ -151,6 +156,83 @@ async function loadBrowserLabInfo(a, b, o, path, err) {
             }
         });
     }
+}
+
+async function loadWorkspaceInfo(a, b, o, err) {
+    let baseUrl = "";
+    await a.getMcServerUrl(o.serverName, async (r) => {
+        baseUrl = r.responseObject();
+        if (baseUrl) {
+            baseUrl = baseUrl.trim().replace(/[\/]+$/, "");
+        } else {
+            err.style.display = "inline-block";
+            await triggerBtnState(b, false);
+            return;
+        }
+
+        await a.getValidWorkspaces(baseUrl,o.authType, o.userName, o.password, o.execToken, o.useProxy, o.proxyAddress, o.useProxyAuth, o.proxyUserName, o.proxyPassword, async (response) => {
+            try {
+                let responseData = response.responseObject();
+
+                if (Array.isArray(responseData)) {
+
+                    // Try to find workspace-like objects (looking for name/uuid properties)
+                    const workspaceObjects = responseData.filter(item =>
+                        item && (item.name || item.uuid)
+                    );
+
+                    if (workspaceObjects.length > 0) {
+                        const div = o.workspaceInfo;
+                        const selectElement = div.querySelector('select[name="workspaceSelect"]');
+                        const saveWorkspace = renderWorkspaces(workspaceObjects, selectElement);
+                        selectElement.innerHTML = saveWorkspace;
+                        const workspaceElement = div.querySelector('input[name="workspaceId"]');
+                        workspaceElement.value = workspaceObjects[0].uuid;
+
+                        updateWorkspaceLabel(div, selectElement, workspaceElement);
+                    } else {
+                        console.log('No workspace provided');
+                        err.style.display = "inline-block";
+                        await triggerBtnState(b, false);
+                    }
+                } else {
+                    console.error('Response is not an array:', responseData);
+                    err.style.display = "inline-block";
+                    await triggerBtnState(b, false);
+                }
+
+                function renderWorkspaces(workspaces, saveWorkspace){
+                    let str = "";
+                    workspaces.forEach((item) => {
+                        if(saveWorkspace == ""){
+                            if(item.name == "Shared assets"){
+                                str = str + "<option value=" + item.uuid.toString() + " selected=" + true + ">" + item.name + "</option>";
+                            }else{
+                                str = str + "<option value=" + item.uuid.toString() + ">" + item.name + "</option>";
+                            }
+                        }else{
+                            if(item.uuid == saveWorkspace){
+                                str = str + "<option value=" + item.uuid.toString() + " selected=" + true + ">" + item.name + "</option>";
+                            }else{
+                                str = str + "<option value=" + item.uuid.toString() + ">" + item.name + "</option>";
+                            }
+                        }
+                    });
+                    return str;
+                }
+
+                function checkChild() {
+                        clearInterval(timer);
+                        triggerBtnState(b, false);
+                }
+
+                let timer = setInterval(checkChild, 500);
+            } catch (callbackError) {
+                err.style.display = "inline-block";
+                await triggerBtnState(b, false);
+            }
+        });
+    });
 }
 
 async function loadMobileInfo(a, b, o, err) {
@@ -347,6 +429,39 @@ function onSaveCloudBrowser(b) {
     } catch(e) {
         console.error(e);
     }
+}
+
+function updateWorkspaceLabel(div, selectElement, workspaceElement) {
+    const label = div.querySelector('label[name="workspaceLabel"]');
+    if (workspaceElement.value) {
+        label.textContent = 'Selected Workspace: ' + selectElement.value;
+    } else {
+        label.textContent = 'Workspace not selected';
+    }
+}
+
+function handleWorkspaceSelection(selectElement) {
+    if (!selectElement) {
+        console.error('Could not find workspace select element');
+    }
+
+    const selectedValue = selectElement.value;
+    const selectedText = selectElement.options[selectElement.selectedIndex]?.text || 'Unknown';
+
+    const div = selectElement.parentElement.closest(".workspace-section");
+    if (!div) {
+        console.error('Could not find parent workspace section');
+        return;
+    }
+
+    const workspaceElement = div.querySelector('input[name="workspaceId"]');
+    if (!workspaceElement) {
+        console.error('Could not find workspace input element');
+        return;
+    }
+
+    workspaceElement.value = selectedValue;
+    updateWorkspaceLabel(div, selectElement, workspaceElement);
 }
 
 async function loadCssIfNotAlreadyLoaded(path) {

@@ -93,6 +93,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     private String fsExtraApps;
     private String fsJobId;
     private ProxySettings proxySettings;
+    private String workspaceId;
     private boolean useSSL;
     private AuthModel authModel;
     private CloudBrowserModel cloudBrowserModel;
@@ -124,7 +125,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     @SuppressWarnings("squid:S00107")
     public RunFromFileSystemModel(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval, String perScenarioTimeOut,
                                   String ignoreErrorStrings, String analysisTemplate, String displayController, String mcServerName, AuthModel authModel,
-                                  String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel, String fsOs,
+                                  String workspaceId, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel, String fsOs,
                                   String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics, String fsInstrumented,
                                   String fsExtraApps, String fsJobId, ProxySettings proxySettings, boolean useSSL, String fsReportPath, CloudBrowserModel cloudBrowserModel) {
         this.setFsTests(fsTests);
@@ -140,6 +141,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.displayController = displayController;
 
         this.mcServerName = mcServerName;
+        this.workspaceId = workspaceId;
 
         this.fsDeviceId = fsDeviceId;
         this.fsOs = fsOs;
@@ -227,6 +229,14 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
         this.mcServerName = mcServerName;
     }
 
+    /**
+     * Sets mc workspace id.
+     *
+     * @param workspaceId the mc server name
+     */
+    public void setWorkspaceId(String workspaceId) {
+        this.workspaceId = workspaceId;
+    }
 
     /**
      * Sets fs device id.
@@ -379,6 +389,15 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      */
     public String getMcServerName() {
         return mcServerName;
+    }
+
+    /**
+     * Gets mc workspace id.
+     *
+     * @return the workspace id
+     */
+    public String getWorkspaceId() {
+        return workspaceId;
     }
 
     /**
@@ -705,6 +724,12 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             props.put(MOBILE_USE_SSL, "1");
         } else {
             props.put(MOBILE_USE_SSL, "0");
+        }
+
+        if (workspaceId != null && !workspaceId.isEmpty()) {
+            props.put("MobileWorkspaceName", workspaceId);
+        } else {
+            props.put("MobileWorkspaceName", "");
         }
 
         if (authModel != null &&  authModel.getValue().equals("base")) {
