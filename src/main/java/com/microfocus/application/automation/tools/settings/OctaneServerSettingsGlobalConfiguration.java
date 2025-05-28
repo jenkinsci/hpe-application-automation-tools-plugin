@@ -61,6 +61,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -80,7 +81,14 @@ public class OctaneServerSettingsGlobalConfiguration extends GlobalConfiguration
     private static final Logger logger = SDKBasedLoggerProvider.getLogger(OctaneServerSettingsGlobalConfiguration.class);
 
     public static OctaneServerSettingsGlobalConfiguration getInstance() {
-        return GlobalConfiguration.all().get(OctaneServerSettingsGlobalConfiguration.class);
+        OctaneServerSettingsGlobalConfiguration octaneServerSettingsGlobalConfiguration =
+                GlobalConfiguration.all().get(OctaneServerSettingsGlobalConfiguration.class);
+        if(octaneServerSettingsGlobalConfiguration == null) {
+            logger.log(Level.INFO, "Getting the instance from the GlobalConfiguration failed. Trying again...");
+            octaneServerSettingsGlobalConfiguration = ExtensionList.lookupSingleton(OctaneServerSettingsGlobalConfiguration.class);
+        }
+
+        return octaneServerSettingsGlobalConfiguration;
     }
 
     @CopyOnWrite
