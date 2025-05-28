@@ -45,20 +45,6 @@
 		</j:if>
 		<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/parallelRunnerEnvironment.js"/>
 		<script type="text/javascript" src="${rootURL}/plugin/hp-application-automation-tools-plugin/js/fileSystemUtils.js"/>
-		<script>
-			function getWorkspaces() {
-				// Show loading state
-				var button = event.target;
-				button.disabled = true;
-				button.textContent = 'Loading...';
-
-				// Your logic here
-				setTimeout(() => {
-					button.disabled = false;
-					button.textContent = 'Get workspaces';
-				}, 2000);
-			}
-		</script>
 	</st:once>
 
 	<style>
@@ -373,11 +359,6 @@
 							<f:entry title="Workspace Name" field="workspaceName">
 								<f:textbox name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
 								<div>
-									<button type="button"
-											class="jenkins-button jenkins-button--primary"
-											onclick="getWorkspaces()">
-										Get workspaces
-									</button>
 									<input name="workspaceList" type="button" value="Get Workspaces" onClick="startLoadInfo(a, this)"/>
 									<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
 								</div>

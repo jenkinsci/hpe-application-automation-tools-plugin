@@ -115,7 +115,7 @@ async function loadInfo(a, b, path) {
         } else if (b.name == "digitalLabWizard") {
             await loadMobileInfo(a, b, dl, err);
         } else if (b.name == "workspaceList") {
-            await loadMobileInfo2(a, b, dl, err);
+            await loadWorkspaceInfo(a, b, dl, err);
         }
     } catch (e) {
         console.error(e);
@@ -158,7 +158,7 @@ async function loadBrowserLabInfo(a, b, o, path, err) {
     }
 }
 
-async function loadMobileInfo2(a, b, o, err) {
+async function loadWorkspaceInfo(a, b, o, err) {
     let baseUrl = "";
     await a.getMcServerUrl(o.serverName, async (r) => {
         baseUrl = r.responseObject();
@@ -169,67 +169,8 @@ async function loadMobileInfo2(a, b, o, err) {
             await triggerBtnState(b, false);
             return;
         }
-        //let prevJobId = o.recreateJob ? "" : o.jobId;
+
         await a.getValidWorkspaces(baseUrl,o.authType, o.userName, o.password, o.execToken, o.useProxy, o.proxyAddress, o.useProxyAuth, o.proxyUserName, o.proxyPassword, async (response) => {
-            // try {
-            //     let workspaces = response.responseObject();
-            //
-            //     if (Array.isArray(workspaces)) {
-            //         workspaces.forEach((workspace, index) => {
-            //             // Add null checks for workspace properties
-            //             const name = workspace?.name || 'Default Workspace';
-            //             const uuid = workspace?.uuid || '';
-            //
-            //             // Assign values to input fields
-            //             //document.getElementById(`workspaceName${index}`).value = name;
-            //             //document.getElementById(`workspaceUuid${index}`).value = uuid;
-            //             document.getElementById('workspaceId').value = uuid;
-            //
-            //             console.log(`Workspace ${index + 1} Name:`, name);
-            //             console.log(`Workspace ${index + 1} UUID:`, uuid);
-            //         });
-            //     } else {
-            //         console.error('Unexpected response format:', workspaces);
-            //     }
-            //
-            //     if (jobId == null) {
-            //         err.style.display = "inline-block";
-            //         await triggerBtnState(b, false);
-            //         return;
-            //     }
-            //     //hide the error message after success login
-            //     err.style.display = "none";
-            //     let openedWindow = window.open('/', 'test parameters', 'height=820,width=1130');
-            //     openedWindow.location.href = 'about:blank';
-            //     if (isSaaS) {
-            //         openedWindow.location.href = baseUrl + "/integration8/en/#/main/wizard?TENANTID=" + tenantId + "&jobId=" + jobId + "&displayUFTMode=true";
-            //     } else {
-            //         openedWindow.location.href = baseUrl + "/integration8/en/#/login?jobId=" + jobId + "&displayUFTMode=true";
-            //     }
-
-                // const msgCallback = async (ev) => {
-                //     if (ev?.data == "mcCloseWizard") {
-                //         await a.populateAppAndDevice(baseUrl, o.userName, o.password, o.execToken, o.authType, o.useProxyAuth, o.proxyAddress, o.proxyUserName, o.proxyPassword, jobId, async (app) => {
-                //             let jobInfo = app.responseObject();
-                //
-                //             // div.querySelector('input[name="fsDeviceId"]').value = deviceId;
-                //             // div.querySelector('input[name="fsOs"]').value = OS;
-                //             // div.querySelector('input[name="fsManufacturerAndModel"]').value = manufacturerAndModel;
-                //             // div.querySelector('input[name="fsTargetLab"]').value = targetLab ?? "";
-                //             // div.querySelector('input[name="fsLaunchAppName"]').value = jobInfo['definitions']['launchApplicationName'] ?? "";
-                //             // div.querySelector('input[name="fsInstrumented"]').value = jobInfo['definitions']['instrumented'] ?? "";
-                //             // div.querySelector('input[name="fsAutActions"]').value = jobInfo['definitions']['autActions'] ?? "";
-                //             // div.querySelector('input[name="fsDevicesMetrics"]').value = jobInfo['definitions']['deviceMetrics'] ?? "";
-                //             // div.querySelector('textarea[name="fsExtraApps"]').value = jobInfo['extraApps'] ?? "";
-                //             // div.querySelector('input[name="fsJobId"]').value = jobInfo['jobUUID'];
-                //             await triggerBtnState(b, false);
-                //             err.style.display = "none";
-                //             window.removeEventListener("message", msgCallback, false);
-                //             openedWindow.close();
-                //         });
-                //     }
-                // };
-
             try {
                 let responseData = response.responseObject();
 
@@ -246,16 +187,6 @@ async function loadMobileInfo2(a, b, o, err) {
                         console.log(`Item ${index}:`, item);
                         console.log(`Item ${index} keys:`, Object.keys(item || {}));
                     });
-
-                    // Look for workspace data - it might be nested or have different property names
-                    // Check if workspaces are in a nested property
-                    // const possibleWorkspaceData = responseData.find(item =>
-                    //     item && (item.workspaces || item.data || item.results || Array.isArray(item))
-                    // );
-
-                    // if (possibleWorkspaceData) {
-                    //     console.log('Found potential workspace data:', possibleWorkspaceData);
-                    // }
 
                     // Try to find workspace-like objects (looking for name/uuid properties)
                     const workspaceObjects = responseData.filter(item =>
