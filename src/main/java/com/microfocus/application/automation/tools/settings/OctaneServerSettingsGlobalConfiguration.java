@@ -88,9 +88,6 @@ public class OctaneServerSettingsGlobalConfiguration extends GlobalConfiguration
             logger.log(Level.INFO, "Getting the instance from the GlobalConfiguration failed.");
             octaneServerSettingsGlobalConfiguration = ExtensionList.lookupSingleton(OctaneServerSettingsGlobalConfiguration.class);
         }
-        ExtensionList.lookupSingleton(OctaneServerSettingsGlobalConfiguration.class);
-
-        logger.log(Level.INFO, octaneServerSettingsGlobalConfiguration);
 
         return octaneServerSettingsGlobalConfiguration;
     }
