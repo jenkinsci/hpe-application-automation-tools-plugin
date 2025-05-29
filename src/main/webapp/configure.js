@@ -201,7 +201,13 @@ async function loadWorkspaceInfo(a, b, o, err) {
                         var saveWorkspace = renderWorkspaces(workspaceObjects, selectElement);
                         selectElement.innerHTML = saveWorkspace;
                         const workspaceElement = div.querySelector('input[name="workspaceId"]');
-                        workspaceElement.value = workspaceObjects[0].uuid;                        
+                        workspaceElement.value = workspaceObjects[0].uuid;
+                        const label = div.querySelector('label[name="workspaceLabel"]');
+                        if (workspaceElement.value) {
+                            label.textContent = 'Selected Workspace: ' +  workspaceObjects[0].uuid;
+                        } else {
+                            label.textContent = 'Workspace not selected';
+                        }
                     } else {
                         console.log('No workspace-like objects found in response');
                         console.log('You may need to check the API documentation for the correct response format');
@@ -445,7 +451,14 @@ function handleWorkspaceSelection(selectElement) {
     const selectedText = selectElement.options[selectElement.selectedIndex].text;
     const div = selectElement.parentElement.closest(".workspace-section");
     const workspaceElement = div.querySelector('input[name="workspaceId"]');
+    const workspaceIdLabel = div.querySelector('label[name="workspaceLabel"]');
     workspaceElement.value = selectedValue;
+    const label = div.querySelector('label[name="workspaceLabel"]');
+    if (workspaceElement.value) {
+            label.textContent = 'Selected Workspace: ' +  selectedValue;
+        } else {
+    label.textContent = 'Workspace not selected';
+    }
 }
 
 async function loadCssIfNotAlreadyLoaded(path) {
