@@ -90,7 +90,7 @@ async function triggerBtnState(b, disabled) {
     } else if (b.name == "env-wizard") {
         b.value = disabled ? "Loading ..." : "Environment wizard";
     } else if (b.name == "workspaceList") {
-        b.value = disabled ? "Loading ..." : "Workspace retrieval";
+        b.value = disabled ? "Loading ..." : "Workspace update";
     }
 }
 async function loadInfo(a, b, path) {
@@ -196,39 +196,38 @@ async function loadWorkspaceInfo(a, b, o, err) {
                     if (workspaceObjects.length > 0) {
                         console.log('Found workspace-like objects:', workspaceObjects);
 
-                        workspaceObjects.forEach((workspace, index) => {
-                            const name = workspace.name || workspace.displayName || workspace.title || 'Unknown';
-                            const uuid = workspace.uuid || workspace.id || workspace.workspaceId || '';
-
-                            console.log(`Workspace ${index + 1} Name:`, name);
-                            console.log(`Workspace ${index + 1} UUID:`, uuid);
-
-                            const div = o.workspaceInfo;
-                            const selectElement = div.querySelector('select[name="workspaceSelect"]');
-                            selectElement.innerHTML = '';
-                            const option = document.createElement('option');
-                            option.value = uuid;
-                            option.text = name;
-                            selectElement.appendChild(option);
-
-
-                            // Set the first valid UUID found
-                            if (index === 1 && uuid) {
-                                const workspaceElement = div.querySelector('input[name="workspaceId"]');
-                                
-                                if (workspaceElement && workspaceElement !== null) {
-                                    workspaceElement.value = uuid;
-                                } else {
-                                    console.warn('Element with ID "workspaceId" not found in DOM');
-                                }
-                            }
-                        });
+                        const div = o.workspaceInfo;
+                        const selectElement = div.querySelector('select[name="workspaceSelect"]');
+                        var saveWorkspace = renderWorkspaces(workspaceObjects, selectElement);
+                        selectElement.innerHTML = saveWorkspace;
+                        const workspaceElement = div.querySelector('input[name="workspaceId"]');
+                        workspaceElement.value = workspaceObjects[0].uuid;                        
                     } else {
                         console.log('No workspace-like objects found in response');
                         console.log('You may need to check the API documentation for the correct response format');
                     }
                 } else {
                     console.error('Response is not an array:', responseData);
+                }
+
+                function renderWorkspaces(workspaces, saveWorkspace){
+                    let str = "";
+                    workspaces.forEach((item) => {
+                        if(saveWorkspace == ""){
+                            if(item.name == "Shared assets"){
+                                str = str + "<option value=" + item.uuid.toString() + " selected=" + true + ">" + item.name + "</option>";
+                            }else{
+                                str = str + "<option value=" + item.uuid.toString() + ">" + item.name + "</option>";
+                            }
+                        }else{
+                            if(item.uuid == saveWorkspace){
+                                str = str + "<option value=" + item.uuid.toString() + " selected=" + true + ">" + item.name + "</option>";
+                            }else{
+                                str = str + "<option value=" + item.uuid.toString() + ">" + item.name + "</option>";
+                            }
+                        }
+                    });
+                    return str;
                 }
 
 
@@ -439,6 +438,14 @@ function onSaveCloudBrowser(b) {
     } catch(e) {
         console.error(e);
     }
+}
+
+function handleWorkspaceSelection(selectElement) {
+    const selectedValue = selectElement.value;
+    const selectedText = selectElement.options[selectElement.selectedIndex].text;
+    const div = selectElement.parentElement.closest(".workspace-section");
+    const workspaceElement = div.querySelector('input[name="workspaceId"]');
+    workspaceElement.value = selectedValue;
 }
 
 async function loadCssIfNotAlreadyLoaded(path) {
