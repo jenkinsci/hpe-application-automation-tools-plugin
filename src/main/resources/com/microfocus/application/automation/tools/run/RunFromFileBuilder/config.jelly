@@ -359,17 +359,16 @@
 							<f:entry title="Workspace Name" field="workspaceName">
 								<f:textbox name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
 								<div>
-									<select id="workspaceSelectable" name="workspaceSelect" style="width: 300px;" onchange="handleWorkspaceSelection(this)">
+									<select id="workspaceSelectable" name="workspaceSelect" style="width: 300px;">
 										<!-- Default option when no items are available -->
-<!--										<f:option value="" selected="true">No workspace selected</f:option>-->
+										<f:option value="" selected="true">No workspace selected</f:option>
 
-<!--										&lt;!&ndash; Dynamic options filled from model &ndash;&gt;-->
-<!--										<j:forEach var="workspacesList" items="${descriptor.getWorkspaceList()}">-->
-<!--											<f:option value="${workspace.id}" selected="${workspace.id == instance.workspaceSelection}">-->
-<!--												${workspace.name}-->
-<!--											</f:option>-->
-<!--										</j:forEach>-->
-										<!--option value="${instance.runFromFileModel.workspaceId}">${instance.runFromFileModel.workspaceId}</option-->
+										<!-- Dynamic options filled from model -->
+										<j:forEach var="workspacesList" items="${descriptor.getWorkspaceList()}">
+											<f:option value="${workspace.id}" selected="${workspace.id == instance.workspaceSelection}">
+												${workspace.name}
+											</f:option>
+										</j:forEach>
 									</select>
 									<input name="workspaceList" type="button" value="Get Workspaces" onClick="startLoadInfo(a, this)"/>
 <!--									<select id="workspaceSelect" name="workspaceSelect">-->
