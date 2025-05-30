@@ -203,17 +203,9 @@ async function loadWorkspaceInfo(a, b, o, err) {
                             console.log(`Workspace ${index + 1} Name:`, name);
                             console.log(`Workspace ${index + 1} UUID:`, uuid);
 
-                            const div = o.workspaceInfo;
-                            const selectElement = div.querySelector('select[name="workspaceSelect"]');
-                            selectElement.innerHTML = '';
-                            const option = document.createElement('option');
-                            option.value = uuid;
-                            option.text = name;
-                            selectElement.appendChild(option);
-
-
                             // Set the first valid UUID found
                             if (index === 1 && uuid) {
+                                const div = o.workspaceInfo;
                                 const workspaceElement = div.querySelector('input[name="workspaceId"]');
                                 
                                 if (workspaceElement && workspaceElement !== null) {
