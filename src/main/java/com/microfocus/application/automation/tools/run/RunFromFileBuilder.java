@@ -664,9 +664,9 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     }
 
     /**
-     * Sets mc workspace id.
+     * Sets Digital Lab workspace id.
      *
-     * @param workspaceId the Digital Lab Workspace id
+     * @param workspaceId the workspace id
      */
     @DataBoundSetter
     public void setWorkspaceId(String workspaceId) {

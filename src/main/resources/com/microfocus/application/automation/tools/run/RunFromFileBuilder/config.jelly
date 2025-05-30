@@ -373,11 +373,9 @@
 									<j:choose>
 										<j:when test="${!empty instance.runFromFileModel.workspaceId}">
 											<j:set var="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
-											<j:log message="Selected Workspace: ${workspaceId}"/>
 											Selected Workspace: ${workspaceId}
 										</j:when>
 										<j:otherwise>
-											<j:log message="No selected workspace"/>
 											No selected workspace
 										</j:otherwise>
 									</j:choose>
