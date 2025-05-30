@@ -130,11 +130,6 @@
 		border-radius: 4px;
 		border-left: 4px solid #007bff;
 		}
-		.workspaces-label {
-			font-weight: bold;
-		    display: block;
-			padding: 10px 10px;
-		}
 	</style>
 
 	<st:bind var="a" value="${descriptor}"/>
@@ -375,23 +370,23 @@
 <!--							<f:entry title="Selected workspace:" field="selectedWorkspace">-->
 <!--								<f:readOnlyTextbox name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>-->
 <!--							</f:entry>-->
-								<label name="workspaceLabel" class="workspaces-label">
+								<label name="workspaceLabel" style="font-weight: bold;">
 									<j:choose>
-										<j:when test="${!empty instance.runFromFileModel.workspaceId}">
+										<j:when test="${instance.runFromFileModel.workspaceId}">
 											<j:set var="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
 											<j:log message="Selected Workspace: ${workspaceId}"/>
 											Selected Workspace: ${workspaceId}
 										</j:when>
 										<j:otherwise>
-											<j:log message="No selected workspace"/>
-											No selected workspace
+											<j:log message="Workspace not selected"/>
+											Workspace not selected
 										</j:otherwise>
 									</j:choose>
 								</label>
 								<input type="hidden" name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
 								<div>
-									<label for="workspaceSelectable" class="workspaces-label">Available workspaces:</label>
-									<select id="workspaceSelectable" name="workspaceSelect" style="width: 200px;" onchange="handleWorkspaceSelection(this)">
+									<label for="workspaceSelectable">Available workspaces:</label>
+									<select id="workspaceSelectable" name="workspaceSelect" style="width: 300px;" onchange="handleWorkspaceSelection(this)">
 										<option value="">-- Select a workspace --</option>
 									</select>
 									<input name="workspaceList" type="button" value="Get Workspaces" onClick="startLoadInfo(a, this)"/>
