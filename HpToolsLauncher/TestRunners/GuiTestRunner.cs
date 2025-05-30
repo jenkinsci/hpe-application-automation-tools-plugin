@@ -63,7 +63,6 @@ namespace HpToolsLauncher
         private const string MOBILE_SECRET = "EXTERNAL_MobileSecretKey";
         private const string MOBILE_AUTH_TYPE = "EXTERNAL_MobileAuthType";
         private const string MOBILE_TENANT = "EXTERNAL_MobileTenantId";
-        private const string MOBILE_WORKSPACE_ID = "EXTERNAL_MobileWorkspaceId";
         private const string MOBILE_USE_SSL = "ALM_MobileUseSSL";
         private const string MOBILE_USE_PROXY = "EXTERNAL_MobileProxySetting_UseProxy";
         private const string MOBILE_PROXY_SETTING = "EXTERNAL_MobileProxySetting";
@@ -425,12 +424,6 @@ namespace HpToolsLauncher
                 if (!_mcConnection.TenantId.IsNullOrEmpty())
                 {
                     tulip.SetTestOptionsVal(MOBILE_TENANT, _mcConnection.TenantId);
-                }
-
-                //set workspaceID
-                if (!_mcConnection.WorkspaceName.IsNullOrEmpty())
-                {
-                    tulip.SetTestOptionsVal(MOBILE_WORKSPACE_ID, _mcConnection.WorkspaceName);
                 }
 
                 // ssl and proxy info
@@ -811,9 +804,7 @@ namespace HpToolsLauncher
                     }
                 }
                 opt.ShowRemoteWndOnRun = true;
-                opt.WorkSpace = string.IsNullOrWhiteSpace(_mcConnection.WorkspaceName)
-                    ? DEFAULT_WORKSPACE
-                    : _mcConnection.WorkspaceName;
+                opt.WorkSpace = DEFAULT_WORKSPACE;
                 return true;
             }
             catch (Exception ex)
