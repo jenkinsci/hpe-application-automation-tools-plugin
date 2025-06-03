@@ -94,6 +94,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     private String fsJobId;
     private ProxySettings proxySettings;
     private String workspaceId;
+    private String workspaceName;
     private boolean useSSL;
     private AuthModel authModel;
     private CloudBrowserModel cloudBrowserModel;
@@ -230,12 +231,21 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     }
 
     /**
-     * Sets mc workspace id.
+     * Sets Digital Lab workspace id.
      *
-     * @param workspaceId the mc server name
+     * @param workspaceId the workspace uuid
      */
     public void setWorkspaceId(String workspaceId) {
         this.workspaceId = workspaceId;
+    }
+
+    /**
+     * Sets Digital Lab workspace Name.
+     *
+     * @param workspaceName the workspace name
+     */
+    public void setWorkspaceName(String workspaceName) {
+        this.workspaceName = workspaceName;
     }
 
     /**
@@ -392,12 +402,21 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
     }
 
     /**
-     * Gets mc workspace id.
+     * Gets Digital Lab workspace id.
      *
      * @return the workspace id
      */
     public String getWorkspaceId() {
         return workspaceId;
+    }
+
+    /**
+     * Gets Digital Lab workspace name.
+     *
+     * @return the workspace name
+     */
+    public String getWorkspaceName() {
+        return workspaceName;
     }
 
     /**

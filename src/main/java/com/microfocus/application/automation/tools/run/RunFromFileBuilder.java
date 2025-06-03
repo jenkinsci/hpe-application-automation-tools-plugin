@@ -623,6 +623,15 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     }
 
     /**
+     * Get the Digital Lab Workspace Name.
+     *
+     * @return workspace name
+     */
+    public String getWorkspaceName() {
+        return runFromFileModel.getWorkspaceName();
+    }
+
+    /**
      * Get the fs report path.
      *
      * @return the filesystem report path
@@ -666,11 +675,21 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     /**
      * Sets Digital Lab workspace id.
      *
-     * @param workspaceId the workspace id
+     * @param workspaceId the workspace uuid
      */
     @DataBoundSetter
     public void setWorkspaceId(String workspaceId) {
         runFromFileModel.setWorkspaceId(workspaceId);
+    }
+
+    /**
+     * Sets Digital Lab workspace Name.
+     *
+     * @param workspaceName the workspace Name
+     */
+    @DataBoundSetter
+    public void setWorkspaceName(String workspaceName) {
+        runFromFileModel.setWorkspaceName(workspaceName);
     }
 
     public Map<Long, String> getResultFileNames() {

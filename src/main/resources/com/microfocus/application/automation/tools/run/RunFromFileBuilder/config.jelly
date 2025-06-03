@@ -355,7 +355,7 @@
 						</f:optionalBlock>
 					 </f:optionalBlock>
 				 </f:entry>
-				<f:advanced title="Workspaces" align="right">
+				<f:entry title="Workspaces" align="right">
 					<div id="workspaceSpecificSection" class="tr config-table-top-row" style="position: relative;">
 						<div class="tr workspace-section">
 							<div style="width: 100%">
@@ -368,46 +368,37 @@
 									</div>
 								</div>
 							</div>
-							<f:entry title="Workspace Id" field="workspaceName">
-								<label name="workspaceLabel" class="workspaces-label">
+							<f:entry title="Workspace Name" field="workspaceName">
+								<input type="hidden" name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
+								<input type="hidden" name="workspaceName" value="${instance.runFromFileModel.workspaceName}"/>
+								<div>
 									<j:choose>
-										<j:when test="${!empty instance.runFromFileModel.workspaceId}">
-											<j:set var="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
-											Selected Workspace: ${workspaceId}
+										<j:when test="${hasConfigPermission}">
+									<label for="workspaceSelectable" class="workspaces-label">Workspace:</label>
+									<select id="workspaceSelectable" name="workspaceSelect" style="width: 200px;" onchange="handleWorkspaceSelection(this)">
+										<j:choose>
+										<j:when test="${!empty instance.runFromFileModel.workspaceName}">
+											<option value="${instance.runFromFileModel.workspaceId}">${instance.runFromFileModel.workspaceName}</option>
 										</j:when>
 										<j:otherwise>
-											No selected workspace
+											<option value="">-- Select a workspace --</option>
 										</j:otherwise>
-									</j:choose>
-								</label>
-								<input type="hidden" name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
-								<j:if test="${hasConfigPermission}">
-								<div>
-									<label for="workspaceSelectable" class="workspaces-label">Available workspaces:</label>
-									<select id="workspaceSelectable" name="workspaceSelect" style="width: 200px;" onchange="handleWorkspaceSelection(this)">
-										<option value="">-- Select a workspace --</option>
+										</j:choose>
 									</select>
-									<input name="workspaceList" type="button" value="Get Workspaces" onClick="startLoadInfo(a, this)"/>
+								</j:when>
+								<j:otherwise>
+									<f:textbox value="${instance.runFromFileModel.workspaceName}"/>
+								</j:otherwise>
+							</j:choose>
+									<j:if test="${hasConfigPermission}">
+									<input name="updateWorkspacesList" type="button" value="Get Workspaces" onClick="startLoadInfo(a, this)"/>
 									<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
+									</j:if>
 								</div>
-								</j:if>
 							</f:entry>
 						</div>
-						<div class="tr config-table-top-row">
-							<div colspan="4">
-								<div align="right">
-									<span class="yui-button yui-push-button repeatable-delete danger">
-										<span class="first-child">
-											<button type="button" tabindex="0" title="Hide Workspace Name Settings" onclick="hideAndMoveAdvancedBody('workspaceSpecificSection')">
-												Hide Workspace Name Settings
-											</button>
-										</span>
-									</span>
-								</div>
-							</div>
-						</div>
 					</div>
-				</f:advanced>
+				</f:entry>
 				<j:set var="hasJobId" value="${instance.runFromFileModel.fsJobId == null ? false : instance.runFromFileModel.fsJobId != ''}"/>
 				<f:optionalBlock name="useMobileDevice" title="Use Device Lab" checked="${hasJobId}" inline="true">
 					<div class="tr device-info-section">

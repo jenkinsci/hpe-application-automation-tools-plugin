@@ -89,7 +89,7 @@ async function triggerBtnState(b, disabled) {
         b.value = disabled ? "Loading ..." : "Wizard";
     } else if (b.name == "env-wizard") {
         b.value = disabled ? "Loading ..." : "Environment wizard";
-    } else if (b.name == "workspaceList") {
+    } else if (b.name == "updateWorkspacesList") {
         b.value = disabled ? "Loading ..." : "Workspace update";
     }
 }
@@ -114,7 +114,7 @@ async function loadInfo(a, b, path) {
             await loadBrowserLabInfo(a, b, dl, path, err);
         } else if (b.name == "digitalLabWizard") {
             await loadMobileInfo(a, b, dl, err);
-        } else if (b.name == "workspaceList") {
+        } else if (b.name == "updateWorkspacesList") {
             await loadWorkspaceInfo(a, b, dl, err);
         }
     } catch (e) {
@@ -186,10 +186,10 @@ async function loadWorkspaceInfo(a, b, o, err) {
                         const selectElement = div.querySelector('select[name="workspaceSelect"]');
                         const saveWorkspace = renderWorkspaces(workspaceObjects, selectElement);
                         selectElement.innerHTML = saveWorkspace;
-                        const workspaceElement = div.querySelector('input[name="workspaceId"]');
-                        workspaceElement.value = workspaceObjects[0].uuid;
-
-                        updateWorkspaceLabel(div, selectElement, workspaceElement);
+                        const workspaceIdElement = div.querySelector('input[name="workspaceId"]');
+                        const workspaceNameElement = div.querySelector('input[name="workspaceName"]');
+                        workspaceIdElement.value = workspaceObjects[0].uuid;
+                        workspaceNameElement.value = workspaceObjects[0].name;
                     } else {
                         console.log('No workspace provided');
                         err.style.display = "inline-block";
@@ -201,20 +201,20 @@ async function loadWorkspaceInfo(a, b, o, err) {
                     await triggerBtnState(b, false);
                 }
 
-                function renderWorkspaces(workspaces, saveWorkspace){
+                function renderWorkspaces(workspaces, saveWorkspace) {
                     let str = "";
                     workspaces.forEach((item) => {
-                        if(saveWorkspace == ""){
-                            if(item.name == "Shared assets"){
-                                str = str + "<option value=" + item.uuid.toString() + " selected=" + true + ">" + item.name + "</option>";
-                            }else{
-                                str = str + "<option value=" + item.uuid.toString() + ">" + item.name + "</option>";
+                        if (saveWorkspace === "") {
+                            if (item.name === "Shared assets") {
+                                str += `<option value="${item.uuid.toString()}" selected>${item.name}</option>`;
+                            } else {
+                                str += `<option value="${item.uuid.toString()}">${item.name}</option>`;
                             }
-                        }else{
-                            if(item.uuid == saveWorkspace){
-                                str = str + "<option value=" + item.uuid.toString() + " selected=" + true + ">" + item.name + "</option>";
-                            }else{
-                                str = str + "<option value=" + item.uuid.toString() + ">" + item.name + "</option>";
+                        } else {
+                            if (item.uuid === saveWorkspace) {
+                                str += `<option value="${item.uuid.toString()}" selected>${item.name}</option>`;
+                            } else {
+                                str += `<option value="${item.uuid.toString()}">${item.name}</option>`;
                             }
                         }
                     });
@@ -431,37 +431,28 @@ function onSaveCloudBrowser(b) {
     }
 }
 
-function updateWorkspaceLabel(div, selectElement, workspaceElement) {
-    const label = div.querySelector('label[name="workspaceLabel"]');
-    if (workspaceElement.value) {
-        label.textContent = 'Selected Workspace: ' + selectElement.value;
-    } else {
-        label.textContent = 'Workspace not selected';
-    }
-}
-
 function handleWorkspaceSelection(selectElement) {
     if (!selectElement) {
-        console.error('Could not find workspace select element');
-    }
-
-    const selectedValue = selectElement.value;
-    const selectedText = selectElement.options[selectElement.selectedIndex]?.text || 'Unknown';
-
-    const div = selectElement.parentElement.closest(".workspace-section");
-    if (!div) {
-        console.error('Could not find parent workspace section');
         return;
     }
 
-    const workspaceElement = div.querySelector('input[name="workspaceId"]');
-    if (!workspaceElement) {
-        console.error('Could not find workspace input element');
+    const selectedWorkspaceId = selectElement.value;
+    const selectedWorkspaceName = selectElement.options[selectElement.selectedIndex]?.text || 'Unknown';
+    const WorkspacesDiv = selectElement.parentElement.closest(".workspace-section");
+
+    if (!WorkspacesDiv) {
         return;
     }
 
-    workspaceElement.value = selectedValue;
-    updateWorkspaceLabel(div, selectElement, workspaceElement);
+    const workspaceIdInput = WorkspacesDiv.querySelector('input[name="workspaceId"]');
+    const workspaceNameInput = WorkspacesDiv.querySelector('input[name="workspaceName"]');
+
+    if (!workspaceIdInput || !workspaceNameInput) {
+        return;
+    }
+
+    workspaceIdInput.value = selectedWorkspaceId;
+    workspaceNameInput.value = selectedWorkspaceName;
 }
 
 async function loadCssIfNotAlreadyLoaded(path) {

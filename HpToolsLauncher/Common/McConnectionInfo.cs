@@ -266,7 +266,7 @@ namespace HpToolsLauncher
                     }
                 }
 
-                //mc workspace
+                //Digital Lab workspace
                 if (ciParams.ContainsKey(MOBILEWORKSPACE))
                 {
                     string mcWorkspaceName = ciParams[MOBILEWORKSPACE];
