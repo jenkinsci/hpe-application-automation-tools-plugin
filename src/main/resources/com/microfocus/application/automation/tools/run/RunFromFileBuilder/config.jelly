@@ -123,13 +123,6 @@
 			color:red;
 			display:none;
 		}
-		.selected-display {
-		margin-top: 20px;
-		padding: 15px;
-		background-color: #f8f8f8;
-		border-radius: 4px;
-		border-left: 4px solid #007bff;
-		}
 		.workspaces-label {
 			font-weight: bold;
 		    display: block;
