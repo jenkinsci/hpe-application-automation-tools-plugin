@@ -90,7 +90,7 @@ async function triggerBtnState(b, disabled) {
     } else if (b.name == "env-wizard") {
         b.value = disabled ? "Loading ..." : "Environment wizard";
     } else if (b.name == "updateWorkspacesList") {
-        b.value = disabled ? "Loading ..." : "Workspace update";
+        b.value = disabled ? "Loading ..." : "Get Workspaces";
     }
 }
 async function loadInfo(a, b, path) {
@@ -188,8 +188,8 @@ async function loadWorkspaceInfo(a, b, o, err) {
                         selectElement.innerHTML = saveWorkspace;
                         const workspaceIdElement = div.querySelector('input[name="workspaceId"]');
                         const workspaceNameElement = div.querySelector('input[name="workspaceName"]');
-                        workspaceIdElement.value = workspaceObjects[0].uuid;
-                        workspaceNameElement.value = workspaceObjects[0].name;
+                        
+                        ({ uuid: workspaceIdElement.value, name: workspaceNameElement.value } = workspaceObjects[0]);
                     } else {
                         console.log('No workspace provided');
                         err.style.display = "inline-block";
@@ -206,15 +206,15 @@ async function loadWorkspaceInfo(a, b, o, err) {
                     workspaces.forEach((item) => {
                         if (saveWorkspace === "") {
                             if (item.name === "Shared assets") {
-                                str += `<option value="${item.uuid.toString()}" selected>${item.name}</option>`;
+                                str += `<option value="${item.uuid}" selected>${item.name}</option>`;
                             } else {
-                                str += `<option value="${item.uuid.toString()}">${item.name}</option>`;
+                                str += `<option value="${item.uuid}">${item.name}</option>`;
                             }
                         } else {
                             if (item.uuid === saveWorkspace) {
-                                str += `<option value="${item.uuid.toString()}" selected>${item.name}</option>`;
+                                str += `<option value="${item.uuid}" selected>${item.name}</option>`;
                             } else {
-                                str += `<option value="${item.uuid.toString()}">${item.name}</option>`;
+                                str += `<option value="${item.uuid}">${item.name}</option>`;
                             }
                         }
                     });
