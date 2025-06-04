@@ -86,12 +86,14 @@ namespace HpToolsLauncher
         private const string SYSTEM_PROXY = "System Proxy";
         private const string HTTP_PROXY = "HTTP Proxy";
         private const string DEFAULT_WORKSPACE = "default workspace";
+        private const string ExportOptionsStepDetailsReportFormat = "UserDefined";
 
         private readonly Type _qtType = Type.GetTypeFromProgID("Quicktest.Application");
         private readonly IAssetRunner _runNotifier;
         private readonly object _lockObject = new object();
         private TimeSpan _timeLeftUntilTimeout = TimeSpan.MaxValue;
         private readonly string _uftRunMode;
+        private bool _uftExportPDF;
         private Stopwatch _stopwatch = null;
         private Application _qtpApplication;
         private ParameterDefinitions _qtpParamDefs;
@@ -103,6 +105,7 @@ namespace HpToolsLauncher
         private CloudBrowser _cloudBrowser;
         private bool _printInputParams;
         private bool _isCancelledByUser;
+        private readonly bool _leaveUftOpenIfVisible = false;
         private RunAsUser _uftRunAsUser;
 
         /// <summary>
@@ -111,10 +114,12 @@ namespace HpToolsLauncher
         /// <param name="runNotifier"></param>
         /// <param name="useUftLicense"></param>
         /// <param name="timeLeftUntilTimeout"></param>
-        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, RunAsUser uftRunAsUser)
+
+        public GuiTestRunner(IAssetRunner runNotifier, bool useUftLicense, TimeSpan timeLeftUntilTimeout, string uftRunMode, DigitalLab digitalLab, bool printInputParams, bool uftExportPdf, RunAsUser uftRunAsUser, bool leaveUftOpenIfVisible)
         {
             _timeLeftUntilTimeout = timeLeftUntilTimeout;
             _uftRunMode = uftRunMode;
+            _uftExportPDF = uftExportPdf;
             _stopwatch = Stopwatch.StartNew();
             _runNotifier = runNotifier;
             _useUFTLicense = useUftLicense;
@@ -123,6 +128,7 @@ namespace HpToolsLauncher
             _cloudBrowser = digitalLab.CloudBrowser;
             _printInputParams = printInputParams;
             _uftRunAsUser = uftRunAsUser;
+            _leaveUftOpenIfVisible = leaveUftOpenIfVisible;
         }
 
         #region QTP
@@ -184,7 +190,11 @@ namespace HpToolsLauncher
                 lock (_lockObject)
                 {
                     _qtpApplication = Activator.CreateInstance(_qtType) as Application;
-                    if (_uftRunAsUser != null)
+                    if (_leaveUftOpenIfVisible && (_qtpApplication.Launched && _qtpApplication.Visible) && _uftRunAsUser != null)
+                    {
+                        _uftRunAsUser = null;
+                    }
+                    else if (_uftRunAsUser != null)
                     {
                         try
                         {
@@ -218,7 +228,12 @@ namespace HpToolsLauncher
                     Console.WriteLine(string.Format("OpenText Functional Testing version = {0}", qtpVersion));
 #endif
                     // Check for required Addins
-                    LoadNeededAddins(testPath);
+                    if (_qtpApplication.Launched && _qtpApplication.Visible && _leaveUftOpenIfVisible)
+                    {
+                        //QTPTestCleanup();
+                    }
+                    else
+                        LoadNeededAddins(testPath);
 
                     SetMobileInfo(qtpVersion);
 
@@ -278,6 +293,31 @@ namespace HpToolsLauncher
             {
                 ConsoleWriter.WriteErrLine(Resources.FsDuplicateParamNames);
                 throw;
+            }
+
+            if (_uftExportPDF)
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                exportOptions.AutoExportResults = true;
+                exportOptions.StepDetailsReport = true;
+                exportOptions.DataTableReport = true;
+                exportOptions.LogTrackingReport = true;
+                exportOptions.ScreenRecorderReport = true;
+                exportOptions.SystemMonitorReport = false;
+                exportOptions.StepDetailsReportFormat = ExportOptionsStepDetailsReportFormat;
+                exportOptions.ExportForFailedRunsOnly = true;
+
+                Console.WriteLine("The global Run Sessions option 'Automatically export run results when run session ends' has been enabled by the Jenkins job.");
+            }
+            else
+            {
+                var exportOptions = _qtpApplication.Options.Run.AutoExportReportConfig as AutoExportReportConfigOptions;
+                if (exportOptions.AutoExportResults)
+                {
+                    exportOptions.AutoExportResults = false;
+                    Console.WriteLine(
+                        "The global Run Sessions option 'Automatically export run results when run session ends' has been disabled by the Jenkins job.");
+                }
             }
 
             //if (!HandleDigitalLab(qtpVersion, ref errorReason))
@@ -438,7 +478,8 @@ namespace HpToolsLauncher
                         _qtpApplication = Activator.CreateInstance(_qtType) as Application;
                     }
 
-                    _qtpApplication.Quit();
+                    if (_qtpApplication.Launched && !(_qtpApplication.Visible && _leaveUftOpenIfVisible))
+                        _qtpApplication.Quit();
                 }
             }
             catch
@@ -696,15 +737,29 @@ namespace HpToolsLauncher
 
         private void CleanUpAndKillQtp()
         {
-            //error during run, process may have crashed (need to cleanup, close QTP and qtpRemote for next test to run correctly)
-            CleanUp();
-
-            //kill the qtp automation, to make sure it will run correctly next time
-            Process[] processes = Process.GetProcessesByName("qtpAutomationAgent");
-            Process qtpAuto = processes.Where(p => p.SessionId == Process.GetCurrentProcess().SessionId).FirstOrDefault();
-            if (qtpAuto != null)
+            if (_qtpApplication == null)
             {
-                qtpAuto.Kill();
+                var type = Type.GetTypeFromProgID("Quicktest.Application");
+                _qtpApplication = Activator.CreateInstance(type) as Application;
+            }
+
+            if (_qtpApplication.Launched && _qtpApplication.Visible && _leaveUftOpenIfVisible)
+            {
+                //leave UFT open, the user can close it manually if needed
+            }
+            else
+            {
+                //error during run, process may have crashed (need to cleanup, close QTP and qtpRemote for next test to run correctly)
+                CleanUp();
+
+                //kill the qtp automation, to make sure it will run correctly next time
+                Process[] processes = Process.GetProcessesByName("qtpAutomationAgent");
+                Process qtpAuto = processes.Where(p => p.SessionId == Process.GetCurrentProcess().SessionId)
+                    .FirstOrDefault();
+                if (qtpAuto != null)
+                {
+                    qtpAuto.Kill();
+                }
             }
         }
         private bool HandleDigitalLab(Version qtpVersion, ref string errorReason)

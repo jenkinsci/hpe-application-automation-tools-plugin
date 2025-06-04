@@ -51,9 +51,9 @@ public class CredentialsModel extends AbstractDescribableImpl<CredentialsModel> 
     private Secret almPassword;
 
     @DataBoundConstructor
-    public CredentialsModel(String almUsername, String almPassword) {
+    public CredentialsModel(String almUsername, Secret almPassword) {
         this.almUsername = almUsername;
-        this.almPassword = Secret.fromString(almPassword);
+        this.almPassword = almPassword;
     }
 
     public String getAlmUsername(){

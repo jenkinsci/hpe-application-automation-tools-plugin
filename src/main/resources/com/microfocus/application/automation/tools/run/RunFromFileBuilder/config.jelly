@@ -198,7 +198,9 @@
 						</j:forEach>
 					</select>
 				</f:entry>
-
+				<f:entry field="fsUftExportPdf">
+					<f:checkbox title="Export run results to PDF" name="isPdfEnabled" checked="${instance.isPdfEnabled}" default="false"/>
+				</f:entry>
 				<f:entry>
 					<f:property field="uftSettingsModel"/>
 				</f:entry>
@@ -422,8 +424,8 @@
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide Digital Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
-									Hide Digital Lab Options
+								<button type="button" tabindex="0" title="Hide Functional Testing Lab Options" onclick="hideAndMoveAdvancedBody('mobileSpecificSection')">
+									Hide Functional Testing Lab Options
 								</button>
 							</span>
 						</span>
