@@ -184,12 +184,22 @@ async function loadWorkspaceInfo(a, b, o, err) {
                     if (workspaceObjects.length > 0) {
                         const div = o.workspaceInfo;
                         const selectElement = div.querySelector('select[name="workspaceSelect"]');
+                        const previousSelectedWorkspace = selectElement.value;
                         const saveWorkspace = renderWorkspaces(workspaceObjects, selectElement);
                         selectElement.innerHTML = saveWorkspace;
+
                         const workspaceIdElement = div.querySelector('input[name="workspaceId"]');
                         const workspaceNameElement = div.querySelector('input[name="workspaceName"]');
-                        
-                        ({ uuid: workspaceIdElement.value, name: workspaceNameElement.value } = workspaceObjects[0]);
+
+                        if (workspaceObjects.some(workspace => workspace.uuid === previousSelectedWorkspace)) {
+                            const selectedWorkspace = workspaceObjects.find(workspace => workspace.uuid === previousSelectedWorkspace);
+                            workspaceIdElement.value = selectedWorkspace.uuid;
+                            workspaceNameElement.value = selectedWorkspace.name;
+                            selectElement.value = previousSelectedWorkspace;
+                        } else {
+                            // Use the first item in the list if the previous selected item is not found
+                            ({ uuid: workspaceIdElement.value, name: workspaceNameElement.value } = workspaceObjects[0]);
+                        }
                     } else {
                         console.log('No workspace provided');
                         err.style.display = "inline-block";
@@ -205,11 +215,7 @@ async function loadWorkspaceInfo(a, b, o, err) {
                     let str = "";
                     workspaces.forEach((item) => {
                         if (saveWorkspace === "") {
-                            if (item.name === "Shared assets") {
-                                str += `<option value="${item.uuid}" selected>${item.name}</option>`;
-                            } else {
-                                str += `<option value="${item.uuid}">${item.name}</option>`;
-                            }
+                            str += `<option value="${item.uuid}">${item.name}</option>`;
                         } else {
                             if (item.uuid === saveWorkspace) {
                                 str += `<option value="${item.uuid}" selected>${item.name}</option>`;
@@ -428,6 +434,43 @@ function onSaveCloudBrowser(b) {
         dlg.remove();
     } catch(e) {
         console.error(e);
+    }
+}
+
+function onMcServerNameChange(selectElement) {
+    if (!selectElement) {
+        return;
+    }
+
+    const mobileSpecificSection = selectElement.parentElement.closest("#mobileSpecificSection");
+    if (!mobileSpecificSection) {
+        return;
+    }
+
+    const workspacesDiv = mobileSpecificSection.querySelector(".workspace-section");
+    if (!workspacesDiv) {
+        return;
+    }
+
+    const workspaceSelect = workspacesDiv.querySelector('select[name="workspaceSelect"]');
+    const workspaceIdInput = workspacesDiv.querySelector('input[name="workspaceId"]');
+    const workspaceNameInput = workspacesDiv.querySelector('input[name="workspaceName"]');
+
+    if (workspaceSelect && workspaceSelect.value !== '') {
+        // Reset the workspace select element to the default option
+        workspaceSelect.innerHTML = '';
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Select a workspace --';
+        workspaceSelect.appendChild(defaultOption);
+
+        // Reset the workspaceIdInput and workspaceNameInput to empty strings
+        if (workspaceIdInput) {
+            workspaceIdInput.value = '';
+        }
+        if (workspaceNameInput) {
+            workspaceNameInput.value = '';
+        }
     }
 }
 

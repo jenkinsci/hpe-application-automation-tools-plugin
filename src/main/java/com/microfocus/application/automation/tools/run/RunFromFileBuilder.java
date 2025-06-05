@@ -1186,13 +1186,6 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         private JSONArray changeResult(JSONArray workspaces) {
             JSONArray result = new JSONArray();
             if (workspaces != null) {
-                //Shared Assets
-//                for (int i = 0; i < workspaces.size(); i++) {
-//                    JSONObject workspace = (JSONObject) workspaces.get(i);
-//                    if(workspace.getAsString("name").equals(Constants.SHARED_ASSETS)){
-//                        result.add(workspace);
-//                    }
-//                }
                 for (int i = 0; i < workspaces.size(); i++) {
                     JSONObject workspace = (JSONObject) workspaces.get(i);
                     if(!workspace.getAsString("name").equals(Constants.SHARED_ASSETS)){

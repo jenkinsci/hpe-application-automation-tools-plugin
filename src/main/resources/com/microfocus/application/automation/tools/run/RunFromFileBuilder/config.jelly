@@ -123,11 +123,6 @@
 			color:red;
 			display:none;
 		}
-		.workspaces-label {
-			font-weight: bold;
-		    display: block;
-			padding: 10px 10px;
-		}
 	</style>
 
 	<st:bind var="a" value="${descriptor}"/>
@@ -298,7 +293,7 @@
 				<f:entry title="Server name" field="mcServerName">
 					<j:choose>
 						<j:when test="${hasConfigPermission}">
-							<select name="mcServerName">
+							<select name="mcServerName" onchange="onMcServerNameChange(this)">
 								<j:forEach var="mcServer" items="${descriptor.mcServers}">
 									<f:option selected="${mcServer.mcServerName==instance.mCServerSettingsModel.mcServerName}" value="${mcServer.mcServerName}">
 										${mcServer.mcServerName}
@@ -348,26 +343,13 @@
 						</f:optionalBlock>
 					 </f:optionalBlock>
 				 </f:entry>
-				<f:entry title="Workspaces" align="right">
-					<div id="workspaceSpecificSection" class="tr config-table-top-row" style="position: relative;">
+				<f:entry>
 						<div class="tr workspace-section">
-							<div style="width: 100%">
-								<div class="tr help-sibling config-table-top-row">
-									<div colspan="3">
-										<div>
-											<b>Workspace Name Settings</b>
-										</div>
-										<span class="setting-no-help"></span>
-									</div>
-								</div>
-							</div>
 							<f:entry title="Workspace Name" field="workspaceName">
 								<input type="hidden" name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
 								<input type="hidden" name="workspaceName" value="${instance.runFromFileModel.workspaceName}"/>
-								<div>
 									<j:choose>
 										<j:when test="${hasConfigPermission}">
-									<label for="workspaceSelectable" class="workspaces-label">Workspace:</label>
 									<select id="workspaceSelectable" name="workspaceSelect" style="width: 200px;" onchange="handleWorkspaceSelection(this)">
 										<j:choose>
 										<j:when test="${!empty instance.runFromFileModel.workspaceName}">
@@ -387,10 +369,8 @@
 									<input name="updateWorkspacesList" type="button" value="Get Workspaces" onClick="startLoadInfo(a, this)"/>
 									<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
 									</j:if>
-								</div>
 							</f:entry>
 						</div>
-					</div>
 				</f:entry>
 				<j:set var="hasJobId" value="${instance.runFromFileModel.fsJobId == null ? false : instance.runFromFileModel.fsJobId != ''}"/>
 				<f:optionalBlock name="useMobileDevice" title="Use Device Lab" checked="${hasJobId}" inline="true">
