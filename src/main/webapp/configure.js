@@ -191,13 +191,12 @@ async function loadWorkspaceInfo(a, b, o, err) {
                         const workspaceIdElement = div.querySelector('input[name="workspaceId"]');
                         const workspaceNameElement = div.querySelector('input[name="workspaceName"]');
 
-                        if (workspaceObjects.some(workspace => workspace.uuid === previousSelectedWorkspace)) {
-                            const selectedWorkspace = workspaceObjects.find(workspace => workspace.uuid === previousSelectedWorkspace);
+                        const selectedWorkspace = workspaceObjects.find(workspace => workspace.uuid === previousSelectedWorkspace);
+                        if (selectedWorkspace) {
                             workspaceIdElement.value = selectedWorkspace.uuid;
                             workspaceNameElement.value = selectedWorkspace.name;
                             selectElement.value = previousSelectedWorkspace;
                         } else {
-                            // Use the first item in the list if the previous selected item is not found
                             ({ uuid: workspaceIdElement.value, name: workspaceNameElement.value } = workspaceObjects[0]);
                         }
                     } else {
@@ -456,21 +455,13 @@ function onMcServerNameChange(selectElement) {
     const workspaceIdInput = workspacesDiv.querySelector('input[name="workspaceId"]');
     const workspaceNameInput = workspacesDiv.querySelector('input[name="workspaceName"]');
 
-    if (workspaceSelect && workspaceSelect.value !== '') {
-        // Reset the workspace select element to the default option
+    if (workspaceSelect?.value) {
         workspaceSelect.innerHTML = '';
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = '-- Select a workspace --';
-        workspaceSelect.appendChild(defaultOption);
+        workspaceSelect.appendChild(new Option('-- Select a workspace --', ''));
 
         // Reset the workspaceIdInput and workspaceNameInput to empty strings
-        if (workspaceIdInput) {
-            workspaceIdInput.value = '';
-        }
-        if (workspaceNameInput) {
-            workspaceNameInput.value = '';
-        }
+        workspaceIdInput && (workspaceIdInput.value = '');
+        workspaceNameInput && (workspaceNameInput.value = '');
     }
 }
 
