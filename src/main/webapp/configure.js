@@ -184,6 +184,7 @@ async function loadWorkspaceInfo(a, b, o, err) {
                     if (workspaceObjects.length > 0) {
                         const div = o.workspaceInfo;
                         const selectElement = div.querySelector('select[name="workspaceSelect"]');
+                        selectElement.disabled = false;
                         const previousSelectedWorkspace = selectElement.value;
                         const saveWorkspace = renderWorkspaces(workspaceObjects, selectElement);
                         selectElement.innerHTML = saveWorkspace;
@@ -457,6 +458,7 @@ function onMcServerNameChange(selectElement) {
 
     if (workspaceSelect?.value) {
         workspaceSelect.innerHTML = '';
+        workspaceSelect.disabled = "true";
         workspaceSelect.appendChild(new Option('-- Select a workspace --', ''));
 
         // Reset the workspaceIdInput and workspaceNameInput to empty strings

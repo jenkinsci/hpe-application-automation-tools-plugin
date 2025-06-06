@@ -350,7 +350,7 @@
 								<input type="hidden" name="workspaceName" value="${instance.runFromFileModel.workspaceName}"/>
 									<j:choose>
 										<j:when test="${hasConfigPermission}">
-									<select id="workspaceSelectable" name="workspaceSelect" style="width: 200px;" onchange="handleWorkspaceSelection(this)">
+									<select id="workspaceSelectable" name="workspaceSelect"  disabled="disabled" style="width: 200px;" onchange="handleWorkspaceSelection(this)">
 										<j:choose>
 										<j:when test="${!empty instance.runFromFileModel.workspaceName}">
 											<option value="${instance.runFromFileModel.workspaceId}">${instance.runFromFileModel.workspaceName}</option>
