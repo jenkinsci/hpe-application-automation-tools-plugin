@@ -458,7 +458,7 @@ function onMcServerNameChange(selectElement) {
 
     if (workspaceSelect?.value) {
         workspaceSelect.innerHTML = '';
-        workspaceSelect.disabled = "true";
+        workspaceSelect.disabled = true;
         workspaceSelect.appendChild(new Option('-- Select a workspace --', ''));
 
         // Reset the workspaceIdInput and workspaceNameInput to empty strings
