@@ -55,6 +55,7 @@ import com.microfocus.application.automation.tools.octane.CIJenkinsServicesImpl;
 import com.microfocus.application.automation.tools.octane.Messages;
 import com.microfocus.application.automation.tools.octane.model.ModelFactory;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
+import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.model.Job;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -288,7 +289,7 @@ public class JobConfigurationProxy {
 			}
 
 			final String jobCiId = job != null ? JobProcessorFactory.getFlowProcessor(job).getTranslatedJobName() :
-						multibranch.getFullName();
+								   BuildHandlerUtils.translateFolderJobName(multibranch.getFullName());
 
 			PipelineContext pipelineContext = dtoFactory.newDTO(PipelineContext.class)
 					.setContextEntityId(pipelineId)
@@ -366,7 +367,8 @@ public class JobConfigurationProxy {
 		JSONArray fieldsMetadata = new JSONArray();
 		try {
 			final String jobCiId = job != null ? JobProcessorFactory.getFlowProcessor(job).getTranslatedJobName()
-					: multibranch.getFullName();
+					: BuildHandlerUtils.translateFolderJobName(multibranch.getFullName());;
+
 			PipelineContextList pipelineContextList = octaneClient.getPipelineContextService().getJobConfiguration(octaneClient.getInstanceId(), jobCiId);
 
 			if (!pipelineContextList.getData().isEmpty()) {
