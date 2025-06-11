@@ -199,13 +199,12 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
             props.put("almUsername", almUserName);
             props.put("almDomain", almDomain);
             props.put("almProject", almProject);
+            props.put("almRunHost", almRunHost);
         } else {
-            props.put("almUsername",
-                    Util.replaceMacro(envVars.expand(almUserName), varResolver));
-            props.put("almDomain",
-                    Util.replaceMacro(envVars.expand(almDomain), varResolver));
-            props.put("almProject",
-                    Util.replaceMacro(envVars.expand(almProject), varResolver));
+            props.put("almUsername", Util.replaceMacro(envVars.expand(almUserName), varResolver));
+            props.put("almDomain", Util.replaceMacro(envVars.expand(almDomain), varResolver));
+            props.put("almProject", Util.replaceMacro(envVars.expand(almProject), varResolver));
+            props.put("almRunHost", Util.replaceMacro(envVars.expand(almRunHost), varResolver));
         }
 
         if (!StringUtils.isEmpty(this.almTestSets)) {
@@ -235,7 +234,6 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         }
 
         props.put("almRunMode", almRunMode);
-        props.put("almRunHost", almRunHost);
 
         return props;
     }
