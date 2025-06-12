@@ -67,7 +67,7 @@
     </licenses>
 
     <properties>
-        <revision>25.2.3-beta</revision>
+        <revision>25.2.2-beta</revision>
         <changelist>-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
         <concurrency>1</concurrency>
