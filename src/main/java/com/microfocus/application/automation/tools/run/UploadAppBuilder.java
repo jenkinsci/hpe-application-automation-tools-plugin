@@ -267,7 +267,7 @@ public class UploadAppBuilder extends Builder {
          * Gets all valid workspace list.
          *
          * @param mcUrl the server name
-         * @return the mc workspace list
+         * @return the Digital Lab workspaces list
          */
         @SuppressWarnings("squid:S2259")
         @JavaScriptMethod

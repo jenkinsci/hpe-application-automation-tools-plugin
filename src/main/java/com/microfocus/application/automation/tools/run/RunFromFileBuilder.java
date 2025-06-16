@@ -60,6 +60,7 @@ import hudson.util.Secret;
 import hudson.util.VariableResolver;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -180,7 +181,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     @Deprecated
     public RunFromFileBuilder(String fsTests, String fsTimeout, String fsUftRunMode, String controllerPollingInterval,
                               String perScenarioTimeOut, String ignoreErrorStrings, String displayController,
-                              String analysisTemplate, String mcServerName, AuthModel authModel, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
+                              String analysisTemplate, String mcServerName, AuthModel authModel, String workspaceId, String fsDeviceId, String fsTargetLab, String fsManufacturerAndModel,
                               String fsOs, String fsAutActions, String fsLaunchAppName, String fsDevicesMetrics,
                               String fsInstrumented, String fsExtraApps, String fsJobId, ProxySettings proxySettings,
                               boolean useSSL, boolean isPdfEnabled, boolean isParallelRunnerEnabled, String fsReportPath, CloudBrowserModel cloudBrowserModel) {
@@ -188,7 +189,7 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         this.isPdfEnabled = isPdfEnabled;
         runFromFileModel = new RunFromFileSystemModel(fsTests, fsTimeout, fsUftRunMode, controllerPollingInterval,
                 perScenarioTimeOut, ignoreErrorStrings, displayController, analysisTemplate, mcServerName,
-                authModel, fsDeviceId, fsTargetLab, fsManufacturerAndModel, fsOs,
+                authModel, workspaceId, fsDeviceId, fsTargetLab, fsManufacturerAndModel, fsOs,
                 fsAutActions, fsLaunchAppName, fsDevicesMetrics, fsInstrumented, fsExtraApps, fsJobId,
                 proxySettings, useSSL, fsReportPath, cloudBrowserModel);
     }
@@ -613,6 +614,24 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     }
 
     /**
+     * Get the Digital Lab Workspace id.
+     *
+     * @return workspace id
+     */
+    public String getWorkspaceId() {
+        return runFromFileModel.getWorkspaceId();
+    }
+
+    /**
+     * Get the Digital Lab Workspace Name.
+     *
+     * @return workspace name
+     */
+    public String getWorkspaceName() {
+        return runFromFileModel.getWorkspaceName();
+    }
+
+    /**
      * Get the fs report path.
      *
      * @return the filesystem report path
@@ -651,6 +670,26 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setUseSSL(boolean useSSL) {
         runFromFileModel.setUseSSL(useSSL);
+    }
+
+    /**
+     * Sets Digital Lab workspace id.
+     *
+     * @param workspaceId the workspace uuid
+     */
+    @DataBoundSetter
+    public void setWorkspaceId(String workspaceId) {
+        runFromFileModel.setWorkspaceId(workspaceId);
+    }
+
+    /**
+     * Sets Digital Lab workspace Name.
+     *
+     * @param workspaceName the workspace Name
+     */
+    @DataBoundSetter
+    public void setWorkspaceName(String workspaceName) {
+        runFromFileModel.setWorkspaceName(workspaceName);
     }
 
     public Map<Long, String> getResultFileNames() {
@@ -1109,6 +1148,52 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
             }
 
             return map;
+        }
+
+        /**
+         * Gets all valid workspaces list.
+         *
+         * @param mcUrl         the mc url
+         * @param mcUserName    the mc user name
+         * @param mcPassword    the mc password
+         * @param proxyAddress  the proxy address
+         * @param proxyUserName the proxy user name
+         * @param proxyPassword the proxy password
+         * @return the workspaces
+         */
+        @SuppressWarnings("squid:S2259")
+        @JavaScriptMethod
+        public JSONArray getValidWorkspaces(String mcUrl, String authType, String mcUserName, String mcPassword, String mcExecToken,
+                                            boolean useProxy, String proxyAddress, boolean useAuthentication, String proxyUserName, String proxyPassword) {
+            JSONArray workspaces = null;
+            for (MCServerSettingsModel mcServer : this.getMcServers()) {
+                if (!com.microfocus.application.automation.tools.sse.common.StringUtils.isNullOrEmpty(mcUrl)
+                        && mcUrl.equals(mcServer.getMcServerName())) {
+                    mcUrl = mcServer.getMcServerUrl();
+                }
+            }
+            AuthModel authModel = new AuthModel(mcUserName, mcPassword, mcExecToken, authType);
+            ProxySettings proxySettings =new ProxySettings(useAuthentication, proxyAddress, proxyUserName, proxyPassword);
+            try {
+                JobConfigurationProxy job = JobConfigurationProxy.getInstance();
+                workspaces = job.getAllValidWorkspaces(mcUrl, authModel, proxySettings);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return changeResult(workspaces);
+        }
+
+        private JSONArray changeResult(JSONArray workspaces) {
+            JSONArray result = new JSONArray();
+            if (workspaces != null) {
+                for (int i = 0; i < workspaces.size(); i++) {
+                    JSONObject workspace = (JSONObject) workspaces.get(i);
+                    if(!workspace.getAsString("name").equals(Constants.SHARED_ASSETS)){
+                        result.add(workspace);
+                    }
+                }
+            }
+            return result;
         }
 
         /**

@@ -293,7 +293,7 @@
 				<f:entry title="Server name" field="mcServerName">
 					<j:choose>
 						<j:when test="${hasConfigPermission}">
-							<select name="mcServerName">
+							<select name="mcServerName" onchange="onMcServerNameChange(this)">
 								<j:forEach var="mcServer" items="${descriptor.mcServers}">
 									<f:option selected="${mcServer.mcServerName==instance.mCServerSettingsModel.mcServerName}" value="${mcServer.mcServerName}">
 										${mcServer.mcServerName}
@@ -343,6 +343,35 @@
 						</f:optionalBlock>
 					 </f:optionalBlock>
 				 </f:entry>
+				<f:entry>
+						<div class="tr workspace-section">
+							<f:entry title="Workspace Name" field="workspaceName">
+								<input type="hidden" name="workspaceId" value="${instance.runFromFileModel.workspaceId}"/>
+								<input type="hidden" name="workspaceName" value="${instance.runFromFileModel.workspaceName}"/>
+									<j:choose>
+										<j:when test="${hasConfigPermission}">
+									<select id="workspaceSelectable" name="workspaceSelect"  disabled="disabled" style="width: 200px;" onchange="handleWorkspaceSelection(this)">
+										<j:choose>
+										<j:when test="${!empty instance.runFromFileModel.workspaceName}">
+											<option value="${instance.runFromFileModel.workspaceId}">${instance.runFromFileModel.workspaceName}</option>
+										</j:when>
+										<j:otherwise>
+											<option value="">-- Select a workspace --</option>
+										</j:otherwise>
+										</j:choose>
+									</select>
+								</j:when>
+								<j:otherwise>
+									<f:textbox value="${instance.runFromFileModel.workspaceName}"/>
+								</j:otherwise>
+							</j:choose>
+									<j:if test="${hasConfigPermission}">
+									<input name="updateWorkspacesList" type="button" value="Get Workspaces" onClick="startLoadInfo(a, this)"/>
+									<span class="error-msg">Functional Testing Lab login information or proxy is incorrect.</span>
+									</j:if>
+							</f:entry>
+						</div>
+				</f:entry>
 				<j:set var="hasJobId" value="${instance.runFromFileModel.fsJobId == null ? false : instance.runFromFileModel.fsJobId != ''}"/>
 				<f:optionalBlock name="useMobileDevice" title="Use Device Lab" checked="${hasJobId}" inline="true">
 					<div class="tr device-info-section">

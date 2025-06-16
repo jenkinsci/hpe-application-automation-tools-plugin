@@ -54,7 +54,8 @@ function getDigitalLab(divMain) {
         proxyPassword: "",
         recreateJob: dl.querySelector('input[name="recreateJob"]').checked,
         jobId: dl.querySelector('input[name="fsJobId"]').value,
-        deviceInfo: dl.querySelector(".device-info-section")
+        deviceInfo: dl.querySelector(".device-info-section"),
+        workspaceInfo: dl.querySelector(".workspace-section")
     };
     if (o.authType == "base") {
         o.userName = dl.querySelector('input[name="mcUserName"]').value;
@@ -88,6 +89,8 @@ async function triggerBtnState(b, disabled) {
         b.value = disabled ? "Loading ..." : "Wizard";
     } else if (b.name == "env-wizard") {
         b.value = disabled ? "Loading ..." : "Environment wizard";
+    } else if (b.name == "updateWorkspacesList") {
+        b.value = disabled ? "Loading ..." : "Get Workspaces";
     }
 }
 async function loadInfo(a, b, path) {
@@ -111,6 +114,8 @@ async function loadInfo(a, b, path) {
             await loadBrowserLabInfo(a, b, dl, path, err);
         } else if (b.name == "digitalLabWizard") {
             await loadMobileInfo(a, b, dl, err);
+        } else if (b.name == "updateWorkspacesList") {
+            await loadWorkspaceInfo(a, b, dl, err);
         }
     } catch (e) {
         console.error(e);
@@ -151,6 +156,89 @@ async function loadBrowserLabInfo(a, b, o, path, err) {
             }
         });
     }
+}
+
+async function loadWorkspaceInfo(a, b, o, err) {
+    let baseUrl = "";
+    await a.getMcServerUrl(o.serverName, async (r) => {
+        baseUrl = r.responseObject();
+        if (baseUrl) {
+            baseUrl = baseUrl.trim().replace(/[\/]+$/, "");
+        } else {
+            err.style.display = "inline-block";
+            await triggerBtnState(b, false);
+            return;
+        }
+
+        await a.getValidWorkspaces(baseUrl,o.authType, o.userName, o.password, o.execToken, o.useProxy, o.proxyAddress, o.useProxyAuth, o.proxyUserName, o.proxyPassword, async (response) => {
+            try {
+                let responseData = response.responseObject();
+
+                if (Array.isArray(responseData)) {
+
+                    // Try to find workspace-like objects (looking for name/uuid properties)
+                    const workspaceObjects = responseData.filter(item =>
+                        item && (item.name || item.uuid)
+                    );
+
+                    if (workspaceObjects.length > 0) {
+                        const div = o.workspaceInfo;
+                        const selectElement = div.querySelector('select[name="workspaceSelect"]');
+                        selectElement.disabled = false;
+                        const previousSelectedWorkspace = selectElement.value;
+                        const saveWorkspace = renderWorkspaces(workspaceObjects, selectElement);
+                        selectElement.innerHTML = saveWorkspace;
+
+                        const workspaceIdElement = div.querySelector('input[name="workspaceId"]');
+                        const workspaceNameElement = div.querySelector('input[name="workspaceName"]');
+
+                        const selectedWorkspace = workspaceObjects.find(workspace => workspace.uuid === previousSelectedWorkspace);
+                        if (selectedWorkspace) {
+                            workspaceIdElement.value = selectedWorkspace.uuid;
+                            workspaceNameElement.value = selectedWorkspace.name;
+                            selectElement.value = previousSelectedWorkspace;
+                        } else {
+                            ({ uuid: workspaceIdElement.value, name: workspaceNameElement.value } = workspaceObjects[0]);
+                        }
+                    } else {
+                        console.log('No workspace provided');
+                        err.style.display = "inline-block";
+                        await triggerBtnState(b, false);
+                    }
+                } else {
+                    console.error('Response is not an array:', responseData);
+                    err.style.display = "inline-block";
+                    await triggerBtnState(b, false);
+                }
+
+                function renderWorkspaces(workspaces, saveWorkspace) {
+                    let str = "";
+                    workspaces.forEach((item) => {
+                        if (saveWorkspace === "") {
+                            str += `<option value="${item.uuid}">${item.name}</option>`;
+                        } else {
+                            if (item.uuid === saveWorkspace) {
+                                str += `<option value="${item.uuid}" selected>${item.name}</option>`;
+                            } else {
+                                str += `<option value="${item.uuid}">${item.name}</option>`;
+                            }
+                        }
+                    });
+                    return str;
+                }
+
+                function checkChild() {
+                        clearInterval(timer);
+                        triggerBtnState(b, false);
+                }
+
+                let timer = setInterval(checkChild, 500);
+            } catch (callbackError) {
+                err.style.display = "inline-block";
+                await triggerBtnState(b, false);
+            }
+        });
+    });
 }
 
 async function loadMobileInfo(a, b, o, err) {
@@ -347,6 +435,60 @@ function onSaveCloudBrowser(b) {
     } catch(e) {
         console.error(e);
     }
+}
+
+function onMcServerNameChange(selectElement) {
+    if (!selectElement) {
+        return;
+    }
+
+    const mobileSpecificSection = selectElement.parentElement.closest("#mobileSpecificSection");
+    if (!mobileSpecificSection) {
+        return;
+    }
+
+    const workspacesDiv = mobileSpecificSection.querySelector(".workspace-section");
+    if (!workspacesDiv) {
+        return;
+    }
+
+    const workspaceSelect = workspacesDiv.querySelector('select[name="workspaceSelect"]');
+    const workspaceIdInput = workspacesDiv.querySelector('input[name="workspaceId"]');
+    const workspaceNameInput = workspacesDiv.querySelector('input[name="workspaceName"]');
+
+    if (workspaceSelect?.value) {
+        workspaceSelect.innerHTML = '';
+        workspaceSelect.disabled = true;
+        workspaceSelect.appendChild(new Option('-- Select a workspace --', ''));
+
+        // Reset the workspaceIdInput and workspaceNameInput to empty strings
+        workspaceIdInput && (workspaceIdInput.value = '');
+        workspaceNameInput && (workspaceNameInput.value = '');
+    }
+}
+
+function handleWorkspaceSelection(selectElement) {
+    if (!selectElement) {
+        return;
+    }
+
+    const selectedWorkspaceId = selectElement.value;
+    const selectedWorkspaceName = selectElement.options[selectElement.selectedIndex]?.text || 'Unknown';
+    const WorkspacesDiv = selectElement.parentElement.closest(".workspace-section");
+
+    if (!WorkspacesDiv) {
+        return;
+    }
+
+    const workspaceIdInput = WorkspacesDiv.querySelector('input[name="workspaceId"]');
+    const workspaceNameInput = WorkspacesDiv.querySelector('input[name="workspaceName"]');
+
+    if (!workspaceIdInput || !workspaceNameInput) {
+        return;
+    }
+
+    workspaceIdInput.value = selectedWorkspaceId;
+    workspaceNameInput.value = selectedWorkspaceName;
 }
 
 async function loadCssIfNotAlreadyLoaded(path) {
