@@ -68,6 +68,7 @@ namespace HpToolsLauncher
         private const string MOBILEPASSWORD = "MobilePassword";
         private const string MOBILETENANTID = "MobileTenantId";
         private const string MOBILEWORKSPACE = "MobileWorkspaceName";
+        private const string MOBILEDEVICEMETRICS = "MobileDeviceMetrics";
         private const string MOBILEEXECTOKEN = "MobileExecToken";
         private const string DIGITALLABTYPE = "DigitalLabType";
         private const string MOBILEUSEPROXY = "MobileUseProxy";
@@ -157,6 +158,7 @@ namespace HpToolsLauncher
         public string HostPort { get; set; }
         public string TenantId { get; set; }
         public string WorkspaceName { get; set; }
+        public string DeviceMetrics { get; set; }
         public bool UseSSL { get { return _useSSL; } set { _useSSL = value; } }
         public int UseSslAsInt { get { return _useSSL ? ONE : ZERO; } }
         public bool UseProxy { get { return _useProxy; } set { _useProxy = value; } }
@@ -273,6 +275,15 @@ namespace HpToolsLauncher
                     if (!string.IsNullOrEmpty(mcWorkspaceName))
                     {
                         WorkspaceName = mcWorkspaceName;
+                    }
+                }
+
+                //Device Metrics
+                {
+                    string mcDeviceMetrics = ciParams[MOBILEDEVICEMETRICS];
+                    if (!string.IsNullOrEmpty(mcDeviceMetrics))
+                    {
+                        DeviceMetrics = mcDeviceMetrics;
                     }
                 }
 

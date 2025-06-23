@@ -751,6 +751,12 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             props.put("MobileWorkspaceName", "");
         }
 
+        if (fsDevicesMetrics != null && !fsDevicesMetrics.isEmpty()) {
+            props.put("MobileDeviceMetrics", fsDevicesMetrics);
+        } else {
+            props.put("MobileDeviceMetrics", "");
+        }
+
         if (authModel != null &&  authModel.getValue().equals("base")) {
             if (StringUtils.isNotBlank(authModel.getMcUserName())) {
                 props.put("MobileUserName", authModel.getMcUserName());
