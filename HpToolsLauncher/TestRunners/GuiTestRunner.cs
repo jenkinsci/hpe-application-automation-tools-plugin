@@ -1054,53 +1054,50 @@ namespace HpToolsLauncher
         {
             try
             {
-                if (_mcConnection != null)
+                if (_mcConnection != null && !string.IsNullOrEmpty(_mcConnection.DeviceMetrics))
                 {
-                    if (!string.IsNullOrEmpty(_mcConnection.DeviceMetrics))
+                    string mcConnectionDeviceMetrics = _mcConnection.DeviceMetrics;
+                    Launchers launchers = _qtpApplication.Test.Settings.Launchers;
+                    var metrics = mcConnectionDeviceMetrics.Split(';').Select(m => m.Trim()).ToList();
+
+                    foreach (object lnc in _qtpApplication.Test.Settings.Launchers)
                     {
-                        string mcConnectionDeviceMetrics = _mcConnection.DeviceMetrics;
-                        Launchers launchers = _qtpApplication.Test.Settings.Launchers;
-                        var metrics = mcConnectionDeviceMetrics.Split(';').Select(m => m.Trim()).ToList();
-
-                        foreach (object lnc in _qtpApplication.Test.Settings.Launchers)
+                        if (lnc is MobileLauncher)
                         {
-                            if (lnc is MobileLauncher)
-                            {
-                                MobileLauncher mobileLauncher = (MobileLauncher)lnc;
-                                mobileLauncher.TrackCPUMetric = false;
-                                mobileLauncher.TrackMemoryMetric = false;
-                                mobileLauncher.TrackFreeMemoryMetric = false;
-                                mobileLauncher.TrackFreeDiskSpaceMetric = false;
-                                mobileLauncher.TrackThermalStateMetric = false;
-                                mobileLauncher.TrackWifiStateMetric = false;
-                                mobileLauncher.TrackLogs = false;
+                            MobileLauncher mobileLauncher = (MobileLauncher)lnc;
+                            mobileLauncher.TrackCPUMetric = false;
+                            mobileLauncher.TrackMemoryMetric = false;
+                            mobileLauncher.TrackFreeMemoryMetric = false;
+                            mobileLauncher.TrackFreeDiskSpaceMetric = false;
+                            mobileLauncher.TrackThermalStateMetric = false;
+                            mobileLauncher.TrackWifiStateMetric = false;
+                            mobileLauncher.TrackLogs = false;
 
-                                foreach (var metric in metrics)
+                            foreach (var metric in metrics)
+                            {
+                                switch (metric)
                                 {
-                                    switch (metric)
-                                    {
-                                        case CPU:
-                                            mobileLauncher.TrackCPUMetric = true;
-                                            break;
-                                        case MEMORY:
-                                            mobileLauncher.TrackMemoryMetric = true;
-                                            break;
-                                        case LOG:
-                                            mobileLauncher.TrackLogs = true;
-                                            break;
-                                        case FREEMEMORY:
-                                            mobileLauncher.TrackFreeMemoryMetric = true;
-                                            break;
-                                        case FREEDISKSPACE:
-                                            mobileLauncher.TrackFreeDiskSpaceMetric = true;
-                                            break;
-                                        case THERMALSTATE:
-                                            mobileLauncher.TrackThermalStateMetric = true;
-                                            break;
-                                        case WIFISTATE:
-                                            mobileLauncher.TrackWifiStateMetric = true;
-                                            break;
-                                    }
+                                    case CPU:
+                                        mobileLauncher.TrackCPUMetric = true;
+                                        break;
+                                    case MEMORY:
+                                        mobileLauncher.TrackMemoryMetric = true;
+                                        break;
+                                    case LOG:
+                                        mobileLauncher.TrackLogs = true;
+                                        break;
+                                    case FREEMEMORY:
+                                        mobileLauncher.TrackFreeMemoryMetric = true;
+                                        break;
+                                    case FREEDISKSPACE:
+                                        mobileLauncher.TrackFreeDiskSpaceMetric = true;
+                                        break;
+                                    case THERMALSTATE:
+                                        mobileLauncher.TrackThermalStateMetric = true;
+                                        break;
+                                    case WIFISTATE:
+                                        mobileLauncher.TrackWifiStateMetric = true;
+                                        break;
                                 }
                             }
                         }
