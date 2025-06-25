@@ -337,7 +337,7 @@ namespace HpToolsLauncher
                 return runDesc;
             }
 
-            if (!HandleMobileDeviceMetrics(_mcConnection.DeviceMetrics, ref errorReason))
+            if (!string.IsNullOrEmpty(_mobileInfo) && !HandleMobileDeviceMetrics(_mcConnection.DeviceMetrics, ref errorReason))
             {
                 runDesc.TestState = TestState.Error;
                 runDesc.ErrorDesc = errorReason;
