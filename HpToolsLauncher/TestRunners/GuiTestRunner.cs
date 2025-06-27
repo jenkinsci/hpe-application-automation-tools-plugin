@@ -80,6 +80,13 @@ namespace HpToolsLauncher
         private const string RUNNING = "Running";
         private const string PASSED = "Passed";
         private const string WARNING = "Warning";
+        private const string CPU = "CPU";
+        private const string MEMORY = "Memory";
+        private const string LOG = "Log";
+        private const string FREEMEMORY = "FreeMomery";
+        private const string FREEDISKSPACE = "FreeDiskSpace";
+        private const string THERMALSTATE = "ThermalState";
+        private const string WIFISTATE = "WifiState";
         private const int MEMBER_NOT_FOUND = -2147352573;
         private const string PROTECT_BstrToBase64_FAILED = "ProtectBSTRToBase64 failed for {0}.";
         private const string WEB = "Web";
@@ -274,7 +281,8 @@ namespace HpToolsLauncher
                 return runDesc;
             }
 
-            if (_qtpApplication.Test != null && _qtpApplication.Test.Modified)
+            //IMPORTANT currently this line is breaking the functionality of test.Settings.Launchers from method HandleInputParameters
+            /*if (_qtpApplication.Test != null && _qtpApplication.Test.Modified)
             {
                 var message = Resources.QtpNotLaunchedError;
                 errorReason = message;
@@ -282,6 +290,7 @@ namespace HpToolsLauncher
                 runDesc.ErrorDesc = errorReason;
                 return runDesc;
             }
+            */
 
             _qtpApplication.UseLicenseOfType(_useUFTLicense ? tagUnifiedLicenseType.qtUnifiedFunctionalTesting : tagUnifiedLicenseType.qtNonUnified);
 
@@ -329,6 +338,13 @@ namespace HpToolsLauncher
             //}
 
             if (!HandleInputParameters(testPath, ref errorReason, paramDict, testinf))
+            {
+                runDesc.TestState = TestState.Error;
+                runDesc.ErrorDesc = errorReason;
+                return runDesc;
+            }
+
+            if (!HandleMobileDeviceMetrics(ref errorReason))
             {
                 runDesc.TestState = TestState.Error;
                 runDesc.ErrorDesc = errorReason;
@@ -935,6 +951,7 @@ namespace HpToolsLauncher
                 }
 
                 _qtpApplication.Open(path, true, false);
+
                 _qtpParamDefs = _qtpApplication.Test.ParameterDefinitions;
                 _qtpParameters = _qtpParamDefs.GetParameters();
 
@@ -1030,6 +1047,69 @@ namespace HpToolsLauncher
                 errorReason = Resources.QtpRunError;
                 return false;
             }
+            return true;
+        }
+
+        private bool HandleMobileDeviceMetrics(ref string errorReason)
+        {
+            try
+            {
+                if (_mcConnection != null && !string.IsNullOrEmpty(_mcConnection.DeviceMetrics))
+                {
+                    string mcConnectionDeviceMetrics = _mcConnection.DeviceMetrics;
+                    Launchers launchers = _qtpApplication.Test.Settings.Launchers;
+                    var metrics = mcConnectionDeviceMetrics.Split(';').Select(m => m.Trim()).ToList();
+
+                    foreach (object lnc in _qtpApplication.Test.Settings.Launchers)
+                    {
+                        if (lnc is MobileLauncher)
+                        {
+                            MobileLauncher mobileLauncher = (MobileLauncher)lnc;
+                            mobileLauncher.TrackCPUMetric = false;
+                            mobileLauncher.TrackMemoryMetric = false;
+                            mobileLauncher.TrackFreeMemoryMetric = false;
+                            mobileLauncher.TrackFreeDiskSpaceMetric = false;
+                            mobileLauncher.TrackThermalStateMetric = false;
+                            mobileLauncher.TrackWifiStateMetric = false;
+                            mobileLauncher.TrackLogs = false;
+
+                            foreach (var metric in metrics)
+                            {
+                                switch (metric)
+                                {
+                                    case CPU:
+                                        mobileLauncher.TrackCPUMetric = true;
+                                        break;
+                                    case MEMORY:
+                                        mobileLauncher.TrackMemoryMetric = true;
+                                        break;
+                                    case LOG:
+                                        mobileLauncher.TrackLogs = true;
+                                        break;
+                                    case FREEMEMORY:
+                                        mobileLauncher.TrackFreeMemoryMetric = true;
+                                        break;
+                                    case FREEDISKSPACE:
+                                        mobileLauncher.TrackFreeDiskSpaceMetric = true;
+                                        break;
+                                    case THERMALSTATE:
+                                        mobileLauncher.TrackThermalStateMetric = true;
+                                        break;
+                                    case WIFISTATE:
+                                        mobileLauncher.TrackWifiStateMetric = true;
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                errorReason = Resources.QtpRunError;
+                return false;
+            }
+
             return true;
         }
 
