@@ -202,7 +202,7 @@ public class SseBuildAndPublishStep extends AbstractStepImpl {
 
         @Override
         public String getDisplayName() {
-            return "Execute OpenText functional tests using ALM Lab Management and Publish tests result";
+            return "Execute OpenText functional tests using ALM Lab Management and Publish test results";
         }
 
         public boolean hasAlmServers() {

@@ -80,7 +80,7 @@ public class SseBuilderPublishResultStepExecution extends AbstractSynchronousNon
         sseBuilder.perform(build, ws, launcher, listener);
 
         if (StringUtils.isNotBlank(archiveTestResultsMode)) {
-            listener.getLogger().println("Publish tests result");
+            listener.getLogger().println("Publish test results");
 
             HashMap<String, String> resultFilename = new HashMap<String, String>(0);
             resultFilename.put(RunFromFileBuilder.class.getName(), sseBuilder.getRunResultsFileName());

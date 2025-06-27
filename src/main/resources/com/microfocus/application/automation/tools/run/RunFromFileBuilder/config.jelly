@@ -176,14 +176,14 @@
 		</f:entry>
 	</f:optionalBlock>
 
-	<f:advanced title="OpenText™ Functional Testing-Specific Settings" align="right">
+	<f:advanced title="OpenText™ Functional Testing Settings" align="right">
 		<div id="uftSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
 					<div class="tr help-sibling config-table-top-row">
 						<div colspan="3">
 							<div>
-								<b>Functional Testing-Specific Settings</b>
+								<b>Functional Testing Settings</b>
 							</div>
 							<span class="setting-no-help"></span>
 						</div>
@@ -210,8 +210,8 @@
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide Functional Testing-Specific Settings" onclick="hideAndMoveAdvancedBody('uftSpecificSection')">
-									Hide Functional Testing-Specific Settings
+								<button type="button" tabindex="0" title="Hide Functional Testing Settings" onclick="hideAndMoveAdvancedBody('uftSpecificSection')">
+									Hide Functional Testing Settings
 								</button>
 							</span>
 						</span>
@@ -221,14 +221,14 @@
 		</div>
 	</f:advanced>
 
-	<f:advanced title="LoadRunner-Specific Settings" align="right">
+	<f:advanced title="LoadRunner Settings" align="right">
 		<div id="loadRunnerSpecificSection" class="tr config-table-top-row" style="position: relative;">
 			<div class="repeated-chunk">
 				<div style="width: 100%">
 					<div class="tr help-sibling config-table-top-row">
 						<div colspan="3">
 							<div>
-								<b>LoadRunner-Specific Settings</b>
+								<b>LoadRunner Settings</b>
 							</div>
 							<span class="setting-no-help"></span>
 						</div>
@@ -265,8 +265,8 @@
 					<div align="right">
 						<span class="yui-button yui-push-button repeatable-delete danger">
 							<span class="first-child">
-								<button type="button" tabindex="0" title="Hide LoadRunner-Specific Settings" onclick="hideAndMoveAdvancedBody('loadRunnerSpecificSection')">
-									Hide LoadRunner-Specific Settings
+								<button type="button" tabindex="0" title="Hide LoadRunner Settings" onclick="hideAndMoveAdvancedBody('loadRunnerSpecificSection')">
+									Hide LoadRunner Settings
 								</button>
 							</span>
 						</span>

@@ -54,7 +54,7 @@ To set up a Freestyle job:
 
 4. Expand the **Add build step** drop-down and select **Execute OpenText tests from file system**.
 
-5. Click the **LoadRunner-Specific Settings** button and specify the following settings:
+5. Click the **LoadRunner Settings** button and specify the following settings:
 
    a.  **Controller Polling Interval.** The interval in seconds by which to poll the Controller for the scenario status. The default is 30 seconds.
 
