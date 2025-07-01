@@ -3,6 +3,8 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
+[What&#39;s New in version CE 25.2](#what&#39;s-new-in-version-CE-25&#46;2)
+
 [What&#39;s New in version CE 24.4](#what&#39;s-new-in-version-CE-24&#46;4)
 
 [What&#39;s New in version CE 24.3](#what&#39;s-new-in-version-CE-24&#46;3)
@@ -49,6 +51,29 @@ This page shows a history of the enhancements made to the OpenText Application A
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
 
+
+## what&#39;s-new-in-version-CE-25&#46;2
+
+**Rebranding for OpenText family products**
+- Functional Testing Lab renaming: Digital Lab is now Functional Testing Lab
+- Functional Testing renaming: UFT One is now Functional Testing
+- Application Quality Management renaming: Application Lifecycle Management is now Application Quality Management
+- Software Delivery Management renaming: ALM Octane is now Software Delivery Management
+- Enterprise Performance Engineering renaming: LoadRunner Enterprise is now Enterprise Performance Engineering
+
+**Functional Testing**
+- Enable using the open Functional Testing visible instance, instead of opening a new Functional Testing instance for each run
+- Export run results to PDF – supported from Functional Testing 25.2
+- Bug fixes
+
+**Functional Testing Lab**
+- Remove the unused Tenant ID field / control and validation logic
+
+**Application Quality Management**
+- Add support for automatic ALM client components registering
+
+**Software Delivery Management**
+- Bug fixes
 
 ## What&#39;s New in version CE 24&#46;4
 
