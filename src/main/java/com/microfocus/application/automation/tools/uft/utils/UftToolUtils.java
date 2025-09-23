@@ -83,6 +83,7 @@ public class UftToolUtils {
      */
     public static List<RerunSettingsModel> updateRerunSettings(String nodeName, String fsTestPath, List<RerunSettingsModel> rerunSettingsModels) {
         List<String> buildTests = getBuildTests(nodeName, fsTestPath);
+        int numberOfRerunTests = rerunSettingsModels.size();
 
         if(buildTests != null && !buildTests.isEmpty()) {
             List<String> testPaths = getTests(buildTests, rerunSettingsModels);
@@ -91,6 +92,11 @@ public class UftToolUtils {
                     rerunSettingsModels.add(new RerunSettingsModel(testPath, false, 0, ""));
                 }
             }
+        }
+
+        if (numberOfRerunTests > 0 && (rerunSettingsModels.size() > numberOfRerunTests))
+        {
+            rerunSettingsModels.sort(Comparator.comparing(RerunSettingsModel::getTest));
         }
 
         return rerunSettingsModels;
@@ -190,15 +196,29 @@ public class UftToolUtils {
 
     private static List<String> getTestsFromNode(String nodeName, String path) {
         Node node = Jenkins.get().getNode(nodeName);
-        FilePath filePath = new FilePath(node.getChannel(), path);
-        UftMasterToSlave uftMasterToSlave = new UftMasterToSlave(path);
         List<String> tests = new ArrayList<>();
-        try {
-            tests = filePath.act(uftMasterToSlave);//
-        } catch (IOException e) {
-            logger.info(String.format("File path not found %s", e.getMessage()));
-        } catch (InterruptedException e) {
-            logger.info(String.format("Remote operation failed %s", e.getMessage()));
+
+        String[] paths = path.split("\\n");
+        boolean multiLinePath = path.contains("\n");
+
+        for (String pathStr : paths) {
+            FilePath filePath = new FilePath(node.getChannel(), pathStr);
+            UftMasterToSlave uftMasterToSlave = new UftMasterToSlave(pathStr);
+
+            try {
+                if (multiLinePath) {
+                    List<String> result = filePath.act(uftMasterToSlave);
+                    if (result != null) {
+                        tests.addAll(result);
+                    }
+                } else {
+                    tests = filePath.act(uftMasterToSlave);
+                }
+            } catch (IOException e) {
+                logger.info(String.format("File path not found: %s", e.getMessage()));
+            } catch (InterruptedException e) {
+                logger.info(String.format("Remote operation failed: %s", e.getMessage()));
+            }
         }
 
         return tests;
