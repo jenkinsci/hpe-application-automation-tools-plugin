@@ -79,7 +79,6 @@ public class MockPcRestProxy extends PcRestProxy {
     protected CloseableHttpResponse executeRawRequest(HttpRequestBase request) throws PcException, IOException {
         String url = request.getURI().toString();
 
-        // Publish run report endpoint (fake ZIP)
         if (url.contains("/Runs/") && url.contains("/Results/") && url.endsWith("/data")) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -92,7 +91,6 @@ public class MockPcRestProxy extends PcRestProxy {
             return new CloseableHttpResponseAdapter(basic);
         }
 
-        // Test instances endpoint
         else if (url.contains("/testinstances")) {
             String fakeXml = "<TestInstances><TestInstance id=\"123\"/></TestInstances>";
             BasicHttpResponse basic = new BasicHttpResponse(new ProtocolVersion("HTTP", 1, 1), 200, "OK");
@@ -100,7 +98,6 @@ public class MockPcRestProxy extends PcRestProxy {
             return new CloseableHttpResponseAdapter(basic);
         }
 
-        // Fallback for other endpoints
         else {
             BasicHttpResponse basic = new BasicHttpResponse(new ProtocolVersion("HTTP", 1, 1), 404, "Not Found");
             return new CloseableHttpResponseAdapter(basic);
@@ -114,31 +111,25 @@ public class MockPcRestProxy extends PcRestProxy {
         HttpResponse response = null;
         String requestUrl = request.getURI().toString();
 
-        // --- LOGIN / LOGOUT / STOP RUN ---
         if (requestUrl.equals(String.format(AUTHENTICATION_LOGIN_URL, PcTestBase.WEB_PROTOCOL, PcTestBase.PC_SERVER_NAME))
             || requestUrl.equals(String.format(AUTHENTICATION_LOGOUT_URL, PcTestBase.WEB_PROTOCOL, PcTestBase.PC_SERVER_NAME))
-            // FIXED: Stop Run is handled here
             || requestUrl.equals(String.format(getBaseURL() + "/%s/%s/%s", RUNS_RESOURCE_NAME, PcTestBase.RUN_ID, STOP_MODE))) {
             response = getOkResponse();
-            // Optionally, return some dummy content that executeRequest() can convert to string
             response.setEntity(new StringEntity("<StopRunResponse>OK</StopRunResponse>", StandardCharsets.UTF_8));
         }
 
-        // --- RUNS endpoint ---
         else if (requestUrl.equals(String.format(getBaseURL() + "/%s", RUNS_RESOURCE_NAME))
                  || requestUrl.equals(String.format(getBaseURL() + "/%s/%s", RUNS_RESOURCE_NAME, PcTestBase.RUN_ID))) {
             response = getOkResponse();
             response.setEntity(new StringEntity(PcTestBase.runResponseEntity));
         }
 
-        // --- TESTS endpoint ---
         else if (requestUrl.equals(String.format(getBaseURL() + "/%s", TESTS_RESOURCE_NAME))
                  || requestUrl.equals(String.format(getBaseURL() + "/%s/%s", TESTS_RESOURCE_NAME, PcTestBase.TEST_ID))) {
             response = getOkResponse();
             response.setEntity(new StringEntity(PcTestBase.testResponseEntity));
         }
 
-        // --- RUNS WAIT endpoint ---
         else if (requestUrl.equals(String.format(getBaseURL() + "/%s/%s", RUNS_RESOURCE_NAME, PcTestBase.RUN_ID_WAIT))) {
             response = getOkResponse();
             response.setEntity(new StringEntity(PcTestBase.runResponseEntity.replace("*", runState.next().value())));
@@ -146,20 +137,17 @@ public class MockPcRestProxy extends PcRestProxy {
                 runState = initializeRunStateIterator();
         }
 
-        // --- RUN RESULTS endpoint ---
         else if (requestUrl.equals(String.format(getBaseURL() + "/%s/%s/%s", RUNS_RESOURCE_NAME, PcTestBase.RUN_ID, RESULTS_RESOURCE_NAME))) {
             response = getOkResponse();
             response.setEntity(new StringEntity(PcTestBase.runResultsEntity));
         }
 
-        // --- RUN RESULTS DATA endpoint (ZIP for publishRunReport) ---
         else if (requestUrl.equals(String.format(getBaseURL() + "/%s/%s/%s/%s/data", RUNS_RESOURCE_NAME, PcTestBase.RUN_ID, RESULTS_RESOURCE_NAME, PcTestBase.REPORT_ID))) {
             response = getOkResponse();
             response.setEntity(new FileEntity(
                     new File(getClass().getResource(PcBuilder.pcReportArchiveName).getPath()), ContentType.DEFAULT_BINARY));
         }
 
-        // --- fallback ---
         if (response == null)
             throw new PcException(String.format("%s %s is not recognized by PC Rest Proxy", request.getMethod(), requestUrl));
 

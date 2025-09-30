@@ -143,6 +143,7 @@ public final class OctaneServerMock {
 			for (TestSpecificHandler testSpecificHandler : testSpecificHandlers) {
 				if (testSpecificHandler.ownsUrlToProcess(Request.getPathInContext(request))) {
 					logger.log(Level.INFO, request.getMethod() + " " + Request.getPathInContext(request) + " picked up by " + testSpecificHandler);
+					callback.succeeded();
 					return testSpecificHandler.handle(request, response, callback);
 				}
 			}
@@ -152,36 +153,41 @@ public final class OctaneServerMock {
 				response.setStatus(HttpServletResponse.SC_OK);
 				HttpCookie cookie = HttpCookie.build("LWSSO_COOKIE_KEY", "some_dummy_security_token").build();
 				Response.addCookie(response,  cookie);
+				callback.succeeded();
 				return true;
 			} else if (request.getMethod().equals("GET") && Request.getPathInContext(request).endsWith("tasks")) {
-				return defaultGetTasksHandler(request, response);
+				return defaultGetTasksHandler(request, response, callback);
 			} else if (request.getMethod().equals("GET") && Request.getPathInContext(request).startsWith("/internal-api/shared_spaces/") && Request.getPathInContext(request).endsWith("/workspaceId")) {
-				return defaultGetWorkspaceFoLogsHandler(request, response);
+				return defaultGetWorkspaceFoLogsHandler(request, response, callback);
 			} else if (request.getMethod().equals("GET") && Request.getPathInContext(request).endsWith("connectivity/status")) {
 				response.setStatus(HttpServletResponse.SC_OK);
 				response.write(true, BufferUtil.toBuffer("{\"octaneVersion\":\"15.1.20.9999\",\"supportedSdkVersion\":\"1.4.17\"}"), callback);
+				callback.succeeded();
 				return true;
 			} else {
 				logger.info("will respond with 200 and empty content");
 				response.setStatus(HttpServletResponse.SC_OK);
+				callback.succeeded();
 				return true;
 			}
 		}
 
-		private boolean defaultGetTasksHandler(Request request, Response response) {
+		private boolean defaultGetTasksHandler(Request request, Response response, Callback callback) {
 			logger.log(Level.INFO, "found GET 'tasks' request, will respond with default Mock handler");
 			try {
 				Thread.sleep(10 * 1000);
 			} catch (InterruptedException ie) {
 				logger.log(Level.FINE, "interrupted while delaying default GET tasks response");
+				callback.failed(ie);
 			}
 			response.setStatus(HttpServletResponse.SC_OK);
 			return true;
 		}
 
-		private boolean defaultGetWorkspaceFoLogsHandler(Request request, Response response) {
+		private boolean defaultGetWorkspaceFoLogsHandler(Request request, Response response, Callback callback) {
 			logger.log(Level.INFO, "found GET 'workspaceId' for build logs request, will respond with default Mock handler");
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+			callback.succeeded();
 			return true;
 		}
 	}
