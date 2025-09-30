@@ -40,6 +40,7 @@ import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.events.CIEvent;
 import com.hp.octane.integrations.dto.events.CIEventsList;
 import com.hp.octane.integrations.services.WorkerPreflight;
+import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.hp.octane.integrations.dto.events.CIEventType;
 import com.microfocus.application.automation.tools.octane.OctaneServerMock;
@@ -84,7 +85,7 @@ public class EventsTest {
 	private static String instanceId;
 
 	@ClassRule
-	public static final JenkinsRule rule = new JenkinsRule();
+	public static final JenkinsRule rule = new LoggedJenkinsRule();
 
 	@BeforeClass
 	public static void beforeClass() {

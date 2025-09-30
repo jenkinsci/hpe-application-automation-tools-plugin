@@ -42,6 +42,7 @@ import com.hp.octane.integrations.dto.tests.TestsResult;
 import com.hp.octane.integrations.services.WorkerPreflight;
 import com.hp.octane.integrations.services.rest.RestService;
 import com.hp.octane.integrations.utils.CIPluginSDKUtils;
+import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.microfocus.application.automation.tools.octane.OctaneServerMock;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
@@ -87,7 +88,7 @@ public class TestApiTest {
 	private static Long pushTestResultId = 10001L;
 
 	@ClassRule
-	final public static JenkinsRule rule = new JenkinsRule();
+	final public static JenkinsRule rule = new LoggedJenkinsRule();
 
 	@BeforeClass
 	public static void init() throws Exception {
