@@ -37,14 +37,18 @@
 package com.microfocus.application.automation.tools.octane;
 
 import com.microfocus.application.automation.tools.octane.events.EventsTest;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -122,7 +126,7 @@ public final class OctaneServerMock {
 			byte[] buffer = new byte[1024];
 			int len;
 
-			GZIPInputStream gzip = new GZIPInputStream(request.getInputStream());
+			GZIPInputStream gzip = new GZIPInputStream(Content.Source.asInputStream(request));
 			while ((len = gzip.read(buffer, 0, 1024)) > 0) {
 				body.append(new String(buffer, 0, len));
 			}
@@ -131,45 +135,40 @@ public final class OctaneServerMock {
 		}
 	}
 
-	private final class OctaneServerMockHandler extends AbstractHandler {
+	private final class OctaneServerMockHandler extends Handler.Abstract {
 
 		@Override
-		public void handle(String s, Request request, HttpServletRequest httpServletRequest, HttpServletResponse response) throws IOException, ServletException {
-			logger.log(Level.INFO, "accepted request " + request.getMethod() + " " + request.getPathInfo());
+		public boolean handle(Request request, Response response, Callback callback) throws Exception {
+			logger.log(Level.INFO, "accepted request " + request.getMethod() + " " + Request.getPathInContext(request));
 			for (TestSpecificHandler testSpecificHandler : testSpecificHandlers) {
-				if (testSpecificHandler.ownsUrlToProcess(request.getPathInfo())) {
-					logger.log(Level.INFO, request.getMethod() + " " + request.getPathInfo() + " picked up by " + testSpecificHandler);
-					testSpecificHandler.handle(s, request, httpServletRequest, response);
-					request.setHandled(true);
-					break;
+				if (testSpecificHandler.ownsUrlToProcess(Request.getPathInContext(request))) {
+					logger.log(Level.INFO, request.getMethod() + " " + Request.getPathInContext(request) + " picked up by " + testSpecificHandler);
+					return testSpecificHandler.handle(request, response, callback);
 				}
 			}
-			if (!request.isHandled()) {
-				logger.log(Level.INFO, "none of test specific handlers matched for " + request.getMethod() + " " + request.getPathInfo());
-				if (request.getMethod().equals("POST") && request.getPathInfo().equals("/authentication/sign_in")) {
-					logger.log(Level.INFO, "found POST 'authentication/sign_in' request, will respond with default Mock handler");
-					response.setStatus(HttpServletResponse.SC_OK);
-					response.addCookie(new Cookie("LWSSO_COOKIE_KEY", "some_dummy_security_token"));
-					request.setHandled(true);
-				} else if (request.getMethod().equals("GET") && request.getPathInfo().endsWith("tasks")) {
-					defaultGetTasksHandler(request, response);
-				} else if (request.getMethod().equals("GET") && request.getPathInfo().startsWith("/internal-api/shared_spaces/") && request.getPathInfo().endsWith("/workspaceId")) {
-					defaultGetWorkspaceFoLogsHandler(request, response);
-				} else if (request.getMethod().equals("GET") && request.getPathInfo().endsWith("connectivity/status")) {
-					response.setStatus(HttpServletResponse.SC_OK);
-					response.getWriter().write("{\"octaneVersion\":\"15.1.20.9999\",\"supportedSdkVersion\":\"1.4.17\"}");
-					response.getWriter().flush();
-					response.getWriter().close();
-					request.setHandled(true);
-				} else {
-					logger.info("will respond with 200 and empty content");
-					response.setStatus(HttpServletResponse.SC_OK);
-					request.setHandled(true);
-				}
+			logger.log(Level.INFO, "none of test specific handlers matched for " + request.getMethod() + " " + Request.getPathInContext(request));
+			if (request.getMethod().equals("POST") && Request.getPathInContext(request).equals("/authentication/sign_in")) {
+				logger.log(Level.INFO, "found POST 'authentication/sign_in' request, will respond with default Mock handler");
+				response.setStatus(HttpServletResponse.SC_OK);
+				HttpCookie cookie = HttpCookie.build("LWSSO_COOKIE_KEY", "some_dummy_security_token").build();
+				Response.addCookie(response,  cookie);
+				return true;
+			} else if (request.getMethod().equals("GET") && Request.getPathInContext(request).endsWith("tasks")) {
+				return defaultGetTasksHandler(request, response);
+			} else if (request.getMethod().equals("GET") && Request.getPathInContext(request).startsWith("/internal-api/shared_spaces/") && Request.getPathInContext(request).endsWith("/workspaceId")) {
+				return defaultGetWorkspaceFoLogsHandler(request, response);
+			} else if (request.getMethod().equals("GET") && Request.getPathInContext(request).endsWith("connectivity/status")) {
+				response.setStatus(HttpServletResponse.SC_OK);
+				response.write(true, BufferUtil.toBuffer("{\"octaneVersion\":\"15.1.20.9999\",\"supportedSdkVersion\":\"1.4.17\"}"), callback);
+				return true;
+			} else {
+				logger.info("will respond with 200 and empty content");
+				response.setStatus(HttpServletResponse.SC_OK);
+				return true;
 			}
 		}
 
-		private void defaultGetTasksHandler(Request request, HttpServletResponse response) {
+		private boolean defaultGetTasksHandler(Request request, Response response) {
 			logger.log(Level.INFO, "found GET 'tasks' request, will respond with default Mock handler");
 			try {
 				Thread.sleep(10 * 1000);
@@ -177,13 +176,13 @@ public final class OctaneServerMock {
 				logger.log(Level.FINE, "interrupted while delaying default GET tasks response");
 			}
 			response.setStatus(HttpServletResponse.SC_OK);
-			request.setHandled(true);
+			return true;
 		}
 
-		private void defaultGetWorkspaceFoLogsHandler(Request request, HttpServletResponse response) {
+		private boolean defaultGetWorkspaceFoLogsHandler(Request request, Response response) {
 			logger.log(Level.INFO, "found GET 'workspaceId' for build logs request, will respond with default Mock handler");
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-			request.setHandled(true);
+			return true;
 		}
 	}
 }

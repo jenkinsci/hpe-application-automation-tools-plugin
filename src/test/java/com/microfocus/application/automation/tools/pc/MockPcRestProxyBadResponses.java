@@ -38,6 +38,7 @@ package com.microfocus.application.automation.tools.pc;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -52,6 +53,7 @@ import org.apache.http.message.BasicHttpResponse;
 import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 
 import com.microfocus.adm.performancecenter.plugins.common.rest.PcRestProxy;
+import org.apache.http.util.EntityUtils;
 
 import static com.microfocus.adm.performancecenter.plugins.common.pcentities.RunState.*;
 
@@ -64,7 +66,7 @@ public class MockPcRestProxyBadResponses extends PcRestProxy {
     }
 
     @Override
-    protected HttpResponse executeRequest(HttpRequestBase request) throws PcException, ClientProtocolException,
+    protected String executeRequest(HttpRequestBase request) throws PcException, ClientProtocolException,
             IOException {
         HttpResponse response = null;
         String requestUrl = request.getURI().toString();
@@ -86,7 +88,8 @@ public class MockPcRestProxyBadResponses extends PcRestProxy {
         }
         if (response == null)
             throw new PcException(String.format("%s %s is not recognized by PC Rest Proxy", request.getMethod(), requestUrl));
-        return response;
+
+        return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
     }
     
     private HttpResponse getOkResponse(){

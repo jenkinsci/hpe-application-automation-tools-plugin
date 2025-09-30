@@ -39,10 +39,11 @@ package com.microfocus.application.automation.tools.results;
 import hudson.model.DirectoryBrowserSupport;
 import hudson.model.ModelObject;
 import hudson.model.Run;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
+import org.kohsuke.stapler.StaplerResponse2;
+
 import java.io.IOException;
 
 /**
@@ -102,7 +103,7 @@ public class SummaryReport implements ModelObject {
      * @throws IOException      the io exception
      * @throws ServletException the servlet exception
      */
-    public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
+    public void doDynamic(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException, ServletException {
 
         if (_directoryBrowserSupport != null)
             _directoryBrowserSupport.generateResponse(req, rsp, this);

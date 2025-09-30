@@ -63,6 +63,7 @@ import hudson.triggers.SCMTrigger;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.Logger;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import java.io.IOException;
 import java.util.*;
@@ -219,7 +220,7 @@ public class TestExecutionJobCreatorService {
 			if (wrapperDescriptor != null) {
 				BuildWrapper wrapper = proj.getBuildWrappersList().get(wrapperDescriptor);
 				if (wrapper == null) {
-					wrapper = wrapperDescriptor.newInstance(null, null);
+					wrapper = wrapperDescriptor.newInstance((StaplerRequest2) null, null);
 					proj.getBuildWrappersList().add(wrapper);
 				}
 

@@ -91,8 +91,8 @@ public class UFTTestDetectionCallable extends MasterToSlaveFileCallable<UftTestD
 
 
             ParameterValue parameterValue = parameterAction.getParameter(UftConstants.FULL_SCAN_PARAMETER_NAME);
-            if (parameterValue != null) {
-                fullScan = (Boolean) parameterValue.getValue();
+            if (parameterValue != null && parameterValue.getValue() != null) {
+                fullScan = Boolean.parseBoolean(parameterValue.getValue().toString());
             }
             if (!fullScan) {
                 fullScan = build.getId().equals("1");

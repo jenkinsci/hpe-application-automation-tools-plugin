@@ -39,10 +39,10 @@ package com.microfocus.application.automation.tools.results;
 import hudson.model.DirectoryBrowserSupport;
 import hudson.model.ModelObject;
 import hudson.model.Run;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import jakarta.servlet.ServletException;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 
-import javax.servlet.ServletException;
 import java.io.IOException;
 
 public class DetailReport implements ModelObject {
@@ -75,7 +75,7 @@ public class DetailReport implements ModelObject {
         return name;
     }
 
-    public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
+    public void doDynamic(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException, ServletException {
 
         if (_directoryBrowserSupport != null)
             _directoryBrowserSupport.generateResponse(req, rsp, this);

@@ -139,6 +139,7 @@ public class Webhooks implements UnprotectedRootAction {
                         if (octaneClient.getConfigurationService().getConfiguration().isDisabled()) {
                             continue;
                         }
+
                         Job jenkinsJob = getJob(octaneClient, jobName);
                         if (jenkinsJob == null) {
                             continue;

@@ -47,11 +47,13 @@ import com.microfocus.application.automation.tools.octane.configuration.Configur
 import hudson.model.FreeStyleProject;
 import hudson.util.Secret;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -145,13 +147,14 @@ public class EventsTest {
 		}
 
 		@Override
-		public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-			String requestBody = getBodyAsString(baseRequest);
+		public boolean handle(Request request, Response response, Callback callback) throws IOException {
+			String requestBody = getBodyAsString(request);
 			CIEventsList tmp = dtoFactory.dtoFromJson(requestBody, CIEventsList.class);
 			eventsLists.setServer(tmp.getServer());
 			eventsLists.getEvents().addAll(tmp.getEvents());
 			logger.info("EVENTS TEST: server mock events list length " + eventsLists.getEvents().size());
 			response.setStatus(HttpServletResponse.SC_OK);
+			return true;
 		}
 	}
 }

@@ -51,6 +51,7 @@ import com.hp.octane.integrations.dto.executor.TestConnectivityInfo;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginFactory;
 import com.microfocus.application.automation.tools.octane.executor.scmmanager.ScmPluginHandler;
+import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.User;
 import hudson.security.Permission;
@@ -86,8 +87,12 @@ public class ExecutorConnectivityService {
 			boolean needCredentialsPermission = false;
 			BaseStandardCredentials credentials = null;
 			if (StringUtils.isNotEmpty(testConnectivityInfo.getUsername()) && testConnectivityInfo.getPassword() != null) {
-				credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, null, null, testConnectivityInfo.getUsername(), testConnectivityInfo.getPassword());
-				needCredentialsPermission = true;
+                try {
+                    credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, null, null, testConnectivityInfo.getUsername(), testConnectivityInfo.getPassword());
+                } catch (Descriptor.FormException e) {
+                    throw new RuntimeException(e);
+                }
+                needCredentialsPermission = true;
 			} else if (StringUtils.isNotEmpty(testConnectivityInfo.getCredentialsId())) {
 				credentials = getCredentialsById(testConnectivityInfo.getCredentialsId());
 			}
@@ -141,8 +146,13 @@ public class ExecutorConnectivityService {
 			if (jenkinsCredentials == null) {
 				SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 				String desc = String.format("Created by the OpenText %s plugin on %s", PLUGIN_NAME, formatter.format(new Date()));
-				BaseStandardCredentials c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialsInfo.getCredentialsId(), desc, credentialsInfo.getUsername(), credentialsInfo.getPassword());
-				CredentialsStore store = new SystemCredentialsProvider.StoreImpl();
+                BaseStandardCredentials c;
+                try {
+                    c = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialsInfo.getCredentialsId(), desc, credentialsInfo.getUsername(), credentialsInfo.getPassword());
+                } catch (Descriptor.FormException e) {
+                    throw new RuntimeException(e);
+                }
+                CredentialsStore store = new SystemCredentialsProvider.StoreImpl();
 				try {
 					if(store.addCredentials(Domain.global(), c)){
 						jenkinsCredentials = c;
