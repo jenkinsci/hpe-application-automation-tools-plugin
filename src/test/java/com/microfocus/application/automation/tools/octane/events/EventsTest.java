@@ -39,7 +39,6 @@ package com.microfocus.application.automation.tools.octane.events;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.events.CIEvent;
 import com.hp.octane.integrations.dto.events.CIEventsList;
-import com.hp.octane.integrations.services.WorkerPreflight;
 import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.hp.octane.integrations.dto.events.CIEventType;
@@ -53,7 +52,6 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -155,6 +153,7 @@ public class EventsTest {
 			eventsLists.getEvents().addAll(tmp.getEvents());
 			logger.info("EVENTS TEST: server mock events list length " + eventsLists.getEvents().size());
 			response.setStatus(HttpServletResponse.SC_OK);
+			callback.succeeded();
 			return true;
 		}
 	}

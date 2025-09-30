@@ -49,9 +49,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
@@ -143,7 +147,6 @@ public final class OctaneServerMock {
 			for (TestSpecificHandler testSpecificHandler : testSpecificHandlers) {
 				if (testSpecificHandler.ownsUrlToProcess(Request.getPathInContext(request))) {
 					logger.log(Level.INFO, request.getMethod() + " " + Request.getPathInContext(request) + " picked up by " + testSpecificHandler);
-					callback.succeeded();
 					return testSpecificHandler.handle(request, response, callback);
 				}
 			}
@@ -187,7 +190,6 @@ public final class OctaneServerMock {
 		private boolean defaultGetWorkspaceFoLogsHandler(Request request, Response response, Callback callback) {
 			logger.log(Level.INFO, "found GET 'workspaceId' for build logs request, will respond with default Mock handler");
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-			callback.succeeded();
 			return true;
 		}
 	}

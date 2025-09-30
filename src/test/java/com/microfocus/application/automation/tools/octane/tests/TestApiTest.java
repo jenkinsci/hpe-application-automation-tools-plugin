@@ -39,7 +39,6 @@ package com.microfocus.application.automation.tools.octane.tests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.tests.TestsResult;
-import com.hp.octane.integrations.services.WorkerPreflight;
 import com.hp.octane.integrations.services.rest.RestService;
 import com.hp.octane.integrations.utils.CIPluginSDKUtils;
 import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
@@ -63,7 +62,6 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.xml.sax.SAXException;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.StringReader;
@@ -181,6 +179,7 @@ public class TestApiTest {
 				response.setStatus(HttpServletResponse.SC_OK);
 				response.write(true, BufferUtil.toBuffer(String.valueOf(true)), callback);
 			}
+			callback.succeeded();
 			return true;
 		}
 	}
@@ -201,6 +200,7 @@ public class TestApiTest {
 			body.put("status", "queued");
 			response.setStatus(HttpServletResponse.SC_ACCEPTED);
 			response.write(true, BufferUtil.toBuffer(new ObjectMapper().writeValueAsString(body)), callback);
+			callback.succeeded();
 			return true;
 		}
 	}
@@ -216,6 +216,7 @@ public class TestApiTest {
 		public boolean handle(Request request, Response response, Callback callback) throws IOException {
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.write(true, BufferUtil.toBuffer("This is the log\""), callback);
+			callback.succeeded();
 			return true;
 		}
 	}
