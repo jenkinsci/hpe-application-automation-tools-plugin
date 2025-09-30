@@ -586,17 +586,6 @@
         <dependency>
             <artifactId>maven-plugin</artifactId>
             <groupId>org.jenkins-ci.main</groupId>
-            <version>3.27</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.annotation</groupId>
-                    <artifactId>javax.annotation-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.inject</groupId>
-                    <artifactId>javax.inject</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <artifactId>matrix-project</artifactId>
