@@ -39,9 +39,9 @@ package com.microfocus.application.automation.tools.octane.tests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.dto.DTOFactory;
 import com.hp.octane.integrations.dto.tests.TestsResult;
-import com.hp.octane.integrations.services.WorkerPreflight;
 import com.hp.octane.integrations.services.rest.RestService;
 import com.hp.octane.integrations.utils.CIPluginSDKUtils;
+import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
 import com.microfocus.application.automation.tools.model.OctaneServerSettingsModel;
 import com.microfocus.application.automation.tools.octane.OctaneServerMock;
 import com.microfocus.application.automation.tools.octane.configuration.ConfigurationService;
@@ -53,14 +53,16 @@ import hudson.util.Secret;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.htmlunit.Page;
 import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.xml.sax.SAXException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
@@ -84,7 +86,7 @@ public class TestApiTest {
 	private static Long pushTestResultId = 10001L;
 
 	@ClassRule
-	final public static JenkinsRule rule = new JenkinsRule();
+	final public static JenkinsRule rule = new LoggedJenkinsRule();
 
 	@BeforeClass
 	public static void init() throws Exception {
@@ -172,11 +174,13 @@ public class TestApiTest {
 		}
 
 		@Override
-		public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-			if (baseRequest.getPathInfo().endsWith("/jobs/" + CIPluginSDKUtils.urlEncodeBase64(testsJobName) + "/tests-result-preflight")) {
+		public boolean handle(Request request, Response response, Callback callback) throws IOException {
+			if (Request.getPathInContext(request).endsWith("/jobs/" + CIPluginSDKUtils.urlEncodeBase64(testsJobName) + "/tests-result-preflight")) {
 				response.setStatus(HttpServletResponse.SC_OK);
-				response.getWriter().write(String.valueOf(true));
+				response.write(true, BufferUtil.toBuffer(String.valueOf(true)), callback);
 			}
+			callback.succeeded();
+			return true;
 		}
 	}
 
@@ -189,13 +193,15 @@ public class TestApiTest {
 		}
 
 		@Override
-		public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-			testResults.add(getBodyAsString(baseRequest));
+		public boolean handle(Request request, Response response, Callback callback) throws IOException {
+			testResults.add(getBodyAsString(request));
 			Map<String, String> body = new HashMap<>();
 			body.put("id", String.valueOf(pushTestResultId));
 			body.put("status", "queued");
 			response.setStatus(HttpServletResponse.SC_ACCEPTED);
-			response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+			response.write(true, BufferUtil.toBuffer(new ObjectMapper().writeValueAsString(body)), callback);
+			callback.succeeded();
+			return true;
 		}
 	}
 
@@ -207,9 +213,11 @@ public class TestApiTest {
 		}
 
 		@Override
-		public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		public boolean handle(Request request, Response response, Callback callback) throws IOException {
 			response.setStatus(HttpServletResponse.SC_OK);
-			response.getWriter().write("This is the log");
+			response.write(true, BufferUtil.toBuffer("This is the log\""), callback);
+			callback.succeeded();
+			return true;
 		}
 	}
 }

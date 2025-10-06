@@ -44,6 +44,8 @@ import com.microfocus.application.automation.tools.octane.tests.ExtensionUtil;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.htmlunit.html.HtmlCheckBoxInput;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlElementUtil;
@@ -54,8 +56,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -217,8 +219,9 @@ public class ConfigurationServiceTest extends OctanePluginTestBase {
 		}
 
 		@Override
-		public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) {
+		public boolean handle(Request request, Response response, Callback callback) {
 			response.setStatus(desiredStatus);
+			return true;
 		}
 	}
 }
