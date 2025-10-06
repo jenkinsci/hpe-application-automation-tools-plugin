@@ -55,6 +55,7 @@ import org.apache.logging.log4j.Logger;
 import org.jenkinsci.plugins.workflow.actions.LabelAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.actions.WorkspaceAction;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowExecution;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -206,13 +207,20 @@ public class BuildHandlerUtils {
 
 	public static CIBuildResult translateRunResult(Run run) {
 		CIBuildResult result;
-		if (run.getResult() == Result.SUCCESS) {
+		Result runResult = run.getResult();
+		if (runResult == null && run instanceof WorkflowRun) {
+			FlowExecution execution = ((WorkflowRun) run).getExecution();
+			if (execution instanceof CpsFlowExecution) {
+				runResult = ((CpsFlowExecution) execution).getResult();
+			}
+		}
+		if (runResult == Result.SUCCESS) {
 			result = CIBuildResult.SUCCESS;
-		} else if (run.getResult() == Result.ABORTED) {
+		} else if (runResult == Result.ABORTED) {
 			result = CIBuildResult.ABORTED;
-		} else if (run.getResult() == Result.FAILURE) {
+		} else if (runResult == Result.FAILURE) {
 			result = CIBuildResult.FAILURE;
-		} else if (run.getResult() == Result.UNSTABLE) {
+		} else if (runResult == Result.UNSTABLE) {
 			result = CIBuildResult.UNSTABLE;
 		} else {
 			result = CIBuildResult.UNAVAILABLE;
