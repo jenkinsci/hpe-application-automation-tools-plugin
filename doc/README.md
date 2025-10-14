@@ -51,20 +51,12 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version CE 25.3 introduced the following enhancements and fixes:
+Version CE 25.4 introduced the following enhancements and fixes:
 
 **Functional Testing**
-- Workspace Selection Now Available in OpenText™ Functional Testing Lab Options
 - Bug fixes
-
-**Functional Testing Lab**
-- Device metrics configured in the Functional Testing Lab section (when "Use Device Lab" is enabled) are now correctly applied during test execution and shown in the report
-- Workspace selection is now available in OpenText™ Functional Testing Lab Options
 
 **Software Delivery Management**
-- Bug fixes
-
-**Application Quality Management**
 - Bug fixes
 
 For information about enhancements introduced in previous versions, see [What's new in earlier versions](https://github.com/jenkinsci/hpe-application-automation-tools-plugin/blob/latest/doc/WhatsNewEarlier.md). 

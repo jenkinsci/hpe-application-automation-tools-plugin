@@ -3,6 +3,9 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
+
+[What&#39;s New in version CE 25.3](#what&#39;s-new-in-version-CE-25&#46;3)
+
 [What&#39;s New in version CE 25.2](#what&#39;s-new-in-version-CE-25&#46;2)
 
 [What&#39;s New in version CE 24.4](#what&#39;s-new-in-version-CE-24&#46;4)
@@ -51,6 +54,21 @@ This page shows a history of the enhancements made to the OpenText Application A
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
 
+## what&#39;s-new-in-version-CE-25&#46;3
+
+**Functional Testing**
+- Workspace Selection Now Available in OpenText™ Functional Testing Lab Options
+- Bug fixes
+
+**Functional Testing Lab**
+- Device metrics configured in the Functional Testing Lab section (when "Use Device Lab" is enabled) are now correctly applied during test execution and shown in the report
+- Workspace selection is now available in OpenText™ Functional Testing Lab Options
+
+**Software Delivery Management**
+- Bug fixes
+
+**Application Quality Management**
+- Bug fixes
 
 ## what&#39;s-new-in-version-CE-25&#46;2
 
