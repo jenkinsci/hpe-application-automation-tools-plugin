@@ -39,8 +39,8 @@ package com.microfocus.application.automation.tools.settings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.Secret;
-import io.jenkins.cli.shaded.org.apache.commons.lang.RandomStringUtils;
 import jenkins.model.GlobalConfiguration;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.Serializable;
