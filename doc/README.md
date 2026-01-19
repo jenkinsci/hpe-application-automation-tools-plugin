@@ -51,10 +51,7 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version CE 25.4 introduced the following enhancements and fixes:
-
-**Functional Testing**
-- Bug fixes
+Version CE 26.1 introduced the following fixes:
 
 **Software Delivery Management**
 - Bug fixes
