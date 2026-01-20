@@ -1,0 +1,120 @@
+
+C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin>call mvn clean package -DskipTests -Dmaven.javadoc.skip=true -Djna.nosys=true 
+[INFO] Scanning for projects...
+[INFO] Artifact org.jenkins-ci.tools:maven-hpi-plugin:pom:3.55 is present in the local repository, but cached from a remote repository ID that is unavailable in current build context, verifying that is downloadable from [incrementals (https://repo.jenkins-ci.org/incrementals/, default, releases), central (https://repo.maven.apache.org/maven2, default, releases)]
+[WARNING] The POM for org.jenkins-ci.tools:maven-hpi-plugin:jar:3.55 is missing, no dependency information available
+[INFO] Artifact org.jenkins-ci.tools:maven-hpi-plugin:jar:3.55 is present in the local repository, but cached from a remote repository ID that is unavailable in current build context, verifying that is downloadable from [incrementals (https://repo.jenkins-ci.org/incrementals/, default, releases), central (https://repo.maven.apache.org/maven2, default, releases)]
+[WARNING] Failed to build parent project for org.jenkins-ci.plugins:hp-application-automation-tools-plugin:hpi:25.4.2-beta-SNAPSHOT
+[INFO] 
+[INFO] ---< org.jenkins-ci.plugins:hp-application-automation-tools-plugin >----
+[INFO] Building OpenText Application Automation Tools 25.4.2-beta-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ hpi ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ hp-application-automation-tools-plugin ---
+[INFO] Deleting C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\target
+[INFO] 
+[INFO] --- exec:1.4.0:exec (clean HPToolsLauncher) @ hp-application-automation-tools-plugin ---
+Microsoft (R) Build Engine version 4.8.9221.0
+[Microsoft .NET Framework, version 4.0.30319.42000]
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Building the projects in this solution one at a time. To enable parallel build, please add the "/m" switch.
+Build started 1/20/2026 5:27:39 PM.
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" on node 1 (Clean target(s)).
+ValidateSolutionConfiguration:
+  Building solution configuration "Release|Mixed Platforms".
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (1) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\LRAnalysisLauncher\LRAnalysisLauncher.csproj" (2) on node 1 (Clean target(s)).
+Project file contains ToolsVersion="12.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\LRAnalysisLauncher\LRAnalysisLauncher.csproj" (2) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.csproj" (3) on node 1 (Clean target(s)).
+Project file contains ToolsVersion="12.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+CoreClean:
+  Deleting file "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\obj\x86\Release\HpToolsLauncher.csprojResolveAssemblyReference.cache".
+  Deleting file "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\obj\x86\Release\HpToolsLauncher.Properties.Resources.resources".
+  Deleting file "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\obj\x86\Release\HpToolsLauncher.csproj.GenerateResource.Cache".
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.csproj" (Clean target(s)).
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\LRAnalysisLauncher\LRAnalysisLauncher.csproj" (Clean target(s)).
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (1) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncherTests\HpToolsLauncherTests.csproj" (4) on node 1 (Clean target(s)).
+Project file contains ToolsVersion="12.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncherTests\HpToolsLauncherTests.csproj" (Clean target(s)).
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (1) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\..\HpToolsAborter\HpToolsAborter.csproj.metaproj" (5) on node 1 (Clean target(s)).
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\..\HpToolsAborter\HpToolsAborter.csproj.metaproj" (5) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsAborter\HpToolsAborter.csproj" (6) on node 1 (Clean target(s)).
+Project file contains ToolsVersion="12.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsAborter\HpToolsAborter.csproj" (Clean target(s)).
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\..\HpToolsAborter\HpToolsAborter.csproj.metaproj" (Clean target(s)).
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (Clean target(s)).
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:00.42
+[INFO] 
+[INFO] --- hpi:3.55:validate (default-validate) @ hp-application-automation-tools-plugin ---
+[INFO] Created marker file C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\target\java-level\17
+[INFO] 
+[INFO] --- hpi:3.55:validate-hpi (default-validate-hpi) @ hp-application-automation-tools-plugin ---
+[INFO] 
+[INFO] --- enforcer:3.5.0:enforce (display-info) @ hp-application-automation-tools-plugin ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- enforcer:3.5.0:enforce (no-snapshots-in-release) @ hp-application-automation-tools-plugin ---
+[INFO] Skipping Rule Enforcement.
+[INFO] 
+[INFO] --- localizer:1.31:generate (default) @ hp-application-automation-tools-plugin ---
+[INFO] 
+[INFO] --- exec:1.4.0:exec (creating HPToolsLauncher) @ hp-application-automation-tools-plugin ---
+Microsoft (R) Build Engine version 4.8.9221.0
+[Microsoft .NET Framework, version 4.0.30319.42000]
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Building the projects in this solution one at a time. To enable parallel build, please add the "/m" switch.
+Build started 1/20/2026 5:27:42 PM.
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" on node 1 (Rebuild target(s)).
+ValidateSolutionConfiguration:
+  Building solution configuration "Release|Mixed Platforms".
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (1) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.csproj" (2) on node 1 (Rebuild target(s)).
+Project file contains ToolsVersion="12.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+CoreResGen:
+  resgen.exe /useSourcePath /r:"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\externals\interop.OTAClient.dll" /r:"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\externals\Interop.Wlrun.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\Microsoft.CSharp.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\Microsoft.VisualBasic.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\mscorlib.dll" /r:"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\externals\QTObjectModelLib.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Core.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Data.DataSetExtensions.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Data.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Web.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Web.Extensions.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Xml.dll" /r:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Xml.Linq.dll" /compile Properties\Resources.resx,obj\x86\Release\HpToolsLauncher.Properties.Resources.resources
+  Processing resource file "Properties\Resources.resx" into "obj\x86\Release\HpToolsLauncher.Properties.Resources.resources".
+GenerateTargetFrameworkMonikerAttribute:
+Skipping target "GenerateTargetFrameworkMonikerAttribute" because all output files are up-to-date with respect to the input files.
+CoreCompile:
+  C:\Windows\Microsoft.NET\Framework\v4.0.30319\Csc.exe /noconfig /unsafe- /nowarn:1701,1702 /langversion:5 /nostdlib+ /platform:x86 /errorreport:prompt /warn:4 /define:TRACE /main:HpToolsLauncher.Program /highentropyva+ /link:"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\externals\interop.OTAClient.dll" /reference:"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\externals\Interop.Wlrun.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\Microsoft.CSharp.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\Microsoft.VisualBasic.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\mscorlib.dll" /link:"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\externals\QTObjectModelLib.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Core.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Data.DataSetExtensions.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Data.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Web.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Web.Extensions.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Xml.dll" /reference:"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Xml.Linq.dll" /debug:pdbonly /filealign:512 /nowin32manifest /optimize+ /out:obj\x86\Release\HpToolsLauncher.exe /subsystemversion:6.00 /resource:obj\x86\Release\HpToolsLauncher.Properties.Resources.resources /resource:MtbxSchema.xsd,HpToolsLauncher.MtbxSchema.xsd /target:exe /utf8output ConsoleQuickEdit.cs ElevatedProcess.cs IProcessAdapter.cs Utils\Encoder.cs Utils\Encrypter.cs Launcher.cs ConsoleWriter.cs Interfaces\IAssetRunner.cs Interfaces\IFileSysTestRunner.cs Interfaces\IXmlBuilder.cs ExportOptions.cs Utils\Extensions.cs Utils\Helper.cs IniManager.cs JavaProperties\JavaIniFile.cs JavaProperties\JavaProperties.cs JunitXml\JunitXmlBuilder.cs JunitXml\junit.cs Common\McConnectionInfo.cs MtbManager.cs NativeProcess.cs ParallelRunner\ParallelRunnerEnvironmentUtil.cs ParallelRunner\ParallelTestRunConfiguration.cs ProcessExtensions.cs Program.cs Properties\AssemblyInfo.cs MtbxManager.cs Properties\Resources.Designer.cs Runners\MBTRunner.cs Runners\RunnerBase.cs TestData.cs TestInfo.cs TestParameter.cs TestParameterInfo.cs TestRunners\IterationInfo.cs TestRunners\ParallelTestRunner.cs TestRunners\PerformanceTestRunner.cs SummaryDataLogger.cs TestRunResults.cs TestRunners\GuiTestRunner.cs RTS\AdditionalAttributeModel.cs RTS\RTSHelper.cs RTS\ScriptRTSModel.cs Runners\FileSystemTestsRunner.cs TestRunners\ApiTestRunner.cs Runners\AlmTestSetsRunner.cs TestSuiteRunResults.cs Utils\RunAsUser.cs Common\WinUserNativeMethods.cs "C:\Users\adumitras\AppData\Local\Temp\.NETFramework,Version=v4.8.AssemblyAttributes.cs"
+Runners\AlmTestSetsRunner.cs(349,38): error CS0840: 'HpToolsLauncher.AlmTestSetsRunner.PathSorter.Node.Name.get' must declare a body because it is not marked abstract or extern. Automatically implemented properties must define both get and set accessors. [C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.csproj]
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.csproj" (Rebuild target(s)) -- FAILED.
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (1) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncherTests\HpToolsLauncherTests.csproj" (3) on node 1 (Rebuild target(s)).
+Project file contains ToolsVersion="12.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncherTests\HpToolsLauncherTests.csproj" (Rebuild target(s)) -- FAILED.
+Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (1) is building "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\LRAnalysisLauncher\LRAnalysisLauncher.csproj" (4) on node 1 (Rebuild target(s)).
+Project file contains ToolsVersion="12.0". This toolset may be unknown or missing, in which case you may be able to resolve this by installing the appropriate version of MSBuild, or the build may have been forced to a particular ToolsVersion for policy reasons. Treating the project as if it had ToolsVersion="4.0". For more information, please see http://go.microsoft.com/fwlink/?LinkId=291333.
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\LRAnalysisLauncher\LRAnalysisLauncher.csproj" (Rebuild target(s)) -- FAILED.
+Done Building Project "C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (Rebuild target(s)) -- FAILED.
+
+Build FAILED.
+
+"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.sln" (Rebuild target) (1) ->
+"C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.csproj" (Rebuild target) (2) ->
+(CoreCompile target) -> 
+  Runners\AlmTestSetsRunner.cs(349,38): error CS0840: 'HpToolsLauncher.AlmTestSetsRunner.PathSorter.Node.Name.get' must declare a body because it is not marked abstract or extern. Automatically implemented properties must define both get and set accessors. [C:\Users\adumitras\Documents\Source Code\hpe-application-automation-tools-plugin\HpToolsLauncher\HpToolsLauncher.csproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:00.76
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.264 s
+[INFO] Finished at: 2026-01-20T17:27:43+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.codehaus.mojo:exec-maven-plugin:1.4.0:exec (creating HPToolsLauncher) on project hp-application-automation-tools-plugin: Command execution failed.: Process exited with an error: 1 (Exit value: 1) -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+
+Waiting for 10 seconds, press CTRL+C to quit ... 9 8 7 6 5 4 3 2 1 0
