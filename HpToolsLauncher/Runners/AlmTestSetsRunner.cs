@@ -49,6 +49,8 @@ using System.Threading;
 using System.Security;
 using HpToolsLauncher.Utils;
 using Microsoft.Win32;
+using System.Globalization;
+using System.Web.UI.WebControls.Expressions;
 
 namespace HpToolsLauncher
 {
@@ -115,6 +117,7 @@ namespace HpToolsLauncher
         public bool SSOEnabled { get; set; }
         public string ClientID { get; set; }
         public string ApiKey { get; set; }
+        public bool TestSetExecOrderBy { get; set; }
 
         /// <summary>
         /// constructor
@@ -151,7 +154,8 @@ namespace HpToolsLauncher
                                 TestStorageType testStorageType,
                                 bool isSSOEnabled,
                                 string qcClientId,
-                                string qcApiKey)
+                                string qcApiKey,
+                                bool almTestSetExecOrderBy)
         {
 
             Timeout = intQcTimeout;
@@ -170,6 +174,7 @@ namespace HpToolsLauncher
             SSOEnabled = isSSOEnabled;
             ClientID = qcClientId;
             ApiKey = qcApiKey;
+            TestSetExecOrderBy = almTestSetExecOrderBy;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -324,7 +329,7 @@ namespace HpToolsLauncher
 
         private class PathSorter
         {
-            public static List<string> SortPaths(List<string> paths)
+            public static List<string> SortPaths(List<string> paths, bool byName)
             {
                 // Build the tree
                 Node root = new Node(String.Empty);
@@ -335,7 +340,7 @@ namespace HpToolsLauncher
 
                 // Sort and flatten
                 List<string> result = new List<string>();
-                root.SortAndFlatten(result, String.Empty);
+                root.SortAndFlatten(result, String.Empty, byName);
                 return result;
             }
 
@@ -384,7 +389,7 @@ namespace HpToolsLauncher
                     _children[nextSegment].AddPath(segments, index + 1);
                 }
 
-                public void SortAndFlatten(List<string> result, string currentPath)
+                public void SortAndFlatten(List<string> result, string currentPath, bool byName)
                 {
                     // Sort subfolders first
                     List<Node> sortedChildren = _children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
@@ -393,11 +398,23 @@ namespace HpToolsLauncher
                         string childPath = string.IsNullOrEmpty(currentPath)
                             ? child.Name
                             : currentPath + BackSlash + child.Name;
-                        child.SortAndFlatten(result, childPath);
+                        child.SortAndFlatten(result, childPath, byName);
                     }
 
                     // Then add leaves, sorted
-                    List<string> sortedLeaves = _leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
+                    List<string> sortedLeaves;
+                    if (byName)
+                    {
+                        sortedLeaves = _leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
+                    }
+                    else
+                    {
+                        sortedLeaves = _leaves
+                            .Select(s => int.Parse(s, CultureInfo.InvariantCulture))
+                            .OrderBy(n => n)
+                            .Select(n => n.ToString(CultureInfo.InvariantCulture))
+                            .ToList();
+                    }
                     foreach (string leaf in sortedLeaves)
                     {
                         result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + BackSlash + leaf);
@@ -753,10 +770,29 @@ namespace HpToolsLauncher
                     removeSetsList.Add(testSetOrFolder);
 
                     List<string> setList = GetAllTestSetsFromDirTree(tsFolder);
+
+                    //List<string> setList = new List<string>();
+                    //setList.Add("base\\2");
+                    //setList.Add("base\\2322");
+                    //setList.Add("base\\67");
+                    //setList.Add("base\\8");
+                    //setList.Add("base\\87");
+                    //setList.Add("base\\A\\8");
+                    //setList.Add("base\\A\\554");
+                    //setList.Add("base\\A\\1000");
+                    //setList.Add("base\\B\\1001");
+                    //setList.Add("base\\B\\1010");
+                    //setList.Add("base\\B\\1011");
+                    //setList.Add("base\\B\\C\\1");
+                    //setList.Add("base\\B\\C\\2");
+                    //setList.Add("base\\B\\C\\4");
+                    //setList.Add("base\\B\\41");
+                    //setList.Add("base\\B\\1");
+
                     if (setList.Count > 1)
                     {
                         // Sort the setList: post-order traversal (deepest first), then alphabetically
-                        setList = PathSorter.SortPaths(setList);
+                        setList = PathSorter.SortPaths(setList, TestSetExecOrderBy);
                     }
                     extraSetsList.AddRange(setList);
                 }
@@ -784,7 +820,7 @@ namespace HpToolsLauncher
                 {
                     string tsPath = childSet.TestSetFolder.Path;
                     tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
-                    string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
+                    string tsFullPath = TestSetExecOrderBy ? string.Format(@"{0}\{1}", tsPath, childSet.Name) : string.Format(@"{0}\{1}", tsPath, childSet.ID);
                     retVal.Add(tsFullPath.TrimEnd());
                 }
             }
@@ -1262,6 +1298,7 @@ namespace HpToolsLauncher
             //find all the testSets under given folders
             try
             {
+                // add the parameter orderBy here
                 FindAllTestSetsUnderFolders();
             }
             catch (Exception ex)

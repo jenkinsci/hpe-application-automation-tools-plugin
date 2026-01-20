@@ -40,6 +40,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace HpToolsLauncher
 {
@@ -61,6 +62,11 @@ namespace HpToolsLauncher
         //[MTAThread]
         static void Main(string[] args)
         {
+            Console.WriteLine("Press any key when you attached to the process...");
+            Console.ReadKey();
+          
+            
+            
             ConsoleWriter.WriteLine(Resources.GeneralStarted);
             ConsoleQuickEdit.Disable();
             Console.OutputEncoding = Encoding.UTF8;
