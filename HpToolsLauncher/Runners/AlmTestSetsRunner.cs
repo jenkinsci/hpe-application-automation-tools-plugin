@@ -59,6 +59,7 @@ namespace HpToolsLauncher
         private static readonly char[] BACK_SLASH = new char[] { '\\' };
         private static readonly char[] COMMA = new char[] { ',' };
         private const char BackSlash = '\\';
+        private const string BackSlash_ = "\\";
 
         private ITDConnection13 _tdConnection;
         private ITDConnection2 _tdConnectionOld;
@@ -117,7 +118,7 @@ namespace HpToolsLauncher
         public bool SSOEnabled { get; set; }
         public string ClientID { get; set; }
         public string ApiKey { get; set; }
-        public bool TestSetExecOrderBy { get; set; }
+        public bool OrderTestSetExecByName { get; set; }
 
         /// <summary>
         /// constructor
@@ -174,7 +175,7 @@ namespace HpToolsLauncher
             SSOEnabled = isSSOEnabled;
             ClientID = qcClientId;
             ApiKey = qcApiKey;
-            TestSetExecOrderBy = almTestSetOrderBy;
+            OrderTestSetExecByName = almTestSetOrderBy;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -386,7 +387,7 @@ namespace HpToolsLauncher
                     // 1) Sort subfolders by folder name
                     foreach (var child in _children.Values.OrderBy(n => n.getName(), StringComparer.Ordinal))
                     {
-                        var childPath = string.IsNullOrEmpty(currentPath) ? child.getName(): currentPath + "\\" + child.getName();
+                        var childPath = string.IsNullOrEmpty(currentPath) ? child.getName(): currentPath + BackSlash_ + child.getName();
                         child.SortAndFlatten(result, childPath, byName);
                     }
 
@@ -397,7 +398,7 @@ namespace HpToolsLauncher
 
                     foreach (var leaf in sortedLeaves)
                     {
-                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf.Name : currentPath + "\\" + leaf.Name);
+                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf.Name : currentPath + BackSlash_ + leaf.Name);
                     }
                 }
             }
@@ -754,7 +755,7 @@ namespace HpToolsLauncher
                     if (setList.Count > 1)
                     {
                         // Sort the setList: post-order traversal (deepest first), then alphabetically
-                        orderedTests = PathSorter.SortPaths(setList, TestSetExecOrderBy);
+                        orderedTests = PathSorter.SortPaths(setList, OrderTestSetExecByName);
                         extraSetsList.AddRange(orderedTests);
                     }
                 }
@@ -767,9 +768,9 @@ namespace HpToolsLauncher
 
         private struct TestSetItem
         {
-            public string Name;
-            public string Path;
-            public int ID;
+            public string Name { get; }
+            public string Path { get; }
+            public int ID { get; }
 
             public TestSetItem(string Name, string Path, int ID)
             {
@@ -908,7 +909,7 @@ namespace HpToolsLauncher
                 // remove the test name and try find test set with parent path
                 try
                 {
-                    int pos = tsPath.LastIndexOf("\\", StringComparison.Ordinal) + 1;
+                    int pos = tsPath.LastIndexOf(BackSlash_, StringComparison.Ordinal) + 1;
                     testName = testSuiteName;
                     testSuiteName = tsPath.Substring(pos, tsPath.Length - pos);
                     tsPath = tsPath.Substring(0, pos - 1);
@@ -1091,7 +1092,7 @@ namespace HpToolsLauncher
                     if (childSet.ID != testSetId) continue;
                     string tsPath = childSet.TestSetFolder.Path;
                     tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
-                    string tsFullPath = tsPath + "\\" + childSet.Name;
+                    string tsFullPath = tsPath + BackSlash_ + childSet.Name;
                     testSuiteName = childSet.Name;
                     return tsFullPath.TrimEnd();
                 }
@@ -1766,7 +1767,7 @@ namespace HpToolsLauncher
 
             activeTestDesc.TestState = TestState.Error;
             activeTestDesc.TestPath = tsPath;
-            int pos = tsPath.LastIndexOf("\\", StringComparison.Ordinal) + 1;
+            int pos = tsPath.LastIndexOf(BackSlash_, StringComparison.Ordinal) + 1;
             activeTestDesc.TestName = tsPath.Substring(pos);
             activeTestDesc.ErrorDesc = errMessage;
             activeTestDesc.FatalErrors = 1;
