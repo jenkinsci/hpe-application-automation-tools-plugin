@@ -155,7 +155,7 @@ namespace HpToolsLauncher
                                 bool isSSOEnabled,
                                 string qcClientId,
                                 string qcApiKey,
-                                bool almOrderBy)
+                                bool almTestSetOrderBy)
         {
 
             Timeout = intQcTimeout;
@@ -174,7 +174,7 @@ namespace HpToolsLauncher
             SSOEnabled = isSSOEnabled;
             ClientID = qcClientId;
             ApiKey = qcApiKey;
-            TestSetExecOrderBy = almOrderBy;
+            TestSetExecOrderBy = almTestSetOrderBy;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -335,7 +335,7 @@ namespace HpToolsLauncher
                 foreach (TestSetItem ts in items)
                 {
                     // Path looks like: "\Folder1\Folder2\TestSetName"
-                    var segments = ts.Path.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                    var segments = ts.Path.Split(BACK_SLASH, StringSplitOptions.RemoveEmptyEntries);
                     root.AddPath(segments, 0, ts);
                 }
 
@@ -346,9 +346,9 @@ namespace HpToolsLauncher
 
             private class Node
             {
-                private string _name;
-                private Dictionary<string, Node> _children;
-                private List<TestSetItem> _leaves; // test sets directly under this node
+                private readonly string _name;
+                private readonly Dictionary<string, Node> _children;
+                private readonly List<TestSetItem> _leaves; // test sets directly under this node
 
                 public Node(string name)
                 {

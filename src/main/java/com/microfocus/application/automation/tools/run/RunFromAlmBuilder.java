@@ -82,7 +82,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     private final static String HP_TOOLS_LAUNCHER_EXE_CFG = "HpToolsLauncher.exe.config";
     private String resultsFileName = "ApiResults.xml";
     private AlmServerSettingsModel almServerSettingsModel;
-    private String almOrderBy;
+    private String almTestSetOrderBy;
 
     @DataBoundConstructor
     public RunFromAlmBuilder(
@@ -105,7 +105,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             FilterTestsModel filterTestsModel,
             SpecifyParametersModel specifyParametersModel,
             AlmServerSettingsModel almServerSettingsModel,
-			String almOrderBy) {
+			String almTestSetOrderBy) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -132,7 +132,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almClientID,
                         almApiKey,
                         almCredScope,
-                        almOrderBy);
+                        almTestSetOrderBy);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -249,7 +249,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         return isFilterTestsEnabled;
     }
 
-    public String getalmOrderBy() { return runFromAlmModel.getalmOrderBy(); }
+    public String getalmTestSetOrderBy() { return runFromAlmModel.getalmTestSetOrderBy(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {

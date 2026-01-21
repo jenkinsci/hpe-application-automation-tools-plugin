@@ -181,8 +181,6 @@ namespace HpToolsLauncher
                 return;
             }
 
-            bool byName = _ciParams.GetOrDefault("almOrderBy") == "name" ? true : false;
-            
             TestSuiteRunResults results = _runner.Run();
 
             string onCheckFailedTests = _ciParams.GetOrDefault("onCheckFailedTest");
@@ -321,7 +319,7 @@ namespace HpToolsLauncher
                     string clientID = _ciParams.GetOrDefault("almClientID");
                     string apiKey = _ciParams.ContainsKey("almApiKeySecret") ? Encrypter.Decrypt(_ciParams["almApiKeySecret"]) : string.Empty;
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
-                    bool almOrderBy = _ciParams.GetOrDefault("almOrderBy") == "name" ? true : false;
+                    bool almTestSetOrderBy = _ciParams.GetOrDefault("almTestSetOrderBy") != "name" ? false : true;
 
                     //create an Alm runner
                     runner = new AlmTestSetsRunner(_ciParams["almServerUrl"],
@@ -342,7 +340,7 @@ namespace HpToolsLauncher
                                      isSSOEnabled,
                                      clientID,
                                      apiKey,
-                                     almOrderBy
+                                     almTestSetOrderBy
                     );
                     break;
                 }
