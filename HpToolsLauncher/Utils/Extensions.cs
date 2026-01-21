@@ -34,7 +34,7 @@
  *  limitations under the License.
  *  ___________________________________________________________________
  */
- using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System;
 using System.Security;
 using System.Linq;
@@ -47,7 +47,9 @@ namespace HpToolsLauncher.Utils
         public static SecureString ToSecureString(this string plainString)
         {
             if (plainString == null)
+            {
                 return null;
+            }
 
             SecureString secureString = new SecureString();
             foreach (char c in plainString.ToCharArray())
