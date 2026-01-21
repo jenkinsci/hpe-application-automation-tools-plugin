@@ -82,6 +82,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     private final static String HP_TOOLS_LAUNCHER_EXE_CFG = "HpToolsLauncher.exe.config";
     private String resultsFileName = "ApiResults.xml";
     private AlmServerSettingsModel almServerSettingsModel;
+    private String almOrderBy;
 
     @DataBoundConstructor
     public RunFromAlmBuilder(
@@ -103,7 +104,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             boolean areParametersEnabled,
             FilterTestsModel filterTestsModel,
             SpecifyParametersModel specifyParametersModel,
-            AlmServerSettingsModel almServerSettingsModel) {
+            AlmServerSettingsModel almServerSettingsModel,
+			String almOrderBy) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -129,7 +131,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         isSSOEnabled,
                         almClientID,
                         almApiKey,
-                        almCredScope);
+                        almCredScope,
+                        almOrderBy);
+        this.almServerSettingsModel = almServerSettingsModel;
     }
 
     public CredentialsScope getCredentialsScopeOrDefault() {
@@ -244,6 +248,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     public boolean getIsFilterTestsEnabled() {
         return isFilterTestsEnabled;
     }
+
+    public String getalmOrderBy() { return runFromAlmModel.getalmOrderBy(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {
@@ -502,6 +508,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             getAlmServers().forEachOrdered(s -> m.add(s.getAlmServerName()));
             return m;
         }
+        
 
         public ListBoxModel doFillAlmUserNameItems(@QueryParameter String almServerName, @AncestorInPath Item item) {
             ListBoxModel m = new ListBoxModel();

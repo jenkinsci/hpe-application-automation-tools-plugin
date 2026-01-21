@@ -181,6 +181,8 @@ namespace HpToolsLauncher
                 return;
             }
 
+            bool byName = _ciParams.GetOrDefault("almOrderBy") == "name" ? true : false;
+            
             TestSuiteRunResults results = _runner.Run();
 
             string onCheckFailedTests = _ciParams.GetOrDefault("onCheckFailedTest");
@@ -229,6 +231,7 @@ namespace HpToolsLauncher
                         Environment.Exit((int)ExitCodeEnum.Failed);
                         return;
                     }
+
                     TestSuiteRunResults rerunResults = _runner.Run();
 
                     RunSummary(resultsFilename, results, rerunResults);
@@ -318,6 +321,7 @@ namespace HpToolsLauncher
                     string clientID = _ciParams.GetOrDefault("almClientID");
                     string apiKey = _ciParams.ContainsKey("almApiKeySecret") ? Encrypter.Decrypt(_ciParams["almApiKeySecret"]) : string.Empty;
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
+                    bool almOrderBy = _ciParams.GetOrDefault("almOrderBy") == "name" ? true : false;
 
                     //create an Alm runner
                     runner = new AlmTestSetsRunner(_ciParams["almServerUrl"],
@@ -336,7 +340,10 @@ namespace HpToolsLauncher
                                      isFirstRun,
                                      _runType,
                                      isSSOEnabled,
-                                     clientID, apiKey);
+                                     clientID,
+                                     apiKey,
+                                     almOrderBy
+                    );
                     break;
                 }
                 case TestStorageType.FileSystem:

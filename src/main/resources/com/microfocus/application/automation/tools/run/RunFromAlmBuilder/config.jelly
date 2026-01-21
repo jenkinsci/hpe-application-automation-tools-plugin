@@ -147,8 +147,29 @@
             </j:otherwise>
         </j:choose>
     </f:entry>
+<!-- New control to seleft whether the tests should be executed in order by their names or by their IDs -->
+    <j:set var="orderby" value="${instance.runFromAlmModel.almOrderBy}"/>
+    <f:entry field="almOrderBy">
+        <label>TestSet Execution Order By</label>
+        <j:choose>
+            <j:when test="${hasConfigPermission}">
+                <select name="almOrderBy">
+                    <f:option selected="${orderby=='name' || orderby==''}" value="name">
+                        Name
+                    </f:option>
+                    <f:option selected="${orderby=='id'}" value="id">
+                        ID
+                    </f:option>
+                </select>
+            </j:when>
+            <j:otherwise>
+                <f:textbox value="${orderby}" />
+            </j:otherwise>
+        </j:choose>
+    </f:entry>
+
     <j:set var="expectedScope" value="${instance.credentialsScopeOrDefault}"/>
-    <f:entry field="almCredentialsScope">
+    <f:entry field="almCredentialsScope">     <!-- this should exist in Java, with a getter -->
         <label>ALM Credentials Scope</label>
         <j:choose>
             <j:when test="${hasConfigPermission}">
