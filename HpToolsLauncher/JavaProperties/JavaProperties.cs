@@ -83,7 +83,7 @@ namespace HpToolsLauncher
 
 
         /// <summary>
-        /// loads properties
+        /// loa-ds properties
         /// </summary>
         /// <param name="reader"></param>
         public void Load(TextReader reader)

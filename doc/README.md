@@ -51,7 +51,10 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version 26.1 introduced the following fixes:
+Version CE 25.4 introduced the following enhancements and fixes:
+
+**Functional Testing**
+- Bug fixes
 
 **Software Delivery Management**
 - Bug fixes
@@ -82,7 +85,7 @@ This plugin supports the following OpenText product versions:
 
 1. Install one of the five latest LTS versions of Jenkins. For details, see the [LTS Changelog](https://jenkins.io/changelog-stable/). **Note:** The plugin may not operate properly with earlier versions of Jenkins.
 
-2. **Java version 8 or higher.** Starting with the 24.3 release, **Java 21** is required . To verify your Java version, go to [http://www.java.com/en/download/installed.jsp](http://www.java.com/en/download/installed.jsp).
+2. **Java version 8 or higher.**  To verify your Java version, go to [http://www.java.com/en/download/installed.jsp](http://www.java.com/en/download/installed.jsp).
 
 3. Install the plugin:
    

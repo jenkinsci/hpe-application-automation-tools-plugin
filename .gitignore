@@ -124,3 +124,13 @@ work
 work1
 nga/
 **/resources/**/*Gherkin*.xml
+
+# other scripts
+*.cmd
+*.bat
+*.ps1
+
+# other stuff
+*.jar
+*.txt
+

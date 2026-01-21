@@ -86,12 +86,13 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
     private String almClientID;
     private Secret almApiKey;
     private CredentialsScope credentialsScope;
+    private String almOrderBy;
 
     @DataBoundConstructor
     public RunFromAlmModel(String almServerName, String almUserName, String almPassword, String almDomain, String almProject,
                            String almTestSets, String almRunResultsMode, String almTimeout,
                            String almRunMode, String almRunHost, Boolean isSSOEnabled,
-                           String almClientID, String almApiKey, CredentialsScope credentialsScope) {
+                           String almClientID, String almApiKey, CredentialsScope credentialsScope, String almOrderBy) {
 
         this.almServerName = almServerName;
         this.credentialsScope = credentialsScope;
@@ -114,6 +115,11 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         this.isSSOEnabled = isSSOEnabled;
         this.almClientID = StringUtils.defaultString(almClientID);
         this.almApiKey = StringUtils.isBlank(almClientID) ? null : Secret.fromString(almApiKey);
+		this.almOrderBy = almOrderBy;
+    }
+
+    public String getalmOrderBy() {
+        return almOrderBy;
     }
 
     public String getAlmUserName() {
@@ -209,8 +215,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
         if (!StringUtils.isEmpty(this.almTestSets)) {
 
-            String[] testSetsArr = this.almTestSets.replaceAll("\r", "").split(
-                    "\n");
+            String[] testSetsArr = this.almTestSets.replaceAll("\r", "").split("\n");
 
             int i = 1;
 
@@ -234,6 +239,9 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         }
 
         props.put("almRunMode", almRunMode);
+
+        String orderBy = StringUtils.isBlank(almOrderBy) ? "name" : almOrderBy;
+        props.put("almOrderBy", orderBy);
 
         return props;
     }

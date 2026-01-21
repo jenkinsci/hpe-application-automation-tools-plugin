@@ -3,23 +3,22 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
-[What&#39;s New in version CE 25.4](#whats-new-in-version-ce-254)
 
-[What&#39;s New in version CE 25.3](#whats-new-in-version-ce-253)
+[What&#39;s New in version CE 25.3](#what&#39;s-new-in-version-CE-25&#46;3)
 
-[What&#39;s New in version CE 25.2](#whats-new-in-version-ce-252)
+[What&#39;s New in version CE 25.2](#what&#39;s-new-in-version-CE-25&#46;2)
 
-[What&#39;s New in version CE 24.4](#whats-new-in-version-ce-244)
+[What&#39;s New in version CE 24.4](#what&#39;s-new-in-version-CE-24&#46;4)
 
-[What&#39;s New in version CE 24.3](#whats-new-in-version-ce-243)
+[What&#39;s New in version CE 24.3](#what&#39;s-new-in-version-CE-24&#46;3)
 
-[What&#39;s New in version CE 24.2](#whats-new-in-version-ce-242)
+[What&#39;s New in version CE 24.2](#what&#39;s-new-in-version-CE-24&#46;2)
 
-[What&#39;s New in version CE 24.1.0](#whats-new-in-version-ce-2410)
+[What&#39;s New in version CE 24.1.0](#what&#39;s-new-in-version-CE-24&#46;1&#46;0)
 
-[What&#39;s New in version CE 23.4 ](#whats-new-in-version-ce-234)
+[What&#39;s New in version CE 23.4 ](#what&#39;s-new-in-version-CE-23&#46;4)
 
-[What&#39;s New in version 23.3.0 ](#whats-new-in-version-2330)
+[What&#39;s New in version 23.3.0 ](#what&#39;s-new-in-version-23&#46;3&#46;0)
 
 [What&#39;s New in version 8.0 ](#what&#39;s-new-in-version-8&#46;0)
 
@@ -54,15 +53,6 @@ This page shows a history of the enhancements made to the OpenText Application A
 [What&#39;s New in version 6.0 ](#what&#39;s-new-in-version-6.0)
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
-
-## what&#39;s-new-in-version-CE-25&#46;4
-Version CE 25.4 introduced the following enhancements and fixes:
-
-**Functional Testing**
-- Bug fixes
-
-**Software Delivery Management**
-- Bug fixes
 
 ## what&#39;s-new-in-version-CE-25&#46;3
 
