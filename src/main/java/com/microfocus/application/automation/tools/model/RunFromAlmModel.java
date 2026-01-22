@@ -86,13 +86,13 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
     private String almClientID;
     private Secret almApiKey;
     private CredentialsScope credentialsScope;
-    private String almTestSetOrderBy;
+    private String almTestSetsExecutionOrderBy;
 
     @DataBoundConstructor
     public RunFromAlmModel(String almServerName, String almUserName, String almPassword, String almDomain, String almProject,
                            String almTestSets, String almRunResultsMode, String almTimeout,
                            String almRunMode, String almRunHost, Boolean isSSOEnabled,
-                           String almClientID, String almApiKey, CredentialsScope credentialsScope, String almTestSetOrderBy) {
+                           String almClientID, String almApiKey, CredentialsScope credentialsScope, String almTestSetsExecutionOrderBy) {
 
         this.almServerName = almServerName;
         this.credentialsScope = credentialsScope;
@@ -115,11 +115,11 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         this.isSSOEnabled = isSSOEnabled;
         this.almClientID = StringUtils.defaultString(almClientID);
         this.almApiKey = StringUtils.isBlank(almClientID) ? null : Secret.fromString(almApiKey);
-		this.almTestSetOrderBy = almTestSetOrderBy;
+		this.almTestSetsExecutionOrderBy = almTestSetsExecutionOrderBy;
     }
 
-    public String getalmTestSetOrderBy() {
-        return almTestSetOrderBy;
+    public String getAlmTestSetsExecutionOrderBy() {
+        return almTestSetsExecutionOrderBy;
     }
 
     public String getAlmUserName() {
@@ -240,8 +240,8 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
         props.put("almRunMode", almRunMode);
 
-        String orderBy = StringUtils.isBlank(almTestSetOrderBy) ? "name" : almTestSetOrderBy;
-        props.put("almTestSetOrderBy", orderBy);
+        String orderBy = StringUtils.isBlank(almTestSetsExecutionOrderBy) ? "name" : almTestSetsExecutionOrderBy;
+        props.put("almTestSetsExecutionOrderBy", orderBy);
 
         return props;
     }

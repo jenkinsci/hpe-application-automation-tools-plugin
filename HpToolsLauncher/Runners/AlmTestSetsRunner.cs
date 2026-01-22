@@ -118,7 +118,7 @@ namespace HpToolsLauncher
         public bool SSOEnabled { get; set; }
         public string ClientID { get; set; }
         public string ApiKey { get; set; }
-        public bool OrderTestSetExecByName { get; set; }
+        public string TestSetExecutionOrderBy { get; set; }
 
         /// <summary>
         /// constructor
@@ -156,7 +156,7 @@ namespace HpToolsLauncher
                                 bool isSSOEnabled,
                                 string qcClientId,
                                 string qcApiKey,
-                                bool almTestSetOrderBy)
+                                string almTestSetsExecutionOrderBy)
         {
 
             Timeout = intQcTimeout;
@@ -175,7 +175,7 @@ namespace HpToolsLauncher
             SSOEnabled = isSSOEnabled;
             ClientID = qcClientId;
             ApiKey = qcApiKey;
-            OrderTestSetExecByName = almTestSetOrderBy;
+            TestSetExecutionOrderBy = almTestSetsExecutionOrderBy;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -330,7 +330,7 @@ namespace HpToolsLauncher
 
         private class PathSorter
         {
-            public static List<string> SortPaths(List<TestSetItem> items, bool byName)
+            public static List<string> SortPaths(List<TestSetItem> items, string almTestSetsExecutionOrderBy)
             {
                 Node root = new Node(string.Empty);
                 foreach (TestSetItem ts in items)
@@ -341,7 +341,7 @@ namespace HpToolsLauncher
                 }
 
                 List<string> result = new List<string>();
-                root.SortAndFlatten(result, string.Empty, byName);
+                root.SortAndFlatten(result, string.Empty, almTestSetsExecutionOrderBy);
                 return result;
             }
 
@@ -382,17 +382,17 @@ namespace HpToolsLauncher
                     child.AddPath(segments, index + 1, item);
                 }
 
-                public void SortAndFlatten(List<string> result, string currentPath, bool byName)
+                public void SortAndFlatten(List<string> result, string currentPath, string almTestSetsExecutionOrderBy)
                 {
                     // 1) Sort subfolders by folder name
                     foreach (var child in _children.Values.OrderBy(n => n.getName(), StringComparer.Ordinal))
                     {
                         var childPath = string.IsNullOrEmpty(currentPath) ? child.getName(): currentPath + BackSlash_ + child.getName();
-                        child.SortAndFlatten(result, childPath, byName);
+                        child.SortAndFlatten(result, childPath, almTestSetsExecutionOrderBy);
                     }
 
                     // 2) Sort test sets either by Name or by ID
-                    IEnumerable<TestSetItem> sortedLeaves = byName
+                    IEnumerable<TestSetItem> sortedLeaves = (almTestSetsExecutionOrderBy == "name" || almTestSetsExecutionOrderBy == "")
                         ? _leaves.OrderBy(l => l.Name, StringComparer.Ordinal)
                         : _leaves.OrderBy(l => l.ID);
 
@@ -755,7 +755,7 @@ namespace HpToolsLauncher
                     if (setList.Count > 1)
                     {
                         // Sort the setList: post-order traversal (deepest first), then alphabetically
-                        orderedTests = PathSorter.SortPaths(setList, OrderTestSetExecByName);
+                        orderedTests = PathSorter.SortPaths(setList, TestSetExecutionOrderBy);
                         extraSetsList.AddRange(orderedTests);
                     }
                 }
@@ -768,9 +768,9 @@ namespace HpToolsLauncher
 
         private struct TestSetItem
         {
-            public string Name { get; }
-            public string Path { get; }
-            public int ID { get; }
+            public string Name { get; private set; }
+            public string Path { get; private set; }
+            public int ID { get; private set; }
 
             public TestSetItem(string Name, string Path, int ID)
             {
@@ -1094,7 +1094,7 @@ namespace HpToolsLauncher
                     tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
                     string tsFullPath = tsPath + BackSlash_ + childSet.Name;
                     testSuiteName = childSet.Name;
-                    return tsFullPath.TrimEnd();
+                    return tsFullPath.Trim();
                 }
             }
 
@@ -1102,11 +1102,7 @@ namespace HpToolsLauncher
             {
                 foreach (ITestSetFolder childFolder in children)
                 {
-                    string found = GetTestSetById(childFolder, testSetId, ref testSuiteName);
-                    if (!string.IsNullOrEmpty(found))
-                    {
-                        return found;
-                    }
+                    GetAllTestSetsFromDirTree(childFolder);
                 }
             }
             return string.Empty;

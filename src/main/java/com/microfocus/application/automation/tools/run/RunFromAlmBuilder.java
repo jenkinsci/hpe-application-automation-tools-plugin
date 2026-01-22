@@ -105,7 +105,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             FilterTestsModel filterTestsModel,
             SpecifyParametersModel specifyParametersModel,
             AlmServerSettingsModel almServerSettingsModel,
-			String almTestSetOrderBy) {
+            String almTestSetsExecutionOrderBy) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -132,7 +132,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almClientID,
                         almApiKey,
                         almCredScope,
-                        almTestSetOrderBy);
+                        almTestSetsExecutionOrderBy);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -249,7 +249,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         return isFilterTestsEnabled;
     }
 
-    public String getalmTestSetOrderBy() { return runFromAlmModel.getalmTestSetOrderBy(); }
+    public String getAlmTestSetsExecutionOrderBy() {
+        return runFromAlmModel.getAlmTestSetsExecutionOrderBy();
+    }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {
@@ -508,7 +510,13 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             getAlmServers().forEachOrdered(s -> m.add(s.getAlmServerName()));
             return m;
         }
-        
+
+        public ListBoxModel doFillAlmTestSetsExecutionOrderBy() {
+            ListBoxModel orderByOptions = new ListBoxModel();
+            orderByOptions.add("Name", "name");
+            orderByOptions.add("ID", "id");
+            return orderByOptions;
+        }
 
         public ListBoxModel doFillAlmUserNameItems(@QueryParameter String almServerName, @AncestorInPath Item item) {
             ListBoxModel m = new ListBoxModel();

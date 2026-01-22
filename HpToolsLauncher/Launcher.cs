@@ -69,7 +69,7 @@ namespace HpToolsLauncher
         private const string RERUN_FAILED_TESTS = "Rerun only failed tests";
         private const string ONE = "1";
         private const string CLEANUP_TEST = "CleanupTest";
-        private const string LEAVE_UFT_OPEN_IF_VISIBLE = "leaveUftOpenIfVisible";
+        //private const string LEAVE_UFT_OPEN_IF_VISIBLE = "leaveUftOpenIfVisible";
 
         public const string ClassName = "HPToolsFileSystemRunner";
 
@@ -319,7 +319,7 @@ namespace HpToolsLauncher
                     string clientID = _ciParams.GetOrDefault("almClientID");
                     string apiKey = _ciParams.ContainsKey("almApiKeySecret") ? Encrypter.Decrypt(_ciParams["almApiKeySecret"]) : string.Empty;
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
-                    bool almTestSetOrderBy = _ciParams.GetOrDefault("almTestSetOrderBy") != "name" ? false : true;
+                    string almTestSetsExecutionOrderBy = _ciParams.GetOrDefault("almTestSetsExecutionOrderBy");
 
                     //create an Alm runner
                     runner = new AlmTestSetsRunner(_ciParams["almServerUrl"],
@@ -340,7 +340,7 @@ namespace HpToolsLauncher
                                      isSSOEnabled,
                                      clientID,
                                      apiKey,
-                                     almTestSetOrderBy
+                                     almTestSetsExecutionOrderBy
                     );
                     break;
                 }
