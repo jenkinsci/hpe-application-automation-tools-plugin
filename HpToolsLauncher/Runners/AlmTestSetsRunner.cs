@@ -694,7 +694,7 @@ namespace HpToolsLauncher
             {
                 sb.AppendLine("Exception while reading step data: " + ex.Message);
             }
-            return sb.ToString().TrimEnd();
+            return sb.ToString().Trim();
         }
 
 
@@ -772,11 +772,11 @@ namespace HpToolsLauncher
             public string Path { get; private set; }
             public int ID { get; private set; }
 
-            public TestSetItem(string Name, string Path, int ID)
+            public TestSetItem(int id, string path, string name): this()
             {
-                this.Name = Name;
-                this.Path = Path;
-                this.ID = ID;
+                Name = name;
+                Path = path;
+                ID = id;
             }
         }
 
@@ -799,7 +799,7 @@ namespace HpToolsLauncher
                     string tsPath = childSet.TestSetFolder.Path;
                     tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
                     string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
-                    TestSetItem testSet = new TestSetItem(childSet.Name, tsFullPath.TrimEnd(), childSet.ID);
+                    TestSetItem testSet = new TestSetItem(childSet.ID, tsFullPath.Trim(), childSet.Name);
                     retVal.Add(testSet);
                 }
             }
@@ -1350,7 +1350,7 @@ namespace HpToolsLauncher
         /// <returns></returns>
         public TestSuiteRunResults RunTestSet(string tsFolderName, string tsName, string inlineTestParams, Stopwatch swForTimeout, int testIdx)
         {
-            string testSuiteName = tsName.TrimEnd();
+            string testSuiteName = tsName.Trim();
             ITestSetFolder tsFolder = null;
             string tsPath = string.Format(@"Root\{0}", tsFolderName);
             string initialFullTsPath = string.Format(@"{0}\{1}", tsPath, tsName);
@@ -2299,7 +2299,7 @@ namespace HpToolsLauncher
 
                         if (File.Exists(logPath))
                         {
-                            retVal = File.ReadAllText(logPath).TrimEnd();
+                            retVal = File.ReadAllText(logPath).Trim();
                         }
                     }
                 }
