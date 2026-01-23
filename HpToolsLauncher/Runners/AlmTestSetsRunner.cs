@@ -694,7 +694,7 @@ namespace HpToolsLauncher
             {
                 sb.AppendLine("Exception while reading step data: " + ex.Message);
             }
-            return sb.ToString().Trim();
+            return sb.ToString().TrimEnd();
         }
 
 
