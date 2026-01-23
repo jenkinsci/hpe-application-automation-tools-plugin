@@ -105,7 +105,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             FilterTestsModel filterTestsModel,
             SpecifyParametersModel specifyParametersModel,
             AlmServerSettingsModel almServerSettingsModel,
-            String almTestSetsExecutionOrderBy) {
+            String almTestSetsRunOrderByCriteria) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -132,7 +132,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almClientID,
                         almApiKey,
                         almCredScope,
-                        almTestSetsExecutionOrderBy);
+                        almTestSetsRunOrderByCriteria);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -249,8 +249,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         return isFilterTestsEnabled;
     }
 
-    public String getAlmTestSetsExecutionOrderBy() {
-        return runFromAlmModel.getAlmTestSetsExecutionOrderBy();
+    public String getAlmTestSetsRunOrderByCriteria() {
+        return runFromAlmModel.getAlmTestSetsRunOrderByCriteria();
     }
 
     @DataBoundSetter
@@ -511,7 +511,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             return m;
         }
 
-        public ListBoxModel doFillAlmTestSetsExecutionOrderBy() {
+        public ListBoxModel doFillAlmTestSetsRunOrderByCriteria() {
             ListBoxModel orderByOptions = new ListBoxModel();
             orderByOptions.add("Name", "name");
             orderByOptions.add("ID", "id");

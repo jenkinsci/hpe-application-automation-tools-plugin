@@ -86,13 +86,13 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
     private String almClientID;
     private Secret almApiKey;
     private CredentialsScope credentialsScope;
-    private String almTestSetsExecutionOrderBy;
+    private String almTestSetsRunOrderByCriteria;
 
     @DataBoundConstructor
     public RunFromAlmModel(String almServerName, String almUserName, String almPassword, String almDomain, String almProject,
                            String almTestSets, String almRunResultsMode, String almTimeout,
                            String almRunMode, String almRunHost, Boolean isSSOEnabled,
-                           String almClientID, String almApiKey, CredentialsScope credentialsScope, String almTestSetsExecutionOrderBy) {
+                           String almClientID, String almApiKey, CredentialsScope credentialsScope, String almTestSetsRunOrderByCriteria) {
 
         this.almServerName = almServerName;
         this.credentialsScope = credentialsScope;
@@ -115,11 +115,11 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         this.isSSOEnabled = isSSOEnabled;
         this.almClientID = StringUtils.defaultString(almClientID);
         this.almApiKey = StringUtils.isBlank(almClientID) ? null : Secret.fromString(almApiKey);
-		this.almTestSetsExecutionOrderBy = almTestSetsExecutionOrderBy;
+		this.almTestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
     }
 
-    public String getAlmTestSetsExecutionOrderBy() {
-        return almTestSetsExecutionOrderBy;
+    public String getAlmTestSetsRunOrderByCriteria() {
+        return almTestSetsRunOrderByCriteria;
     }
 
     public String getAlmUserName() {
@@ -240,8 +240,8 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
         props.put("almRunMode", almRunMode);
 
-        String orderBy = StringUtils.isBlank(almTestSetsExecutionOrderBy) ? "name" : almTestSetsExecutionOrderBy;
-        props.put("almTestSetsExecutionOrderBy", orderBy);
+        String orderBy = StringUtils.isBlank(almTestSetsRunOrderByCriteria) ? "name" : almTestSetsRunOrderByCriteria;
+        props.put("almTestSetsRunOrderByCriteria", orderBy);
 
         return props;
     }

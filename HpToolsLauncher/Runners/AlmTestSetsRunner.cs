@@ -156,7 +156,7 @@ namespace HpToolsLauncher
                                 bool isSSOEnabled,
                                 string qcClientId,
                                 string qcApiKey,
-                                string almTestSetsExecutionOrderBy)
+                                string almTestSetsRunOrderByCriteria)
         {
 
             Timeout = intQcTimeout;
@@ -175,7 +175,7 @@ namespace HpToolsLauncher
             SSOEnabled = isSSOEnabled;
             ClientID = qcClientId;
             ApiKey = qcApiKey;
-            TestSetsRunOrderByCriteria = almTestSetsExecutionOrderBy;
+            TestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -330,7 +330,7 @@ namespace HpToolsLauncher
 
         private class PathSorter
         {
-            public static List<string> SortPaths(List<TestSetItem> items, string almTestSetsExecutionOrderBy)
+            public static List<string> SortPaths(List<TestSetItem> items, string almTestSetsRunOrderByCriteria)
             {
                 Node root = new Node(string.Empty);
                 foreach (TestSetItem ts in items)
@@ -341,7 +341,7 @@ namespace HpToolsLauncher
                 }
 
                 List<string> result = new List<string>();
-                root.SortAndFlatten(result, string.Empty, almTestSetsExecutionOrderBy);
+                root.SortAndFlatten(result, string.Empty, almTestSetsRunOrderByCriteria);
                 return result;
             }
 
@@ -382,17 +382,17 @@ namespace HpToolsLauncher
                     child.AddPath(segments, index + 1, item);
                 }
 
-                public void SortAndFlatten(List<string> result, string currentPath, string almTestSetsExecutionOrderBy)
+                public void SortAndFlatten(List<string> result, string currentPath, string almTestSetsRunOrderByCriteria)
                 {
                     // 1) Sort subfolders by folder name
                     foreach (var child in _children.Values.OrderBy(n => n.getName(), StringComparer.Ordinal))
                     {
                         var childPath = string.IsNullOrEmpty(currentPath) ? child.getName(): currentPath + BackSlash_ + child.getName();
-                        child.SortAndFlatten(result, childPath, almTestSetsExecutionOrderBy);
+                        child.SortAndFlatten(result, childPath, almTestSetsRunOrderByCriteria);
                     }
 
                     // 2) Sort test sets either by Name or by ID
-                    IEnumerable<TestSetItem> sortedLeaves = (almTestSetsExecutionOrderBy == "name" || almTestSetsExecutionOrderBy == "")
+                    IEnumerable<TestSetItem> sortedLeaves = (almTestSetsRunOrderByCriteria == "name" || almTestSetsRunOrderByCriteria == "")
                         ? _leaves.OrderBy(l => l.Name)
                         : _leaves.OrderBy(l => l.ID);
 

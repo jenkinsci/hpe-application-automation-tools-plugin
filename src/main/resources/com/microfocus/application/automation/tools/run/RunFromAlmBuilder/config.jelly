@@ -148,14 +148,14 @@
         </j:choose>
     </f:entry>
     <!-- New control to select whether the tests should be executed in order by their names or by their IDs -->
-    <f:entry field="almTestSetsExecutionOrderBy">
+    <f:entry field="almTestSetsRunOrderByCriteria">
         <label>TestSet Execution Order By</label>
         <j:choose>
             <j:when test="${hasConfigPermission}">
-                <f:select field="almTestSetsExecutionOrderBy" clazz="alm-test-set-order-by" />
+                <f:select field="almTestSetsRunOrderByCriteria" clazz="alm-test-set-order-by" />
             </j:when>
             <j:otherwise>
-                <f:textbox value="${instance.runFromAlmModel.almTestSetsExecutionOrderBy}" />
+                <f:textbox value="${instance.runFromAlmModel.almTestSetsRunOrderByCriteria}" />
             </j:otherwise>
         </j:choose>
     </f:entry>

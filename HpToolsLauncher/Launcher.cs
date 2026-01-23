@@ -319,7 +319,7 @@ namespace HpToolsLauncher
                     string clientID = _ciParams.GetOrDefault("almClientID");
                     string apiKey = _ciParams.ContainsKey("almApiKeySecret") ? Encrypter.Decrypt(_ciParams["almApiKeySecret"]) : string.Empty;
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
-                    string almTestSetsExecutionOrderBy = _ciParams.GetOrDefault("almTestSetsExecutionOrderBy");
+                    string almTestSetsRunOrderByCriteria = _ciParams.GetOrDefault("almTestSetsRunOrderByCriteria");
 
                     //create an Alm runner
                     runner = new AlmTestSetsRunner(_ciParams["almServerUrl"],
@@ -340,7 +340,7 @@ namespace HpToolsLauncher
                                      isSSOEnabled,
                                      clientID,
                                      apiKey,
-                                     almTestSetsExecutionOrderBy
+                                     almTestSetsRunOrderByCriteria
                     );
                     break;
                 }
