@@ -152,7 +152,7 @@
         <label>TestSet Execution Order By</label>
         <j:choose>
             <j:when test="${hasConfigPermission}">
-                <f:select field="almTestSetsRunOrderByCriteria" clazz="alm-test-set-order-by" />
+                <f:select />
             </j:when>
             <j:otherwise>
                 <f:textbox value="${instance.runFromAlmModel.almTestSetsRunOrderByCriteria}" />

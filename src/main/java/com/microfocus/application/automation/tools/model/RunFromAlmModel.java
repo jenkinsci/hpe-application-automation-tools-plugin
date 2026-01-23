@@ -240,8 +240,12 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
         props.put("almRunMode", almRunMode);
 
-        String orderBy = StringUtils.isBlank(almTestSetsRunOrderByCriteria) ? "name" : almTestSetsRunOrderByCriteria;
-        props.put("almTestSetsRunOrderByCriteria", orderBy);
+        if (!almTestSetsRunOrderByCriteria.isBlank()) {
+            props.put("almTestSetsRunOrderByCriteria", almTestSetsRunOrderByCriteria);
+        }
+        else {
+            props.put("almTestSetsRunOrderByCriteria", "");
+        }
 
         return props;
     }
