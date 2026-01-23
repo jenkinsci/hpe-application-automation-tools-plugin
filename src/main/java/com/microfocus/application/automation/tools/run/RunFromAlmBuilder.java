@@ -511,7 +511,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             return m;
         }
 
-        public ListBoxModel doFillAlmTestSetsRunOrderByCriteriaItems(@QueryParameter String almServerName, @AncestorInPath Item item) {
+        public ListBoxModel doFillAlmTestSetsRunOrderByCriteriaItems(@AncestorInPath Item item) {
             ListBoxModel orderByOptions = new ListBoxModel();
 
             if (item == null || !item.hasPermission(Item.CONFIGURE)) {
