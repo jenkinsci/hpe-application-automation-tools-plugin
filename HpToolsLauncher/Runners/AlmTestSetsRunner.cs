@@ -351,16 +351,26 @@ namespace HpToolsLauncher
                 private readonly Dictionary<string, Node> _children;
                 private readonly List<TestSetItem> _leaves; // test sets directly under this node
 
+                public string Name
+                {
+                    get { return _name; }
+                }
+
+                public Dictionary<string, Node> Children
+                {
+                    get { return _children; }
+                }
+
+                public List<TestSetItem> Leaves
+                {
+                    get { return _leaves; }
+                }
+
                 public Node(string name)
                 {
                     _name = name;
                     _children = new Dictionary<string, Node>();
                     _leaves = new List<TestSetItem>();
-                }
-
-                public string getName()
-                {
-                    return _name;
                 }
 
                 public void AddPath(string[] segments, int index, TestSetItem item)
@@ -385,9 +395,9 @@ namespace HpToolsLauncher
                 public void SortAndFlatten(List<string> result, string currentPath, string almTestSetsRunOrderByCriteria)
                 {
                     // 1) Sort subfolders by folder name
-                    foreach (var child in _children.Values.OrderBy(n => n.getName(), StringComparer.Ordinal))
+                    foreach (var child in _children.Values.OrderBy(n => n.Name, StringComparer.Ordinal))
                     {
-                        var childPath = string.IsNullOrEmpty(currentPath) ? child.getName(): currentPath + BackSlash_ + child.getName();
+                        string childPath = string.IsNullOrEmpty(currentPath) ? child.Name: currentPath + BackSlash_ + child.Name;
                         child.SortAndFlatten(result, childPath, almTestSetsRunOrderByCriteria);
                     }
 
@@ -772,11 +782,11 @@ namespace HpToolsLauncher
             public string Path { get; private set; }
             public int ID { get; private set; }
 
-            public TestSetItem(int id, string path, string name)
+            public TestSetItem(int id, string name, string path)
             {
                 ID = id;
-                Path = path;
                 Name = name;
+                Path = path;
             }
         }
 
