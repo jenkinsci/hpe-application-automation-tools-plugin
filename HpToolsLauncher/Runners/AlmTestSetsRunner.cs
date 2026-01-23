@@ -809,7 +809,7 @@ namespace HpToolsLauncher
                     string tsPath = childSet.TestSetFolder.Path;
                     tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
                     string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
-                    TestSetItem testSet = new TestSetItem(childSet.ID, tsFullPath.Trim(), childSet.Name);
+                    TestSetItem testSet = new TestSetItem(childSet.ID, childSet.Name, tsFullPath.Trim());
                     retVal.Add(testSet);
                 }
             }
