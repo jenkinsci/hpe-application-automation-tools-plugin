@@ -118,7 +118,7 @@ namespace HpToolsLauncher
         public bool SSOEnabled { get; set; }
         public string ClientID { get; set; }
         public string ApiKey { get; set; }
-        public string TestSetExecutionOrderBy { get; set; }
+        public string TestSetsRunOrderByCriteria { get; set; }
 
         /// <summary>
         /// constructor
@@ -175,7 +175,7 @@ namespace HpToolsLauncher
             SSOEnabled = isSSOEnabled;
             ClientID = qcClientId;
             ApiKey = qcApiKey;
-            TestSetExecutionOrderBy = almTestSetsExecutionOrderBy;
+            TestSetsRunOrderByCriteria = almTestSetsExecutionOrderBy;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -354,7 +354,7 @@ namespace HpToolsLauncher
                 public Node(string name)
                 {
                     _name = name;
-                    _children = new Dictionary<string, Node>(StringComparer.Ordinal);
+                    _children = new Dictionary<string, Node>();
                     _leaves = new List<TestSetItem>();
                 }
 
@@ -372,12 +372,12 @@ namespace HpToolsLauncher
                         return;
                     }
 
-                    var next = segments[index];
+                    string nextSegment = segments[index];
                     Node child;
-                    if (!_children.TryGetValue(next, out child))
+                    if (!_children.TryGetValue(nextSegment, out child))
                     {
-                        child = new Node(next);
-                        _children[next] = child;
+                        child = new Node(nextSegment);
+                        _children[nextSegment] = child;
                     }
                     child.AddPath(segments, index + 1, item);
                 }
@@ -393,7 +393,7 @@ namespace HpToolsLauncher
 
                     // 2) Sort test sets either by Name or by ID
                     IEnumerable<TestSetItem> sortedLeaves = (almTestSetsExecutionOrderBy == "name" || almTestSetsExecutionOrderBy == "")
-                        ? _leaves.OrderBy(l => l.Name, StringComparer.Ordinal)
+                        ? _leaves.OrderBy(l => l.Name)
                         : _leaves.OrderBy(l => l.ID);
 
                     foreach (var leaf in sortedLeaves)
@@ -755,7 +755,7 @@ namespace HpToolsLauncher
                     if (setList.Count > 1)
                     {
                         // Sort the setList: post-order traversal (deepest first), then alphabetically
-                        orderedTests = PathSorter.SortPaths(setList, TestSetExecutionOrderBy);
+                        orderedTests = PathSorter.SortPaths(setList, TestSetsRunOrderByCriteria);
                         extraSetsList.AddRange(orderedTests);
                     }
                 }
@@ -766,17 +766,17 @@ namespace HpToolsLauncher
             TestSets.AddRange(extraSetsList);
         }
 
-        private struct TestSetItem
+        private sealed class TestSetItem
         {
             public string Name { get; private set; }
             public string Path { get; private set; }
             public int ID { get; private set; }
 
-            public TestSetItem(int id, string path, string name): this()
+            public TestSetItem(int id, string path, string name)
             {
-                Name = name;
-                Path = path;
                 ID = id;
+                Path = path;
+                Name = name;
             }
         }
 
