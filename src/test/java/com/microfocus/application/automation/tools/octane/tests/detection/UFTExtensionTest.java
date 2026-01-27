@@ -82,6 +82,7 @@ public class UFTExtensionTest {
 
 		AbstractBuild buildMock = Mockito.mock(AbstractBuild.class);
 		Mockito.when(buildMock.getProject()).thenReturn(project);
+        Mockito.when(buildMock.getParent()).thenReturn(project);
 
 		ResultFields fields = detectionService.getDetectedFields(buildMock);
 		assertUFTFields(fields);
@@ -100,6 +101,7 @@ public class UFTExtensionTest {
 
 		AbstractBuild buildMock = Mockito.mock(AbstractBuild.class);
 		Mockito.when(buildMock.getProject()).thenReturn(project);
+        Mockito.when(buildMock.getParent()).thenReturn(project);
 
 		ResultFields fields = detectionService.getDetectedFields(buildMock);
 		assertUFTFields(fields);

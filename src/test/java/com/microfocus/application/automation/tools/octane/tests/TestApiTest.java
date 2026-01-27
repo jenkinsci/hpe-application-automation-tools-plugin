@@ -69,6 +69,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -129,6 +130,7 @@ public class TestApiTest {
 
 	@Test
 	public void testXml() throws Exception {
+        TimeUnit.SECONDS.sleep(3);
 		Page testResults = client.goTo("job/" + testsJobName + "/" + build.getNumber() + "/nga/tests/xml", "application/xml");
 		String testResultsBody = testResults.getWebResponse().getContentAsString();
 		TestsResult testsResultOrigin = dtoFactory.dtoFromXml(testResultsBody, TestsResult.class);
