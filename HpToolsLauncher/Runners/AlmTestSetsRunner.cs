@@ -395,7 +395,7 @@ namespace HpToolsLauncher
                 public void SortAndFlatten(List<string> result, string currentPath, string almTestSetsRunOrderByCriteria)
                 {
                     // 1) Sort subfolders by folder name
-                    foreach (var child in _children.Values.OrderBy(n => n.Name, StringComparer.Ordinal))
+                    foreach (var child in _children.Values.OrderBy(n => n.Name))
                     {
                         string childPath = string.IsNullOrEmpty(currentPath) ? child.Name: currentPath + BackSlash_ + child.Name;
                         child.SortAndFlatten(result, childPath, almTestSetsRunOrderByCriteria);
@@ -403,7 +403,7 @@ namespace HpToolsLauncher
 
                     // 2) Sort test sets either by Name or by ID
                     IEnumerable<TestSetItem> sortedLeaves = (almTestSetsRunOrderByCriteria == "name" || almTestSetsRunOrderByCriteria == "")
-                        ? _leaves.OrderBy(l => l.Name)
+                        ? _leaves.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase)
                         : _leaves.OrderBy(l => l.ID);
 
                     foreach (var leaf in sortedLeaves)
