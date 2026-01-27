@@ -67,7 +67,7 @@
     </licenses>
 
     <properties>
-        <revision>26.2</revision>
+        <revision>26.1</revision>
         <changelist>-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
         <concurrency>1</concurrency>
