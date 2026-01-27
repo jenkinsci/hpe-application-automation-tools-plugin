@@ -1295,6 +1295,15 @@ namespace HpToolsLauncher
                 return null;
             }
 
+            if (TestSetsRunOrderByCriteria == "name" || TestSetsRunOrderByCriteria == "")
+            {
+                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by name.");
+            }
+            else
+            {
+                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by ID.");
+            }
+
             // we start the timer, it is important for the timeout
             Stopwatch swForTimeout = Stopwatch.StartNew();
 
@@ -1335,7 +1344,7 @@ namespace HpToolsLauncher
                     }
                 }
 
-                TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, inlineTestParams, swForTimeout, idx);
+                TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, inlineTestParams, swForTimeout, idx, testSetItem);
                 if (runResults != null)
                     activeRunDescription.AppendResults(runResults);
 
@@ -1357,7 +1366,7 @@ namespace HpToolsLauncher
         /// <param name="swForTimeout"></param>
         /// <param name="testIdx"></param>
         /// <returns></returns>
-        public TestSuiteRunResults RunTestSet(string tsFolderName, string tsName, string inlineTestParams, Stopwatch swForTimeout, int testIdx)
+        public TestSuiteRunResults RunTestSet(string tsFolderName, string tsName, string inlineTestParams, Stopwatch swForTimeout, int testIdx, string testSetItem)
         {
             string testSuiteName = tsName.Trim();
             ITestSetFolder tsFolder = null;
@@ -1411,7 +1420,13 @@ namespace HpToolsLauncher
             }
 
             ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
-            ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerDisplayTest, testSuiteName, targetTestSet.ID));
+            ConsoleWriter.WriteLine(Resources.SingleSeperator);
+            ConsoleWriter.WriteLine("Test Set Details:");
+            ConsoleWriter.WriteLine(string.Format("  - ID: {0}", targetTestSet.ID));
+            ConsoleWriter.WriteLine(string.Format("  - Name: {0}", testSuiteName));
+            ConsoleWriter.WriteLine(string.Format("  - Path: {0}", testSetItem));
+            ConsoleWriter.WriteLine(string.Format("  - Index: {0}", testIdx));
+            ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             //start execution
             ITSScheduler scheduler = null;
