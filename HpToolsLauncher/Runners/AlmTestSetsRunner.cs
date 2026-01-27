@@ -790,7 +790,6 @@ namespace HpToolsLauncher
             }
         }
 
-
         /// <summary>
         /// Recursively find all test sets in the QC directory tree, starting from a given folder
         /// </summary>
