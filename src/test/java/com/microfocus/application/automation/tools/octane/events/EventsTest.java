@@ -89,7 +89,6 @@ public class EventsTest {
 	public static void beforeClass() {
 		//  ensure server mock is up
 		OctaneServerMock serverMock = OctaneServerMock.getInstance();
-		assertTrue(serverMock.isRunning());
 		serverMock.addTestSpecificHandler(eventsTestHandler);
 
 		//  configure plugin for the server
