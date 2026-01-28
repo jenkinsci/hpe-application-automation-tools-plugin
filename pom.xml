@@ -77,7 +77,7 @@
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <maven.exec.skip>false</maven.exec.skip>
         <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
-        <hpi.bundledArtifacts>SVConfigurator,activation,commons-cli,commons-csv,commons-lang,integrations-dto,integrations-sdk,istack-commons-runtime,jakarta.activation,jakarta.xml.bind-api,jaxb-api,jaxb-core,jaxb-impl,jaxb-runtime,log4j-api,log4j-core,log4j-web,plugins-common,poi,tape,txw2,zip4j</hpi.bundledArtifacts>
+        <hpi.bundledArtifacts>SVConfigurator,commons-cli,commons-csv,commons-lang,integrations-dto,integrations-sdk,log4j-api,log4j-core,log4j-web,plugins-common,poi,tape,zip4j</hpi.bundledArtifacts>
 		<!-- The ending year for copyright information -->
 		<copyright.end.year>2025</copyright.end.year>
 	</properties>
@@ -527,6 +527,18 @@
                     <groupId>com.google.code.gson</groupId>
                     <artifactId>gson</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId> com.sun.xml.bind</groupId>
+                    <artifactId>jaxb-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId> com.sun.xml.bind</groupId>
+                    <artifactId>jaxb-impl</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -683,12 +695,31 @@
                     <groupId>commons-io</groupId>
                     <artifactId>commons-io</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jaxb</groupId>
+                    <artifactId>jaxb-runtime</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jaxb</groupId>
+                    <artifactId>jaxb-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jaxb</groupId>
+                    <artifactId>txw2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.istack</groupId>
+                    <artifactId>istack-commons-runtime</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.xml.bind</groupId>
+                    <artifactId>jaxb-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.activation</groupId>
+                    <artifactId>activation</artifactId>
+                </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
-          <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -705,9 +736,8 @@
             <artifactId>jakarta-activation-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>2.3.6</version>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>javax-activation-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
@@ -737,6 +767,14 @@
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>gson-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>jakarta-xml-bind-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>jaxb</artifactId>
+        </dependency>
 
         <!--Test-->
         <dependency>
@@ -753,12 +791,6 @@
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>jenkins-test-harness-tools</artifactId>
             <version>2.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.ivy</groupId>
-            <artifactId>ivy</artifactId>
-            <version>2.5.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

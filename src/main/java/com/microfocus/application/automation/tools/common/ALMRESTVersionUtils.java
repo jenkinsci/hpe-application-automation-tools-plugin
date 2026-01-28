@@ -37,9 +37,9 @@
 package com.microfocus.application.automation.tools.common;
 
 import com.microfocus.application.automation.tools.model.ALMVersion;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Unmarshaller;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 
 /**

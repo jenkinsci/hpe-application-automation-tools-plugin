@@ -45,9 +45,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
-
 import com.microfocus.application.automation.tools.JenkinsUtils;
 import com.microfocus.application.automation.tools.model.AlmServerSettingsModel;
 import com.microfocus.application.automation.tools.model.CdaDetails;
@@ -58,6 +55,8 @@ import com.microfocus.application.automation.tools.sse.result.model.junit.Testca
 import com.microfocus.application.automation.tools.sse.result.model.junit.Testsuite;
 import com.microfocus.application.automation.tools.sse.result.model.junit.Testsuites;
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Marshaller;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
