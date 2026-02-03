@@ -1410,7 +1410,7 @@ namespace HpToolsLauncher
             }
 
             ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
-            ConsoleWriter.WriteLine(string.Format("Index: {0}, ID: {1}, Full path: \"{2}\"", testIdx, targetTestSet.ID, testSetItem));
+            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Path = \"{2}\"", testIdx, targetTestSet.ID, testSetItem));
             ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             //start execution
