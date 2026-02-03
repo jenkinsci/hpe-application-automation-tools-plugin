@@ -80,10 +80,9 @@ namespace HpToolsLauncher
         private const string _EXE = ".exe";
         private const string SOFTWARE_WOW6432_CLASSES_CLSID_0 = @"Software\WOW6432Node\Classes\CLSID\{0}";
         private const string FILE_ISNT_REGISTERED = @"{0} is not registered in HKLM\{1}.";
-        private const string ID = "id";
-        private const string BY_ID = "ID";
-        private const string BY_NAME = "Name";
-        private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by";
+        private const string ID = "ID";
+        private const string NAME = "Name";
+        private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
 
         public ITDConnection13 TdConnection
         {
@@ -388,7 +387,7 @@ namespace HpToolsLauncher
                     }
 
                     // 2) Sort test sets either by Name or by ID
-                    IEnumerable<TestSetItem> sortedLeaves = almTestSetsRunOrderByCriteria == ID ?
+                    IEnumerable<TestSetItem> sortedLeaves = almTestSetsRunOrderByCriteria == ID.ToLower() ?
                         _leaves.OrderBy(l => l.ID) :
                         _leaves.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
@@ -1236,7 +1235,7 @@ namespace HpToolsLauncher
                 return null;
             }
 
-            ConsoleWriter.WriteLine(string.Format(ORDERBY_MESSAGE, TestSetsRunOrderByCriteria == ID ? BY_ID : BY_NAME));
+            ConsoleWriter.WriteLine(string.Format(ORDERBY_MESSAGE, TestSetsRunOrderByCriteria == ID.ToLower() ? ID : NAME));
 
             // we start the timer, it is important for the timeout
             Stopwatch swForTimeout = Stopwatch.StartNew();
