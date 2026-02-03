@@ -80,6 +80,10 @@ namespace HpToolsLauncher
         private const string _EXE = ".exe";
         private const string SOFTWARE_WOW6432_CLASSES_CLSID_0 = @"Software\WOW6432Node\Classes\CLSID\{0}";
         private const string FILE_ISNT_REGISTERED = @"{0} is not registered in HKLM\{1}.";
+        private const string ID = "id";
+        private const string BY_ID = "ID";
+        private const string BY_NAME = "Name";
+        private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by";
 
         public ITDConnection13 TdConnection
         {
@@ -320,14 +324,6 @@ namespace HpToolsLauncher
             }
         }
 
-        /// <summary>
-        /// destructor - ensures dispose of connection
-        /// </summary>
-        ~AlmTestSetsRunner()
-        {
-            Dispose(false);
-        }
-
         private class PathSorter
         {
             public static List<string> SortPaths(List<TestSetItem> items, string almTestSetsRunOrderByCriteria)
@@ -354,16 +350,6 @@ namespace HpToolsLauncher
                 public string Name
                 {
                     get { return _name; }
-                }
-
-                public Dictionary<string, Node> Children
-                {
-                    get { return _children; }
-                }
-
-                public List<TestSetItem> Leaves
-                {
-                    get { return _leaves; }
                 }
 
                 public Node(string name)
@@ -402,9 +388,9 @@ namespace HpToolsLauncher
                     }
 
                     // 2) Sort test sets either by Name or by ID
-                    IEnumerable<TestSetItem> sortedLeaves = (almTestSetsRunOrderByCriteria == "name" || almTestSetsRunOrderByCriteria == "")
-                        ? _leaves.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase)
-                        : _leaves.OrderBy(l => l.ID);
+                    IEnumerable<TestSetItem> sortedLeaves = almTestSetsRunOrderByCriteria == ID ?
+                        _leaves.OrderBy(l => l.ID) :
+                        _leaves.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase);
 
                     foreach (var leaf in sortedLeaves)
                     {
@@ -1073,41 +1059,6 @@ namespace HpToolsLauncher
         }
 
         /// <summary>
-        /// Search test set in QC by the given ID
-        /// </summary>
-        /// <param name="tsFolder"></param>
-        /// <param name="testSetId"></param>
-        /// <param name="testSuiteName"></param>
-        /// <returns>the test set identified by the given id or empty string in case the test set was not found</returns>
-        private string GetTestSetById(ITestSetFolder tsFolder, int testSetId, ref string testSuiteName)
-        {
-            List children = tsFolder.FindChildren(string.Empty);
-            List testSets = tsFolder.FindTestSets(string.Empty);
-
-            if (testSets != null)
-            {
-                foreach (ITestSet childSet in testSets)
-                {
-                    if (childSet.ID != testSetId) continue;
-                    string tsPath = childSet.TestSetFolder.Path;
-                    tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
-                    string tsFullPath = tsPath + BackSlash_ + childSet.Name;
-                    testSuiteName = childSet.Name;
-                    return tsFullPath.Trim();
-                }
-            }
-
-            if (children != null)
-            {
-                foreach (ITestSetFolder childFolder in children)
-                {
-                    GetAllTestSetsFromDirTree(childFolder);
-                }
-            }
-            return string.Empty;
-        }
-
-        /// <summary>
         /// Gets test index given it's name
         /// </summary>
         /// <param name="strName"></param>
@@ -1285,14 +1236,7 @@ namespace HpToolsLauncher
                 return null;
             }
 
-            if (TestSetsRunOrderByCriteria == "id")
-            {
-                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by ID.");
-            }
-            else
-            {
-                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by name.");
-            }
+            ConsoleWriter.WriteLine(string.Format(ORDERBY_MESSAGE, TestSetsRunOrderByCriteria == ID ? BY_ID : BY_NAME));
 
             // we start the timer, it is important for the timeout
             Stopwatch swForTimeout = Stopwatch.StartNew();
@@ -2255,7 +2199,7 @@ namespace HpToolsLauncher
             try
             {
                 var sf = pTest.StepFactory as StepFactory;
-                ; if (sf == null)
+                if (sf == null)
                     return string.Empty;
 
                 var stepList = sf.NewList(string.Empty) as IList;
@@ -2341,12 +2285,6 @@ namespace HpToolsLauncher
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-    }
-
-    public class QCFailure
-    {
-        public string Name { get; set; }
-        public string Desc { get; set; }
     }
 
     public enum QcRunMode
