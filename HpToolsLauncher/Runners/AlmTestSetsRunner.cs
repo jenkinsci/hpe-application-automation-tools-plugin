@@ -1295,13 +1295,13 @@ namespace HpToolsLauncher
                 return null;
             }
 
-            if (TestSetsRunOrderByCriteria == "name" || TestSetsRunOrderByCriteria == "")
+            if (TestSetsRunOrderByCriteria == "id")
             {
-                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by name.");
+                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by ID.");
             }
             else
             {
-                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by ID.");
+                ConsoleWriter.WriteLine("Test sets will be executed in ascending order by name.");
             }
 
             // we start the timer, it is important for the timeout
@@ -1420,12 +1420,7 @@ namespace HpToolsLauncher
             }
 
             ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
-            ConsoleWriter.WriteLine(Resources.SingleSeperator);
-            ConsoleWriter.WriteLine("Test Set Details:");
-            ConsoleWriter.WriteLine(string.Format("  - ID: {0}", targetTestSet.ID));
-            ConsoleWriter.WriteLine(string.Format("  - Name: {0}", testSuiteName));
-            ConsoleWriter.WriteLine(string.Format("  - Path: {0}", testSetItem));
-            ConsoleWriter.WriteLine(string.Format("  - Index: {0}", testIdx));
+            ConsoleWriter.WriteLine(string.Format("Index: {0}, ID: {1}, Full path: \"{2}\"", testIdx, targetTestSet.ID, testSetItem));
             ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             //start execution
