@@ -890,17 +890,7 @@ namespace HpToolsLauncher
 
             try
             {
-                //check test storage type
-                if (testStorageType.Equals(TestStorageType.AlmLabManagement))
-                {
-                    tsFolder = (ITestSetFolder)tsTreeManager.NodeByPath["Root"];
-                    GetTestSetById(tsFolder, Convert.ToInt32(tsName), ref testSuiteName);
-                }
-                else
-                {
-                    tsFolder = (ITestSetFolder)tsTreeManager.get_NodeByPath(tsPath);
-                }
-
+                tsFolder = (ITestSetFolder)tsTreeManager.get_NodeByPath(tsPath);
                 isTestPath = false;
             }
             catch (COMException ex)
@@ -1548,10 +1538,6 @@ namespace HpToolsLauncher
             ITSTest currentTest = null;
             string abortFilename = string.Format(@"{0}\stop{1}.txt", Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Launcher.UniqueTimeStamp);
 
-            if (Storage == TestStorageType.AlmLabManagement)
-            {
-                Timeout *= 60;
-            }
             //update run result description
             UpdateTestsResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet, currentTestSetInstances, Timeout, executionStatus, swForTimeout, ref prevTest, ref currentTest, abortFilename);
 
