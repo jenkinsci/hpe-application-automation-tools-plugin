@@ -82,6 +82,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     private final static String HP_TOOLS_LAUNCHER_EXE_CFG = "HpToolsLauncher.exe.config";
     private String resultsFileName = "ApiResults.xml";
     private AlmServerSettingsModel almServerSettingsModel;
+    private String almTestSetOrderBy;
 
     @DataBoundConstructor
     public RunFromAlmBuilder(
@@ -103,7 +104,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             boolean areParametersEnabled,
             FilterTestsModel filterTestsModel,
             SpecifyParametersModel specifyParametersModel,
-            AlmServerSettingsModel almServerSettingsModel) {
+            AlmServerSettingsModel almServerSettingsModel,
+            String almTestSetsRunOrderByCriteria) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -129,7 +131,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         isSSOEnabled,
                         almClientID,
                         almApiKey,
-                        almCredScope);
+                        almCredScope,
+                        almTestSetsRunOrderByCriteria);
+        this.almServerSettingsModel = almServerSettingsModel;
     }
 
     public CredentialsScope getCredentialsScopeOrDefault() {
@@ -243,6 +247,10 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
 
     public boolean getIsFilterTestsEnabled() {
         return isFilterTestsEnabled;
+    }
+
+    public String getAlmTestSetsRunOrderByCriteria() {
+        return runFromAlmModel.getAlmTestSetsRunOrderByCriteria();
     }
 
     @DataBoundSetter
@@ -501,6 +509,17 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             }
             getAlmServers().forEachOrdered(s -> m.add(s.getAlmServerName()));
             return m;
+        }
+
+        public ListBoxModel doFillAlmTestSetsRunOrderByCriteriaItems(@AncestorInPath Item item) {
+            ListBoxModel orderByOptions = new ListBoxModel();
+
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return orderByOptions;
+            }
+            orderByOptions.add("Name", "name");
+            orderByOptions.add("ID", "id");
+            return orderByOptions;
         }
 
         public ListBoxModel doFillAlmUserNameItems(@QueryParameter String almServerName, @AncestorInPath Item item) {

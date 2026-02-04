@@ -229,6 +229,7 @@ namespace HpToolsLauncher
                         Environment.Exit((int)ExitCodeEnum.Failed);
                         return;
                     }
+
                     TestSuiteRunResults rerunResults = _runner.Run();
 
                     RunSummary(resultsFilename, results, rerunResults);
@@ -247,8 +248,6 @@ namespace HpToolsLauncher
 
             switch (_runType)
             {
-                case TestStorageType.AlmLabManagement:
-
                 case TestStorageType.Alm:
                 { 
                     //check that all required parameters exist
@@ -318,6 +317,7 @@ namespace HpToolsLauncher
                     string clientID = _ciParams.GetOrDefault("almClientID");
                     string apiKey = _ciParams.ContainsKey("almApiKeySecret") ? Encrypter.Decrypt(_ciParams["almApiKeySecret"]) : string.Empty;
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
+                    string almTestSetsRunOrderByCriteria = _ciParams.GetOrDefault("almTestSetsRunOrderByCriteria");
 
                     //create an Alm runner
                     runner = new AlmTestSetsRunner(_ciParams["almServerUrl"],
@@ -336,7 +336,10 @@ namespace HpToolsLauncher
                                      isFirstRun,
                                      _runType,
                                      isSSOEnabled,
-                                     clientID, apiKey);
+                                     clientID,
+                                     apiKey,
+                                     almTestSetsRunOrderByCriteria
+                    );
                     break;
                 }
                 case TestStorageType.FileSystem:
@@ -465,7 +468,7 @@ namespace HpToolsLauncher
                     }
                     ConsoleWriter.WriteLine("Launcher timeout is " + timeout.ToString(@"dd\:\:hh\:mm\:ss"));
 
-                    bool leaveUftOpenIfVisible = _ciParams.GetOrDefault("LEAVE_UFT_OPEN_IF_VISIBLE", "0") == "1";
+                    bool leaveUftOpenIfVisible = _ciParams.GetOrDefault(LEAVE_UFT_OPEN_IF_VISIBLE, "0") == "1";
 
                     //LR specific values:
                     //default values are set by JAVA code, in com.hpe.application.automation.tools.model.RunFromFileSystemModel.java

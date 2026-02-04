@@ -49,6 +49,8 @@ using System.Threading;
 using System.Security;
 using HpToolsLauncher.Utils;
 using Microsoft.Win32;
+using System.Globalization;
+using System.Web.UI.WebControls.Expressions;
 
 namespace HpToolsLauncher
 {
@@ -57,6 +59,7 @@ namespace HpToolsLauncher
         private static readonly char[] BACK_SLASH = new char[] { '\\' };
         private static readonly char[] COMMA = new char[] { ',' };
         private const char BackSlash = '\\';
+        private const string BackSlash_ = "\\";
 
         private ITDConnection13 _tdConnection;
         private ITDConnection2 _tdConnectionOld;
@@ -77,6 +80,9 @@ namespace HpToolsLauncher
         private const string _EXE = ".exe";
         private const string SOFTWARE_WOW6432_CLASSES_CLSID_0 = @"Software\WOW6432Node\Classes\CLSID\{0}";
         private const string FILE_ISNT_REGISTERED = @"{0} is not registered in HKLM\{1}.";
+        private const string ID = "ID";
+        private const string NAME = "Name";
+        private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
 
         public ITDConnection13 TdConnection
         {
@@ -115,6 +121,7 @@ namespace HpToolsLauncher
         public bool SSOEnabled { get; set; }
         public string ClientID { get; set; }
         public string ApiKey { get; set; }
+        public string TestSetsRunOrderByCriteria { get; set; }
 
         /// <summary>
         /// constructor
@@ -151,7 +158,8 @@ namespace HpToolsLauncher
                                 TestStorageType testStorageType,
                                 bool isSSOEnabled,
                                 string qcClientId,
-                                string qcApiKey)
+                                string qcApiKey,
+                                string almTestSetsRunOrderByCriteria)
         {
 
             Timeout = intQcTimeout;
@@ -170,6 +178,7 @@ namespace HpToolsLauncher
             SSOEnabled = isSSOEnabled;
             ClientID = qcClientId;
             ApiKey = qcApiKey;
+            TestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -314,97 +323,82 @@ namespace HpToolsLauncher
             }
         }
 
-        /// <summary>
-        /// destructor - ensures dispose of connection
-        /// </summary>
-        ~AlmTestSetsRunner()
-        {
-            Dispose(false);
-        }
-
         private class PathSorter
         {
-            public static List<string> SortPaths(List<string> paths)
+            public static List<string> SortPaths(List<TestSetItem> items, string almTestSetsRunOrderByCriteria)
             {
-                // Build the tree
-                Node root = new Node(String.Empty);
-                foreach (string path in paths)
+                Node root = new Node(string.Empty);
+                foreach (TestSetItem ts in items)
                 {
-                    root.AddPath(path.Split(BackSlash));
+                    // Path looks like: "\Folder1\Folder2\TestSetName"
+                    var segments = ts.Path.Split(BACK_SLASH, StringSplitOptions.RemoveEmptyEntries);
+                    root.AddPath(segments, 0, ts);
                 }
 
-                // Sort and flatten
                 List<string> result = new List<string>();
-                root.SortAndFlatten(result, String.Empty);
+                root.SortAndFlatten(result, string.Empty, almTestSetsRunOrderByCriteria);
                 return result;
             }
 
             private class Node
             {
-                private readonly string _name; // Backing field for Name
-                private readonly Dictionary<string, Node> _children; // Backing field for Children
-                private readonly List<string> _leaves; // Backing field for Leaves
+                private readonly string _name;
+                private readonly Dictionary<string, Node> _children;
+                private readonly List<TestSetItem> _leaves; // test sets directly under this node
 
                 public string Name
                 {
                     get { return _name; }
                 }
 
-                public Dictionary<string, Node> Children
-                {
-                    get { return _children; }
-                }
-
-                public List<string> Leaves
-                {
-                    get { return _leaves; }
-                }
-
                 public Node(string name)
                 {
-                    this._name = name;
-                    this._children = new Dictionary<string, Node>();
-                    this._leaves = new List<string>();
+                    _name = name;
+                    _children = new Dictionary<string, Node>();
+                    _leaves = new List<TestSetItem>();
                 }
 
-                public void AddPath(string[] segments, int index = 0)
+                public void AddPath(string[] segments, int index, TestSetItem item)
                 {
-                    if (index == segments.Length - 1)
+                    // The last segment is the test set name
+                    if (index >= segments.Length - 1)
                     {
-                        _leaves.Add(segments[index]);
+                        _leaves.Add(item);
                         return;
                     }
 
                     string nextSegment = segments[index];
-                    if (!_children.ContainsKey(nextSegment))
+                    Node child;
+                    if (!_children.TryGetValue(nextSegment, out child))
                     {
-                        _children[nextSegment] = new Node(nextSegment);
+                        child = new Node(nextSegment);
+                        _children[nextSegment] = child;
                     }
-
-                    _children[nextSegment].AddPath(segments, index + 1);
+                    child.AddPath(segments, index + 1, item);
                 }
 
-                public void SortAndFlatten(List<string> result, string currentPath)
+                public void SortAndFlatten(List<string> result, string currentPath, string almTestSetsRunOrderByCriteria)
                 {
-                    // Sort subfolders first
-                    List<Node> sortedChildren = _children.Values.OrderBy(n => n.Name, StringComparer.Ordinal).ToList();
-                    foreach (Node child in sortedChildren)
+                    // 1) Sort subfolders by folder name
+                    foreach (var child in _children.Values.OrderBy(n => n.Name))
                     {
-                        string childPath = string.IsNullOrEmpty(currentPath)
-                            ? child.Name
-                            : currentPath + BackSlash + child.Name;
-                        child.SortAndFlatten(result, childPath);
+                        string childPath = string.IsNullOrEmpty(currentPath) ? child.Name: currentPath + BackSlash_ + child.Name;
+                        child.SortAndFlatten(result, childPath, almTestSetsRunOrderByCriteria);
                     }
 
-                    // Then add leaves, sorted
-                    List<string> sortedLeaves = _leaves.OrderBy(l => l, StringComparer.Ordinal).ToList();
-                    foreach (string leaf in sortedLeaves)
+                    // 2) Sort test sets either by Name or by ID
+                    IEnumerable<TestSetItem> sortedLeaves = almTestSetsRunOrderByCriteria == ID.ToLower() ?
+                        _leaves.OrderBy(l => l.ID) :
+                        _leaves.OrderBy(l => l.Name, StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var leaf in sortedLeaves)
                     {
-                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf : currentPath + BackSlash + leaf);
+                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf.Name : currentPath + BackSlash_ + leaf.Name);
                     }
                 }
             }
         }
+
 
         //------------------------------- Connection to QC --------------------------
 
@@ -751,14 +745,14 @@ namespace HpToolsLauncher
                 if (tsFolder != null)
                 {
                     removeSetsList.Add(testSetOrFolder);
-
-                    List<string> setList = GetAllTestSetsFromDirTree(tsFolder);
+                    List<TestSetItem> setList = GetAllTestSetsFromDirTree(tsFolder);
+                    List<string> orderedTests = new List<string>();
                     if (setList.Count > 1)
                     {
                         // Sort the setList: post-order traversal (deepest first), then alphabetically
-                        setList = PathSorter.SortPaths(setList);
+                        orderedTests = PathSorter.SortPaths(setList, TestSetsRunOrderByCriteria);
+                        extraSetsList.AddRange(orderedTests);
                     }
-                    extraSetsList.AddRange(setList);
                 }
 
             }
@@ -767,14 +761,28 @@ namespace HpToolsLauncher
             TestSets.AddRange(extraSetsList);
         }
 
+        private sealed class TestSetItem
+        {
+            public string Name { get; private set; }
+            public string Path { get; private set; }
+            public int ID { get; private set; }
+
+            public TestSetItem(int id, string name, string path)
+            {
+                ID = id;
+                Name = name;
+                Path = path;
+            }
+        }
+
         /// <summary>
         /// Recursively find all test sets in the QC directory tree, starting from a given folder
         /// </summary>
         /// <param name="tsFolder"></param>
         /// <returns>the list of test sets</returns>
-        private List<string> GetAllTestSetsFromDirTree(ITestSetFolder tsFolder)
+        private List<TestSetItem> GetAllTestSetsFromDirTree(ITestSetFolder tsFolder)
         {
-            List<string> retVal = new List<string>();
+            List<TestSetItem> retVal = new List<TestSetItem>();
             List children = tsFolder.FindChildren(string.Empty);
             List testSets = tsFolder.FindTestSets(string.Empty);
 
@@ -785,7 +793,8 @@ namespace HpToolsLauncher
                     string tsPath = childSet.TestSetFolder.Path;
                     tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
                     string tsFullPath = string.Format(@"{0}\{1}", tsPath, childSet.Name);
-                    retVal.Add(tsFullPath.TrimEnd());
+                    TestSetItem testSet = new TestSetItem(childSet.ID, childSet.Name, tsFullPath.Trim());
+                    retVal.Add(testSet);
                 }
             }
 
@@ -866,17 +875,7 @@ namespace HpToolsLauncher
 
             try
             {
-                //check test storage type
-                if (testStorageType.Equals(TestStorageType.AlmLabManagement))
-                {
-                    tsFolder = (ITestSetFolder)tsTreeManager.NodeByPath["Root"];
-                    GetTestSetById(tsFolder, Convert.ToInt32(tsName), ref testSuiteName);
-                }
-                else
-                {
-                    tsFolder = (ITestSetFolder)tsTreeManager.get_NodeByPath(tsPath);
-                }
-
+                tsFolder = (ITestSetFolder)tsTreeManager.get_NodeByPath(tsPath);
                 isTestPath = false;
             }
             catch (COMException ex)
@@ -894,7 +893,7 @@ namespace HpToolsLauncher
                 // remove the test name and try find test set with parent path
                 try
                 {
-                    int pos = tsPath.LastIndexOf("\\", StringComparison.Ordinal) + 1;
+                    int pos = tsPath.LastIndexOf(BackSlash_, StringComparison.Ordinal) + 1;
                     testName = testSuiteName;
                     testSuiteName = tsPath.Substring(pos, tsPath.Length - pos);
                     tsPath = tsPath.Substring(0, pos - 1);
@@ -1056,41 +1055,6 @@ namespace HpToolsLauncher
             }
 
             return testList;
-        }
-
-        /// <summary>
-        /// Search test set in QC by the given ID
-        /// </summary>
-        /// <param name="tsFolder"></param>
-        /// <param name="testSetId"></param>
-        /// <param name="testSuiteName"></param>
-        /// <returns>the test set identified by the given id or empty string in case the test set was not found</returns>
-        private string GetTestSetById(ITestSetFolder tsFolder, int testSetId, ref string testSuiteName)
-        {
-            List children = tsFolder.FindChildren(string.Empty);
-            List testSets = tsFolder.FindTestSets(string.Empty);
-
-            if (testSets != null)
-            {
-                foreach (ITestSet childSet in testSets)
-                {
-                    if (childSet.ID != testSetId) continue;
-                    string tsPath = childSet.TestSetFolder.Path;
-                    tsPath = tsPath.Substring(5).Trim(BACK_SLASH);
-                    string tsFullPath = tsPath + "\\" + childSet.Name;
-                    testSuiteName = childSet.Name;
-                    return tsFullPath.TrimEnd();
-                }
-            }
-
-            if (children != null)
-            {
-                foreach (ITestSetFolder childFolder in children)
-                {
-                    GetAllTestSetsFromDirTree(childFolder);
-                }
-            }
-            return string.Empty;
         }
 
         /// <summary>
@@ -1271,6 +1235,8 @@ namespace HpToolsLauncher
                 return null;
             }
 
+            ConsoleWriter.WriteLine(string.Format(ORDERBY_MESSAGE, TestSetsRunOrderByCriteria == ID.ToLower() ? ID : NAME));
+
             // we start the timer, it is important for the timeout
             Stopwatch swForTimeout = Stopwatch.StartNew();
 
@@ -1311,7 +1277,7 @@ namespace HpToolsLauncher
                     }
                 }
 
-                TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, inlineTestParams, swForTimeout, idx);
+                TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, inlineTestParams, swForTimeout, idx, testSetItem);
                 if (runResults != null)
                     activeRunDescription.AppendResults(runResults);
 
@@ -1333,9 +1299,9 @@ namespace HpToolsLauncher
         /// <param name="swForTimeout"></param>
         /// <param name="testIdx"></param>
         /// <returns></returns>
-        public TestSuiteRunResults RunTestSet(string tsFolderName, string tsName, string inlineTestParams, Stopwatch swForTimeout, int testIdx)
+        public TestSuiteRunResults RunTestSet(string tsFolderName, string tsName, string inlineTestParams, Stopwatch swForTimeout, int testIdx, string testSetItem)
         {
-            string testSuiteName = tsName.TrimEnd();
+            string testSuiteName = tsName.Trim();
             ITestSetFolder tsFolder = null;
             string tsPath = string.Format(@"Root\{0}", tsFolderName);
             string initialFullTsPath = string.Format(@"{0}\{1}", tsPath, tsName);
@@ -1387,7 +1353,8 @@ namespace HpToolsLauncher
             }
 
             ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
-            ConsoleWriter.WriteLine(string.Format(Resources.AlmRunnerDisplayTest, testSuiteName, targetTestSet.ID));
+            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Path = \"{2}\"", testIdx, targetTestSet.ID, testSetItem));
+            ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             //start execution
             ITSScheduler scheduler = null;
@@ -1514,10 +1481,6 @@ namespace HpToolsLauncher
             ITSTest currentTest = null;
             string abortFilename = string.Format(@"{0}\stop{1}.txt", Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Launcher.UniqueTimeStamp);
 
-            if (Storage == TestStorageType.AlmLabManagement)
-            {
-                Timeout *= 60;
-            }
             //update run result description
             UpdateTestsResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet, currentTestSetInstances, Timeout, executionStatus, swForTimeout, ref prevTest, ref currentTest, abortFilename);
 
@@ -1748,7 +1711,7 @@ namespace HpToolsLauncher
 
             activeTestDesc.TestState = TestState.Error;
             activeTestDesc.TestPath = tsPath;
-            int pos = tsPath.LastIndexOf("\\", StringComparison.Ordinal) + 1;
+            int pos = tsPath.LastIndexOf(BackSlash_, StringComparison.Ordinal) + 1;
             activeTestDesc.TestName = tsPath.Substring(pos);
             activeTestDesc.ErrorDesc = errMessage;
             activeTestDesc.FatalErrors = 1;
@@ -2235,7 +2198,7 @@ namespace HpToolsLauncher
             try
             {
                 var sf = pTest.StepFactory as StepFactory;
-                ; if (sf == null)
+                if (sf == null)
                     return string.Empty;
 
                 var stepList = sf.NewList(string.Empty) as IList;
@@ -2284,7 +2247,7 @@ namespace HpToolsLauncher
 
                         if (File.Exists(logPath))
                         {
-                            retVal = File.ReadAllText(logPath).TrimEnd();
+                            retVal = File.ReadAllText(logPath).Trim();
                         }
                     }
                 }
@@ -2321,12 +2284,6 @@ namespace HpToolsLauncher
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-    }
-
-    public class QCFailure
-    {
-        public string Name { get; set; }
-        public string Desc { get; set; }
     }
 
     public enum QcRunMode
