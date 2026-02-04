@@ -248,8 +248,6 @@ namespace HpToolsLauncher
 
             switch (_runType)
             {
-                case TestStorageType.AlmLabManagement:
-
                 case TestStorageType.Alm:
                 { 
                     //check that all required parameters exist
