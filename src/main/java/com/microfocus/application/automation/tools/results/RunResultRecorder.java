@@ -330,21 +330,16 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	private void zipSelectedFolders(FilePath base, List<FilePath> foldersToInclude, FilePath destZipFile, TaskListener listener) throws IOException, InterruptedException {
+	private void zipSelectedFolders(FilePath base, List<FilePath> foldersToInclude, FilePath destZipFile) throws IOException, InterruptedException {
 		try (OutputStream fos = destZipFile.write(); ZipOutputStream zos = new ZipOutputStream(fos)) {
-			final String basePrefix = base.getRemote().replace('\\', '/') + "/";
+			String basePrefix = base.getRemote().replace('\\', '/');
+			if (!basePrefix.endsWith("/")) {
+				basePrefix += "/";
+			}
 			for (FilePath folder : foldersToInclude) {
-				if (!folder.exists()) {
-					continue;
-				}
 				for (FilePath file : folder.list("**/*")) {
-					if (file.isDirectory()) {
-						continue;
-					}
-					String fullPath = file.getRemote().replace('\\', '/');
-					String entryName = fullPath.substring(basePrefix.length());
-					ZipEntry ze = new ZipEntry(entryName);
-					zos.putNextEntry(ze);
+					String entryName = file.getRemote().replace('\\', '/').substring(basePrefix.length());
+					zos.putNextEntry(new ZipEntry(entryName));
 					try (InputStream in = file.read()) {
 						in.transferTo(zos);
 					}
@@ -605,18 +600,18 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 								}
 
 								List<FilePath> foldersToInclude = new ArrayList<>();
+								foldersToInclude.add(reportFolder);
 								for (String dir : reportMetaData.getStResFolders()) {
 									FilePath stResDirs = new FilePath(baseFolder, dir);
 									if (stResDirs.exists()) {
 										foldersToInclude.add(stResDirs);
 									}
 								}
-								foldersToInclude.add(reportFolder);
 								String zipFileName = getUniqueZipFileNameInFolder(zipFileNames, (StringUtils.isBlank(nodeName) ? "" : nodeName + "_") + testFolder.getName(), "UFT");
 								zipFileNames.add(zipFileName);
 								FilePath archivedFiles = new FilePath(new FilePath(artifactsDir), zipFileName);
 
-								zipSelectedFolders(baseFolder, foldersToInclude, archivedFiles, listener);
+								zipSelectedFolders(baseFolder, foldersToInclude, archivedFiles);
 
 								// add to Report list
 								String zipFileUrlName = "artifact/" + zipFileName;
