@@ -91,6 +91,8 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static com.microfocus.application.automation.tools.results.projectparser.performance.XmlParserUtil.getNode;
 import static com.microfocus.application.automation.tools.results.projectparser.performance.XmlParserUtil.getNodeAttr;
@@ -316,6 +318,35 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 	private boolean isParallelRunnerReportPath(FilePath reportPath) throws IOException, InterruptedException {
 		FilePath parallelRunnerResultsFile = new FilePath(reportPath, PARALLEL_RESULT_FILE);
 		return parallelRunnerResultsFile.exists();
+	}
+
+	/**
+	 * Helper method that includes inside an archive all the necessary folders.
+	 *
+	 * @param base: base is the parent folder that contains Report/ and StRes*
+	 * @param foldersToInclude
+	 * @param destZipFile
+	 * @param listener
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	private void zipSelectedFolders(FilePath base, List<FilePath> foldersToInclude, FilePath destZipFile) throws IOException, InterruptedException {
+		try (OutputStream fos = destZipFile.write(); ZipOutputStream zos = new ZipOutputStream(fos)) {
+			String basePrefix = base.getRemote().replace('\\', '/');
+			if (!basePrefix.endsWith("/")) {
+				basePrefix += "/";
+			}
+			for (FilePath folder : foldersToInclude) {
+				for (FilePath file : folder.list("**/*")) {
+					String entryName = file.getRemote().replace('\\', '/').substring(basePrefix.length());
+					zos.putNextEntry(new ZipEntry(entryName));
+					try (InputStream in = file.read()) {
+						in.transferTo(zos);
+					}
+					zos.closeEntry();
+				}
+			}
+		}
 	}
 
 	/**
@@ -562,25 +593,25 @@ public class RunResultRecorder extends Recorder implements Serializable, MatrixA
 						if (archiveTestResult) {
 							if (reportFolder.exists()) {
 								FilePath testFolder = new FilePath(channel, testFolderPath);
-								String zipFileName = getUniqueZipFileNameInFolder(zipFileNames, (StringUtils.isBlank(nodeName) ? "" : nodeName + "_") + testFolder.getName(), "UFT");
-								zipFileNames.add(zipFileName);
-								try (ByteArrayOutputStream outStr = new ByteArrayOutputStream()) {
+								// get the parent of the report folder
+								FilePath baseFolder = reportFolder.getParent();
+								if (baseFolder == null) {
+									baseFolder = reportFolder;
+								}
 
-									// don't use FileFilter for zip, or it will cause bug when files are on slave
-									reportFolder.zip(outStr);
-
-									/*
-									 * I did't use copyRecursiveTo or copyFrom due to bug in
-									 * jekins:https://issues.jenkins-ci.org/browse /JENKINS-9189 //(which is
-									 * cleaimed to have been fixed, but not. So I zip the folder to stream and copy
-									 * it to the master.
-									 */
-
-									try (InputStream instr = new ByteArrayInputStream(outStr.toByteArray())) {
-										FilePath archivedFile = new FilePath(new FilePath(artifactsDir), zipFileName);
-										archivedFile.copyFrom(instr);
+								List<FilePath> foldersToInclude = new ArrayList<>();
+								foldersToInclude.add(reportFolder);
+								for (String dir : reportMetaData.getStResFolders()) {
+									FilePath stResDirs = new FilePath(baseFolder, dir);
+									if (stResDirs.exists()) {
+										foldersToInclude.add(stResDirs);
 									}
 								}
+								String zipFileName = getUniqueZipFileNameInFolder(zipFileNames, (StringUtils.isBlank(nodeName) ? "" : nodeName + "_") + testFolder.getName(), "UFT");
+								zipFileNames.add(zipFileName);
+								FilePath archivedFiles = new FilePath(new FilePath(artifactsDir), zipFileName);
+
+								zipSelectedFolders(baseFolder, foldersToInclude, archivedFiles);
 
 								// add to Report list
 								String zipFileUrlName = "artifact/" + zipFileName;
