@@ -345,7 +345,7 @@ Utils.loadMC = function(a, b, prEnv){
 				tenantId = map["TENANT_ID_COOKIE"];
 			}
 			if(map.hasOwnProperty("isSaaS")) {
-				isSaaS = map["isSaaS"];
+				isSaaS = (map["isSaaS"] === "true");
 			}
 
 			// var jobId = response.responseObject();
