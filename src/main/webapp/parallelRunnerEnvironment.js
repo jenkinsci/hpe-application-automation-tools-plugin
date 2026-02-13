@@ -618,6 +618,28 @@ function setViewVisibility(panel) {
 		updateFsView(panel, chkParallelRunner);
 	}, false);
 }
+
+/**
+ * Enforces mutual exclusivity between Parallel Runner and mobile/cloud execution.
+ * When parallel is enabled, mobile and cloud options are unchecked and disabled; otherwise they are re-enabled.
+ * @param panel - the current build step container
+ * @param isParallelRun - a flag that reflects the state of the Parallel run checkbox
+ */
+function enforceParallelConstraints(panel, isParallelRun) {
+	const mobile = panel.querySelector('input[name="useMobileDevice"]');
+	const cloud = panel.querySelector('input[name="cloudBrowserModel"]');
+
+	[mobile, cloud].forEach(function (checkBox) {
+		// If parallel is ON => turn OFF children + disable them
+		if (isParallelRun) {
+			checkBox.checked = false;
+		}
+		checkBox.disabled = isParallelRun;
+		// Let Jenkins optionalBlock / listeners react
+		checkBox.dispatchEvent(new Event("change", { bubbles: true }));
+	});
+}
+
 function updateFsView(panel, chkParallelRunner) {
 	const isParallelRun = chkParallelRunner.checked;
 	RunFromFileSystemEnv.setFsTestsVisibility(panel, !isParallelRun);
@@ -625,6 +647,8 @@ function updateFsView(panel, chkParallelRunner) {
 	RunFromFileSystemEnv.setParamsVisibility(panel, !isParallelRun);
 	//this panel should be automatically shown/hidden, so comment-out it for now to see if all works fine
 	//ParallelRunnerEnv.setEnvironmentsVisibility(panel, isParallelRun);
+	// enforce disabling mobile + cloud when parallel is enabled
+	enforceParallelConstraints(panel, isParallelRun);
 }
 function setupFsTask(hasConfigPermission) {
 	let divMain = null;
