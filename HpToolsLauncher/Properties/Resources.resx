@@ -212,7 +212,7 @@ Save the test in QuickTest and then run it again.</value>
     <value>Unable to login. Please check username and password.</value>
   </data>
   <data name="AlmRunnerStartingExecution" xml:space="preserve">
-    <value>Starting test set execution</value>
+    <value>Starting test sets execution.</value>
   </data>
   <data name="AlmRunnerStat" xml:space="preserve">
     <value>Test: {0}, Id: {1}, Execution status: {2}</value>
