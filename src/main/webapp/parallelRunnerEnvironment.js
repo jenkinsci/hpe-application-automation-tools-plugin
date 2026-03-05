@@ -345,7 +345,7 @@ Utils.loadMC = function(a, b, prEnv){
 				tenantId = map["TENANT_ID_COOKIE"];
 			}
 			if(map.hasOwnProperty("isSaaS")) {
-				isSaaS = map["isSaaS"];
+				isSaaS = map.isSaaS === "true" || map.isSaaS === true;
 			}
 
 			// var jobId = response.responseObject();
@@ -608,6 +608,24 @@ RunFromFileSystemEnv.setParamsVisibility = function(panel, visible) {
 	this.setInputVisibility(panel, "areParametersEnabled", visible);
 };
 
+RunFromFileSystemEnv._cbStates = new WeakMap();
+
+RunFromFileSystemEnv.enforceParallelConstraints = function(panel, isParallelRun) {
+	const checkboxes = panel.querySelectorAll("input[name='useMobileDevice'], input[name='cloudBrowserModel']");
+	checkboxes.forEach(checkbox => {
+		if (isParallelRun) {
+			RunFromFileSystemEnv._cbStates.set(checkbox, checkbox.checked);
+			if (checkbox.checked === true)
+				checkbox.click(); // to close it
+			checkbox.disabled = true;
+		} else {
+			checkbox.disabled = false;
+			if (RunFromFileSystemEnv._cbStates.get(checkbox) === true)
+				checkbox.click(); // to reopen it.
+		}
+	});
+};
+
 /**
  * Hide/Show the corresponding controls based on the parallel runner checkBox state.
  */
@@ -618,6 +636,7 @@ function setViewVisibility(panel) {
 		updateFsView(panel, chkParallelRunner);
 	}, false);
 }
+
 function updateFsView(panel, chkParallelRunner) {
 	const isParallelRun = chkParallelRunner.checked;
 	RunFromFileSystemEnv.setFsTestsVisibility(panel, !isParallelRun);
@@ -625,7 +644,9 @@ function updateFsView(panel, chkParallelRunner) {
 	RunFromFileSystemEnv.setParamsVisibility(panel, !isParallelRun);
 	//this panel should be automatically shown/hidden, so comment-out it for now to see if all works fine
 	//ParallelRunnerEnv.setEnvironmentsVisibility(panel, isParallelRun);
+	RunFromFileSystemEnv.enforceParallelConstraints(panel, isParallelRun);
 }
+
 function setupFsTask(hasConfigPermission) {
 	let divMain = null;
 	if (document.location.href.indexOf("pipeline-syntax")>0) { // we are on pipeline-syntax page, where runFromFileBuilder step can be selected only once

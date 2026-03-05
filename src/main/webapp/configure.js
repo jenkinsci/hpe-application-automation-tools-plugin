@@ -267,7 +267,7 @@ async function loadMobileInfo(a, b, o, err) {
                 tenantId = map["TENANT_ID_COOKIE"];
             }
             if(map.hasOwnProperty("isSaaS")) {
-                isSaaS = map["isSaaS"];
+                isSaaS = map.isSaaS === "true" || map.isSaaS === true;
             }
 
             if (jobId == null) {
