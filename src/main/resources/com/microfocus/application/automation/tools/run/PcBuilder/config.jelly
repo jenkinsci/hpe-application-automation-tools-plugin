@@ -1,44 +1,27 @@
 <!--
-
-     Certain versions of software accessible here may contain branding from
-     Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
-     This software was acquired by Micro Focus on September 1, 2017, and is now
-     offered by OpenText.
-     Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
-     in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
-     property of their respective owners.
-     OpenText is a trademark of Open Text.
-     __________________________________________________________________
-     MIT License
-
-     Copyright 2012-2025 Open Text.
-
-     The only warranties for products and services of Open Text and
-     its affiliates and licensors ("Open Text") are as may be set forth
-     in the express warranty statements accompanying such products and services.
-     Nothing herein should be construed as constituting an additional warranty.
-     Open Text shall not be liable for technical or editorial errors or
-     omissions contained herein. The information contained herein is subject
-     to change without notice.
-
-     Except as specifically indicated otherwise, this document contains
-     confidential information and a valid license is required for possession,
-     use or copying. If this work is provided to the U.S. Government,
-     consistent with FAR 12.211 and 12.212, Commercial Computer Software,
-     Computer Software Documentation, and Technical Data for Commercial Items are
-     licensed to the U.S. Government under vendor's standard commercial license.
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
-     ___________________________________________________________________
-
--->
+  ~
+  ~  Certain versions of software and/or documents (“Material”) accessible here may contain branding from
+  ~  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.  As of September 1, 2017,
+  ~  the Material is now offered by Micro Focus, a separately owned and operated company.  Any reference to the HP
+  ~  and Hewlett Packard Enterprise/HPE marks is historical in nature, and the HP and Hewlett Packard Enterprise/HPE
+  ~  marks are the property of their respective owners.
+  ~ __________________________________________________________________
+  ~ MIT License
+  ~
+  ~ © Copyright 2012-2018 Micro Focus or one of its affiliates.
+  ~
+  ~ The only warranties for products and services of Micro Focus and its affiliates
+  ~ and licensors (“Micro Focus”) are set forth in the express warranty statements
+  ~ accompanying such products and services. Nothing herein should be construed as
+  ~ constituting an additional warranty. Micro Focus shall not be liable for technical
+  ~ or editorial errors or omissions contained herein.
+  ~ The information contained herein is subject to change without notice.
+  ~ ___________________________________________________________________
+  ~
+  -->
 <?jelly escape-by-default='true'?>
 <j:jelly  xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
-	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:hp="/lib/hp-application-automation-tools" >
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials" >
 	<f:block>
 	<style>
 	.disabledLine {
@@ -147,65 +130,26 @@
 		}
 
 		function verifyURLAvailable(){
-            var pcServerAndTenant = getLreServer(document.getElementsByName("pc.pcServerName")[0].value);
+
+            var pcServer = document.getElementsByName("pc.pcServerName")[0].value;
             var scheme = "http";
             if(document.getElementsByName("pc.HTTPSProtocol")[0].checked){
                 scheme = "https"
             }
-            if (pcServerAndTenant.length == 2 &amp;&amp; pcServerAndTenant[0]) {
-                var popup = window.open(scheme + "://" + pcServerAndTenant[0] + "/loadtest/"  + pcServerAndTenant[1]);
+            if(pcServer){
+                var popup = window.open(scheme + "://" + pcServer + "/loadtest/");
                 popup.opener = null;
-            } else {
-                alert("Server name is missing.");
+            }else{
+                alert("LoadRunner Enterprise Server name is missing.");
             }
             return false;
-        }
+		}
 
-        function getLreServer(lreServer){
-            var delimiterSlash = "/";
-            var delimiterQuestionMark = "?";
-            var useDelimiter = delimiterSlash;
-            var strServerAndTenant = [lreServer, ""];
-            var theLreServer = lreServer;
-            if (lreServer != null &amp;&amp; !(lreServer.length === 0)) {
-                theLreServer = /* replace */ lreServer.toLowerCase().split("http://").join("");
-                theLreServer = /* replace */ theLreServer.split("https://").join("");
-                theLreServer = /* replace */ theLreServer.split("/lre").join("");
-                theLreServer = /* replace */ theLreServer.split("/site").join("");
-                theLreServer = /* replace */ theLreServer.split("/loadtest").join("");
-                theLreServer = /* replace */ theLreServer.split("/pcx").join("");
-                theLreServer = /* replace */ theLreServer.split("/adminx").join("");
-                theLreServer = /* replace */ theLreServer.split("/admin").join("");
-                theLreServer = /* replace */ theLreServer.split("/login").join("");
-            }
-            if (theLreServer != null &amp;&amp; !(theLreServer.length === 0)) {
-                if ( /* contains */(theLreServer.indexOf("/") != -1)) {
-                    useDelimiter = delimiterSlash;
-                }
-                else if ( /* contains */(theLreServer.indexOf("?") != -1)) {
-                    useDelimiter = delimiterQuestionMark;
-                }
-                var severTenantArray = theLreServer.split(useDelimiter);
-                if (severTenantArray.length &gt; 0) {
-                    strServerAndTenant[0] = severTenantArray[0];
-                    if (severTenantArray.length &gt; 1) {
-                        if (useDelimiter === delimiterQuestionMark) {
-                            strServerAndTenant[1] = delimiterQuestionMark + severTenantArray[1];
-                        }
-                        else {
-                            strServerAndTenant[1] = severTenantArray[1];
-                        }
-                    }
-                }
-            }
-            return strServerAndTenant;
-        }
+
 
 		</script>
 	</f:block>
-	<!--
-      ~ [JENKINS-64639]: This table is only for drawing information. Also, the tr and td are removed by Jenkins core and the generated HTML doesn't contain it.
-      -->
+	
 	<tr>
 		<td />
 		<td colspan="2">
@@ -221,18 +165,13 @@
 	<f:entry title="Description" field="description">
 		<f:textbox name="pc.description" value="${instance.pcModel.description}" />
 	</f:entry>
-	<f:entry title="Server" field="pcServerName">
+	<f:entry title="LRE Server" field="pcServerName">
 		<f:textbox name="pc.pcServerName" value="${instance.pcModel.pcServerName}" />
 	</f:entry>
 	<f:entry title="&#160;">
         <f:checkbox title="Use HTTPS Protocol" field="HTTPSProtocol" name="pc.HTTPSProtocol" checked="${instance.pcModel.HTTPSProtocol}" />
     </f:entry>
-
-    <f:entry title="&#160;" field="authenticateWithToken">
-        <f:checkbox title="Use Token For Authentication" field="authenticateWithToken" name="pcgit.authenticateWithToken" checked="${instance.pcModel.authenticateWithToken}" />
-    </f:entry>
-
-    <f:entry name="pc.credentialsId" field="credentialsId" title="Credentials">
+    <f:entry name="pc.credentialsId" field="credentialsId" title="LRE Credentials">
         <c:select expressionAllowed="true" />
     </f:entry>
 	<f:entry title="Domain" field="almDomain">
@@ -262,7 +201,7 @@
 	<td class="setting-leftspace">&#160;</td>
     <td>Test Instance ID</td>
     <td colspan="2">
-		<hp:blockWrapperTableWidth>
+        <table style="width:100%">
         <f:radioBlock field="autoTestInstanceID" name="pc.autoTestInstanceID" value="AUTO" checked="${instance.pcModel.autoTestInstanceID=='AUTO' || instance.pcModel.autoTestInstanceID== null}" title="Automatically select existing or create new if none exists (Performance Center 12.55 or later)" inline="true">
        </f:radioBlock>
          <f:radioBlock  field="autoTestInstanceID" name="pc.autoTestInstanceID" value="MANUAL"  checked="${instance.pcModel.autoTestInstanceID=='MANUAL'}" title="Manual selection" inline="true">
@@ -272,7 +211,7 @@
                 </f:entry>
              </f:nested>
          </f:radioBlock>
-        </hp:blockWrapperTableWidth>
+        </table>
     </td>
 
 	<f:block>
@@ -308,7 +247,7 @@
 	    <td class="setting-leftspace">&#160;</td>
         <td>Trending</td>
         <td colspan="2">
-            <hp:blockWrapperTableWidthId id="trendReportTable">
+            <table style="width:100%" id="trendReportTable">
             <f:radioBlock field="addRunToTrendReport" name="addRunToTrendReport" value="NO_TREND" checked="${instance.pcModel.addRunToTrendReport=='NO_TREND'}" title="Do Not Trend" inline="true">
             </f:radioBlock>
             <f:radioBlock field="addRunToTrendReport" name="addRunToTrendReport" value="ASSOCIATED" checked="${instance.pcModel.addRunToTrendReport=='ASSOCIATED'}" title="Use trend report associated with the test (Performance Center 12.55 or later)" inline="true">
@@ -318,7 +257,7 @@
 			        <f:textbox  name="trendReportId" style="width:40px;height:24px;text-align:center;margin:0px" value="${instance.pcModel.trendReportId}" inline="true"/>
                 </f:entry>
             </f:radioBlock>
-			</hp:blockWrapperTableWidthId>
+            </table>
         </td>
 
 
@@ -343,14 +282,13 @@
 
 				<td rowspan="2" style="vertical-align:middle">
 					<f:textbox name="timeslotDurationHours" id="${h_id}"
-						value="${instance.pcModel.timeslotDurationHours}" default="0"
+						value="${instance.pcModel.timeslotDuration.hours}" default="0"
 						style="width:40px;height:24px;text-align:center"
-                        onchange="if (!value.Startwith('&#x24;&#x24;')) {
-										var hours = parseInt(value);
+						onchange="var hours = parseInt(value); 
 										value = (isNaN(hours) || (hours &lt; 0)) ? 0 : ((hours &gt; 480) ? 480 : hours);
 										var minutes = document.getElementById('${m_id}');
 										if (value == 0 &amp;&amp; minutes.value &lt; 30) minutes.value = 30;
-										else if (value == 480) minutes.value = 0; }" />
+										else if (value == 480) minutes.value = 0;" />
 				</td>
 				<td>
 					<input type="button" value=" /\ "
@@ -366,12 +304,11 @@
 
 				<td rowspan="2" style="vertical-align:middle">
 					<f:textbox name="timeslotDurationMinutes" id="${m_id}"
-						value="${instance.pcModel.timeslotDurationMinutes}" default="30"
+						value="${instance.pcModel.timeslotDuration.minutes}" default="30"
 						style="width:40px;height:24px;text-align:center"
-                        onchange="if (!value.Startwith('&#x24;&#x24;')) {
-										var v = parseInt(value);
+						onchange="var v = parseInt(value); 
 										v = isNaN(v) || (v &lt; 0) || (v &gt; 59) ? 0 : v ;										
-										value = (v &lt; 30 &amp;&amp; document.getElementById('${h_id}').value == 0) ? 30 : v; }" />
+										value = (v &lt; 30 &amp;&amp; document.getElementById('${h_id}').value == 0) ? 30 : v;" />
 				</td>
 				<td>
 					<input type="button" value=" /\ "
@@ -433,7 +370,7 @@
 	<td class="setting-leftspace">&#160;</td>
     <td>On Timeslot creation failure</td>
     <td colspan="2">
-		<hp:blockWrapperTableWidthId id="retryTable">
+        <table style="width:100%" id="retryTable">
         <f:radioBlock field="retry" name="pc.retry" value="NO_RETRY" checked="${instance.pcModel.retry =='NO_RETRY'}" title="Do Not Repeat" inline="true" />
         <f:radioBlock field="retry" name="pc.retry" value="RETRY" checked="${instance.pcModel.retry=='RETRY'}" title="Repeat with the following parameters" inline="true">
             <f:entry title="Delay between attempts (in minutes):" field="retry">
@@ -443,7 +380,7 @@
                 <f:textbox  name="pc.retryOccurrences" style="width:40px;height:24px;text-align:center;margin:0px" value="${instance.pcModel.retryOccurrences}" inline="true"/>
             </f:entry>
         </f:radioBlock>
-		</hp:blockWrapperTableWidthId>
+        </table>
     </td>
 
   
