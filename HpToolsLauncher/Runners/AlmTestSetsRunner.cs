@@ -1230,13 +1230,11 @@ namespace HpToolsLauncher
             }
             catch (Exception ex)
             {
-
                 ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerErrorBadQcInstallation, ex.Message, ex.StackTrace));
                 return null;
             }
-
+            ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
             ConsoleWriter.WriteLine(string.Format(ORDERBY_MESSAGE, TestSetsRunOrderByCriteria == ID.ToLower() ? ID : NAME));
-
             // we start the timer, it is important for the timeout
             Stopwatch swForTimeout = Stopwatch.StartNew();
 
@@ -1352,8 +1350,7 @@ namespace HpToolsLauncher
                 return runDesc;
             }
 
-            ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
-            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Path = \"{2}\"", testIdx, targetTestSet.ID, testSetItem));
+            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Name = {2}, Path = \"{3}\"", testIdx, targetTestSet.ID, targetTestSet.Name, Path.GetDirectoryName(testSetItem)));
             ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             //start execution
@@ -1482,7 +1479,7 @@ namespace HpToolsLauncher
             string abortFilename = string.Format(@"{0}\stop{1}.txt", Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Launcher.UniqueTimeStamp);
 
             //update run result description
-            UpdateTestsResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet, currentTestSetInstances, Timeout, executionStatus, swForTimeout, ref prevTest, ref currentTest, abortFilename);
+            UpdateTestsResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet, currentTestSetInstances, Timeout, executionStatus, swForTimeout, ref prevTest, ref currentTest, abortFilename, testSetItem);
 
             //done with all tests, stop collecting output in the testRun object.
             ConsoleWriter.ActiveTestRun = null;
@@ -1859,11 +1856,19 @@ namespace HpToolsLauncher
         /// <param name="prevTest"></param>
         /// <param name="currentTest"></param>
         /// <param name="abortFilename"></param>
-        private void UpdateTestsResultsDescription(ref TestRunResults activeTestDesc, TestSuiteRunResults runDesc,
-                                             ITSScheduler scheduler, ITestSet targetTestSet,
-                                             string currentTestSetInstances, double timeout,
-                                             IExecutionStatus executionStatus, Stopwatch sw,
-                                             ref ITSTest prevTest, ref ITSTest currentTest, string abortFilename)
+        private void UpdateTestsResultsDescription(
+            ref TestRunResults activeTestDesc,
+            TestSuiteRunResults runDesc,
+            ITSScheduler scheduler,
+            ITestSet targetTestSet,
+            string currentTestSetInstances,
+            double timeout,
+            IExecutionStatus executionStatus, 
+            Stopwatch sw,
+            ref ITSTest prevTest,
+            ref ITSTest currentTest,
+            string abortFilename,
+            string testPath)
         {
             var tsExecutionFinished = false;
 
@@ -1952,7 +1957,7 @@ namespace HpToolsLauncher
 
                                 if (execState != TestState.Unknown)
                                 {
-                                    WriteTestRunSummary(currentTest);
+                                    WriteTestRunSummary(currentTest, testPath);
                                 }
                             }
 
@@ -2050,7 +2055,7 @@ namespace HpToolsLauncher
         /// writes a summary of the test run after it's over
         /// </summary>
         /// <param name="prevTest"></param>
-        private void WriteTestRunSummary(ITSTest prevTest)
+        private void WriteTestRunSummary(ITSTest prevTest, string testPath)
         {
             try
             {
@@ -2085,8 +2090,10 @@ namespace HpToolsLauncher
                         "\n" + linkStr + "\n"));
                 }
 
-                ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " + prevTest.Name +
-                                                ", " + Resources.AlmRunnerRunIdCaption + " " + runId
+                // get the path here...
+                ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " 
+                                                + "\"" + testPath + "\\" + prevTest.Name + "\", "
+                                                + Resources.AlmRunnerRunIdCaption + " " + runId
                                                 + "\n-------------------------------------------------------------------------------------------------------");
             }
             catch (Exception ex)
