@@ -550,4 +550,150 @@ Save the test in QuickTest and then run it again.</value>
   <data name="CloudBrowserNotSupported" xml:space="preserve">
     <value>Cloud Browser is not supported in OpenText Functional Testing {0}. Please upgrade to UFT One 23.4 or later.</value>
   </data>
+	<data name="HtmlReport" xml:space="preserve">
+    <value><![CDATA[
+	    <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+          <title>Execution Report</title>
+          <style>
+            body {
+              font-family: Verdana, Arial, Helvetica, sans-serif;
+              font-size: 12px;
+              color: #333333;
+              background: #f7f7f7;
+              margin: 0;
+              padding: 20px;
+            }
+
+            .report-container {
+              max-width: 1100px;
+              margin: 0 auto;
+              background: #ffffff;
+              border: 1px solid #d6d6d6;
+            }
+
+            .report-header {
+              background: #8e001d;
+              color: #ffffff;
+              padding: 14px 18px;
+              border-bottom: 4px solid #6d0016;
+            }
+
+            .report-header h2 {
+              margin: 0;
+              font-size: 18px;
+              font-weight: bold;
+            }
+
+            .report-header p {
+              margin: 6px 0 0 0;
+              font-size: 12px;
+              color: #f4dfe4;
+            }
+
+            .summary-block {
+              padding: 16px 18px 10px 18px;
+              background: #fafafa;
+              border-bottom: 1px solid #dddddd;
+            }
+
+            .summary-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            .summary-table td {
+              padding: 6px 10px 6px 0;
+              vertical-align: top;
+              font-size: 12px;
+            }
+
+            .label {
+              font-weight: bold;
+              color: #485464;
+              width: 140px;
+              white-space: nowrap;
+            }
+
+            .value {
+              color: #222222;
+            }
+
+            .section-title {
+              padding: 14px 18px 8px 18px;
+              font-size: 14px;
+              font-weight: bold;
+              color: #8e001d;
+            }
+
+            .results-table {
+              width: calc(100% - 36px);
+              margin: 0 18px 18px 18px;
+              border-collapse: collapse;
+              background: #ffffff;
+              border: 1px solid #cfcfcf;
+            }
+
+            .results-table th {
+              background: #eceff3;
+              color: #485464;
+              text-align: left;
+              padding: 10px 8px;
+              font-size: 12px;
+              border-bottom: 1px solid #cfcfcf;
+            }
+
+            .results-table td {
+              padding: 10px 8px;
+              border-bottom: 1px solid #e5e5e5;
+              vertical-align: top;
+              font-size: 12px;
+            }
+
+            .results-table tr:last-child td {
+              border-bottom: none;
+            }
+
+            .status-passed {
+              color: #2f7d32;
+              font-weight: bold;
+            }
+
+            .status-warning {
+              color: #b26a00;
+              font-weight: bold;
+            }
+
+            .status-failed {
+              color: #b00020;
+              font-weight: bold;
+            }
+
+            a {
+              color: #0057a8;
+              text-decoration: none;
+            }
+
+            a:hover {
+              text-decoration: underline;
+            }
+
+            .footer-note {
+              margin: 0 18px 18px 18px;
+              font-size: 11px;
+              color: #666666;
+            }
+          </style>
+        </head>
+        <body>
+
+        {{REPORT_CONTAINERS}}
+
+        </body>
+        </html>
+	]]></value>
+  </data>
 </root>

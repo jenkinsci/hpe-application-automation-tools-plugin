@@ -286,6 +286,13 @@
             <f:property field="filterTestsModel" />
         </f:entry>
     </f:optionalBlock>
+    <f:optionalBlock name="emailReportEnabled" title="Send email test summary report" inline="true" checked="${instance.emailReportEnabled}">
+        <f:entry field="runFromAlmModel">
+            <f:entry title="Send to (one mail per line)" field="almEmailSummaryRespondersList">
+                <f:expandableTextbox />
+            </f:entry>
+        </f:entry>
+    </f:optionalBlock>
     <f:advanced>
         <f:entry>
             <label>Run mode</label>

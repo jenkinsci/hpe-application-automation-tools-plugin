@@ -318,27 +318,30 @@ namespace HpToolsLauncher
                     string apiKey = _ciParams.ContainsKey("almApiKeySecret") ? Encrypter.Decrypt(_ciParams["almApiKeySecret"]) : string.Empty;
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
                     string almTestSetsRunOrderByCriteria = _ciParams.GetOrDefault("almTestSetsRunOrderByCriteria");
+                    string almEmailSummaryRespondersList = _ciParams.GetOrDefault("almEmailSummaryRespondersList");
 
-                    //create an Alm runner
-                    runner = new AlmTestSetsRunner(_ciParams["almServerUrl"],
-                                     _ciParams["almUsername"],
-                                     Encrypter.Decrypt(_ciParams["almPassword"]),
-                                     _ciParams["almDomain"],
-                                     _ciParams["almProject"],
-                                     dblQcTimeout,
-                                     enmQcRunMode,
-                                     almRunHost,
-                                     sets,
-                                     @params,
-                                     isFilterSelected,
-                                     filterByName,
-                                     filterByStatuses,
-                                     isFirstRun,
-                                     _runType,
-                                     isSSOEnabled,
-                                     clientID,
-                                     apiKey,
-                                     almTestSetsRunOrderByCriteria
+                        //create an Alm runner
+                    runner = new AlmTestSetsRunner(
+                        _ciParams["almServerUrl"],
+                        _ciParams["almUsername"],
+                        Encrypter.Decrypt(_ciParams["almPassword"]),
+                        _ciParams["almDomain"],
+                        _ciParams["almProject"],
+                        dblQcTimeout,
+                        enmQcRunMode,
+                        almRunHost,
+                        sets,
+                        @params,
+                        isFilterSelected,
+                        filterByName,
+                        filterByStatuses,
+                        isFirstRun,
+                        _runType,
+                        isSSOEnabled,
+                        clientID,
+                        apiKey,
+                        almTestSetsRunOrderByCriteria,
+                        almEmailSummaryRespondersList
                     );
                     break;
                 }

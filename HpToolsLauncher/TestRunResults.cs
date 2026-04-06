@@ -80,6 +80,7 @@ namespace HpToolsLauncher
         }
 
         public int PrevRunId { get; set; }
+        public int RunId { get; set; }
 
         public TestInfo TestInfo { get; set; }
     }

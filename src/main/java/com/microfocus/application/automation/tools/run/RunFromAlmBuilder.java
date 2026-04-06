@@ -82,7 +82,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     private final static String HP_TOOLS_LAUNCHER_EXE_CFG = "HpToolsLauncher.exe.config";
     private String resultsFileName = "ApiResults.xml";
     private AlmServerSettingsModel almServerSettingsModel;
-    private String almTestSetOrderBy;
+    private boolean emailReportEnabled;
 
     @DataBoundConstructor
     public RunFromAlmBuilder(
@@ -105,7 +105,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             FilterTestsModel filterTestsModel,
             SpecifyParametersModel specifyParametersModel,
             AlmServerSettingsModel almServerSettingsModel,
-            String almTestSetsRunOrderByCriteria) {
+            String almTestSetsRunOrderByCriteria,
+            boolean emailReportEnabled,
+            String almEmailSummaryRespondersList) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -115,7 +117,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         CredentialsScope almCredScope = StringUtils.isBlank(almCredentialsScope) ?
                 findMostSuitableCredentialsScope(almServerName, almUserName, almClientID, isSSOEnabled) :
                 CredentialsScope.valueOf(almCredentialsScope.toUpperCase());
-
+        this.emailReportEnabled = emailReportEnabled;
         runFromAlmModel =
                 new RunFromAlmModel(
                         almServerName,
@@ -132,7 +134,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almClientID,
                         almApiKey,
                         almCredScope,
-                        almTestSetsRunOrderByCriteria);
+                        almTestSetsRunOrderByCriteria,
+                        emailReportEnabled,
+                        almEmailSummaryRespondersList);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -196,6 +200,14 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
+    @DataBoundSetter
+    public void setEmailReportEnabled(boolean emailReportEnabled) {
+        this.emailReportEnabled = emailReportEnabled;
+    }
+
+    public boolean isEmailReportEnabled() {
+        return emailReportEnabled;
+    }
     //IMPORTANT: most properties are used by config.jelly and / or by pipeline-syntax generator
     public String getAlmCredentialsScope() {
         return runFromAlmModel.getCredentialsScopeValue();
@@ -252,6 +264,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     public String getAlmTestSetsRunOrderByCriteria() {
         return runFromAlmModel.getAlmTestSetsRunOrderByCriteria();
     }
+
+    public String getAlmEmailSummaryRespondersList() { return runFromAlmModel.getAlmEmailSummaryRespondersList(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {

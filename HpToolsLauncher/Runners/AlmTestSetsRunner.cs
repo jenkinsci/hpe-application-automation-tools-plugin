@@ -122,6 +122,7 @@ namespace HpToolsLauncher
         public string ClientID { get; set; }
         public string ApiKey { get; set; }
         public string TestSetsRunOrderByCriteria { get; set; }
+        public string EmailSummaryRespondersList { get; set; }
 
         /// <summary>
         /// constructor
@@ -141,25 +142,27 @@ namespace HpToolsLauncher
         /// <param name="initialTestRun"></param>
         /// <param name="testStorageType"></param>
         /// <param name="isSSOEnabled"></param>
-        public AlmTestSetsRunner(string qcServer,
-                                string qcUser,
-                                string qcPassword,
-                                string qcDomain,
-                                string qcProject,
-                                double intQcTimeout,
-                                QcRunMode enmQcRunMode,
-                                string runHost,
-                                List<string> qcTestSets,
-                                List<TestParameter> @params,
-                                bool isFilterSelected,
-                                string filterByName,
-                                List<string> filterByStatuses,
-                                bool initialTestRun,
-                                TestStorageType testStorageType,
-                                bool isSSOEnabled,
-                                string qcClientId,
-                                string qcApiKey,
-                                string almTestSetsRunOrderByCriteria)
+        public AlmTestSetsRunner(
+            string qcServer,
+            string qcUser,
+            string qcPassword,
+            string qcDomain,
+            string qcProject,
+            double intQcTimeout,
+            QcRunMode enmQcRunMode,
+            string runHost,
+            List<string> qcTestSets,
+            List<TestParameter> @params,
+            bool isFilterSelected,
+            string filterByName,
+            List<string> filterByStatuses,
+            bool initialTestRun,
+            TestStorageType testStorageType,
+            bool isSSOEnabled,
+            string qcClientId,
+            string qcApiKey,
+            string almTestSetsRunOrderByCriteria,
+            string almEmailSummaryRespondersList)
         {
 
             Timeout = intQcTimeout;
@@ -179,6 +182,7 @@ namespace HpToolsLauncher
             ClientID = qcClientId;
             ApiKey = qcApiKey;
             TestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
+            EmailSummaryRespondersList = almEmailSummaryRespondersList;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -1210,8 +1214,6 @@ namespace HpToolsLauncher
             return testType.ToUpper() == API_TEST ? TestType.ST : TestType.QTP;
         }
 
-        // ------------------------- Run tests and update test results --------------------------------
-
         /// <summary>
         /// runs the tests given to the object.
         /// </summary>
@@ -1233,12 +1235,15 @@ namespace HpToolsLauncher
                 ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerErrorBadQcInstallation, ex.Message, ex.StackTrace));
                 return null;
             }
+            
             ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
             ConsoleWriter.WriteLine(string.Format(ORDERBY_MESSAGE, TestSetsRunOrderByCriteria == ID.ToLower() ? ID : NAME));
             // we start the timer, it is important for the timeout
             Stopwatch swForTimeout = Stopwatch.StartNew();
 
             int idx = 1;
+            List<TestSetResult> testSetresultsList = new List<TestSetResult>();
+
             //run all the TestSets
             foreach (string testSetItem in TestSets)
             {
@@ -1256,12 +1261,11 @@ namespace HpToolsLauncher
                     if (testSetItem.IndexOf(" ", StringComparison.Ordinal) != -1 && testSet.Count(x => x == ' ') >= 1)
                     {
                         if (!testSet.Contains(':'))//test has no parameters attached
-                        {
                             tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
-                        }
                         else
                         {
                             int quotationMarkIndex = testSet.IndexOf("\"", StringComparison.Ordinal);
+
                             if (quotationMarkIndex > pos)
                             {
                                 tsName = testSet.Substring(pos, quotationMarkIndex - pos).Trim(BACK_SLASH).TrimEnd(' ');
@@ -1270,21 +1274,61 @@ namespace HpToolsLauncher
                         }
                     }
                     else
-                    {
                         tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
-                    }
                 }
 
                 TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, inlineTestParams, swForTimeout, idx, testSetItem);
                 if (runResults != null)
+                {
                     activeRunDescription.AppendResults(runResults);
+                    if (EmailSummaryRespondersList != null && EmailSummaryRespondersList.Length > 0)
+                    {
+                        TestSetResult testSetResultDTO = new TestSetResult
+                        {
+                            TestSetName = Path.GetFileName(testSetItem),
+                            TestSetPath = testSetItem,
+                            FinishedAt = DateTime.Now,
+                            Tests = runResults.TestRuns.Select(test => new TestRunResult
+                            {
+                                TestName = test.TestName,
+                                Status = test.TestState.ToString(),
+                                Message = !string.IsNullOrWhiteSpace(test.ErrorDesc) ? test.ErrorDesc : test.FailureDesc,
+                                AlmLink = GetTestRunLink(test.PrevRunId)
+                            }).ToList(),
+                            CumulativeSummary = string.Format(
+                                "Tests: {0}, Failures: {1}, Errors: {2}, Warnings: {3}, Total Run Time: {4}",
+                                runResults.NumTests,
+                                runResults.NumFailures,
+                                runResults.NumErrors,
+                                runResults.NumWarnings,
+                                runResults.TotalRunTime
+                            )
+                        };
+                        testSetresultsList.Add(testSetResultDTO);
+                    }
+                }
 
                 // if the run has cancelled, because of timeout, we should terminate the build
-                if (_isRunCancelled) break;
-
+                if (_isRunCancelled)
+                    break;
                 ++idx;
             }
 
+            if (testSetresultsList.Count > 0)
+            {
+                ReportContext reportContext = new ReportContext
+                {
+                    ServerUrl = MQcServer,
+                    Domain = MQcDomain,
+                    Project = MQcProject,
+                    User = MQcUser,
+                    TestSets = testSetresultsList
+                };
+                
+                HtmlReportBuilder htmlBuilder = new HtmlReportBuilder(Resources.HtmlReport);
+                string htmlReportPage = htmlBuilder.BuildReport(reportContext);
+                _tdConnection.SendMail(EmailSummaryRespondersList, "alm-no-reply@opentext.com", "ALM Test Report", htmlReportPage);
+            }
             return activeRunDescription;
         }
 
@@ -2027,8 +2071,8 @@ namespace HpToolsLauncher
             {
                 mQcServer += "/";
             }
-
-            return string.Format("{0}://{1}.{2}.{3}TestRunsModule-00000000090859589?EntityType=IRun&EntityID={4}", prefix, MQcProject, MQcDomain, mQcServer, runId);
+            string link = string.Format("{0}://{1}.{2}.{3}TestRunsModule-00000000090859589?EntityType=IRun&EntityID={4}", prefix, MQcProject, MQcDomain, mQcServer, runId);
+            return link;
         }
 
         /// <summary>
