@@ -82,7 +82,7 @@ namespace HpToolsLauncher.Utils.Alm
     {
         private readonly string _template;
 
-        public HtmlReportBuilder(string htmlTemplateFromResx)
+        public AlmHtmlReportBuilder(string htmlTemplateFromResx)
         {
             _template = htmlTemplateFromResx;
         }
