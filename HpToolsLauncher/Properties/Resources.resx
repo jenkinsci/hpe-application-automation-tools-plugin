@@ -550,7 +550,7 @@ Save the test in QuickTest and then run it again.</value>
   <data name="CloudBrowserNotSupported" xml:space="preserve">
     <value>Cloud Browser is not supported in OpenText Functional Testing {0}. Please upgrade to UFT One 23.4 or later.</value>
   </data>
-	<data name="HtmlReport" xml:space="preserve">
+	<data name="AlmHtmlReport" xml:space="preserve">
     <value><![CDATA[
 	    <!DOCTYPE html>
         <html lang="en">
@@ -690,7 +690,7 @@ Save the test in QuickTest and then run it again.</value>
         </head>
         <body>
 
-        {{REPORT_CONTAINERS}}
+        {{REPORT_CONTAINER}}
 
         </body>
         </html>

@@ -83,6 +83,7 @@ namespace HpToolsLauncher
         private const string ID = "ID";
         private const string NAME = "Name";
         private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
+        private readonly string _emailSummaryReceivers;
 
         public ITDConnection13 TdConnection
         {
@@ -122,7 +123,6 @@ namespace HpToolsLauncher
         public string ClientID { get; set; }
         public string ApiKey { get; set; }
         public string TestSetsRunOrderByCriteria { get; set; }
-        public string EmailSummaryRespondersList { get; set; }
 
         /// <summary>
         /// constructor
@@ -162,7 +162,7 @@ namespace HpToolsLauncher
             string qcClientId,
             string qcApiKey,
             string almTestSetsRunOrderByCriteria,
-            string almEmailSummaryRespondersList)
+            string almEmailSummaryReceivers)
         {
 
             Timeout = intQcTimeout;
@@ -182,7 +182,7 @@ namespace HpToolsLauncher
             ClientID = qcClientId;
             ApiKey = qcApiKey;
             TestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
-            EmailSummaryRespondersList = almEmailSummaryRespondersList;
+            _emailSummaryReceivers = almEmailSummaryReceivers;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -1242,7 +1242,7 @@ namespace HpToolsLauncher
             Stopwatch swForTimeout = Stopwatch.StartNew();
 
             int idx = 1;
-            List<TestSetResult> testSetresultsList = new List<TestSetResult>();
+            List<TestSetResult> testSetResults = new List<TestSetResult>();
 
             //run all the TestSets
             foreach (string testSetItem in TestSets)
@@ -1281,9 +1281,9 @@ namespace HpToolsLauncher
                 if (runResults != null)
                 {
                     activeRunDescription.AppendResults(runResults);
-                    if (EmailSummaryRespondersList != null && EmailSummaryRespondersList.Length > 0)
+                    if (_emailSummaryReceivers != null && _emailSummaryReceivers.Length > 0)
                     {
-                        TestSetResult testSetResultDTO = new TestSetResult
+                        TestSetResult testSetRes = new TestSetResult
                         {
                             TestSetName = Path.GetFileName(testSetItem),
                             TestSetPath = testSetItem,
@@ -1304,7 +1304,7 @@ namespace HpToolsLauncher
                                 runResults.TotalRunTime
                             )
                         };
-                        testSetresultsList.Add(testSetResultDTO);
+                        testSetResults.Add(testSetRes);
                     }
                 }
 
@@ -1314,7 +1314,7 @@ namespace HpToolsLauncher
                 ++idx;
             }
 
-            if (testSetresultsList.Count > 0)
+            if (testSetResults.Count > 0)
             {
                 ReportContext reportContext = new ReportContext
                 {
@@ -1322,12 +1322,12 @@ namespace HpToolsLauncher
                     Domain = MQcDomain,
                     Project = MQcProject,
                     User = MQcUser,
-                    TestSets = testSetresultsList
+                    TestSets = testSetResults
                 };
                 
-                HtmlReportBuilder htmlBuilder = new HtmlReportBuilder(Resources.HtmlReport);
+                HtmlReportBuilder htmlBuilder = new HtmlReportBuilder(Resources.AlmHtmlReport);
                 string htmlReportPage = htmlBuilder.BuildReport(reportContext);
-                _tdConnection.SendMail(EmailSummaryRespondersList, "alm-no-reply@opentext.com", "ALM Test Report", htmlReportPage);
+                _tdConnection.SendMail(_emailSummaryReceivers, "alm-no-reply@opentext.com", "ALM Test Report", htmlReportPage);
             }
             return activeRunDescription;
         }
@@ -2071,8 +2071,7 @@ namespace HpToolsLauncher
             {
                 mQcServer += "/";
             }
-            string link = string.Format("{0}://{1}.{2}.{3}TestRunsModule-00000000090859589?EntityType=IRun&EntityID={4}", prefix, MQcProject, MQcDomain, mQcServer, runId);
-            return link;
+            return string.Format("{0}://{1}.{2}.{3}TestRunsModule-00000000090859589?EntityType=IRun&EntityID={4}", prefix, MQcProject, MQcDomain, mQcServer, runId);
         }
 
         /// <summary>

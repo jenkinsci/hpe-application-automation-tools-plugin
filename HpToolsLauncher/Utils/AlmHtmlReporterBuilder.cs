@@ -34,14 +34,14 @@
  *  limitations under the License.
  *  ___________________________________________________________________
  */
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace HpToolsLauncher.Utils
+namespace HpToolsLauncher.Utils.Alm
 {
     // DTOs (Data Transfer Objects) to hold the report data and build the HTML report from a template
     public class TestRunResult
@@ -78,7 +78,7 @@ namespace HpToolsLauncher.Utils
         }
     }
 
-    public class HtmlReportBuilder
+    public class AlmHtmlReportBuilder
     {
         private readonly string _template;
 
@@ -96,7 +96,7 @@ namespace HpToolsLauncher.Utils
                 string containerHtml = BuildTestSetContainer(context, set);
                 containers.AppendLine(containerHtml);
             }
-            return _template.Replace("{{REPORT_CONTAINERS}}", containers.ToString());
+            return _template.Replace("{{REPORT_CONTAINER}}", containers.ToString());
         }
 
         private string BuildTestSetContainer(ReportContext context, TestSetResult testSetResultsDTO)
@@ -195,13 +195,18 @@ namespace HpToolsLauncher.Utils
                         statusClass = "";
                         break;
                 }
-                sb.AppendLine(@"
+                sb.AppendLine(string.Format(@"
                 <tr>
-                    <td>" + test.TestName + @"</td>
-                    <td class=""" + statusClass + @""">" + test.Status + @"</td>
-                    <td>" + test.Message + @"</td>
-                    <td><a href=""" + test.AlmLink + @""">Open in ALM</a></td>
-                </tr>");
+                    <td>{0}</td>
+                    <td class=""{1}"">{2}</td>
+                    <td>{3}</td>
+                    <td><a href=""{4}"">Open in ALM</a></td>
+                </tr>",
+                test.TestName,
+                statusClass,
+                test.Status,
+                test.Message,
+                test.AlmLink));
             }
 
             return sb.ToString();

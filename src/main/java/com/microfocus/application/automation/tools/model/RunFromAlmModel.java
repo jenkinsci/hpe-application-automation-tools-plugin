@@ -90,7 +90,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
     private CredentialsScope credentialsScope;
     private String almTestSetsRunOrderByCriteria;
     private boolean isEmailReportEnabled;
-    private String almEmailSummaryRespondersList;
+    private String almEmailSummaryReceivers;
 
     @DataBoundConstructor
     public RunFromAlmModel(
@@ -110,7 +110,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
             CredentialsScope credentialsScope,
             String almTestSetsRunOrderByCriteria,
             boolean isEmailReportEnabled,
-            String almEmailSummaryRespondersList) {
+            String almEmailSummaryReceivers) {
         this.almServerName = almServerName;
         this.credentialsScope = credentialsScope;
 
@@ -134,7 +134,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         this.almApiKey = StringUtils.isBlank(almClientID) ? null : Secret.fromString(almApiKey);
 		this.almTestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
         this.isEmailReportEnabled = isEmailReportEnabled;
-        this.almEmailSummaryRespondersList = almEmailSummaryRespondersList;
+        this.almEmailSummaryReceivers = almEmailSummaryReceivers;
     }
 
     public String getAlmTestSetsRunOrderByCriteria() {
@@ -201,7 +201,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         return CreateProperties(envVars, varResolver);
     }
 
-    public String getAlmEmailSummaryRespondersList() { return almEmailSummaryRespondersList; }
+    public String getAlmEmailSummaryReceivers() { return almEmailSummaryReceivers; }
     public String getCredentialsScopeValue() { return credentialsScope == null ? "" : credentialsScope.getValue(); }
     public String getPasswordEncryptedValue() { return almPassword == null ? "" : almPassword.getEncryptedValue(); }
     public String getApiKeyEncryptedValue() { return almApiKey == null || StringUtils.isBlank(almApiKey.getPlainText()) ? "" : almApiKey.getEncryptedValue(); }
@@ -264,13 +264,13 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
             props.put("almTestSetsRunOrderByCriteria", almTestSetsRunOrderByCriteria);
         }
 
-        if (isEmailReportEnabled && StringUtils.isNotBlank(almEmailSummaryRespondersList)) {
+        if (isEmailReportEnabled && StringUtils.isNotBlank(almEmailSummaryReceivers)) {
             String[] emailsList = almEmailSummaryRespondersList.split("[\\n,\\s;]+");
             String emails = Arrays.stream(emailsList)
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
                             .collect(Collectors.joining(";"));
-            props.put("almEmailSummaryRespondersList", emails);
+            props.put("almEmailSummaryReceivers", emails);
         }
 
         return props;

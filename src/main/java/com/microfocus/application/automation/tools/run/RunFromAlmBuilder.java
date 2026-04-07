@@ -42,7 +42,6 @@ import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.uft.model.FilterTestsModel;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsGlobalConfiguration;
 import com.microfocus.application.automation.tools.uft.model.SpecifyParametersModel;
-import hudson.*;
 
 import hudson.model.*;
 
@@ -62,7 +61,6 @@ import hudson.util.VariableResolver;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.*;
 
 import com.microfocus.application.automation.tools.AlmToolsUtils;
 import com.microfocus.application.automation.tools.EncryptionUtils;
@@ -82,7 +80,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     private final static String HP_TOOLS_LAUNCHER_EXE_CFG = "HpToolsLauncher.exe.config";
     private String resultsFileName = "ApiResults.xml";
     private AlmServerSettingsModel almServerSettingsModel;
-    private boolean emailReportEnabled;
+    private boolean isEmailReportEnabled;
 
     @DataBoundConstructor
     public RunFromAlmBuilder(
@@ -106,7 +104,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             SpecifyParametersModel specifyParametersModel,
             AlmServerSettingsModel almServerSettingsModel,
             String almTestSetsRunOrderByCriteria,
-            boolean emailReportEnabled,
+            boolean isEmailReportEnabled,
             String almEmailSummaryRespondersList) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
@@ -117,7 +115,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         CredentialsScope almCredScope = StringUtils.isBlank(almCredentialsScope) ?
                 findMostSuitableCredentialsScope(almServerName, almUserName, almClientID, isSSOEnabled) :
                 CredentialsScope.valueOf(almCredentialsScope.toUpperCase());
-        this.emailReportEnabled = emailReportEnabled;
+        this.isEmailReportEnabled = isEmailReportEnabled;
         runFromAlmModel =
                 new RunFromAlmModel(
                         almServerName,
@@ -135,7 +133,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almApiKey,
                         almCredScope,
                         almTestSetsRunOrderByCriteria,
-                        emailReportEnabled,
+                        isEmailReportEnabled,
                         almEmailSummaryRespondersList);
         this.almServerSettingsModel = almServerSettingsModel;
     }
@@ -200,13 +198,12 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
-    @DataBoundSetter
-    public void setEmailReportEnabled(boolean emailReportEnabled) {
-        this.emailReportEnabled = emailReportEnabled;
+    public void setIsEmailReportEnabled(boolean isEmailReportEnabled) {
+        this.isEmailReportEnabled = isEmailReportEnabled;
     }
 
-    public boolean isEmailReportEnabled() {
-        return emailReportEnabled;
+    public boolean getIsEmailReportEnabled() {
+        return isEmailReportEnabled;
     }
     //IMPORTANT: most properties are used by config.jelly and / or by pipeline-syntax generator
     public String getAlmCredentialsScope() {
@@ -265,7 +262,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         return runFromAlmModel.getAlmTestSetsRunOrderByCriteria();
     }
 
-    public String getAlmEmailSummaryRespondersList() { return runFromAlmModel.getAlmEmailSummaryRespondersList(); }
+    public String getAlmEmailSummaryRespondersList() { return runFromAlmModel.getAlmEmailSummaryReceivers(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {

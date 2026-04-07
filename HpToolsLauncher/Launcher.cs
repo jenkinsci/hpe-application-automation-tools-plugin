@@ -318,7 +318,7 @@ namespace HpToolsLauncher
                     string apiKey = _ciParams.ContainsKey("almApiKeySecret") ? Encrypter.Decrypt(_ciParams["almApiKeySecret"]) : string.Empty;
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
                     string almTestSetsRunOrderByCriteria = _ciParams.GetOrDefault("almTestSetsRunOrderByCriteria");
-                    string almEmailSummaryRespondersList = _ciParams.GetOrDefault("almEmailSummaryRespondersList");
+                    string almEmailSummaryReceivers = _ciParams.GetOrDefault("almEmailSummaryReceivers");
 
                         //create an Alm runner
                     runner = new AlmTestSetsRunner(
@@ -341,7 +341,7 @@ namespace HpToolsLauncher
                         clientID,
                         apiKey,
                         almTestSetsRunOrderByCriteria,
-                        almEmailSummaryRespondersList
+                        almEmailSummaryReceivers
                     );
                     break;
                 }
