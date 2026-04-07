@@ -42,30 +42,33 @@ import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.uft.model.FilterTestsModel;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsGlobalConfiguration;
 import com.microfocus.application.automation.tools.uft.model.SpecifyParametersModel;
-
 import hudson.model.*;
-
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-
 import java.io.IOException;
 import java.net.URL;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
-
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.VariableResolver;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
-
 import com.microfocus.application.automation.tools.AlmToolsUtils;
 import com.microfocus.application.automation.tools.EncryptionUtils;
 import com.microfocus.application.automation.tools.run.AlmRunTypes.RunType;
-
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.EnvVars;
+import hudson.Util;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.QueryParameter;
 import static com.microfocus.application.automation.tools.Messages.CompanyName;
 import static com.microfocus.application.automation.tools.Messages.RunFromAlmBuilderStepName;
 
@@ -105,7 +108,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             AlmServerSettingsModel almServerSettingsModel,
             String almTestSetsRunOrderByCriteria,
             boolean isEmailReportEnabled,
-            String almEmailSummaryRespondersList) {
+            String almEmailSummaryReceivers) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -134,7 +137,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almCredScope,
                         almTestSetsRunOrderByCriteria,
                         isEmailReportEnabled,
-                        almEmailSummaryRespondersList);
+                        almEmailSummaryReceivers);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -262,7 +265,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         return runFromAlmModel.getAlmTestSetsRunOrderByCriteria();
     }
 
-    public String getAlmEmailSummaryRespondersList() { return runFromAlmModel.getAlmEmailSummaryReceivers(); }
+    public String getAlmEmailSummaryReceivers() { return runFromAlmModel.getAlmEmailSummaryReceivers(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {

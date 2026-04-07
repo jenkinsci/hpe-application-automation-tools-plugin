@@ -41,22 +41,14 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
-
 import hudson.util.VariableResolver;
-
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-
 import hudson.util.Secret;
-
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-
 import javax.annotation.Nonnull;
 
 public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
@@ -265,7 +257,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         }
 
         if (isEmailReportEnabled && StringUtils.isNotBlank(almEmailSummaryReceivers)) {
-            String[] emailsList = almEmailSummaryRespondersList.split("[\\n,\\s;]+");
+            String[] emailsList = almEmailSummaryReceivers.split("[\\n,\\s;]+");
             String emails = Arrays.stream(emailsList)
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())

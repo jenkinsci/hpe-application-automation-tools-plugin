@@ -1244,7 +1244,6 @@ namespace HpToolsLauncher
 
             int idx = 1;
             List<TestSetResult> testSetResults = new List<TestSetResult>();
-
             //run all the TestSets
             foreach (string testSetItem in TestSets)
             {
@@ -1325,7 +1324,7 @@ namespace HpToolsLauncher
                     TestSets = testSetResults
                 };
                 
-                AlmHtmlReportBuilder htmlBuilder = new AlmHtmlReportBuilder(Resources.AlmHtmlReport);
+                AlmHtmlReportBuilder htmlBuilder = new AlmHtmlReportBuilder();
                 string htmlReportPage = htmlBuilder.BuildReport(reportContext);
                 _tdConnection.SendMail(_emailSummaryReceivers, "alm-no-reply@opentext.com", "ALM Test Report", htmlReportPage);
             }

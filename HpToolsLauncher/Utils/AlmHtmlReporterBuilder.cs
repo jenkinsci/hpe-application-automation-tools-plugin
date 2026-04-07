@@ -36,10 +36,8 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
+using HpToolsLauncher.Properties;
 
 namespace HpToolsLauncher.Utils.Alm
 {
@@ -80,12 +78,7 @@ namespace HpToolsLauncher.Utils.Alm
 
     public class AlmHtmlReportBuilder
     {
-        private readonly string _template;
-
-        public AlmHtmlReportBuilder(string htmlTemplateFromResx)
-        {
-            _template = htmlTemplateFromResx;
-        }
+        private readonly string _template = Resources.AlmHtmlReport;
 
         public string BuildReport(ReportContext context)
         {
