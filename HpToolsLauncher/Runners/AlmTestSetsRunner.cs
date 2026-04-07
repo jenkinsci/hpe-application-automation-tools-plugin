@@ -47,6 +47,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Security;
+using HpToolsLauncher.Utils.Alm;
 using HpToolsLauncher.Utils;
 using Microsoft.Win32;
 using System.Globalization;
@@ -1250,7 +1251,6 @@ namespace HpToolsLauncher
                 string testSet = testSetItem.TrimEnd(BACK_SLASH);
                 string tsName = testSet;
                 int pos = testSetItem.LastIndexOf('\\');
-
                 string testSetDir = string.Empty;
                 string inlineTestParams = string.Empty;
 
@@ -1325,11 +1325,11 @@ namespace HpToolsLauncher
                     TestSets = testSetResults
                 };
                 
-                HtmlReportBuilder htmlBuilder = new HtmlReportBuilder(Resources.AlmHtmlReport);
+                AlmHtmlReportBuilder htmlBuilder = new AlmHtmlReportBuilder(Resources.AlmHtmlReport);
                 string htmlReportPage = htmlBuilder.BuildReport(reportContext);
                 _tdConnection.SendMail(_emailSummaryReceivers, "alm-no-reply@opentext.com", "ALM Test Report", htmlReportPage);
             }
-            return activeRunDescription;
+            return activeRunDescription;    
         }
 
         /// <summary>
