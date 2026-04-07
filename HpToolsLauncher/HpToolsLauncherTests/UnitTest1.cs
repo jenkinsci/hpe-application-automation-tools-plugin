@@ -133,7 +133,8 @@ namespace HpToolsLauncherTests
         [TestMethod]
         public void TestQcTestRun()
         {
-            AlmTestSetsRunner runner = new AlmTestSetsRunner("http://vmsoa22:8080/qcbin/",
+            AlmTestSetsRunner runner = new AlmTestSetsRunner(
+                "http://vmsoa22:8080/qcbin/",
                 "sa",
                 "",
                 "DEFAULT",
@@ -141,7 +142,19 @@ namespace HpToolsLauncherTests
                 100000,
                 QcRunMode.RUN_LOCAL,
                 null,
-                new List<string> { "Aaron\\Amit" }, new List<TestParameter>(), false, "", new List<string> { "Failed", "Blocked" }, false, TestStorageType.Alm, false, "", "", "");
+                new List<string> { "Aaron\\Amit" },
+                new List<TestParameter>(),
+                false,
+                "",
+                new List<string> { "Failed", "Blocked" },
+                false,
+                TestStorageType.Alm,
+                false,
+                "",
+                "",
+                "",
+                ""
+            );
 
             if (runner.Connected)
                 runner.Run();
