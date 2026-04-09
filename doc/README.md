@@ -54,9 +54,9 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 Version 26.2 introduced the following enhancements and fixes:
 
 **Functional Testing**
-- Test Sets Execution order can be specified by Name or by ID
+- Test Set Execution order can be specified by Name or by ID
 - Test Set Execution Summary Reports emails can are available
-- API test reports’ links from a GUI Test were fixed in the archived report
+- In archived reports, the links to run results of API tests called from GUI Tests are now correct
 - Minor bug fixes
 
 For information about enhancements introduced in previous versions, see [What's new in earlier versions](https://github.com/jenkinsci/hpe-application-automation-tools-plugin/blob/latest/doc/WhatsNewEarlier.md). 
