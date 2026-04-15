@@ -1317,8 +1317,8 @@ namespace HpToolsLauncher
             }
 
             if (testSetResults.Count > 0 &&
-                _emailSummarySender != null && _emailSummarySender.Length > 0 &&
-                _emailSummaryReceivers != null && _emailSummaryReceivers.Length > 0)
+                _emailSummarySender != null && !_emailSummarySender.IsNullOrWhiteSpace() &&
+                _emailSummaryReceivers != null && !_emailSummaryReceivers.IsNullOrWhiteSpace())
             {
                 ReportContext reportContext = new ReportContext
                 {
