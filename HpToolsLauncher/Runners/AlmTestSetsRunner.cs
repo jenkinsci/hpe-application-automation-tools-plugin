@@ -83,6 +83,7 @@ namespace HpToolsLauncher
         private const string ID = "ID";
         private const string NAME = "Name";
         private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
+        private const string REPORT_TITLE = "Execution Event Notification";
         private readonly string _emailSummaryReceivers;
         private readonly string _emailSummarySender;
 
@@ -1316,9 +1317,7 @@ namespace HpToolsLauncher
                 ++idx;
             }
 
-            if (testSetResults.Count > 0 &&
-                _emailSummarySender != null && !_emailSummarySender.IsNullOrWhiteSpace() &&
-                _emailSummaryReceivers != null && !_emailSummaryReceivers.IsNullOrWhiteSpace())
+            if (testSetResults.Count > 0 && !_emailSummarySender.IsNullOrWhiteSpace() && !_emailSummaryReceivers.IsNullOrWhiteSpace())
             {
                 ReportContext reportContext = new ReportContext
                 {
@@ -1331,7 +1330,7 @@ namespace HpToolsLauncher
                 
                 AlmHtmlReportBuilder htmlBuilder = new AlmHtmlReportBuilder();
                 string htmlReportPage = htmlBuilder.BuildReport(reportContext);
-                _tdConnection.SendMail(_emailSummaryReceivers, _emailSummarySender, "Execution Event Notification", htmlReportPage);
+                _tdConnection.SendMail(_emailSummaryReceivers, _emailSummarySender, REPORT_TITLE, htmlReportPage);
             }
             return activeRunDescription;    
         }
