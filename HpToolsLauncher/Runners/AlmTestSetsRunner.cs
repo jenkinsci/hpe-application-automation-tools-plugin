@@ -82,7 +82,7 @@ namespace HpToolsLauncher
         private const string FILE_ISNT_REGISTERED = @"{0} is not registered in HKLM\{1}.";
         private const string ID = "ID";
         private const string NAME = "Name";
-        private const string ORDERBY_MESSAGE = "Test set will be executed in ascending order by {0}.";
+        private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
         private readonly string _emailSummaryReceivers;
         private readonly string _emailSummarySender;
 
