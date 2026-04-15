@@ -82,9 +82,9 @@ namespace HpToolsLauncher
         private const string FILE_ISNT_REGISTERED = @"{0} is not registered in HKLM\{1}.";
         private const string ID = "ID";
         private const string NAME = "Name";
-        private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
+        private const string ORDERBY_MESSAGE = "Test set will be executed in ascending order by {0}.";
         private readonly string _emailSummaryReceivers;
-        private readonly string _almEmailSummarySender;
+        private readonly string _emailSummarySender;
 
         public ITDConnection13 TdConnection
         {
@@ -198,7 +198,7 @@ namespace HpToolsLauncher
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
 
-            _almEmailSummarySender = almEmailSummarySender;
+            _emailSummarySender = almEmailSummarySender;
         }
 
         private void RegisterAlmComponents(QcRunMode runMode)
@@ -1316,7 +1316,9 @@ namespace HpToolsLauncher
                 ++idx;
             }
 
-            if (testSetResults.Count > 0)
+            if (testSetResults.Count > 0 &&
+                _emailSummarySender != null && _emailSummarySender.Length > 0 &&
+                _emailSummaryReceivers != null && _emailSummaryReceivers.Length > 0)
             {
                 ReportContext reportContext = new ReportContext
                 {
@@ -1329,7 +1331,7 @@ namespace HpToolsLauncher
                 
                 AlmHtmlReportBuilder htmlBuilder = new AlmHtmlReportBuilder();
                 string htmlReportPage = htmlBuilder.BuildReport(reportContext);
-                _tdConnection.SendMail(_emailSummaryReceivers, _almEmailSummarySender, "ALM Test Report", htmlReportPage);
+                _tdConnection.SendMail(_emailSummaryReceivers, _emailSummarySender, "Execution Event Notification", htmlReportPage);
             }
             return activeRunDescription;    
         }
