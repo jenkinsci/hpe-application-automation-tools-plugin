@@ -83,6 +83,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
     private String almTestSetsRunOrderByCriteria;
     private boolean isEmailReportEnabled;
     private String almEmailSummaryReceivers;
+    private String almEmailSummarySender;
 
     @DataBoundConstructor
     public RunFromAlmModel(
@@ -102,7 +103,8 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
             CredentialsScope credentialsScope,
             String almTestSetsRunOrderByCriteria,
             boolean isEmailReportEnabled,
-            String almEmailSummaryReceivers) {
+            String almEmailSummaryReceivers,
+            String almEmailSummarySender) {
         this.almServerName = almServerName;
         this.credentialsScope = credentialsScope;
 
@@ -127,6 +129,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 		this.almTestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
         this.isEmailReportEnabled = isEmailReportEnabled;
         this.almEmailSummaryReceivers = almEmailSummaryReceivers;
+        this.almEmailSummarySender = almEmailSummarySender;
     }
 
     public String getAlmTestSetsRunOrderByCriteria() {
@@ -193,6 +196,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         return CreateProperties(envVars, varResolver);
     }
 
+    public String getAlmEmailSummarySender() { return almEmailSummarySender; }
     public String getAlmEmailSummaryReceivers() { return almEmailSummaryReceivers; }
     public String getCredentialsScopeValue() { return credentialsScope == null ? "" : credentialsScope.getValue(); }
     public String getPasswordEncryptedValue() { return almPassword == null ? "" : almPassword.getEncryptedValue(); }
@@ -263,6 +267,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
                             .filter(s -> !s.isEmpty())
                             .collect(Collectors.joining(";"));
             props.put("almEmailSummaryReceivers", emails);
+            props.put("almEmailSummarySender", almEmailSummarySender);
         }
 
         return props;

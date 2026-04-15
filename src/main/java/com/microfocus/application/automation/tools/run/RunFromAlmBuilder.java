@@ -108,7 +108,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             AlmServerSettingsModel almServerSettingsModel,
             String almTestSetsRunOrderByCriteria,
             boolean isEmailReportEnabled,
-            String almEmailSummaryReceivers) {
+            String almEmailSummaryReceivers,
+            String almEmailSummarySender) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -137,7 +138,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almCredScope,
                         almTestSetsRunOrderByCriteria,
                         isEmailReportEnabled,
-                        almEmailSummaryReceivers);
+                        almEmailSummaryReceivers,
+                        almEmailSummarySender);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -266,6 +268,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getAlmEmailSummaryReceivers() { return runFromAlmModel.getAlmEmailSummaryReceivers(); }
+
+    public String getAlmEmailSummarySender() { return runFromAlmModel.getAlmEmailSummarySender(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {
@@ -566,6 +570,20 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                 }
             }
             return m;
+        }
+
+        public FormValidation doCheckAlmEmailSummarySender(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Sender email must be set.");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckAlmEmailSummaryReceivers(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("At least one receiver email is required.");
+           }
+            return FormValidation.ok();
         }
 
         public FormValidation doCheckAlmTimeout(@QueryParameter String value) {

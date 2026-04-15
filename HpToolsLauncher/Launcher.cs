@@ -319,6 +319,7 @@ namespace HpToolsLauncher
                     string almRunHost = _ciParams.GetOrDefault("almRunHost");
                     string almTestSetsRunOrderByCriteria = _ciParams.GetOrDefault("almTestSetsRunOrderByCriteria");
                     string almEmailSummaryReceivers = _ciParams.GetOrDefault("almEmailSummaryReceivers");
+                    string almEmailSummarySender = _ciParams.GetOrDefault("almEmailSummarySender");
 
                         //create an Alm runner
                     runner = new AlmTestSetsRunner(
@@ -341,7 +342,8 @@ namespace HpToolsLauncher
                         clientID,
                         apiKey,
                         almTestSetsRunOrderByCriteria,
-                        almEmailSummaryReceivers
+                        almEmailSummaryReceivers,
+                        almEmailSummarySender
                     );
                     break;
                 }
