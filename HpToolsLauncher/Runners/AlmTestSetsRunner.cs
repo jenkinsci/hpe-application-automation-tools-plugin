@@ -85,7 +85,6 @@ namespace HpToolsLauncher
         private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
         private const string REPORT_TITLE = "Execution Event Notification";
         private readonly string _emailSummaryReceivers;
-        private readonly string _emailSummarySender;
 
         public ITDConnection13 TdConnection
         {
@@ -164,8 +163,7 @@ namespace HpToolsLauncher
             string qcClientId,
             string qcApiKey,
             string almTestSetsRunOrderByCriteria,
-            string almEmailSummaryReceivers,
-            string almEmailSummarySender)
+            string almEmailSummaryReceivers)
         {
 
             Timeout = intQcTimeout;
@@ -198,8 +196,6 @@ namespace HpToolsLauncher
                 Console.WriteLine("ALM Test set runner not connected");
                 Environment.Exit((int)Launcher.ExitCodeEnum.Failed);
             }
-
-            _emailSummarySender = almEmailSummarySender;
         }
 
         private void RegisterAlmComponents(QcRunMode runMode)
@@ -1317,7 +1313,7 @@ namespace HpToolsLauncher
                 ++idx;
             }
 
-            if (testSetResults.Count > 0 && !_emailSummarySender.IsNullOrWhiteSpace() && !_emailSummaryReceivers.IsNullOrWhiteSpace())
+            if (testSetResults.Count > 0 && !_emailSummaryReceivers.IsNullOrWhiteSpace())
             {
                 ReportContext reportContext = new ReportContext
                 {
@@ -1330,7 +1326,7 @@ namespace HpToolsLauncher
                 
                 AlmHtmlReportBuilder htmlBuilder = new AlmHtmlReportBuilder();
                 string htmlReportPage = htmlBuilder.BuildReport(reportContext);
-                _tdConnection.SendMail(_emailSummaryReceivers, _emailSummarySender, REPORT_TITLE, htmlReportPage);
+                _tdConnection.SendMail(SendTo: _emailSummaryReceivers, Subject: REPORT_TITLE, Message: htmlReportPage);
             }
             return activeRunDescription;    
         }

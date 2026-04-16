@@ -288,9 +288,6 @@
     </f:optionalBlock>
     <f:optionalBlock name="isEmailReportEnabled" title="Send email test summary report" inline="true" checked="${instance.isEmailReportEnabled}">
         <f:entry field="runFromAlmModel">
-            <f:entry title="From" field="almEmailSummarySender" mandatory="true">
-                <f:textbox />
-            </f:entry>
             <f:entry title="Send to" field="almEmailSummaryReceivers">
                 <f:expandableTextbox />
             </f:entry>

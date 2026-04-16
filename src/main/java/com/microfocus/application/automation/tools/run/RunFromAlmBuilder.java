@@ -108,8 +108,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             AlmServerSettingsModel almServerSettingsModel,
             String almTestSetsRunOrderByCriteria,
             boolean isEmailReportEnabled,
-            String almEmailSummaryReceivers,
-            String almEmailSummarySender) {
+            String almEmailSummaryReceivers) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -138,8 +137,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almCredScope,
                         almTestSetsRunOrderByCriteria,
                         isEmailReportEnabled,
-                        almEmailSummaryReceivers,
-                        almEmailSummarySender);
+                        almEmailSummaryReceivers);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -268,8 +266,6 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getAlmEmailSummaryReceivers() { return runFromAlmModel.getAlmEmailSummaryReceivers(); }
-
-    public String getAlmEmailSummarySender() { return runFromAlmModel.getAlmEmailSummarySender(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {
@@ -570,13 +566,6 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                 }
             }
             return m;
-        }
-
-        public FormValidation doCheckAlmEmailSummarySender(@QueryParameter String value) {
-            if (value == null || value.trim().isEmpty()) {
-                return FormValidation.error("Sender email must be set.");
-            }
-            return FormValidation.ok();
         }
 
         public FormValidation doCheckAlmEmailSummaryReceivers(@QueryParameter String value) {
