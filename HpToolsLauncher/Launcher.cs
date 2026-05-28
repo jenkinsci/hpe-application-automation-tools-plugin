@@ -81,14 +81,16 @@ namespace HpToolsLauncher
         /// <summary>
         /// if running an alm job theses strings are mandatory:
         /// </summary>
-        private readonly string[] requiredParamsForQcRun = { "almServerUrl",
-                                 "almUsername",
-                                 "almPassword",
-                                 "almDomain",
-                                 "almProject",
-                                 "almRunMode",
-                                 "almTimeout",
-                                 "almRunHost"};
+        private readonly string[] requiredParamsForQcRun = {
+            "almServerUrl",
+            "almUsername",
+            "almPassword",
+            "almDomain",
+            "almProject",
+            "almRunMode",
+            "almTimeout",
+            "almRunHost"
+        };
         private readonly char[] _colon_semicolon = ",;".ToCharArray();
 
         /// <summary>
@@ -606,7 +608,7 @@ namespace HpToolsLauncher
                     bool uftExportPdf = false;
                     bool.TryParse(uftExportPdfParam, out uftExportPdf);
 
-                        if (validTests.Count > 0)
+                    if (validTests.Count > 0)
                     {
                         runner = new FileSystemTestsRunner(validTests, GetValidParams(), printInputParams, timeout, uftRunMode, pollingInterval, perScenarioTimeOutMinutes, ignoreErrorStrings, jenkinsEnvVars, new DigitalLab(mcConnectionInfo, mobileinfo, cloudBrowser), parallelRunnerEnvironments, displayController, analysisTemplate, summaryDataLogger, scriptRTSSet, reportPath, resultsFilename, _encoding, uftRunAsUser, uftExportPdf, leaveUftOpenIfVisible);
                     }
