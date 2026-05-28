@@ -174,14 +174,14 @@ namespace HpToolsLauncher
         {
             HostPort = PORT_8080;
             UserName =
-            ExecToken =
-            Password =
-            HostAddress =
-            TenantId =
-            WorkspaceName =
-            ProxyAddress =
-            ProxyUserName =
-            ProxyPassword = string.Empty;
+                ExecToken =
+                Password =
+                HostAddress =
+                TenantId =
+                WorkspaceName =
+                ProxyAddress =
+                ProxyUserName =
+                ProxyPassword = string.Empty;
         }
 
         public McConnectionInfo(JavaProperties ciParams) : this()
