@@ -568,6 +568,13 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             return m;
         }
 
+        public FormValidation doCheckAlmEmailSummaryReceivers(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("At least one receiver email is required.");
+            }
+            return FormValidation.ok();
+        }
+
         public FormValidation doCheckAlmTimeout(@QueryParameter String value) {
 
             if (StringUtils.isEmpty(value)) {
