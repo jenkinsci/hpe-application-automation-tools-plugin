@@ -160,11 +160,7 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 			if (scmProcessor != null) {
 				logger.debug("SCMProcessor found: {}, calling getCommonOriginRevision", scmProcessor.getClass().getName());
 				commonOriginRevision = scmProcessor.getCommonOriginRevision(build);
-				if (commonOriginRevision != null) {
-					logger.debug("Common origin revision calculated - branch: {}, revision: {}", commonOriginRevision.branch, commonOriginRevision.revision);
-				} else {
-					logger.warn("SCMProcessor returned null for common origin revision");
-				}
+				logger.info("Common Origin revision is {}", commonOriginRevision);
 			} else {
 				logger.warn("No SCMProcessor found for SCM type: {}", scm.getClass().getName());
 			}

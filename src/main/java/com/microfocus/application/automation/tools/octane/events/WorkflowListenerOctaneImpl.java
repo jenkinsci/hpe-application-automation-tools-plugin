@@ -67,6 +67,7 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import java.lang.reflect.Method;
 
 import java.util.HashSet;
 import java.util.List;
@@ -190,8 +191,6 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 			SCM scm = extractScmFromJob(jobParent);
 			if (scm != null) {
 				return processScmForCommonOrigin(run, scm);
-			} else {
-				logger.warn("No SCM found for job: {} - common hash will not be sent", run.getFullDisplayName());
 			}
 		} catch (Exception e) {
 			logger.error("Failed to resolve common origin revision for pipeline run: {}", e.getMessage(), e);
@@ -212,18 +211,12 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 		if (scmProcessor != null) {
 			logger.debug("SCMProcessor found: {}, calling getCommonOriginRevision", scmProcessor.getClass().getName());
 			CommonOriginRevision commonOriginRevision = scmProcessor.getCommonOriginRevision(run);
+			logger.info("Common Origin revision is {}", commonOriginRevision);
 
-			if (commonOriginRevision != null) {
-				logger.debug("Common origin revision calculated - branch: {}, revision: {}",
-					commonOriginRevision.branch, commonOriginRevision.revision);
-			} else {
-				logger.warn("SCMProcessor returned null for common origin revision");
-			}
 			return commonOriginRevision;
-		} else {
-			logger.warn("No SCMProcessor found for SCM type: {}", scm.getClass().getName());
-			return null;
 		}
+
+		return null;
 	}
 
 	/**
@@ -243,53 +236,91 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 
 	/**
 	 * Directly extracts SCM from a job using various reflection strategies.
+	 *
+	 * @param job the job object to inspect
+	 * @return the SCM object, or null if not found
 	 */
 	private SCM extractScmDirectly(Object job) {
 		try {
-			// First, try the direct getScm() method (works for FreestyleJob, AbstractProject)
-			try {
-				java.lang.reflect.Method getSCMMethod = job.getClass().getMethod(METHOD_GET_SCM);
-				Object scmObj = getSCMMethod.invoke(job);
-				if (scmObj instanceof SCM) {
-					return (SCM) scmObj;
-				}
-			} catch (NoSuchMethodException e) {
-				logger.debug("Job {} does not have getScm() method, trying alternative approaches", job.getClass().getSimpleName());
+			SCM scm = tryExtractScmViaGetScm(job);
+			if (scm != null) {
+				return scm;
 			}
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Job {} does not support getScm(), trying getDefinition().getScm()", job.getClass().getSimpleName());
+		}
 
-			// For Pipeline jobs with SCM, the definition is a CpsScmFlowDefinition
-			// Try to get definition from WorkflowJob
-			try {
-				java.lang.reflect.Method getDefinitionMethod = job.getClass().getMethod(METHOD_GET_DEFINITION);
-				Object definition = getDefinitionMethod.invoke(job);
-				if (definition != null) {
-					// Try to get SCM from the definition
-					java.lang.reflect.Method getSCMFromDefMethod = definition.getClass().getMethod(METHOD_GET_SCM);
-					Object scmObj = getSCMFromDefMethod.invoke(definition);
-					if (scmObj instanceof SCM) {
-						return (SCM) scmObj;
-					}
-				}
-			} catch (NoSuchMethodException e) {
-				logger.debug("Job {} does not have getDefinition().getScm() method, trying alternative approaches", job.getClass().getSimpleName());
+		try {
+			SCM scm = tryExtractScmViaDefinition(job);
+			if (scm != null) {
+				return scm;
 			}
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Job {} does not support getDefinition().getScm(), trying getSCMs()", job.getClass().getSimpleName());
+		}
 
-			// Some workflow jobs expose SCMs as a collection rather than getScm()
-			try {
-				java.lang.reflect.Method getSCMsMethod = job.getClass().getMethod(METHOD_GET_SCMS);
-				Object scmsObj = getSCMsMethod.invoke(job);
-				if (scmsObj instanceof Collection<?>) {
-					for (Object scmObj : (Collection<?>) scmsObj) {
-						if (scmObj instanceof SCM) {
-							return (SCM) scmObj;
-						}
-					}
+		try {
+			return tryExtractScmViaScmsCollection(job);
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Could not extract SCM from job {} using fallback strategies: {}", job.getClass().getSimpleName(), e.getMessage());
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM by invoking {@code getScm()} directly on the job.
+	 *
+	 * @param job the job instance to inspect
+	 * @return extracted SCM, or null when the returned object is not an SCM
+	 * @throws ReflectiveOperationException when {@code getScm()} cannot be resolved or invoked
+	 */
+	private SCM tryExtractScmViaGetScm(Object job) throws ReflectiveOperationException {
+		Method getScmMethod = job.getClass().getMethod(METHOD_GET_SCM);
+		Object scmObj = getScmMethod.invoke(job);
+		if (scmObj instanceof SCM scm) {
+			return scm;
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM from a pipeline definition via {@code getDefinition().getScm()}.
+	 *
+	 * @param job the job instance that may expose a pipeline definition
+	 * @return extracted SCM, or null when definition/scm is unavailable
+	 * @throws ReflectiveOperationException when reflection calls cannot be resolved or invoked
+	 */
+	private SCM tryExtractScmViaDefinition(Object job) throws ReflectiveOperationException {
+		Method getDefinitionMethod = job.getClass().getMethod(METHOD_GET_DEFINITION);
+		Object definition = getDefinitionMethod.invoke(job);
+		if (definition == null) {
+			return null;
+		}
+
+		Method getScmFromDefinitionMethod = definition.getClass().getMethod(METHOD_GET_SCM);
+		Object scmObj = getScmFromDefinitionMethod.invoke(definition);
+		if (scmObj instanceof SCM scm) {
+			return scm;
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM from jobs exposing multiple SCMs via {@code getSCMs()}.
+	 *
+	 * @param job the job instance to inspect
+	 * @return first SCM found in the returned collection, or null when none is present
+	 * @throws ReflectiveOperationException when {@code getSCMs()} cannot be resolved or invoked
+	 */
+	private SCM tryExtractScmViaScmsCollection(Object job) throws ReflectiveOperationException {
+		Method getScmsMethod = job.getClass().getMethod(METHOD_GET_SCMS);
+		Object scmsObj = getScmsMethod.invoke(job);
+		if (scmsObj instanceof Collection<?> scmCollection) {
+			for (Object scmObj : scmCollection) {
+				if (scmObj instanceof SCM scm) {
+					return scm;
 				}
-			} catch (NoSuchMethodException e) {
-				logger.debug("Job {} does not have getSCMs() method, no more fallback options", job.getClass().getSimpleName());
 			}
-		} catch (Exception e) {
-			logger.debug("Could not extract SCM from job {}: {}", job.getClass().getSimpleName(), e.getMessage());
 		}
 		return null;
 	}
@@ -328,12 +359,13 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 	 */
 	private void setCommonHashOnEvent(CIEvent event, CommonOriginRevision commonOriginRevision, String runDisplayName) {
 		if (commonOriginRevision != null) {
-			if (commonOriginRevision.revision != null && !commonOriginRevision.revision.isEmpty()) {
+			String revision = commonOriginRevision.revision;
+			if (revision != null && !revision.isEmpty()) {
 				event
-						.setCommonHashId(commonOriginRevision.revision)
+						.setCommonHashId(revision)
 						.setBranchName(commonOriginRevision.branch);
 				logger.debug("Common hash set for pipeline run: {} (branch: {})",
-					commonOriginRevision.revision, commonOriginRevision.branch);
+					revision, commonOriginRevision.branch);
 			} else {
 				logger.warn("Common origin revision object exists but revision is null/empty for pipeline run: {}", runDisplayName);
 			}
