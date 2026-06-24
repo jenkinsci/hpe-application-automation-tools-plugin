@@ -51,10 +51,14 @@ import com.microfocus.application.automation.tools.octane.configuration.SDKBased
 import com.microfocus.application.automation.tools.octane.model.CIEventCausesFactory;
 import com.microfocus.application.automation.tools.octane.model.processors.parameters.ParameterProcessors;
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
+import com.microfocus.application.automation.tools.octane.model.processors.scm.CommonOriginRevision;
+import com.microfocus.application.automation.tools.octane.model.processors.scm.SCMProcessor;
+import com.microfocus.application.automation.tools.octane.model.processors.scm.SCMProcessors;
 import com.microfocus.application.automation.tools.octane.tests.TestListener;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.Extension;
 import hudson.model.Result;
+import hudson.scm.SCM;
 import org.apache.logging.log4j.Logger;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.actions.WarningAction;
@@ -63,10 +67,12 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import java.lang.reflect.Method;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Collection;
 
 /**
  * Octane's listener for WorkflowRun events
@@ -162,6 +168,163 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 		return run.getFullDisplayName();
 	}
 
+	// Reflection method names
+	private static final String METHOD_GET_DEFINITION = "getDefinition";
+	private static final String METHOD_GET_SCM = "getScm";
+	private static final String METHOD_GET_SCMS = "getSCMs";
+
+	/**
+	 * Extracts the common origin revision (merge-base) for a WorkflowRun.
+	 * This is used for code coverage comparison between branches in Octane.
+	 *
+	 * @param run the WorkflowRun to process
+	 * @return CommonOriginRevision containing branch and revision info, or null if unable to extract
+	 */
+	private CommonOriginRevision getCommonOriginRevision(WorkflowRun run) {
+		try {
+			Object jobParent = run.getParent();
+			if (jobParent == null) {
+				logger.warn("Job parent is null for run: {}", run.getFullDisplayName());
+				return null;
+			}
+
+			SCM scm = extractScmFromJob(jobParent);
+			if (scm != null) {
+				return processScmForCommonOrigin(run, scm);
+			}
+		} catch (Exception e) {
+			logger.error("Failed to resolve common origin revision for pipeline run: {}", e.getMessage(), e);
+		}
+		return null;
+	}
+
+	/**
+	 * Processes the SCM to extract common origin revision information.
+	 * @param run the WorkflowRun being processed
+	 * @param scm the SCM object associated with the run
+	 * @return CommonOriginRevision containing branch and revision info, or null if unable to extract
+	 */
+	private CommonOriginRevision processScmForCommonOrigin(WorkflowRun run, SCM scm) {
+		logger.debug("SCM found: {}, getting SCMProcessor", scm.getClass().getName());
+		SCMProcessor scmProcessor = SCMProcessors.getAppropriate(scm.getClass().getName());
+
+		if (scmProcessor != null) {
+			logger.debug("SCMProcessor found: {}, calling getCommonOriginRevision", scmProcessor.getClass().getName());
+			CommonOriginRevision commonOriginRevision = scmProcessor.getCommonOriginRevision(run);
+			logger.info("Common Origin revision is {}", commonOriginRevision);
+
+			return commonOriginRevision;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Extracts SCM from a job object using reflection.
+	 * For both regular Pipeline jobs and MultiBranch Pipeline children, the parent is always
+	 * a WorkflowJob, so the same extraction strategies apply to both.
+	 *
+	 * @param job the job object (WorkflowJob, AbstractProject, etc.)
+	 * @return the SCM object, or null if not found
+	 */
+	private SCM extractScmFromJob(Object job) {
+		if (job == null) {
+			return null;
+		}
+		return extractScmDirectly(job);
+	}
+
+	/**
+	 * Directly extracts SCM from a job using various reflection strategies.
+	 *
+	 * @param job the job object to inspect
+	 * @return the SCM object, or null if not found
+	 */
+	private SCM extractScmDirectly(Object job) {
+		try {
+			SCM scm = tryExtractScmViaGetScm(job);
+			if (scm != null) {
+				return scm;
+			}
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Job {} does not support getScm(), trying getDefinition().getScm()", job.getClass().getSimpleName());
+		}
+
+		try {
+			SCM scm = tryExtractScmViaDefinition(job);
+			if (scm != null) {
+				return scm;
+			}
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Job {} does not support getDefinition().getScm(), trying getSCMs()", job.getClass().getSimpleName());
+		}
+
+		try {
+			return tryExtractScmViaScmsCollection(job);
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Could not extract SCM from job {} using fallback strategies: {}", job.getClass().getSimpleName(), e.getMessage());
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM by invoking {@code getScm()} directly on the job.
+	 *
+	 * @param job the job instance to inspect
+	 * @return extracted SCM, or null when the returned object is not an SCM
+	 * @throws ReflectiveOperationException when {@code getScm()} cannot be resolved or invoked
+	 */
+	private SCM tryExtractScmViaGetScm(Object job) throws ReflectiveOperationException {
+		Method getScmMethod = job.getClass().getMethod(METHOD_GET_SCM);
+		Object scmObj = getScmMethod.invoke(job);
+		if (scmObj instanceof SCM scm) {
+			return scm;
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM from a pipeline definition via {@code getDefinition().getScm()}.
+	 *
+	 * @param job the job instance that may expose a pipeline definition
+	 * @return extracted SCM, or null when definition/scm is unavailable
+	 * @throws ReflectiveOperationException when reflection calls cannot be resolved or invoked
+	 */
+	private SCM tryExtractScmViaDefinition(Object job) throws ReflectiveOperationException {
+		Method getDefinitionMethod = job.getClass().getMethod(METHOD_GET_DEFINITION);
+		Object definition = getDefinitionMethod.invoke(job);
+		if (definition == null) {
+			return null;
+		}
+
+		Method getScmFromDefinitionMethod = definition.getClass().getMethod(METHOD_GET_SCM);
+		Object scmObj = getScmFromDefinitionMethod.invoke(definition);
+		if (scmObj instanceof SCM scm) {
+			return scm;
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM from jobs exposing multiple SCMs via {@code getSCMs()}.
+	 *
+	 * @param job the job instance to inspect
+	 * @return first SCM found in the returned collection, or null when none is present
+	 * @throws ReflectiveOperationException when {@code getSCMs()} cannot be resolved or invoked
+	 */
+	private SCM tryExtractScmViaScmsCollection(Object job) throws ReflectiveOperationException {
+		Method getScmsMethod = job.getClass().getMethod(METHOD_GET_SCMS);
+		Object scmsObj = getScmsMethod.invoke(job);
+		if (scmsObj instanceof Collection<?> scmCollection) {
+			for (Object scmObj : scmCollection) {
+				if (scmObj instanceof SCM scm) {
+					return scm;
+				}
+			}
+		}
+		return null;
+	}
+
 	private void sendPipelineFinishedEvent(WorkflowRun parentRun) {
 		workflowJobStarted.remove(getBuildKey(parentRun));
 		boolean hasTests = testListener.processBuild(parentRun);
@@ -179,7 +342,36 @@ public class WorkflowListenerOctaneImpl implements GraphListener {
 				.setCauses(CIEventCausesFactory.processCauses(parentRun))
 				.setTestResultExpected(hasTests)
 				.setEnvironmentOutputtedParameters(OutputEnvironmentParametersHelper.getOutputEnvironmentParams(parentRun));
+
+		// Set commonHashId and branchName for pipeline run comparison
+		setCommonHashOnEvent(event, getCommonOriginRevision(parentRun), parentRun.getFullDisplayName());
+
 		CIJenkinsServicesImpl.publishEventToRelevantClients(event);
+	}
+
+	/**
+	 * Sets the common hash ID and branch name on a CI event if valid.
+	 * Logs appropriate warnings if the common origin revision is invalid.
+	 *
+	 * @param event the CI event to update
+	 * @param commonOriginRevision the common origin revision data
+	 * @param runDisplayName display name of the run for logging
+	 */
+	private void setCommonHashOnEvent(CIEvent event, CommonOriginRevision commonOriginRevision, String runDisplayName) {
+		if (commonOriginRevision != null) {
+			String revision = commonOriginRevision.revision;
+			if (revision != null && !revision.isEmpty()) {
+				event
+						.setCommonHashId(revision)
+						.setBranchName(commonOriginRevision.branch);
+				logger.debug("Common hash set for pipeline run: {} (branch: {})",
+					revision, commonOriginRevision.branch);
+			} else {
+				logger.warn("Common origin revision object exists but revision is null/empty for pipeline run: {}", runDisplayName);
+			}
+		} else {
+			logger.warn("Common origin revision is null for pipeline run: {} - common hash will not be sent to Octane", runDisplayName);
+		}
 	}
 
 	private void sendStageStartedEvent(StepStartNode stepStartNode) {

@@ -136,28 +136,59 @@ public final class AbstractBuildListenerOctaneImpl extends RunListener<AbstractB
 					.setDuration(build.getDuration())
 					.setTestResultExpected(hasTests)
 					.setEnvironmentOutputtedParameters(OutputEnvironmentParametersHelper.getOutputEnvironmentParams(build));
-			CommonOriginRevision commonOriginRevision = getCommonOriginRevision(build);
-			if (commonOriginRevision != null) {
-				event
-						.setCommonHashId(commonOriginRevision.revision)
-						.setBranchName(commonOriginRevision.branch);
-			}
+
+			setCommonHashOnEvent(event, getCommonOriginRevision(build), build.getFullDisplayName());
+
 			CIJenkinsServicesImpl.publishEventToRelevantClients(event);
 		} catch (Throwable throwable) {
-			logger.error("failed to build and/or dispatch FINISHED event for " + build, throwable);
+			logger.error("failed to build and/or dispatch FINISHED event for {}", build, throwable);
 		}
 	}
 
+	/**
+	 * Extracts the common origin revision (merge-base) for an AbstractBuild.
+	 *
+	 * @param build the build to process
+	 * @return CommonOriginRevision containing branch and revision info, or null if unable to extract
+	 */
 	private CommonOriginRevision getCommonOriginRevision(AbstractBuild build) {
 		CommonOriginRevision commonOriginRevision = null;
 		SCM scm = build.getProject().getScm();
 		if (scm != null) {
+			logger.debug("SCM found for AbstractBuild: {}", scm.getClass().getName());
 			SCMProcessor scmProcessor = SCMProcessors.getAppropriate(scm.getClass().getName());
 			if (scmProcessor != null) {
+				logger.debug("SCMProcessor found: {}, calling getCommonOriginRevision", scmProcessor.getClass().getName());
 				commonOriginRevision = scmProcessor.getCommonOriginRevision(build);
+				logger.info("Common Origin revision is {}", commonOriginRevision);
+			} else {
+				logger.warn("No SCMProcessor found for SCM type: {}", scm.getClass().getName());
 			}
+		} else {
+			logger.debug("No SCM configured for build: {}", build.getFullDisplayName());
 		}
 		return commonOriginRevision;
+	}
+
+	/**
+	 * Sets the common hash ID and branch name on a CI event if valid.
+	 * Logs appropriate warnings if the common origin revision is invalid.
+	 *
+	 * @param event the CI event to update
+	 * @param commonOriginRevision the common origin revision data
+	 * @param buildDisplayName display name of the build for logging
+	 */
+	private void setCommonHashOnEvent(CIEvent event, CommonOriginRevision commonOriginRevision, String buildDisplayName) {
+		if (commonOriginRevision != null) {
+			if (commonOriginRevision.revision != null && !commonOriginRevision.revision.isEmpty()) {
+				event
+						.setCommonHashId(commonOriginRevision.revision)
+						.setBranchName(commonOriginRevision.branch);
+				logger.debug("Common hash set for build: {} (branch: {})", commonOriginRevision.revision, commonOriginRevision.branch);
+			} else {
+				logger.warn("Common origin revision object exists but revision is null/empty for build: {}", buildDisplayName);
+			}
+		}
 	}
 
 	//  TODO: https://issues.jenkins-ci.org/browse/JENKINS-53410

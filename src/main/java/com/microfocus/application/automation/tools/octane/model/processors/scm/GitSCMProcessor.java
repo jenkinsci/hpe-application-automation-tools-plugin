@@ -42,6 +42,8 @@ import com.hp.octane.integrations.dto.scm.impl.LineRange;
 import com.hp.octane.integrations.dto.scm.impl.RevisionsMap;
 import com.hp.octane.integrations.dto.scm.impl.SCMFileBlameImpl;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
+import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
+import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.FilePath;
 import hudson.model.*;
 import hudson.plugins.git.Branch;
@@ -70,6 +72,7 @@ import org.eclipse.jgit.errors.NoMergeBaseException;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -79,6 +82,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.*;
 
@@ -89,7 +93,18 @@ import java.util.*;
 class GitSCMProcessor implements SCMProcessor {
 	private static final Logger logger = SDKBasedLoggerProvider.getLogger(GitSCMProcessor.class);
 	private static final DTOFactory dtoFactory = DTOFactory.getInstance();
-	private static final String MASTER = "refs/remotes/origin/master";
+	private static final String DEFAULT_REMOTE_BRANCH = "refs/remotes/origin/master";
+
+	// Reflection method names used for SCM extraction
+	private static final String METHOD_GET_DEFINITION = "getDefinition";
+	private static final String METHOD_GET_SCM = "getScm";
+	private static final String METHOD_GET_SCMS = "getSCMs";
+
+	// Git ref path constants
+	private static final String REFS_REMOTES_ORIGIN_PREFIX = "refs/remotes/origin/";
+
+	// Parameter name for user-specified default branch (used for merge-base calculation)
+	private static final String DEFAULT_BRANCH_PARAMETER = "DEFAULT_PROJECT_BRANCH";
 
 	@Override
 	public SCMData getSCMData(AbstractBuild build, SCM scm) {
@@ -129,34 +144,69 @@ class GitSCMProcessor implements SCMProcessor {
 		return extractSCMData(run, scm, run.getChangeSets());
 	}
 
+	/**
+	 * Calculates the common origin revision (merge-base) between the current branch and the default remote branch.
+	 *
+	 * @param run the Jenkins run (supports both AbstractBuild and WorkflowRun)
+	 * @return CommonOriginRevision containing the branch name and common hash ID
+	 */
 	@Override
 	public CommonOriginRevision getCommonOriginRevision(final Run run) {
-		//for phase 1 this is hard coded since its not possible to calculate it, and configuration from outside will complicate the feature
-		//so for this phase we keep it hardcoded.
 		CommonOriginRevision commonOriginRevision = new CommonOriginRevision();
 		commonOriginRevision.branch = getBranchName(run);
 
 		try {
-			final AbstractBuild abstractBuild = (AbstractBuild) run;
-			FilePath workspace = ((AbstractBuild) run).getWorkspace();
-			if (workspace != null) {
-				commonOriginRevision.revision = workspace.act(new FileContentCallable(getCheckoutDir(abstractBuild)));
+			FilePath workspace = getWorkspaceForRun(run);
 
+			if (workspace != null) {
+				String checkoutDirValue = getCheckoutDirForRun(run);
+				String defaultBranch = extractDefaultBranchParameter(run);
+				commonOriginRevision.revision = workspace.act(new FileContentCallable(checkoutDirValue, defaultBranch));
+				logger.debug("most recent common revision resolved to {} (branch: {})", commonOriginRevision.revision, commonOriginRevision.branch);
+			} else {
+				logger.warn("Workspace is null for run {}, cannot calculate common origin revision", run.getFullDisplayName());
 			}
-			logger.debug("most recent common revision resolved to " + commonOriginRevision.revision + " (branch: " + commonOriginRevision.branch + ")");
 		} catch (Exception e) {
 			logger.error("failed to resolve most recent common revision : " + e.getClass().getName() + " - " + e.getMessage());
-			return commonOriginRevision;
 		}
 		return commonOriginRevision;
 	}
 
+	/**
+	 * Gets the workspace for a given run, handling both AbstractBuild and WorkflowRun types.
+	 */
+	private FilePath getWorkspaceForRun(Run run) {
+		if (run instanceof AbstractBuild abstractBuild) {
+			return abstractBuild.getWorkspace();
+		} else if (run instanceof WorkflowRun workflowRun) {
+			return BuildHandlerUtils.getWorkspace(workflowRun);
+		}
+		return null;
+	}
+
+	/**
+	 * Gets the checkout directory for a given run, handling both AbstractBuild and WorkflowRun types.
+	 */
+	private String getCheckoutDirForRun(Run run) {
+		String checkoutDir = StringUtils.EMPTY;
+
+		if (run instanceof AbstractBuild abstractBuild) {
+			checkoutDir = getCheckoutDir(abstractBuild);
+			logger.debug("AbstractBuild checkoutDir: '{}'", checkoutDir);
+		} else if (run instanceof WorkflowRun workflowRun) {
+			SCM scm = extractScmFromRun(run);
+			checkoutDir = scm != null ? getCheckoutDirForWorkflowRun(workflowRun, scm) : StringUtils.EMPTY;
+			logger.debug("WorkflowRun checkoutDir: '{}', SCM: {}", checkoutDir, scm != null ? scm.getClass().getSimpleName() : "null");
+		}
+
+		return checkoutDir;
+	}
+
 	private SCMData extractSCMData(Run run, SCM scm, List<ChangeLogSet<? extends ChangeLogSet.Entry>> changes) {
-		if (!(scm instanceof GitSCM)) {
+		if (!(scm instanceof GitSCM gitData)) {
 			throw new IllegalArgumentException("GitSCM type of SCM was expected here, found '" + scm.getClass().getName() + "'");
 		}
 
-		GitSCM gitData = (GitSCM) scm;
 		SCMRepository repository;
 		List<SCMCommit> tmpCommits;
 		String builtRevId = null;
@@ -175,28 +225,186 @@ class GitSCMProcessor implements SCMProcessor {
 				.setCommits(tmpCommits);
 	}
 
+	/**
+	 * Extracts the branch name from the run's SCM configuration.
+	 *
+	 * @param r the Jenkins run
+	 * @return the branch name, or null if unable to extract
+	 */
 	private String getBranchName(Run r) {
 		try {
-			SCM scm = ((AbstractBuild) r).getProject().getScm();
-			GitSCM git = (GitSCM) scm;
-			List<BranchSpec> branches = git.getBranches();
-			String rawBranchName = branches.get(0).toString();
-			if (rawBranchName != null && rawBranchName.startsWith("${") && rawBranchName.endsWith("}")) {
-				String param = rawBranchName.substring(2, rawBranchName.length() - 1);
-				if (((AbstractBuild) r).getBuildVariables().get(param) != null) {
-					return ((AbstractBuild) r).getBuildVariables().get(param).toString();
-				} else {
-					return param;
-				}
+			SCM scm = extractScmFromRun(r);
+
+			if (scm instanceof GitSCM git) {
+				return extractBranchFromGitSCM(git, r);
 			}
-			if (rawBranchName != null && rawBranchName.startsWith("*/")) {
-				return rawBranchName.substring(2);
-			}
-			return rawBranchName; //trunk the '*/' from the '*/<branch name>' in order to get clean branch name
 		} catch (Exception e) {
 			logger.error("failed to extract branch name", e);
 		}
 		return null;
+	}
+
+	/**
+	 * Extracts the user-specified default branch parameter from the run.
+	 * This branch is used as the base for merge-base calculation (common ancestor).
+	 * Works for both AbstractBuild and WorkflowRun.
+	 *
+	 * @param run the Jenkins run
+	 * @return the default branch name, or null if not specified
+	 */
+	private String extractDefaultBranchParameter(Run run) {
+		try {
+			ParametersAction parameterAction = run.getAction(ParametersAction.class);
+			if (parameterAction != null) {
+				ParameterValue pv = parameterAction.getParameter(DEFAULT_BRANCH_PARAMETER);
+				if (pv != null && pv.getValue() instanceof String branch) {
+					if (StringUtils.isNotBlank(branch)) {
+						logger.debug("Found {} parameter with value: {}", DEFAULT_BRANCH_PARAMETER, branch);
+						return branch;
+					}
+				}
+			}
+		} catch (Exception e) {
+			logger.debug("Failed to extract {} parameter: {}", DEFAULT_BRANCH_PARAMETER, e.getMessage());
+		}
+		return null;
+	}
+
+	/**
+	 * Extracts SCM from a Run object, supporting both AbstractBuild and WorkflowRun.
+	 *
+	 * @param run the Jenkins run
+	 * @return the SCM object, or null if not found
+	 */
+	private SCM extractScmFromRun(Run run) {
+		if (run instanceof AbstractBuild abstractBuild) {
+			return abstractBuild.getProject().getScm();
+		} else if (run instanceof WorkflowRun workflowRun) {
+			return extractScmFromWorkflowRun(workflowRun);
+		}
+		return null;
+	}
+
+	/**
+	 * Extracts SCM from a WorkflowRun using reflection, trying multiple strategies.
+	 *
+	 * @param workflowRun the WorkflowRun instance
+	 * @return the SCM object if found, null otherwise
+	 */
+	private SCM extractScmFromWorkflowRun(WorkflowRun workflowRun) {
+		Object jobParent = workflowRun.getParent();
+
+		SCM scm = tryExtractScmViaDefinition(jobParent);
+		if (scm != null) {
+			return scm;
+		}
+
+		scm = tryExtractScmViaScmsCollection(jobParent);
+		if (scm != null) {
+			return scm;
+		}
+
+		if (!JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME.equals(jobParent.getClass().getName())) {
+			scm = tryExtractScmViaDirectGetScm(jobParent);
+		}
+
+		return scm;
+	}
+
+	/**
+	 * Attempts to extract SCM via job definition (getDefinition().getScm()).
+	 *
+	 * @param jobParent the job parent object
+	 * @return the SCM object if found, null otherwise
+	 */
+	private SCM tryExtractScmViaDefinition(Object jobParent) {
+		try {
+			Method getDefinitionMethod = jobParent.getClass().getMethod(METHOD_GET_DEFINITION);
+			Object definition = getDefinitionMethod.invoke(jobParent);
+			if (definition == null) {
+				return null;
+			}
+
+			Method getSCMMethod = definition.getClass().getMethod(METHOD_GET_SCM);
+			Object scmObj = getSCMMethod.invoke(definition);
+			if (scmObj instanceof SCM scm) {
+				return scm;
+			}
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Could not extract SCM from WorkflowRun definition: {}", e.getMessage());
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM from SCMs collection (getSCMs()).
+	 *
+	 * @param jobParent the job parent object
+	 * @return the first SCM object found in the collection, null otherwise
+	 */
+	private SCM tryExtractScmViaScmsCollection(Object jobParent) {
+		try {
+			Method getSCMsMethod = jobParent.getClass().getMethod(METHOD_GET_SCMS);
+			Object scmsObj = getSCMsMethod.invoke(jobParent);
+			if (scmsObj instanceof Collection<?> scmCollection) {
+				for (Object scmObj : scmCollection) {
+					if (scmObj instanceof SCM scm) {
+						return scm;
+					}
+				}
+			}
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Could not extract SCM collection from WorkflowRun parent: {}", e.getMessage());
+		}
+		return null;
+	}
+
+	/**
+	 * Attempts to extract SCM directly via getScm() method.
+	 *
+	 * @param jobParent the job parent object
+	 * @return the SCM object if found, null otherwise
+	 */
+	private SCM tryExtractScmViaDirectGetScm(Object jobParent) {
+		try {
+			Method getSCMMethod = jobParent.getClass().getMethod(METHOD_GET_SCM);
+			Object scmObj = getSCMMethod.invoke(jobParent);
+			if (scmObj instanceof SCM scm) {
+				return scm;
+			}
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Could not extract SCM using direct getScm fallback: {}", e.getMessage());
+		}
+		return null;
+	}
+
+	/**
+	 * Extracts the branch name from a GitSCM configuration, resolving parameters if needed.
+	 */
+	private String extractBranchFromGitSCM(GitSCM git, Run run) {
+		List<BranchSpec> branches = git.getBranches();
+		if (branches == null || branches.isEmpty()) {
+			return null;
+		}
+
+		String rawBranchName = branches.stream().findFirst().toString();
+
+        // Handle parameterized branch names like ${BRANCH_NAME}
+		if (rawBranchName.startsWith("${") && rawBranchName.endsWith("}")) {
+			String param = rawBranchName.substring(2, rawBranchName.length() - 1);
+			if (run instanceof AbstractBuild runObj) {
+				Object value = runObj.getBuildVariables().get(param);
+				return value != null ? value.toString() : param;
+			}
+			return param;
+		}
+
+		// Remove '*/' prefix from branch names like '*/master'
+		if (rawBranchName.startsWith("*/")) {
+			return rawBranchName.substring(2);
+		}
+
+		return rawBranchName;
 	}
 
     private static String getCheckoutDir(AbstractBuild r) {
@@ -208,6 +416,33 @@ class GitSCMProcessor implements SCMProcessor {
             }
         }
         return "";
+	}
+
+	/**
+	 * Extracts the checkout directory for WorkflowRun (Pipeline jobs).
+	 * For Pipeline jobs, we need to get the SCM from the job definition.
+	 *
+	 * @param run the WorkflowRun instance
+	 * @param scm the SCM configuration
+	 * @return the checkout directory path, or empty string if not configured
+	 */
+	private static String getCheckoutDirForWorkflowRun(WorkflowRun run, SCM scm) {
+		try {
+			if (scm instanceof GitSCM gitSCM) {
+				DescribableList<GitSCMExtension, GitSCMExtensionDescriptor> extensions = gitSCM.getExtensions();
+				if (extensions != null) {
+					RelativeTargetDirectory relativeTargetDirectory = extensions.get(RelativeTargetDirectory.class);
+					if (relativeTargetDirectory != null && relativeTargetDirectory.getRelativeTargetDir() != null) {
+						String checkoutDir = relativeTargetDirectory.getRelativeTargetDir();
+						logger.debug("Checkout directory found for WorkflowRun: {}", checkoutDir);
+						return checkoutDir;
+					}
+				}
+			}
+		} catch (Exception e) {
+			logger.debug("Could not extract checkout directory for WorkflowRun: {}", e.getMessage());
+		}
+		return StringUtils.EMPTY;
 	}
 
 	private SCMRepository getRepository(Run run, GitSCM gitData) {
@@ -293,9 +528,11 @@ class GitSCMProcessor implements SCMProcessor {
 
 	private static final class FileContentCallable extends MasterToSlaveFileCallable<String> {
 		private final String checkoutDir;
+		private final String userDefaultBranch;
 
-		private FileContentCallable(String checkoutDir) {
+		private FileContentCallable(String checkoutDir, String userDefaultBranch) {
 			this.checkoutDir = checkoutDir;
+			this.userDefaultBranch = userDefaultBranch;
 		}
 
 		@Override
@@ -318,7 +555,13 @@ class GitSCMProcessor implements SCMProcessor {
 						return "";
 					}
 
-					ObjectId resolveForMaster = repo.resolve(MASTER);
+					// Try to find the default remote branch
+					String defaultRemoteBranch = findDefaultRemoteBranch(repo);
+					if (defaultRemoteBranch == null) {
+						return "";
+					}
+
+					ObjectId resolveForMaster = repo.resolve(defaultRemoteBranch);
 					if (resolveForMaster == null) {
 						return "";
 					}
@@ -351,6 +594,69 @@ class GitSCMProcessor implements SCMProcessor {
 					return base.getId().getName();
 				}
 			}
+		}
+
+		/**
+		 * Tries to find the default remote branch in the repository.
+		 * Strategy:
+		 * 0. User-specified default branch parameter (DEFAULT_PROJECT_BRANCH job parameter)
+		 * 1. Fallback to refs/remotes/origin/master
+		 *
+		 * @param repo the Git repository
+		 * @return the ref name of the default remote branch, or null if not found
+		 */
+		private String findDefaultRemoteBranch(Repository repo) {
+			// Strategy 0: User-specified default branch parameter (HIGHEST PRIORITY)
+			if (StringUtils.isNotEmpty(userDefaultBranch)) {
+				String resolvedBranch = resolveUserDefaultBranch(repo, userDefaultBranch);
+				if (resolvedBranch != null) {
+					return resolvedBranch;
+				}
+				logger.warn("User-specified default branch '{}' not found, falling back to master", userDefaultBranch);
+			}
+
+			// Strategy 1: Fallback to master
+			if (refExists(repo, DEFAULT_REMOTE_BRANCH)) {
+				logger.debug("Using default remote branch for merge-base: {}", DEFAULT_REMOTE_BRANCH);
+				return DEFAULT_REMOTE_BRANCH;
+			}
+
+			return null;
+		}
+
+		/**
+		 * Resolves user-specified default branch to a full Git ref.
+		 *
+		 * @param repo the Git repository
+		 * @param userBranch the user-specified branch name
+		 * @return the resolved full ref name, or null if not found
+		 */
+		private String resolveUserDefaultBranch(Repository repo, String userBranch) {
+			// Try as-is first
+			if (refExists(repo, userBranch)) {
+				logger.debug("Using user-specified default branch (exact match): {}", userBranch);
+				return userBranch;
+			}
+
+			// Only try with prefix if it's a plain branch name (not already a full ref path)
+			if (!userBranch.startsWith("refs/")) {
+				String withPrefix = REFS_REMOTES_ORIGIN_PREFIX + userBranch;
+				if (refExists(repo, withPrefix)) {
+					logger.debug("Using user-specified default branch (resolved to): {}", withPrefix);
+					return withPrefix;
+				}
+			}
+
+			return null;
+		}
+
+		private boolean refExists(Repository repo, String refName) {
+			try {
+				return repo.resolve(refName) != null;
+			} catch (Exception e) {
+				logger.debug("Failed to resolve ref {}: {}", refName, e.getMessage());
+			}
+			return false;
 		}
 	}
 
