@@ -258,9 +258,9 @@ class GitSCMProcessor implements SCMProcessor {
 			if (parameterAction != null) {
 				ParameterValue pv = parameterAction.getParameter(DEFAULT_BRANCH_PARAMETER);
 				if (pv != null && pv.getValue() instanceof String branch) {
-					if (StringUtils.isNotEmpty(branch)) {
+					if (StringUtils.isNotBlank(branch)) {
 						logger.debug("Found {} parameter with value: {}", DEFAULT_BRANCH_PARAMETER, branch);
-						return branch.trim();
+						return branch;
 					}
 				}
 			}
@@ -286,75 +286,94 @@ class GitSCMProcessor implements SCMProcessor {
 	}
 
 	/**
-	 * Extracts SCM from a WorkflowRun using reflection.
+	 * Extracts SCM from a WorkflowRun using reflection, trying multiple strategies.
+	 *
+	 * @param workflowRun the WorkflowRun instance
+	 * @return the SCM object if found, null otherwise
 	 */
 	private SCM extractScmFromWorkflowRun(WorkflowRun workflowRun) {
 		Object jobParent = workflowRun.getParent();
-		if (jobParent == null) {
-			return null;
+
+		SCM scm = tryExtractScmViaDefinition(jobParent);
+		if (scm != null) {
+			return scm;
 		}
 
+		scm = tryExtractScmViaScmsCollection(jobParent);
+		if (scm != null) {
+			return scm;
+		}
+
+		if (!JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME.equals(jobParent.getClass().getName())) {
+			scm = tryExtractScmViaDirectGetScm(jobParent);
+		}
+
+		return scm;
+	}
+
+	/**
+	 * Attempts to extract SCM via job definition (getDefinition().getScm()).
+	 *
+	 * @param jobParent the job parent object
+	 * @return the SCM object if found, null otherwise
+	 */
+	private SCM tryExtractScmViaDefinition(Object jobParent) {
 		try {
-			SCM scm = tryExtractScmViaDefinition(jobParent);
-			if (scm != null) {
+			Method getDefinitionMethod = jobParent.getClass().getMethod(METHOD_GET_DEFINITION);
+			Object definition = getDefinitionMethod.invoke(jobParent);
+			if (definition == null) {
+				return null;
+			}
+
+			Method getSCMMethod = definition.getClass().getMethod(METHOD_GET_SCM);
+			Object scmObj = getSCMMethod.invoke(definition);
+			if (scmObj instanceof SCM scm) {
 				return scm;
 			}
 		} catch (ReflectiveOperationException e) {
 			logger.debug("Could not extract SCM from WorkflowRun definition: {}", e.getMessage());
 		}
+		return null;
+	}
 
+	/**
+	 * Attempts to extract SCM from SCMs collection (getSCMs()).
+	 *
+	 * @param jobParent the job parent object
+	 * @return the first SCM object found in the collection, null otherwise
+	 */
+	private SCM tryExtractScmViaScmsCollection(Object jobParent) {
 		try {
-			SCM scm = tryExtractScmViaScmsCollection(jobParent);
-			if (scm != null) {
-				return scm;
+			Method getSCMsMethod = jobParent.getClass().getMethod(METHOD_GET_SCMS);
+			Object scmsObj = getSCMsMethod.invoke(jobParent);
+			if (scmsObj instanceof Collection<?> scmCollection) {
+				for (Object scmObj : scmCollection) {
+					if (scmObj instanceof SCM scm) {
+						return scm;
+					}
+				}
 			}
 		} catch (ReflectiveOperationException e) {
 			logger.debug("Could not extract SCM collection from WorkflowRun parent: {}", e.getMessage());
 		}
+		return null;
+	}
 
-		if (!JobProcessorFactory.WORKFLOW_MULTI_BRANCH_JOB_NAME.equals(jobParent.getClass().getName())) {
-			try {
-				return tryExtractScmViaDirectGetScm(jobParent);
-			} catch (ReflectiveOperationException e) {
-				logger.debug("Could not extract SCM using direct getScm fallback: {}", e.getMessage());
+	/**
+	 * Attempts to extract SCM directly via getScm() method.
+	 *
+	 * @param jobParent the job parent object
+	 * @return the SCM object if found, null otherwise
+	 */
+	private SCM tryExtractScmViaDirectGetScm(Object jobParent) {
+		try {
+			Method getSCMMethod = jobParent.getClass().getMethod(METHOD_GET_SCM);
+			Object scmObj = getSCMMethod.invoke(jobParent);
+			if (scmObj instanceof SCM scm) {
+				return scm;
 			}
-		}
-		return null;
-	}
-
-	private SCM tryExtractScmViaDefinition(Object jobParent) throws ReflectiveOperationException {
-		Method getDefinitionMethod = jobParent.getClass().getMethod(METHOD_GET_DEFINITION);
-		Object definition = getDefinitionMethod.invoke(jobParent);
-		if (definition == null) {
-			return null;
-		}
-
-		Method getSCMMethod = definition.getClass().getMethod(METHOD_GET_SCM);
-		Object scmObj = getSCMMethod.invoke(definition);
-		if (scmObj instanceof SCM scm) {
-			return scm;
-		}
-		return null;
-	}
-
-	private SCM tryExtractScmViaScmsCollection(Object jobParent) throws ReflectiveOperationException {
-		Method getSCMsMethod = jobParent.getClass().getMethod(METHOD_GET_SCMS);
-		Object scmsObj = getSCMsMethod.invoke(jobParent);
-		if (scmsObj instanceof Collection<?> scmCollection) {
-			for (Object scmObj : scmCollection) {
-				if (scmObj instanceof SCM scm) {
-					return scm;
-				}
-			}
-		}
-		return null;
-	}
-
-	private SCM tryExtractScmViaDirectGetScm(Object jobParent) throws ReflectiveOperationException {
-		Method getSCMMethod = jobParent.getClass().getMethod(METHOD_GET_SCM);
-		Object scmObj = getSCMMethod.invoke(jobParent);
-		if (scmObj instanceof SCM scm) {
-			return scm;
+		} catch (ReflectiveOperationException e) {
+			logger.debug("Could not extract SCM using direct getScm fallback: {}", e.getMessage());
 		}
 		return null;
 	}
