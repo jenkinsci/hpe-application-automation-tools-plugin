@@ -3,6 +3,8 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
+[What&#39;s New in version 26.1](#whats-new-in-version-261)
+
 [What&#39;s New in version CE 25.4](#whats-new-in-version-ce-254)
 
 [What&#39;s New in version CE 25.3](#whats-new-in-version-ce-253)
@@ -54,6 +56,12 @@ This page shows a history of the enhancements made to the OpenText Application A
 [What&#39;s New in version 6.0 ](#what&#39;s-new-in-version-6.0)
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
+
+## what&#39;s-new-in-version-26&#46;1
+Version 26.1 introduced the following fixes:
+
+**Software Delivery Management**
+- Bug fixes
 
 ## what&#39;s-new-in-version-CE-25&#46;4
 Version CE 25.4 introduced the following enhancements and fixes:

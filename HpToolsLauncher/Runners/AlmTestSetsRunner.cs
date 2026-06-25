@@ -47,6 +47,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Security;
+using HpToolsLauncher.Utils.Alm;
 using HpToolsLauncher.Utils;
 using Microsoft.Win32;
 using System.Globalization;
@@ -83,6 +84,8 @@ namespace HpToolsLauncher
         private const string ID = "ID";
         private const string NAME = "Name";
         private const string ORDERBY_MESSAGE = "Test sets will be executed in ascending order by {0}.";
+        private const string EXECUTION_EVENT_NOTIFICATION = "Execution Event Notification";
+        private readonly string _emailSummaryReceivers;
 
         public ITDConnection13 TdConnection
         {
@@ -141,25 +144,27 @@ namespace HpToolsLauncher
         /// <param name="initialTestRun"></param>
         /// <param name="testStorageType"></param>
         /// <param name="isSSOEnabled"></param>
-        public AlmTestSetsRunner(string qcServer,
-                                string qcUser,
-                                string qcPassword,
-                                string qcDomain,
-                                string qcProject,
-                                double intQcTimeout,
-                                QcRunMode enmQcRunMode,
-                                string runHost,
-                                List<string> qcTestSets,
-                                List<TestParameter> @params,
-                                bool isFilterSelected,
-                                string filterByName,
-                                List<string> filterByStatuses,
-                                bool initialTestRun,
-                                TestStorageType testStorageType,
-                                bool isSSOEnabled,
-                                string qcClientId,
-                                string qcApiKey,
-                                string almTestSetsRunOrderByCriteria)
+        public AlmTestSetsRunner(
+            string qcServer,
+            string qcUser,
+            string qcPassword,
+            string qcDomain,
+            string qcProject,
+            double intQcTimeout,
+            QcRunMode enmQcRunMode,
+            string runHost,
+            List<string> qcTestSets,
+            List<TestParameter> @params,
+            bool isFilterSelected,
+            string filterByName,
+            List<string> filterByStatuses,
+            bool initialTestRun,
+            TestStorageType testStorageType,
+            bool isSSOEnabled,
+            string qcClientId,
+            string qcApiKey,
+            string almTestSetsRunOrderByCriteria,
+            string almEmailSummaryReceivers)
         {
 
             Timeout = intQcTimeout;
@@ -179,6 +184,7 @@ namespace HpToolsLauncher
             ClientID = qcClientId;
             ApiKey = qcApiKey;
             TestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
+            _emailSummaryReceivers = almEmailSummaryReceivers;
 
             RegisterAlmComponents(enmQcRunMode);
 
@@ -1210,8 +1216,6 @@ namespace HpToolsLauncher
             return testType.ToUpper() == API_TEST ? TestType.ST : TestType.QTP;
         }
 
-        // ------------------------- Run tests and update test results --------------------------------
-
         /// <summary>
         /// runs the tests given to the object.
         /// </summary>
@@ -1230,24 +1234,23 @@ namespace HpToolsLauncher
             }
             catch (Exception ex)
             {
-
                 ConsoleWriter.WriteErrLine(string.Format(Resources.AlmRunnerErrorBadQcInstallation, ex.Message, ex.StackTrace));
                 return null;
             }
-
+            
+            ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
             ConsoleWriter.WriteLine(string.Format(ORDERBY_MESSAGE, TestSetsRunOrderByCriteria == ID.ToLower() ? ID : NAME));
-
             // we start the timer, it is important for the timeout
             Stopwatch swForTimeout = Stopwatch.StartNew();
 
             int idx = 1;
+            List<TestSetResult> testSetResults = new List<TestSetResult>();
             //run all the TestSets
             foreach (string testSetItem in TestSets)
             {
                 string testSet = testSetItem.TrimEnd(BACK_SLASH);
                 string tsName = testSet;
                 int pos = testSetItem.LastIndexOf('\\');
-
                 string testSetDir = string.Empty;
                 string inlineTestParams = string.Empty;
 
@@ -1258,12 +1261,11 @@ namespace HpToolsLauncher
                     if (testSetItem.IndexOf(" ", StringComparison.Ordinal) != -1 && testSet.Count(x => x == ' ') >= 1)
                     {
                         if (!testSet.Contains(':'))//test has no parameters attached
-                        {
                             tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
-                        }
                         else
                         {
                             int quotationMarkIndex = testSet.IndexOf("\"", StringComparison.Ordinal);
+
                             if (quotationMarkIndex > pos)
                             {
                                 tsName = testSet.Substring(pos, quotationMarkIndex - pos).Trim(BACK_SLASH).TrimEnd(' ');
@@ -1272,22 +1274,62 @@ namespace HpToolsLauncher
                         }
                     }
                     else
-                    {
                         tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
-                    }
                 }
 
                 TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, inlineTestParams, swForTimeout, idx, testSetItem);
                 if (runResults != null)
+                {
                     activeRunDescription.AppendResults(runResults);
+                    if (_emailSummaryReceivers != null && _emailSummaryReceivers.Length > 0)
+                    {
+                        TestSetResult testSetRes = new TestSetResult
+                        {
+                            TestSetName = Path.GetFileName(testSetItem),
+                            TestSetPath = testSetItem,
+                            FinishedAt = DateTime.Now,
+                            Tests = runResults.TestRuns.Select(test => new TestRunResult
+                            {
+                                TestName = test.TestName,
+                                Status = test.TestState.ToString(),
+                                Message = !string.IsNullOrWhiteSpace(test.ErrorDesc) ? test.ErrorDesc : test.FailureDesc,
+                                AlmLink = GetTestRunLink(test.PrevRunId)
+                            }).ToList(),
+                            CumulativeSummary = string.Format(
+                                "Tests: {0}, Failures: {1}, Errors: {2}, Warnings: {3}, Total Run Time: {4}",
+                                runResults.NumTests,
+                                runResults.NumFailures,
+                                runResults.NumErrors,
+                                runResults.NumWarnings,
+                                runResults.TotalRunTime
+                            )
+                        };
+                        testSetResults.Add(testSetRes);
+                    }
+                }
 
                 // if the run has cancelled, because of timeout, we should terminate the build
-                if (_isRunCancelled) break;
-
+                if (_isRunCancelled)
+                    break;
                 ++idx;
             }
 
-            return activeRunDescription;
+            if (testSetResults.Count > 0 && !_emailSummaryReceivers.IsNullOrWhiteSpace())
+            {
+                ReportContext reportContext = new ReportContext
+                {
+                    ServerUrl = MQcServer,
+                    Domain = MQcDomain,
+                    Project = MQcProject,
+                    User = MQcUser,
+                    TestSets = testSetResults
+                };
+                
+                AlmHtmlReportBuilder htmlBuilder = new AlmHtmlReportBuilder();
+                string htmlReportPage = htmlBuilder.BuildReport(reportContext);
+                _tdConnection.SendMail(SendTo: _emailSummaryReceivers, Subject: EXECUTION_EVENT_NOTIFICATION, Message: htmlReportPage);
+            }
+            return activeRunDescription;    
         }
 
         /// <summary>
@@ -1352,8 +1394,7 @@ namespace HpToolsLauncher
                 return runDesc;
             }
 
-            ConsoleWriter.WriteLine(Resources.AlmRunnerStartingExecution);
-            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Path = \"{2}\"", testIdx, targetTestSet.ID, testSetItem));
+            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Name = {2}, Path = \"{3}\"", testIdx, targetTestSet.ID, targetTestSet.Name, Path.GetDirectoryName(testSetItem)));
             ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             //start execution
@@ -1482,7 +1523,7 @@ namespace HpToolsLauncher
             string abortFilename = string.Format(@"{0}\stop{1}.txt", Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), Launcher.UniqueTimeStamp);
 
             //update run result description
-            UpdateTestsResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet, currentTestSetInstances, Timeout, executionStatus, swForTimeout, ref prevTest, ref currentTest, abortFilename);
+            UpdateTestsResultsDescription(ref activeTestDesc, runDesc, scheduler, targetTestSet, currentTestSetInstances, Timeout, executionStatus, swForTimeout, ref prevTest, ref currentTest, abortFilename, testSetItem);
 
             //done with all tests, stop collecting output in the testRun object.
             ConsoleWriter.ActiveTestRun = null;
@@ -1859,11 +1900,19 @@ namespace HpToolsLauncher
         /// <param name="prevTest"></param>
         /// <param name="currentTest"></param>
         /// <param name="abortFilename"></param>
-        private void UpdateTestsResultsDescription(ref TestRunResults activeTestDesc, TestSuiteRunResults runDesc,
-                                             ITSScheduler scheduler, ITestSet targetTestSet,
-                                             string currentTestSetInstances, double timeout,
-                                             IExecutionStatus executionStatus, Stopwatch sw,
-                                             ref ITSTest prevTest, ref ITSTest currentTest, string abortFilename)
+        private void UpdateTestsResultsDescription(
+            ref TestRunResults activeTestDesc,
+            TestSuiteRunResults runDesc,
+            ITSScheduler scheduler,
+            ITestSet targetTestSet,
+            string currentTestSetInstances,
+            double timeout,
+            IExecutionStatus executionStatus, 
+            Stopwatch sw,
+            ref ITSTest prevTest,
+            ref ITSTest currentTest,
+            string abortFilename,
+            string testPath)
         {
             var tsExecutionFinished = false;
 
@@ -1952,7 +2001,7 @@ namespace HpToolsLauncher
 
                                 if (execState != TestState.Unknown)
                                 {
-                                    WriteTestRunSummary(currentTest);
+                                    WriteTestRunSummary(currentTest, testPath);
                                 }
                             }
 
@@ -2022,7 +2071,6 @@ namespace HpToolsLauncher
             {
                 mQcServer += "/";
             }
-
             return string.Format("{0}://{1}.{2}.{3}TestRunsModule-00000000090859589?EntityType=IRun&EntityID={4}", prefix, MQcProject, MQcDomain, mQcServer, runId);
         }
 
@@ -2050,7 +2098,7 @@ namespace HpToolsLauncher
         /// writes a summary of the test run after it's over
         /// </summary>
         /// <param name="prevTest"></param>
-        private void WriteTestRunSummary(ITSTest prevTest)
+        private void WriteTestRunSummary(ITSTest prevTest, string testPath)
         {
             try
             {
@@ -2085,8 +2133,10 @@ namespace HpToolsLauncher
                         "\n" + linkStr + "\n"));
                 }
 
-                ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " + prevTest.Name +
-                                                ", " + Resources.AlmRunnerRunIdCaption + " " + runId
+                // get the path here...
+                ConsoleWriter.WriteLineWithTime(Resources.AlmRunnerTestCompleteCaption + " " 
+                                                + "\"" + testPath + "\\" + prevTest.Name + "\", "
+                                                + Resources.AlmRunnerRunIdCaption + " " + runId
                                                 + "\n-------------------------------------------------------------------------------------------------------");
             }
             catch (Exception ex)

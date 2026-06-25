@@ -41,20 +41,14 @@ import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
-
 import hudson.util.VariableResolver;
-
 import java.util.Arrays;
 import java.util.List;
-
 import hudson.util.Secret;
-
 import java.util.Properties;
-
+import java.util.stream.Collectors;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-
 import javax.annotation.Nonnull;
 
 public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
@@ -87,13 +81,28 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
     private Secret almApiKey;
     private CredentialsScope credentialsScope;
     private String almTestSetsRunOrderByCriteria;
+    private boolean isEmailReportEnabled;
+    private String almEmailSummaryReceivers;
 
     @DataBoundConstructor
-    public RunFromAlmModel(String almServerName, String almUserName, String almPassword, String almDomain, String almProject,
-                           String almTestSets, String almRunResultsMode, String almTimeout,
-                           String almRunMode, String almRunHost, Boolean isSSOEnabled,
-                           String almClientID, String almApiKey, CredentialsScope credentialsScope, String almTestSetsRunOrderByCriteria) {
-
+    public RunFromAlmModel(
+            String almServerName,
+            String almUserName,
+            String almPassword,
+            String almDomain,
+            String almProject,
+            String almTestSets,
+            String almRunResultsMode,
+            String almTimeout,
+            String almRunMode,
+            String almRunHost,
+            Boolean isSSOEnabled,
+            String almClientID,
+            String almApiKey,
+            CredentialsScope credentialsScope,
+            String almTestSetsRunOrderByCriteria,
+            boolean isEmailReportEnabled,
+            String almEmailSummaryReceivers) {
         this.almServerName = almServerName;
         this.credentialsScope = credentialsScope;
 
@@ -116,6 +125,8 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         this.almClientID = StringUtils.defaultString(almClientID);
         this.almApiKey = StringUtils.isBlank(almClientID) ? null : Secret.fromString(almApiKey);
 		this.almTestSetsRunOrderByCriteria = almTestSetsRunOrderByCriteria;
+        this.isEmailReportEnabled = isEmailReportEnabled;
+        this.almEmailSummaryReceivers = almEmailSummaryReceivers;
     }
 
     public String getAlmTestSetsRunOrderByCriteria() {
@@ -182,6 +193,7 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
         return CreateProperties(envVars, varResolver);
     }
 
+    public String getAlmEmailSummaryReceivers() { return almEmailSummaryReceivers; }
     public String getCredentialsScopeValue() { return credentialsScope == null ? "" : credentialsScope.getValue(); }
     public String getPasswordEncryptedValue() { return almPassword == null ? "" : almPassword.getEncryptedValue(); }
     public String getApiKeyEncryptedValue() { return almApiKey == null || StringUtils.isBlank(almApiKey.getPlainText()) ? "" : almApiKey.getEncryptedValue(); }
@@ -242,6 +254,15 @@ public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
         if (StringUtils.isNotBlank(almTestSetsRunOrderByCriteria)) {
             props.put("almTestSetsRunOrderByCriteria", almTestSetsRunOrderByCriteria);
+        }
+
+        if (isEmailReportEnabled && StringUtils.isNotBlank(almEmailSummaryReceivers)) {
+            String[] emailsList = almEmailSummaryReceivers.split("[\\n,\\s;]+");
+            String emails = Arrays.stream(emailsList)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.joining(";"));
+            props.put("almEmailSummaryReceivers", emails);
         }
 
         return props;

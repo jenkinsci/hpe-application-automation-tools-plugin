@@ -42,32 +42,33 @@ import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.uft.model.FilterTestsModel;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsGlobalConfiguration;
 import com.microfocus.application.automation.tools.uft.model.SpecifyParametersModel;
-import hudson.*;
-
 import hudson.model.*;
-
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-
 import java.io.IOException;
 import java.net.URL;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
-
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.VariableResolver;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.*;
-
 import com.microfocus.application.automation.tools.AlmToolsUtils;
 import com.microfocus.application.automation.tools.EncryptionUtils;
 import com.microfocus.application.automation.tools.run.AlmRunTypes.RunType;
-
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.EnvVars;
+import hudson.Util;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.QueryParameter;
 import static com.microfocus.application.automation.tools.Messages.CompanyName;
 import static com.microfocus.application.automation.tools.Messages.RunFromAlmBuilderStepName;
 
@@ -82,7 +83,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     private final static String HP_TOOLS_LAUNCHER_EXE_CFG = "HpToolsLauncher.exe.config";
     private String resultsFileName = "ApiResults.xml";
     private AlmServerSettingsModel almServerSettingsModel;
-    private String almTestSetOrderBy;
+    private boolean isEmailReportEnabled;
 
     @DataBoundConstructor
     public RunFromAlmBuilder(
@@ -105,7 +106,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
             FilterTestsModel filterTestsModel,
             SpecifyParametersModel specifyParametersModel,
             AlmServerSettingsModel almServerSettingsModel,
-            String almTestSetsRunOrderByCriteria) {
+            String almTestSetsRunOrderByCriteria,
+            boolean isEmailReportEnabled,
+            String almEmailSummaryReceivers) {
 
         this.isFilterTestsEnabled = isFilterTestsEnabled;
         this.areParametersEnabled = areParametersEnabled;
@@ -115,7 +118,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         CredentialsScope almCredScope = StringUtils.isBlank(almCredentialsScope) ?
                 findMostSuitableCredentialsScope(almServerName, almUserName, almClientID, isSSOEnabled) :
                 CredentialsScope.valueOf(almCredentialsScope.toUpperCase());
-
+        this.isEmailReportEnabled = isEmailReportEnabled;
         runFromAlmModel =
                 new RunFromAlmModel(
                         almServerName,
@@ -132,7 +135,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                         almClientID,
                         almApiKey,
                         almCredScope,
-                        almTestSetsRunOrderByCriteria);
+                        almTestSetsRunOrderByCriteria,
+                        isEmailReportEnabled,
+                        almEmailSummaryReceivers);
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
@@ -196,6 +201,13 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         this.almServerSettingsModel = almServerSettingsModel;
     }
 
+    public void setIsEmailReportEnabled(boolean isEmailReportEnabled) {
+        this.isEmailReportEnabled = isEmailReportEnabled;
+    }
+
+    public boolean getIsEmailReportEnabled() {
+        return isEmailReportEnabled;
+    }
     //IMPORTANT: most properties are used by config.jelly and / or by pipeline-syntax generator
     public String getAlmCredentialsScope() {
         return runFromAlmModel.getCredentialsScopeValue();
@@ -252,6 +264,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     public String getAlmTestSetsRunOrderByCriteria() {
         return runFromAlmModel.getAlmTestSetsRunOrderByCriteria();
     }
+
+    public String getAlmEmailSummaryReceivers() { return runFromAlmModel.getAlmEmailSummaryReceivers(); }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {
@@ -552,6 +566,13 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                 }
             }
             return m;
+        }
+
+        public FormValidation doCheckAlmEmailSummaryReceivers(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("At least one receiver email is required.");
+            }
+            return FormValidation.ok();
         }
 
         public FormValidation doCheckAlmTimeout(@QueryParameter String value) {

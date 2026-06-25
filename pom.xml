@@ -67,7 +67,7 @@
     </licenses>
 
     <properties>
-        <revision>26.2</revision>
+        <revision>26.3</revision>
         <changelist>-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
         <concurrency>1</concurrency>
@@ -78,6 +78,13 @@
         <maven.exec.skip>false</maven.exec.skip>
         <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
         <hpi.bundledArtifacts>SVConfigurator,commons-cli,commons-csv,commons-lang,integrations-dto,integrations-sdk,log4j-api,log4j-core,log4j-web,plugins-common,poi,tape,zip4j</hpi.bundledArtifacts>
+        <jenkins-test-harness.version>2444.v82e008e25040
+        </jenkins-test-harness.version> <!-- TODO newer versions than 2.55 require debugging an issue with open file handles -->
+        <java.level>21</java.level>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
+
 		<!-- The ending year for copyright information -->
 		<copyright.end.year>2025</copyright.end.year>
 	</properties>
