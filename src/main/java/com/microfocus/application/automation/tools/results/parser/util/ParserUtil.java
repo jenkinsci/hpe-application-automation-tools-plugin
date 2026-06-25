@@ -39,8 +39,8 @@ package com.microfocus.application.automation.tools.results.parser.util;
 import java.io.StringWriter;
 import java.util.Date;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.Marshaller;
 
 import com.microfocus.application.automation.tools.results.parser.ReportParser;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmRun;
