@@ -504,6 +504,12 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jenkins-ci.plugins</groupId>
+                    <artifactId>bouncycastle-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.microfocus.sv</groupId>
@@ -612,9 +618,15 @@
 
         <!--SCM providers integration-->
         <dependency>
-            <artifactId>git</artifactId>
             <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jenkins-ci.plugins</groupId>
+                    <artifactId>bouncycastle-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -659,7 +671,38 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>mailer</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jenkins-ci.plugins</groupId>
+                    <artifactId>bouncycastle-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+    <!--  TODO remove the next 4 dependencies when the org.jenkins-ci.plugins:bouncycastle-api dependency has no more vulnerabilities from bouncy castle api -->
+    <!--  TODO and remove exclusions from org.jenkins-ci.plugins:mailer, org.jenkins-ci.plugins:git and org.jenkins-ci.plugins:credentials -->
+      <!-- Bouncy castle dependencies-->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpg-jdk18on</artifactId>
+            <version>1.84</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.84</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.84</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcutil-jdk18on</artifactId>
+            <version>1.84</version>
+        </dependency>
+    <!-- Bouncy castle dependencies-->
 
         <!--sonar plugin for compile phase only-->
         <dependency>
