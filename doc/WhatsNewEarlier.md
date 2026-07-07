@@ -3,6 +3,8 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
+[What&#39;s New in version 26.2](#whats-new-in-version-262)
+
 [What&#39;s New in version 26.1](#whats-new-in-version-261)
 
 [What&#39;s New in version CE 25.4](#whats-new-in-version-ce-254)
@@ -56,6 +58,16 @@ This page shows a history of the enhancements made to the OpenText Application A
 [What&#39;s New in version 6.0 ](#what&#39;s-new-in-version-6.0)
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
+
+## what&#39;s-new-in-version-26&#46;2
+Version 26.2 introduced the following enhancements and fixes:
+
+**Functional Testing**
+- Test Set Execution order can be specified by Name or by ID
+- Test Set Execution Summary Reports emails can are available
+- In archived reports, the links to run results of API tests called from GUI Tests are now correct
+- Minor bug fixes
+
 
 ## what&#39;s-new-in-version-26&#46;1
 Version 26.1 introduced the following fixes:
