@@ -86,7 +86,6 @@ public final class AlmToolsUtils {
 
         // Use script to run the cmdLine and get the console output
         args.add(file);
-        args.add("--use-stdin-key");
         args.add("-paramfile");
         args.add(paramFileName);
         if (StringUtils.isNotBlank(encoding)) {
@@ -94,15 +93,15 @@ public final class AlmToolsUtils {
             args.add(encoding);
         }
 
-        // for encryption
+        /*// for encryption
         Map<String, String> envs = new HashMap<>();
 
-        /*try {
+        try {
             UFTEncryptionGlobalConfiguration config = UFTEncryptionGlobalConfiguration.getInstance();
             envs.put("hptoolslauncher.key", Secret.fromString(config.getEncKey()).getPlainText());
         } catch (NullPointerException ignored) {
             throw new IOException("Failed to access encryption key, the module UFTEncryption is unavailable.");
-        }*/
+        }
 
         if (node == null) {
             node = JenkinsUtils.getCurrentNode(file);
@@ -112,17 +111,25 @@ public final class AlmToolsUtils {
             }
         }
 
-        /*try {
+        try {
             envs.put("hptoolslauncher.rootpath", Objects.requireNonNull(node.getRootPath()).getRemote());
         } catch (NullPointerException e) {
             throw new IOException(e.getMessage());
         }*/
 
-        String input = Base64.getEncoder().encodeToString(Aes256Encrypter.getPrivateKey());
-        InputStream in = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
-        // Run the script on node
-        // Execution result should be 0
-        int returnCode = launcher.launch().cmds(args).stdin(in).stdout(out).pwd(file.getParent()).envs(envs).join();
+        int returnCode;
+        byte[] pk = Aes256Encrypter.getPrivateKey();
+        if (pk == null) {
+            // Run the script on node
+            // Execution result should be 0
+            //returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).envs(envs).join();
+            returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).join();
+        } else {
+            args.add("--use-stdin-key");
+            String input = Base64.getEncoder().encodeToString(Aes256Encrypter.getPrivateKey());
+            InputStream in = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
+            returnCode = launcher.launch().cmds(args).stdin(in).stdout(out).pwd(file.getParent()).join();
+        }
 
         if (returnCode != 0) {
             if (returnCode == -1) {
