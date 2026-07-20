@@ -50,6 +50,7 @@ import com.microfocus.application.automation.tools.settings.MCServerSettingsGlob
 import com.microfocus.application.automation.tools.uft.model.SpecifyParametersModel;
 import com.microfocus.application.automation.tools.uft.model.UftRunAsUser;
 import com.microfocus.application.automation.tools.uft.model.UftSettingsModel;
+import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import com.microfocus.application.automation.tools.uft.utils.UftToolUtils;
 import hudson.*;
 import hudson.model.*;
@@ -763,7 +764,8 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
         String plainTextToken = runFromFileModel.getMcExecToken() == null ? null : Secret.fromString(runFromFileModel.getMcExecToken()).getPlainText();
         if (StringUtils.isNotBlank(plainTextPwd)) {
             try {
-                String encPassword = EncryptionUtils.encrypt(plainTextPwd, currNode);
+                //String encPassword = EncryptionUtils.encrypt(plainTextPwd, currNode);
+                String encPassword = Aes256Encrypter.encrypt(plainTextPwd);
                 mergedProps.put("MobilePassword", encPassword);
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);
@@ -772,7 +774,8 @@ public class RunFromFileBuilder extends Builder implements SimpleBuildStep {
             }
         } else if (StringUtils.isNotBlank(plainTextToken)) {
             try {
-                String encToken = EncryptionUtils.encrypt(plainTextToken, currNode);
+                //String encToken = EncryptionUtils.encrypt(plainTextToken, currNode);
+                String encToken = Aes256Encrypter.encrypt(plainTextToken);
                 mergedProps.put("MobileExecToken", encToken);
             } catch (Exception e) {
                 build.setResult(Result.FAILURE);

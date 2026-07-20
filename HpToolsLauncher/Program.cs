@@ -35,6 +35,7 @@
  *  ___________________________________________________________________
  */
 using HpToolsLauncher.Properties;
+using HpToolsLauncher.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -68,6 +69,13 @@ namespace HpToolsLauncher
                 ShowHelp();
                 return;
             }
+
+            if (Encrypter.USE_STDIN_KEY.In(true, args))
+            {
+                Encrypter.Create();
+                args = args.Exclude(Encrypter.USE_STDIN_KEY, true);
+            }
+
             for (int i = 0; i < args.Count(); i += 2)
             {
                 string key = args[i].StartsWith("-") ? args[i].Substring(1) : args[i];

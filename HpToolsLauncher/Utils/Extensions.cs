@@ -34,11 +34,12 @@
  *  limitations under the License.
  *  ___________________________________________________________________
  */
-using System.Runtime.InteropServices;
 using System;
-using System.Security;
-using System.Linq;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace HpToolsLauncher.Utils
 {
@@ -116,5 +117,15 @@ namespace HpToolsLauncher.Utils
             var descrAttrs = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);
             return descrAttrs.Length > 0 ? descrAttrs[0].Description : enumValue.ToString();
         }
+
+        public static string[] Exclude(this IEnumerable<string> source, string value, bool ignoreCase = false)
+        {
+            var comparison = ignoreCase
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            return source.Where(s => !string.Equals(s, value, comparison)).ToArray();
+        }
+
     }
 }
