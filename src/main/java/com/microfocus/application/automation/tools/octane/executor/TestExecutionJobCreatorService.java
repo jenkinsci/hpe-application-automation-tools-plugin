@@ -46,6 +46,7 @@ import com.hp.octane.integrations.dto.scm.SCMRepository;
 import com.hp.octane.integrations.executor.TestsToRunFramework;
 import com.hp.octane.integrations.services.configurationparameters.UftTestRunnerFolderParameter;
 import com.hp.octane.integrations.utils.SdkConstants;
+import com.microfocus.application.automation.tools.mi.MIAgentResultPublisher;
 import com.microfocus.application.automation.tools.model.ResultsPublisherModel;
 import com.microfocus.application.automation.tools.octane.actions.UFTTestDetectionPublisher;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
@@ -56,6 +57,7 @@ import com.microfocus.application.automation.tools.octane.testrunner.TestsToRunC
 import com.microfocus.application.automation.tools.results.RunResultRecorder;
 import com.microfocus.application.automation.tools.run.RunFromCodelessBuilder;
 import com.microfocus.application.automation.tools.run.RunFromFileBuilder;
+import com.microfocus.application.automation.tools.run.RunFromMiAgentBuilder;
 import hudson.model.*;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.Builder;
@@ -167,7 +169,14 @@ public class TestExecutionJobCreatorService {
 
 	private static FreeStyleProject createDiscoveryJob(DiscoveryInfo discoveryInfo) {
 		try {
-			String discoveryJobPrefix = TestingToolType.UFT.equals(discoveryInfo.getTestingToolType()) ? UFT_DISCOVERY_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW : MBT_DISCOVERY_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW;
+			String discoveryJobPrefix;
+			if (TestingToolType.UFT.equals(discoveryInfo.getTestingToolType())) {
+				discoveryJobPrefix = UFT_DISCOVERY_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW;
+			} else if (TestingToolType.MI_AGENT.equals(discoveryInfo.getTestingToolType())) {
+				return null;
+			} else {
+				discoveryJobPrefix = MBT_DISCOVERY_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW;
+			}
 			String discoveryJobName = String.format("%s-%s-%s", discoveryJobPrefix, discoveryInfo.getExecutorId(), discoveryInfo.getExecutorLogicalName().substring(0,5));
 			FreeStyleProject proj = createProject(discoveryInfo.getConfigurationId(), discoveryJobName);
 
@@ -342,6 +351,9 @@ public class TestExecutionJobCreatorService {
 	public static FreeStyleProject createExecutor(DiscoveryInfo discoveryInfo) {
 		try {
 			TestingToolType testingToolType = discoveryInfo.getTestingToolType();
+			if (TestingToolType.MI_AGENT.equals(testingToolType)) {
+				return createMiAgentExecutor(discoveryInfo);
+			}
 			String exeJobPrefix = TestingToolType.UFT.equals(testingToolType) ? UFT_EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW : MBT_EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW;
 			String projectName = String.format("%s-%s-%s", exeJobPrefix, discoveryInfo.getExecutorId(), discoveryInfo.getExecutorLogicalName().substring(0,5));
 			FreeStyleProject proj = createProject(discoveryInfo.getConfigurationId(), projectName);
@@ -394,5 +406,61 @@ public class TestExecutionJobCreatorService {
 
 	private static void addConcurrentBuildFlag(FreeStyleProject proj) throws IOException {
 		proj.setConcurrentBuild(true);
+	}
+
+	/**
+	 * Creates an execution job dedicated to the MI Agent (Autonomous-Tester / AuTe) runner.
+	 * <p>
+	 * AuTe jobs deliberately bypass {@code RunResultRecorder} / JUnit / mqmTests.xml transport;
+	 * their results are handled end-to-end by {@link MIAgentResultPublisher}.
+	 * </p>
+	 */
+	private static FreeStyleProject createMiAgentExecutor(DiscoveryInfo discoveryInfo) throws IOException {
+		String projectName = String.format("%s-%s-%s",
+				MI_AGENT_EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW,
+				discoveryInfo.getExecutorId(),
+				discoveryInfo.getExecutorLogicalName().substring(0, 5));
+		FreeStyleProject proj = createProject(discoveryInfo.getConfigurationId(), projectName);
+
+		proj.setDescription(String.format(
+				"This job was created by the OpenText Application Automation Tools plugin for running MI Agent (Autonomous-Tester) tests. It is associated with Software Delivery Management test runner #%s.",
+				discoveryInfo.getExecutorId()));
+
+		addStringParameter(proj, UftConstants.TESTS_TO_RUN_PARAMETER_NAME, "", "Tests to run");
+		addConstantParameter(proj, UftConstants.TEST_RUNNER_ID_PARAMETER_NAME, discoveryInfo.getExecutorId(), "Software Delivery Management test runner ID");
+		addConstantParameter(proj, UftConstants.TEST_RUNNER_LOGICAL_NAME_PARAMETER_NAME, discoveryInfo.getExecutorLogicalName(), "Software Delivery Management test runner logical name");
+		addStringParameter(proj, SdkConstants.JobParameters.SUITE_ID_PARAMETER_NAME, "", "Software Delivery Management test suite ID");
+		addStringParameter(proj, SdkConstants.JobParameters.SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the Software Delivery Management test suite run to associate with the test run results.");
+
+		addExecutionAssignedNode(proj);
+		addTimestamper(proj);
+		addConcurrentBuildFlag(proj);
+
+		// Build steps - MI Agent converter + runner
+		Builder converterBuilder = new TestsToRunConverterBuilder(TestsToRunFramework.MF_MI_AGENT.value());
+		proj.getBuildersList().add(converterBuilder);
+		RunFromMiAgentBuilder miAgentRunner = new RunFromMiAgentBuilder();
+		miAgentRunner.setExecutorId(discoveryInfo.getExecutorId());
+		miAgentRunner.setExecutorLogicalName(discoveryInfo.getExecutorLogicalName());
+		miAgentRunner.setConfigurationId(discoveryInfo.getConfigurationId());
+		miAgentRunner.setWorkspaceId(discoveryInfo.getWorkspaceId());
+		proj.getBuildersList().add(miAgentRunner);
+
+		// Post-build - AuTe-specific publisher (no RunResultRecorder for MI Agent)
+		List publishers = proj.getPublishersList();
+		boolean alreadyHasMiPublisher = false;
+		for (Object publisher : publishers) {
+			if (publisher instanceof MIAgentResultPublisher) {
+				alreadyHasMiPublisher = true;
+				break;
+			}
+		}
+		if (!alreadyHasMiPublisher) {
+			MIAgentResultPublisher miPublisher = new MIAgentResultPublisher();
+			miPublisher.setConfigurationId(discoveryInfo.getConfigurationId());
+			miPublisher.setWorkspaceId(discoveryInfo.getWorkspaceId());
+			publishers.add(miPublisher);
+		}
+		return proj;
 	}
 }

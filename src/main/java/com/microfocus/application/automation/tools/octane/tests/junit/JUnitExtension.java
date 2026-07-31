@@ -40,6 +40,7 @@ import com.google.inject.Inject;
 import com.hp.octane.integrations.OctaneClient;
 import com.hp.octane.integrations.OctaneSDK;
 import com.microfocus.application.automation.tools.JenkinsUtils;
+import com.microfocus.application.automation.tools.mi.MIAgentBuildAction;
 import com.microfocus.application.automation.tools.octane.actions.cucumber.CucumberTestResultsAction;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.executor.CheckOutSubDirEnvContributor;
@@ -101,6 +102,9 @@ public class JUnitExtension extends OctaneTestsExtension {
 		} else if (build.getAction(AbstractTestResultAction.class) != null) {
 			logger.debug("AbstractTestResultAction found, JUnit results expected");
 			return true;
+		} else if (build.getAction(MIAgentBuildAction.class) != null) {
+			logger.debug("MI Agent (Autonomous-Tester) run detected. JUnit processing is skipped; results are published by MIAgentResultPublisher.");
+			return false;
 		} else {
 			logger.debug("AbstractTestResultAction not found, no JUnit results expected");
 			return false;
