@@ -1,0 +1,656 @@
+/*
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
+ *
+ *  Copyright 2012-2026 Open Text.
+ *
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
+ *
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
+ */
+package com.microfocus.application.automation.tools.mi;
+
+import com.hp.octane.integrations.OctaneClient;
+import com.hp.octane.integrations.OctaneConfiguration;
+import com.hp.octane.integrations.OctaneSDK;
+import com.hp.octane.integrations.dto.DTOFactory;
+import com.hp.octane.integrations.dto.connectivity.HttpMethod;
+import com.hp.octane.integrations.dto.connectivity.OctaneRequest;
+import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
+import com.hp.octane.integrations.services.rest.OctaneRestClient;
+import com.hp.octane.integrations.utils.SdkStringUtils;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Publisher;
+import hudson.tasks.Recorder;
+import jenkins.tasks.SimpleBuildStep;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpStatus;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+
+import javax.annotation.Nonnull;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Post-build publisher for MI Agent (Autonomous-Tester / AuTe) results.
+ *
+ * <p>Publishes the run status and per-step results back to Software Delivery Management, then
+ * uploads recording/screenshot artifacts as attachments.</p>
+ */
+public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    public static final String DEFAULT_RESULT_FOLDER = "mi-agent-results";
+    public static final String DEFAULT_MANIFEST_NAME = "manifest.json";
+    private static final String RUN_STEPS_RESULT_FILE = "run_steps_result.json";
+    private static final Pattern SCREENSHOT_RE = Pattern.compile("^screenshot_(?<stepId>[^_]+)_");
+    private static final List<String> SUPPORTED_MANIFEST_VERSIONS = Collections.singletonList("1.0");
+    private static final String ACCEPT_JSON = "application/json";
+    private static final String CONTENT_TYPE_JSON = "application/json";
+
+    private String resultFolder;
+    private String manifestName;
+    private String configurationId;
+    private String workspaceId;
+    private boolean uploadAttachments = true;
+    private boolean failBuildOnPublishError = true;
+
+    @DataBoundConstructor
+    public MIAgentResultPublisher() {
+        this.resultFolder = DEFAULT_RESULT_FOLDER;
+        this.manifestName = DEFAULT_MANIFEST_NAME;
+    }
+
+    public String getResultFolder() {
+        return resultFolder;
+    }
+
+    @DataBoundSetter
+    public void setResultFolder(String resultFolder) {
+        this.resultFolder = StringUtils.isBlank(resultFolder) ? DEFAULT_RESULT_FOLDER : resultFolder.trim();
+    }
+
+    public String getManifestName() {
+        return manifestName;
+    }
+
+    @DataBoundSetter
+    public void setManifestName(String manifestName) {
+        this.manifestName = StringUtils.isBlank(manifestName) ? DEFAULT_MANIFEST_NAME : manifestName.trim();
+    }
+
+    public String getConfigurationId() {
+        return configurationId;
+    }
+
+    @DataBoundSetter
+    public void setConfigurationId(String configurationId) {
+        this.configurationId = configurationId;
+    }
+
+    public String getWorkspaceId() {
+        return workspaceId;
+    }
+
+    @DataBoundSetter
+    public void setWorkspaceId(String workspaceId) {
+        this.workspaceId = workspaceId;
+    }
+
+    public boolean isUploadAttachments() {
+        return uploadAttachments;
+    }
+
+    @DataBoundSetter
+    public void setUploadAttachments(boolean uploadAttachments) {
+        this.uploadAttachments = uploadAttachments;
+    }
+
+    public boolean isFailBuildOnPublishError() {
+        return failBuildOnPublishError;
+    }
+
+    @DataBoundSetter
+    public void setFailBuildOnPublishError(boolean failBuildOnPublishError) {
+        this.failBuildOnPublishError = failBuildOnPublishError;
+    }
+
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
+
+    @Override
+    public void perform(@Nonnull Run<?, ?> run,
+                        @Nonnull FilePath workspace,
+                        @Nonnull Launcher launcher,
+                        @Nonnull TaskListener listener) throws IOException, InterruptedException {
+
+        PrintStream log = listener.getLogger();
+        log.println("[MI Agent] Autonomous-Tester result publisher started.");
+
+        MIAgentPublishSummary summary = new MIAgentPublishSummary();
+        try {
+            FilePath resultRoot = workspace.child(resultFolder);
+            List<FilePath> resultFiles = collectResultFiles(resultRoot, log);
+            if (resultFiles.isEmpty()) {
+                summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
+                summary.setMessage("No MI Agent result files found under '" + resultFolder + "'.");
+                return;
+            }
+
+            JSONObject manifest = readManifest(resultRoot.child(manifestName));
+            validateManifest(manifest);
+
+            PublishContext ctx = createPublishContext();
+            JSONArray runs = (JSONArray) manifest.get("runs");
+            List<String> failures = new ArrayList<>();
+            int publishedSteps = 0;
+            int totalSteps = 0;
+
+            for (Object item : runs) {
+                if (!(item instanceof JSONObject)) {
+                    continue;
+                }
+                JSONObject runItem = (JSONObject) item;
+                RunPublishData runData = parseRunPublishData(resultRoot, runItem);
+                try {
+                    RunPublishResult runPublishResult = publishSingleRun(runData, ctx, log);
+                    publishedSteps += runPublishResult.publishedSteps;
+                    totalSteps += runPublishResult.totalSteps;
+                } catch (Exception e) {
+                    failures.add("Run " + runData.runId + ": " + e.getMessage());
+                    log.println("[MI Agent][WARN] Failed publishing run " + runData.runId + ": " + e.getMessage());
+                }
+            }
+
+            summary.setTotalTests(totalSteps);
+            summary.setPublishedFiles(resultFiles.size());
+            summary.setPublishedSteps(publishedSteps);
+            if (failures.isEmpty()) {
+                summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
+                summary.setMessage("Published " + runs.size() + " MI Agent run(s), " + publishedSteps + " step result(s).");
+            } else {
+                handlePublishFailures(run, failures, summary, log);
+            }
+        } catch (MIAgentValidationException e) {
+            summary.setStatus(MIAgentPublishSummary.Status.INVALID);
+            summary.setMessage("Validation failed: " + e.getMessage());
+            run.setResult(Result.FAILURE);
+        } catch (Exception e) {
+            summary.setStatus(MIAgentPublishSummary.Status.ERROR);
+            summary.setMessage("Unexpected error: " + e.getMessage());
+            log.println("[MI Agent][ERROR] " + summary.getMessage());
+            e.printStackTrace(log);
+            run.setResult(failBuildOnPublishError ? Result.FAILURE : Result.UNSTABLE);
+        } finally {
+            run.addAction(new MIAgentPublishSummaryAction(summary));
+            log.println("[MI Agent] " + summary.getMessage());
+        }
+    }
+
+    List<FilePath> collectResultFiles(FilePath resultDir, PrintStream log) throws IOException, InterruptedException {
+        if (!resultDir.exists()) {
+            return Collections.emptyList();
+        }
+        List<FilePath> files = new ArrayList<>();
+        files.addAll(Arrays.asList(resultDir.list("**/*.json")));
+        files.addAll(Arrays.asList(resultDir.list("**/*.xml")));
+        files.addAll(Arrays.asList(resultDir.list("**/*.html")));
+        files.addAll(Arrays.asList(resultDir.list("**/*.mp4")));
+        files.addAll(Arrays.asList(resultDir.list("**/*.jpg")));
+        log.println("[MI Agent] Collected " + files.size() + " result file(s) from '" + resultDir.getRemote() + "'.");
+        return files;
+    }
+
+    private JSONObject readManifest(FilePath manifest) throws IOException, InterruptedException, MIAgentValidationException {
+        if (!manifest.exists()) {
+            throw new MIAgentValidationException("Manifest '" + manifest.getRemote() + "' not found.");
+        }
+        Object parsed = JSONValue.parse(manifest.readToString());
+        if (!(parsed instanceof JSONObject)) {
+            throw new MIAgentValidationException("Manifest must be a JSON object.");
+        }
+        return (JSONObject) parsed;
+    }
+
+    void validateManifest(JSONObject manifest) throws MIAgentValidationException {
+        String schemaVersion = manifest.getAsString("schemaVersion");
+        if (StringUtils.isBlank(schemaVersion) || !SUPPORTED_MANIFEST_VERSIONS.contains(schemaVersion)) {
+            throw new MIAgentValidationException("Unsupported manifest version: " + schemaVersion
+                    + ". Supported: " + SUPPORTED_MANIFEST_VERSIONS);
+        }
+        JSONArray runs = (JSONArray) manifest.get("runs");
+        if (runs == null || runs.isEmpty()) {
+            throw new MIAgentValidationException("Manifest contains no runs.");
+        }
+    }
+
+    private PublishContext createPublishContext() throws MIAgentValidationException {
+        if (StringUtils.isBlank(configurationId)) {
+            throw new MIAgentValidationException("Missing configurationId.");
+        }
+        if (StringUtils.isBlank(workspaceId)) {
+            throw new MIAgentValidationException("Missing workspaceId.");
+        }
+
+        OctaneClient client = OctaneSDK.getClientByInstanceId(configurationId);
+        if (client == null) {
+            throw new MIAgentValidationException("Octane client not found for configurationId=" + configurationId);
+        }
+
+        OctaneConfiguration conf = client.getConfigurationService().getConfiguration();
+        if (conf == null || SdkStringUtils.isEmpty(conf.getUrl()) || SdkStringUtils.isEmpty(conf.getSharedSpace())) {
+            throw new MIAgentValidationException("Invalid Octane configuration.");
+        }
+
+        return new PublishContext(client, conf.getUrl(), conf.getSharedSpace(), workspaceId);
+    }
+
+    private RunPublishData parseRunPublishData(FilePath resultRoot, JSONObject runItem) throws IOException, InterruptedException, MIAgentValidationException {
+        String runId = runItem.getAsString("runId");
+        String runFolderPath = runItem.getAsString("runFolder");
+        if (StringUtils.isBlank(runId) || StringUtils.isBlank(runFolderPath)) {
+            throw new MIAgentValidationException("Manifest run entry is missing runId/runFolder.");
+        }
+
+        FilePath runFolder = new FilePath(resultRoot.getChannel(), runFolderPath);
+        FilePath resultFile = runFolder.child(RUN_STEPS_RESULT_FILE);
+        if (!resultFile.exists()) {
+            throw new MIAgentValidationException("Missing run_steps_result.json for run " + runId);
+        }
+
+        Object parsedResult = JSONValue.parse(resultFile.readToString());
+        if (!(parsedResult instanceof JSONObject)) {
+            throw new MIAgentValidationException("run_steps_result.json is not a JSON object for run " + runId);
+        }
+
+        return new RunPublishData(runId, runFolder, (JSONObject) parsedResult);
+    }
+
+    private RunPublishResult publishSingleRun(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
+        String overallStatusId = toListNodeStatusId((JSONObject) runData.runResult.get("native_status"));
+        if (StringUtils.isBlank(overallStatusId)) {
+            overallStatusId = "list_node.run_native_status.failed";
+        }
+
+        updateRunStatus(runData.runId, overallStatusId, ctx);
+        int publishedSteps = 0;
+        int totalSteps = 0;
+        JSONObject runSteps = (JSONObject) runData.runResult.get("run_steps");
+        JSONArray steps = runSteps == null ? null : (JSONArray) runSteps.get("data");
+        if (steps != null) {
+            for (Object item : steps) {
+                if (!(item instanceof JSONObject)) {
+                    continue;
+                }
+                totalSteps++;
+                JSONObject step = (JSONObject) item;
+                String stepId = String.valueOf(step.get("id"));
+                String stepStatusId = toListNodeStatusId((JSONObject) step.get("result"));
+                if (StringUtils.isBlank(stepId) || StringUtils.isBlank(stepStatusId)) {
+                    continue;
+                }
+                String actual = step.get("actual") == null ? null : String.valueOf(step.get("actual"));
+                updateRunStep(stepId, stepStatusId, actual, ctx);
+                publishedSteps++;
+            }
+        }
+
+        if (uploadAttachments) {
+            uploadAttachments(runData, ctx, log);
+        }
+        log.println("[MI Agent] Published run " + runData.runId + " (steps " + publishedSteps + "/" + totalSteps + ").");
+        return new RunPublishResult(publishedSteps, totalSteps);
+    }
+
+    private void updateRunStatus(String runId, String statusId, PublishContext ctx) throws IOException {
+        JSONObject payload = new JSONObject();
+        JSONObject status = new JSONObject();
+        status.put("type", "list_node");
+        status.put("id", statusId);
+        payload.put("native_status", status);
+
+        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/runs/%s", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId, runId);
+        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client);
+        assertSuccess(response, "Update run status failed for run " + runId);
+    }
+
+    private void updateRunStep(String stepId, String statusId, String actual, PublishContext ctx) throws IOException {
+        JSONObject payload = new JSONObject();
+        JSONObject status = new JSONObject();
+        status.put("type", "list_node");
+        status.put("id", statusId);
+        payload.put("result", status);
+        if (actual != null) {
+            payload.put("actual", actual);
+        }
+
+        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/run_steps/%s", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId, stepId);
+        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client);
+        assertSuccess(response, "Update run step failed for step " + stepId);
+    }
+
+    private void uploadAttachments(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
+        FilePath recording = runData.runFolder.child("recording.mp4");
+        if (recording.exists()) {
+            uploadAttachment(ctx, recording, "recording.mp4", "owner_run", "run", runData.runId);
+            log.println("[MI Agent] Uploaded recording.mp4 for run " + runData.runId + ".");
+        }
+
+        FilePath images = runData.runFolder.child("images");
+        if (!images.exists()) {
+            return;
+        }
+        for (FilePath shot : images.list("screenshot_*.jpg")) {
+            String name = shot.getName();
+            Matcher m = SCREENSHOT_RE.matcher(name);
+            if (!m.find()) {
+                continue;
+            }
+            String stepId = m.group("stepId");
+            uploadAttachment(ctx, shot, name, "owner_run_step", "run_step", stepId);
+        }
+    }
+
+    private void uploadAttachment(PublishContext ctx, FilePath file, String fileName, String ownerField, String ownerType, String ownerId)
+            throws IOException, InterruptedException {
+        String boundary = "----MIAgentBoundary" + UUID.randomUUID();
+        byte[] fileBytes;
+        try (InputStream in = file.read()) {
+            fileBytes = IOUtils.toByteArray(in);
+        }
+        String mime = resolveMime(fileName);
+
+        JSONObject entity = new JSONObject();
+        entity.put("name", fileName);
+        JSONObject owner = new JSONObject();
+        owner.put("type", ownerType);
+        owner.put("id", ownerId);
+        entity.put(ownerField, owner);
+
+        byte[] body = buildMultipart(boundary, entity.toJSONString(), fileBytes, fileName, mime);
+        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId);
+
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("accept", ACCEPT_JSON);
+        headers.put("Content-Type", "multipart/form-data; boundary=" + boundary);
+        headers.put("Content-Length", String.valueOf(body.length));
+        headers.put(OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
+
+        OctaneRequest request = DTOFactory.getInstance()
+                .newDTO(OctaneRequest.class)
+                .setMethod(HttpMethod.POST)
+                .setHeaders(headers)
+                .setUrl(url)
+                .setBody(new ByteArrayInputStream(body));
+        OctaneResponse response = ctx.client.getRestService().obtainOctaneRestClient().execute(request);
+        assertSuccess(response, "Attachment upload failed for " + fileName);
+    }
+
+    private byte[] buildMultipart(String boundary, String entityJson, byte[] fileBytes, String fileName, String mime) {
+        String crlf = "\r\n";
+        StringBuilder builder = new StringBuilder();
+        builder.append("--").append(boundary).append(crlf)
+                .append("Content-Disposition: form-data; name=\"entity\"; filename=\"blob\"").append(crlf)
+                .append("Content-Type: application/json").append(crlf).append(crlf)
+                .append(entityJson).append(crlf)
+                .append("--").append(boundary).append(crlf)
+                .append("Content-Disposition: form-data; name=\"content\"; filename=\"").append(fileName).append("\"").append(crlf)
+                .append("Content-Type: ").append(mime).append(crlf).append(crlf);
+        byte[] prefix = builder.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] suffix = (crlf + "--" + boundary + "--" + crlf).getBytes(StandardCharsets.UTF_8);
+        byte[] body = new byte[prefix.length + fileBytes.length + suffix.length];
+        System.arraycopy(prefix, 0, body, 0, prefix.length);
+        System.arraycopy(fileBytes, 0, body, prefix.length, fileBytes.length);
+        System.arraycopy(suffix, 0, body, prefix.length + fileBytes.length, suffix.length);
+        return body;
+    }
+
+    private String resolveMime(String fileName) {
+        String lower = fileName.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".mp4")) {
+            return "video/mp4";
+        }
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (lower.endsWith(".png")) {
+            return "image/png";
+        }
+        return "application/octet-stream";
+    }
+
+    private OctaneResponse executeJsonRequest(HttpMethod method, String url, String jsonBody, OctaneClient client) throws IOException {
+        Map<String, String> headers = new LinkedHashMap<>();
+        headers.put("accept", ACCEPT_JSON);
+        headers.put("Content-Type", CONTENT_TYPE_JSON);
+        headers.put(OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
+
+        OctaneRequest request = DTOFactory.getInstance()
+                .newDTO(OctaneRequest.class)
+                .setMethod(method)
+                .setHeaders(headers)
+                .setUrl(url)
+                .setBody(jsonBody);
+        return client.getRestService().obtainOctaneRestClient().execute(request);
+    }
+
+    private void assertSuccess(OctaneResponse response, String message) throws IOException {
+        if (response == null) {
+            throw new IOException(message + ": empty response");
+        }
+        if (response.getStatus() >= HttpStatus.SC_OK && response.getStatus() < HttpStatus.SC_MULTIPLE_CHOICES) {
+            return;
+        }
+        throw new IOException(message + ". HTTP " + response.getStatus() + ", body: " + String.valueOf(response.getBody()));
+    }
+
+    private String toListNodeStatusId(JSONObject statusObject) {
+        if (statusObject != null) {
+            String id = firstNonBlank(statusObject.getAsString("id"), statusObject.getAsString("logical_name"));
+            if (StringUtils.isNotBlank(id) && id.startsWith("list_node.")) {
+                return id;
+            }
+            String byName = mapStatusName(statusObject.getAsString("name"));
+            if (StringUtils.isNotBlank(byName)) {
+                return byName;
+            }
+        }
+        return null;
+    }
+
+    private String mapStatusName(String raw) {
+        if (StringUtils.isBlank(raw)) {
+            return null;
+        }
+        String s = raw.trim().toLowerCase(Locale.ROOT).replace("-", "").replace("_", "").replace(" ", "");
+        switch (s) {
+            case "passed":
+            case "pass":
+            case "success":
+                return "list_node.run_native_status.passed";
+            case "failed":
+            case "fail":
+            case "failure":
+                return "list_node.run_native_status.failed";
+            case "skipped":
+            case "skip":
+                return "list_node.run_native_status.skipped";
+            case "notcompleted":
+                return "list_node.run_native_status.not_completed";
+            case "needsattention":
+                return "list_node.run_native_status.needs_attention";
+            default:
+                return null;
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (StringUtils.isNotBlank(value)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    void handlePublishFailures(Run<?, ?> run, List<String> failures, MIAgentPublishSummary summary, PrintStream log) {
+        summary.setStatus(MIAgentPublishSummary.Status.PARTIAL_FAILURE);
+        summary.setFailures(failures);
+        summary.setMessage("Publish completed with " + failures.size() + " failure(s).");
+        for (String f : failures) {
+            log.println("[MI Agent][WARN] " + f);
+        }
+        run.setResult(failBuildOnPublishError ? Result.FAILURE : Result.UNSTABLE);
+    }
+
+    public static class MIAgentValidationException extends Exception {
+        private static final long serialVersionUID = 1L;
+        public MIAgentValidationException(String message) { super(message); }
+    }
+
+    public static class MIAgentPublishSummary implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        public enum Status { PUBLISHED, PARTIAL_FAILURE, NO_RESULTS, INVALID, ERROR }
+
+        private Status status = Status.NO_RESULTS;
+        private String message = "";
+        private int totalTests;
+        private int publishedFiles;
+        private int publishedSteps;
+        private List<String> failures = new ArrayList<>();
+
+        public Status getStatus() { return status; }
+        public void setStatus(Status status) { this.status = status; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public int getTotalTests() { return totalTests; }
+        public void setTotalTests(int totalTests) { this.totalTests = totalTests; }
+        public int getPublishedFiles() { return publishedFiles; }
+        public void setPublishedFiles(int publishedFiles) { this.publishedFiles = publishedFiles; }
+        public int getPublishedSteps() { return publishedSteps; }
+        public void setPublishedSteps(int publishedSteps) { this.publishedSteps = publishedSteps; }
+        public List<String> getFailures() { return failures; }
+        public void setFailures(List<String> failures) { this.failures = new ArrayList<>(failures); }
+    }
+
+    public static class MIAgentPublishSummaryAction extends hudson.model.InvisibleAction implements Serializable {
+        private static final long serialVersionUID = 1L;
+        private final MIAgentPublishSummary summary;
+        public MIAgentPublishSummaryAction(MIAgentPublishSummary summary) { this.summary = summary; }
+        public MIAgentPublishSummary getSummary() { return summary; }
+    }
+
+    @Extension
+    @Symbol("miAgentPublisher")
+    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return true;
+        }
+
+        @Nonnull
+        @Override
+        public String getDisplayName() {
+            return "Publish MI Agent (Autonomous-Tester) results to Software Delivery Management";
+        }
+    }
+
+    static List<String> supportedManifestVersions() {
+        return new ArrayList<>(Arrays.asList(SUPPORTED_MANIFEST_VERSIONS.toArray(new String[0])));
+    }
+
+    private static class PublishContext {
+        private final OctaneClient client;
+        private final String baseUrl;
+        private final String sharedSpaceId;
+        private final String workspaceId;
+
+        private PublishContext(OctaneClient client, String baseUrl, String sharedSpaceId, String workspaceId) {
+            this.client = client;
+            this.baseUrl = baseUrl;
+            this.sharedSpaceId = sharedSpaceId;
+            this.workspaceId = workspaceId;
+        }
+    }
+
+    private static class RunPublishData {
+        private final String runId;
+        private final FilePath runFolder;
+        private final JSONObject runResult;
+
+        private RunPublishData(String runId, FilePath runFolder, JSONObject runResult) {
+            this.runId = runId;
+            this.runFolder = runFolder;
+            this.runResult = runResult;
+        }
+    }
+
+    private static class RunPublishResult {
+        private final int publishedSteps;
+        private final int totalSteps;
+
+        private RunPublishResult(int publishedSteps, int totalSteps) {
+            this.publishedSteps = publishedSteps;
+            this.totalSteps = totalSteps;
+        }
+    }
+}
