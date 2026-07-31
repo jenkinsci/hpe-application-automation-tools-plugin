@@ -167,6 +167,7 @@ public class TestExecutionJobCreatorService {
 		return proj;
 	}
 
+	// SKIP DISCOVERY FOR MI AGENT
 	private static FreeStyleProject createDiscoveryJob(DiscoveryInfo discoveryInfo) {
 		try {
 			String discoveryJobPrefix;
