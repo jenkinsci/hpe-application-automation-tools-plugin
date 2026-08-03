@@ -59,7 +59,7 @@ import com.microfocus.application.automation.tools.octane.tests.build.BuildHandl
 import hudson.model.Job;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.kohsuke.stapler.bind.JavaScriptMethod;

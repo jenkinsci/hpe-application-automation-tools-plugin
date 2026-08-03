@@ -37,7 +37,7 @@
 package com.microfocus.application.automation.tools.commonResultUpload.service;
 
 import com.microfocus.application.automation.tools.results.service.almentities.IAlmConsts;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashSet;
 import java.util.Map;

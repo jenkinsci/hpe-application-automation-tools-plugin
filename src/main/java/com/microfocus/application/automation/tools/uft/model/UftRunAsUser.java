@@ -39,7 +39,7 @@ package com.microfocus.application.automation.tools.uft.model;
 import com.microfocus.application.automation.tools.EncryptionUtils;
 import hudson.model.Node;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.microfocus.application.automation.tools.uft.utils.Constants.*;
 

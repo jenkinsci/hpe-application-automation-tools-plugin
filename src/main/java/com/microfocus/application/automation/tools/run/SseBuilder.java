@@ -57,7 +57,7 @@ import com.microfocus.application.automation.tools.sse.result.model.junit.Testsu
 import com.microfocus.application.automation.tools.sse.sdk.Logger;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.Marshaller;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;

@@ -40,7 +40,7 @@ import com.microfocus.application.automation.tools.octane.configuration.SDKBased
 import hudson.XmlFile;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;

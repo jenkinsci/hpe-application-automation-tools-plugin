@@ -87,6 +87,7 @@
 
 		<!-- The ending year for copyright information -->
 		<copyright.end.year>2026</copyright.end.year>
+		<ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
 	</properties>
 
     <distributionManagement>

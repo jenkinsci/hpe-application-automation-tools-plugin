@@ -50,7 +50,7 @@ import com.hp.octane.integrations.services.pullrequestsandbranches.rest.authenti
 import hudson.model.Run;
 import hudson.model.User;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import java.io.PrintStream;

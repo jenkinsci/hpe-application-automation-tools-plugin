@@ -90,7 +90,7 @@ import hudson.security.ACLContext;
 import hudson.util.IOUtils;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.Logger;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
