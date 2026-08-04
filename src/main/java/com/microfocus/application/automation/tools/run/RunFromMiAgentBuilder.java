@@ -62,8 +62,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Build step that executes MI Agent runs from the converted tests payload.
@@ -95,17 +93,9 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     public RunFromMiAgentBuilder() {
     }
 
-    public String getExecutorId() {
-        return executorId;
-    }
-
     @DataBoundSetter
     public void setExecutorId(String executorId) {
         this.executorId = executorId;
-    }
-
-    public String getExecutorLogicalName() {
-        return executorLogicalName;
     }
 
     @DataBoundSetter
@@ -113,17 +103,9 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         this.executorLogicalName = executorLogicalName;
     }
 
-    public String getConfigurationId() {
-        return configurationId;
-    }
-
     @DataBoundSetter
     public void setConfigurationId(String configurationId) {
         this.configurationId = configurationId;
-    }
-
-    public String getWorkspaceId() {
-        return workspaceId;
     }
 
     @DataBoundSetter
@@ -131,26 +113,14 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         this.workspaceId = workspaceId;
     }
 
-    public String getRunnerExecutable() {
-        return runnerExecutable;
-    }
-
     @DataBoundSetter
     public void setRunnerExecutable(String runnerExecutable) {
         this.runnerExecutable = StringUtils.isBlank(runnerExecutable) ? DEFAULT_RUNNER_EXECUTABLE : runnerExecutable.trim();
     }
 
-    public String getResultFolder() {
-        return resultFolder;
-    }
-
     @DataBoundSetter
     public void setResultFolder(String resultFolder) {
         this.resultFolder = StringUtils.isBlank(resultFolder) ? DEFAULT_RESULT_FOLDER : resultFolder.trim();
-    }
-
-    public String getBrowserChannel() {
-        return browserChannel;
     }
 
     @DataBoundSetter
@@ -286,14 +256,47 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
     private JSONObject normalizeRunStepsInput(JSONObject runData) {
         JSONObject normalized = new JSONObject();
-        normalized.put("type", "run_manual_test");
-        normalized.put("id", runData.get("id"));
-        if (runData.get("name") != null) {
-            normalized.put("name", runData.get("name"));
-        }
-        Object runSteps = runData.get("run_steps");
-        normalized.put("run_steps", runSteps != null ? runSteps : new JSONObject());
+
+        copyScalarField(normalized, runData, "type");
+        copyScalarField(normalized, runData, "workspace_id");
+        copyScalarField(normalized, runData, "name");
+        copyScalarField(normalized, runData, "test_name");
+        copyScalarField(normalized, runData, "order_in_suite_run");
+        copyScalarField(normalized, runData, "duration");
+        copyScalarField(normalized, runData, "id");
+        copyScalarField(normalized, runData, "subtype");
+        copyScalarField(normalized, runData, "has_attachments");
+        copyScalarField(normalized, runData, "manual_run_source");
+
+        // Keep nested structures as JSON objects exactly as received (deep copied).
+        copyObjectField(normalized, runData, "au_tester_configuration", false);
+        copyObjectField(normalized, runData, "parent_suite", false);
+        copyObjectField(normalized, runData, "run_steps", true);
+        copyObjectField(normalized, runData, "test", false);
+        copyObjectField(normalized, runData, "native_status", false);
+        copyObjectField(normalized, runData, "run_by", false);
+
         return normalized;
+    }
+
+    private void copyScalarField(JSONObject target, JSONObject source, String field) {
+        Object value = source.get(field);
+        if (value != null) {
+            target.put(field, value);
+        }
+    }
+
+    private void copyObjectField(JSONObject target, JSONObject source, String field, boolean required) {
+        Object rawValue = source.get(field);
+        if (rawValue == null) {
+            if (required) {
+                target.put(field, new JSONObject());
+            }
+            return;
+        }
+
+        Object deepCopy = JSONValue.parse(JSONValue.toJSONString(rawValue));
+        target.put(field, deepCopy instanceof JSONObject ? deepCopy : rawValue);
     }
 
     private int executeRunner(FilePath runFolder,
