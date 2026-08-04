@@ -54,16 +54,12 @@ public class MIAgentBuildAction extends InvisibleAction implements Serializable 
     private final String configurationId;
     private final String workspaceId;
 
-    public MIAgentBuildAction() {
-        this(null, null, null, null);
-    }
-
     public MIAgentBuildAction(String executorId, String executorLogicalName, String configurationId, String workspaceId) {
         this.executorId = executorId;
         this.executorLogicalName = executorLogicalName;
         this.configurationId = configurationId;
         this.workspaceId = workspaceId;
-    }
+}
 
     public String getExecutorId() {
         return executorId;

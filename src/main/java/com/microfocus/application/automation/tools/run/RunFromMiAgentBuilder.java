@@ -36,13 +36,11 @@
  */
 package com.microfocus.application.automation.tools.run;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.hp.octane.integrations.executor.TestsToRunConverter;
 import com.microfocus.application.automation.tools.mi.MIAgentBuildAction;
 import com.microfocus.application.automation.tools.mi.MIAgentResultPublisher;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
+import hudson.*;
 import hudson.model.AbstractProject;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -56,12 +54,14 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Collections;
 
 /**
  * Build step that executes MI Agent runs from the converted tests payload.
@@ -73,22 +73,26 @@ import java.io.PrintStream;
  */
 public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
-    public static final String DEFAULT_RUNNER_EXECUTABLE = "mi-agent.exe";
     public static final String DEFAULT_RESULT_FOLDER = MIAgentResultPublisher.DEFAULT_RESULT_FOLDER;
+    private static final String MI_AGENT_EXE =  "mi-agent.exe";
     private static final String RUN_STEPS_FILE_NAME = "run_steps.json";
     private static final String RUN_STEPS_RESULT_FILE_NAME = "run_steps_result.json";
     private static final String MANIFEST_FILE_NAME = "manifest.json";
+    private static final String CONF_FILE_NAME = "conf.json";
+    private static final String[] RUN_STEP_SCALAR_FIELDS = {
+            "type", "workspace_id", "name", "test_name", "order_in_suite_run",
+            "duration", "id", "subtype", "has_attachments", "manual_run_source"
+    };
+    private static final String[] RUN_STEP_OBJECT_FIELDS = {
+            "au_tester_configuration", "parent_suite", "run_steps", "test", "native_status", "run_by"
+    };
 
     private String executorId;
     private String executorLogicalName;
     private String configurationId;
     private String workspaceId;
-    private String runnerExecutable = DEFAULT_RUNNER_EXECUTABLE;
-    private String resultFolder = DEFAULT_RESULT_FOLDER;
-    private String browserChannel = "chrome";
-    private boolean recordingEnabled = true;
-    private boolean skipExecution;
-
+    private String llmAnalyzerCredentialId;
+    private String llmExecutorCredentialId;
     @DataBoundConstructor
     public RunFromMiAgentBuilder() {
     }
@@ -114,36 +118,13 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     }
 
     @DataBoundSetter
-    public void setRunnerExecutable(String runnerExecutable) {
-        this.runnerExecutable = StringUtils.isBlank(runnerExecutable) ? DEFAULT_RUNNER_EXECUTABLE : runnerExecutable.trim();
+    public void setLlmAnalyzerCredentialId(String llmAnalyzerCredentialId) {
+        this.llmAnalyzerCredentialId = llmAnalyzerCredentialId;
     }
 
     @DataBoundSetter
-    public void setResultFolder(String resultFolder) {
-        this.resultFolder = StringUtils.isBlank(resultFolder) ? DEFAULT_RESULT_FOLDER : resultFolder.trim();
-    }
-
-    @DataBoundSetter
-    public void setBrowserChannel(String browserChannel) {
-        this.browserChannel = StringUtils.isBlank(browserChannel) ? "chrome" : browserChannel.trim();
-    }
-
-    public boolean isRecordingEnabled() {
-        return recordingEnabled;
-    }
-
-    @DataBoundSetter
-    public void setRecordingEnabled(boolean recordingEnabled) {
-        this.recordingEnabled = recordingEnabled;
-    }
-
-    public boolean isSkipExecution() {
-        return skipExecution;
-    }
-
-    @DataBoundSetter
-    public void setSkipExecution(boolean skipExecution) {
-        this.skipExecution = skipExecution;
+    public void setLlmExecutorCredentialId(String llmExecutorCredentialId) {
+        this.llmExecutorCredentialId = llmExecutorCredentialId;
     }
 
     @Override
@@ -177,7 +158,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             return;
         }
 
-        FilePath resultRoot = workspace.child(resultFolder);
+        FilePath resultRoot = workspace.child(DEFAULT_RESULT_FOLDER);
         if (resultRoot.exists()) {
             resultRoot.deleteRecursive();
         }
@@ -202,7 +183,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             JSONObject runStepsInput = normalizeRunStepsInput(runData);
             runStepsFile.write(runStepsInput.toJSONString(), "UTF-8");
 
-            int exitCode = executeRunner(runFolder, runStepsFile, workspace, launcher, log);
+            int exitCode = executeRunner(runFolder, runStepsFile, workspace, launcher, log, build);
             boolean hasResult = runFolder.child(RUN_STEPS_RESULT_FILE_NAME).exists();
             if (exitCode != 0 || !hasResult) {
                 failures++;
@@ -257,66 +238,102 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private JSONObject normalizeRunStepsInput(JSONObject runData) {
         JSONObject normalized = new JSONObject();
 
-        copyScalarField(normalized, runData, "type");
-        copyScalarField(normalized, runData, "workspace_id");
-        copyScalarField(normalized, runData, "name");
-        copyScalarField(normalized, runData, "test_name");
-        copyScalarField(normalized, runData, "order_in_suite_run");
-        copyScalarField(normalized, runData, "duration");
-        copyScalarField(normalized, runData, "id");
-        copyScalarField(normalized, runData, "subtype");
-        copyScalarField(normalized, runData, "has_attachments");
-        copyScalarField(normalized, runData, "manual_run_source");
-
+        copyFields(normalized, runData, RUN_STEP_SCALAR_FIELDS, false);
         // Keep nested structures as JSON objects exactly as received (deep copied).
-        copyObjectField(normalized, runData, "au_tester_configuration", false);
-        copyObjectField(normalized, runData, "parent_suite", false);
-        copyObjectField(normalized, runData, "run_steps", true);
-        copyObjectField(normalized, runData, "test", false);
-        copyObjectField(normalized, runData, "native_status", false);
-        copyObjectField(normalized, runData, "run_by", false);
+        copyFields(normalized, runData, RUN_STEP_OBJECT_FIELDS, true);
+        normalized.putIfAbsent("run_steps", new JSONObject());
 
         return normalized;
     }
 
-    private void copyScalarField(JSONObject target, JSONObject source, String field) {
-        Object value = source.get(field);
-        if (value != null) {
-            target.put(field, value);
+    private void copyFields(JSONObject target, JSONObject source, String[] fields, boolean deepCopy) {
+        for (String field : fields) {
+            Object value = source.get(field);
+            if (value == null) {
+                continue;
+            }
+            target.put(field, deepCopy ? deepCopyObject(value) : value);
         }
     }
 
-    private void copyObjectField(JSONObject target, JSONObject source, String field, boolean required) {
-        Object rawValue = source.get(field);
-        if (rawValue == null) {
-            if (required) {
-                target.put(field, new JSONObject());
-            }
-            return;
-        }
-
-        Object deepCopy = JSONValue.parse(JSONValue.toJSONString(rawValue));
-        target.put(field, deepCopy instanceof JSONObject ? deepCopy : rawValue);
+    private Object deepCopyObject(Object value) {
+        Object deepCopy = JSONValue.parse(JSONValue.toJSONString(value));
+        return deepCopy instanceof JSONObject ? deepCopy : value;
     }
 
     private int executeRunner(FilePath runFolder,
                               FilePath runStepsFile,
                               FilePath workspace,
                               Launcher launcher,
-                              PrintStream log) throws IOException, InterruptedException {
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(runnerExecutable);
-        args.add("--run_step_file_path=" + runStepsFile.getRemote());
-        args.add("--output_base_dir=" + runFolder.getRemote());
-        args.add("--browser_channel=" + browserChannel);
-        args.add("--execution_recording_enabled=" + (recordingEnabled ? "true" : "false"));
-        if (skipExecution) {
-            args.add("--skip_execution=true");
+                              PrintStream log,
+                              Run<?, ?> build) throws IOException, InterruptedException {
+        FilePath wsRunner = workspace.child(MI_AGENT_EXE);
+        if (!wsRunner.exists()) {
+            throw new IOException("[MI Agent][ERROR] MI Agent executable not found at: "
+                    + wsRunner.getRemote()
+                    + ". Expected location: ${WORKSPACE}\\mi-agent.exe");
         }
+
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        args.add(wsRunner.getRemote());
+        FilePath confFile = generateConfFile(workspace, runStepsFile.getRemote(), runFolder.getRemote(), build);
+        args.add("--config_file_path " + confFile.getRemote());
+        log.println("[MI Agent] Resolved executable: " + wsRunner.getRemote());
         log.println("[MI Agent] Executing: " + args.toStringWithQuote());
         int exitCode = launcher.launch().cmds(args).stdout(log).pwd(workspace).join();
         log.println("[MI Agent] Exit code: " + exitCode);
         return exitCode;
+    }
+
+    private FilePath generateConfFile(FilePath workspace, String runStepFilePath, String outputBaseDir, Run<?, ?> build)
+            throws IOException, InterruptedException {
+        String llmAnalyzerKey = resolveCredentialSecret(build, llmAnalyzerCredentialId, "LLM_ANALYZER_KEY");
+        String llmExecutorKey = resolveCredentialSecret(build, llmExecutorCredentialId, "LLM_EXECUTOR_KEY");
+
+        JSONObject conf = new JSONObject();
+        conf.put("LLM_EXECUTOR_VENDOR", "GEMINI");
+        conf.put("LLM_EXECUTOR_MODEL", "gemini-2.5-flash");
+        conf.put("LLM_EXECUTOR_TEMPERATURE", 0.2);
+        conf.put("LLM_ANALYZER_VENDOR", "GEMINI");
+        conf.put("LLM_ANALYZER_MODEL", "gemini-2.5-pro");
+        conf.put("LLM_ANALYZER_KEY", llmAnalyzerKey);
+        conf.put("LLM_EXECUTOR_KEY", llmExecutorKey);
+        conf.put("STEP_MULTIPLIER", 3);
+        conf.put("MAX_NUMBER_OF_STEPS_SBS", 15);
+        conf.put("MIN_NUMBER_OF_STEPS_SBS", 5);
+        conf.put("BROWSER_USE_LOGGING_LEVEL", "debug");
+        conf.put("ANONYMIZED_TELEMETRY", false);
+        conf.put("CONVERSATION", true);
+        conf.put("MANUAL_RUN_SOURCE_MBT", "mbt");
+        conf.put("COST_CALCULATION", true);
+        conf.put("EXECUTION_RECORDING_ENABLED", false);
+        conf.put("NO_IMAGES", false);
+        conf.put("MI_DOM_STABILITY_WAIT", 2.0);
+        conf.put("MI_DOM_STABILITY_MIN_WAIT", 0.3);
+        conf.put("MI_AGENT_MODE", "dev");
+        conf.put("VALIDATE_SCHEMA", true);
+        conf.put("RUN_STEP_FILE_PATH", runStepFilePath);
+        conf.put("OUTPUT_BASE_DIR", outputBaseDir);
+        conf.put("LOG_TO_CONSOLE", 2);
+        conf.put("DISABLE_LOG_REDIRECT", 2);
+        conf.put("AWS_CLUSTER_NAME", "dorin");
+
+        FilePath confFile = workspace.child(CONF_FILE_NAME);
+        confFile.write(conf.toJSONString(), "UTF-8");
+        return confFile;
+    }
+
+    private String resolveCredentialSecret(Run<?, ?> build, String credentialId, String fieldName) throws IOException {
+        if (StringUtils.isBlank(credentialId)) {
+            throw new IOException("[MI Agent][ERROR] Missing credential id for " + fieldName + ".");
+        }
+        StringCredentials credentials = CredentialsProvider.findCredentialById(
+                credentialId, StringCredentials.class, build, Collections.emptyList());
+        if (credentials == null) {
+            throw new IOException("[MI Agent][ERROR] Jenkins credential not found for " + fieldName
+                    + " (id: " + credentialId + ").");
+        }
+        return credentials.getSecret().getPlainText();
     }
 
     private void synthesizeFailureResult(FilePath runFolder, JSONObject runStepsInput, String message) throws IOException, InterruptedException {
@@ -354,13 +371,6 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         steps.put("data", failedSteps);
         result.put("run_steps", steps);
         runFolder.child(RUN_STEPS_RESULT_FILE_NAME).write(result.toJSONString(), "UTF-8");
-    }
-
-    /**
-     * Convenience check used by other extensions.
-     */
-    public static boolean isMiAgentRun(Run<?, ?> run) {
-        return run != null && run.getAction(MIAgentBuildAction.class) != null;
     }
 
     @Extension
