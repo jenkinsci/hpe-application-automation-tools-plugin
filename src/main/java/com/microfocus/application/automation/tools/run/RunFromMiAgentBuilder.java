@@ -91,8 +91,6 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private String executorLogicalName;
     private String configurationId;
     private String workspaceId;
-    private String llmAnalyzerCredentialId;
-    private String llmExecutorCredentialId;
     @DataBoundConstructor
     public RunFromMiAgentBuilder() {
     }
@@ -115,16 +113,6 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setWorkspaceId(String workspaceId) {
         this.workspaceId = workspaceId;
-    }
-
-    @DataBoundSetter
-    public void setLlmAnalyzerCredentialId(String llmAnalyzerCredentialId) {
-        this.llmAnalyzerCredentialId = llmAnalyzerCredentialId;
-    }
-
-    @DataBoundSetter
-    public void setLlmExecutorCredentialId(String llmExecutorCredentialId) {
-        this.llmExecutorCredentialId = llmExecutorCredentialId;
     }
 
     @Override
@@ -287,8 +275,8 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
     private FilePath generateConfFile(FilePath workspace, String runStepFilePath, String outputBaseDir, Run<?, ?> build)
             throws IOException, InterruptedException {
-        String llmAnalyzerKey = resolveCredentialSecret(build, llmAnalyzerCredentialId, "LLM_ANALYZER_KEY");
-        String llmExecutorKey = resolveCredentialSecret(build, llmExecutorCredentialId, "LLM_EXECUTOR_KEY");
+        String llmAnalyzerKey = resolveCredentialSecret(build,  "LLM_ANALYZER_KEY");
+        String llmExecutorKey = resolveCredentialSecret(build,  "LLM_EXECUTOR_KEY");
 
         JSONObject conf = new JSONObject();
         conf.put("LLM_EXECUTOR_VENDOR", "GEMINI");
@@ -323,15 +311,11 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         return confFile;
     }
 
-    private String resolveCredentialSecret(Run<?, ?> build, String credentialId, String fieldName) throws IOException {
-        if (StringUtils.isBlank(credentialId)) {
-            throw new IOException("[MI Agent][ERROR] Missing credential id for " + fieldName + ".");
-        }
+    private String resolveCredentialSecret(Run<?, ?> build, String credentialId) throws IOException {
         StringCredentials credentials = CredentialsProvider.findCredentialById(
                 credentialId, StringCredentials.class, build, Collections.emptyList());
         if (credentials == null) {
-            throw new IOException("[MI Agent][ERROR] Jenkins credential not found for " + fieldName
-                    + " (id: " + credentialId + ").");
+            throw new IOException("[MI Agent][ERROR] Jenkins credential not found for " + credentialId + ".");
         }
         return credentials.getSecret().getPlainText();
     }
