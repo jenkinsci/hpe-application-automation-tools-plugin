@@ -71,6 +71,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class TestsToRunConverterBuilderMIAgentTest {
 
@@ -183,6 +185,7 @@ public class TestsToRunConverterBuilderMIAgentTest {
         assertEquals("Checkout flow", runs.get(1).path("test").path("name").asText());
         assertEquals(2, runs.get(1).path("run_steps").path("data").size());
         assertEquals("list_node.manual_test_run_step_type.validate", runs.get(1).path("run_steps").path("data").get(1).path("step_type").path("id").asText());
+        verify(mockRestClient, times(2)).execute(any());
     }
 
     @Test
@@ -198,6 +201,8 @@ public class TestsToRunConverterBuilderMIAgentTest {
 
         verify(build).setResult(Result.FAILURE);
         verify(build, never()).addAction(any());
+        // Current converter flow resolves metadata and runs from Octane before validating each test's runId.
+        verify(mockRestClient, times(2)).execute(any());
     }
 
     @Test
@@ -210,6 +215,7 @@ public class TestsToRunConverterBuilderMIAgentTest {
 
         verify(build, never()).addAction(any());
         verify(build, never()).setResult(any());
+        verifyNoInteractions(mockRestClient);
     }
 
     @Test
