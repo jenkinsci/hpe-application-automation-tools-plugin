@@ -37,7 +37,7 @@
 package com.microfocus.application.automation.tools.mc;
 
 import net.minidev.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.regex.Pattern;
 

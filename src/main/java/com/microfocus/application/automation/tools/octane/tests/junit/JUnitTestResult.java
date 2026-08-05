@@ -44,7 +44,7 @@ import com.hp.octane.integrations.utils.SdkStringUtils;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import com.microfocus.application.automation.tools.octane.tests.HPRunnerType;
 import com.microfocus.application.automation.tools.octane.tests.detection.MFToolsDetectionExtension;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 
 import javax.xml.stream.XMLStreamException;

@@ -42,7 +42,7 @@ import java.net.URL;
 
 import com.microfocus.sv.svconfigurator.core.impl.processor.Credentials;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SvServerSettingsModel implements Serializable{

@@ -42,7 +42,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.EnvVars;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Properties;

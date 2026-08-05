@@ -47,7 +47,7 @@ import java.util.List;
 import hudson.util.Secret;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import javax.annotation.Nonnull;
 

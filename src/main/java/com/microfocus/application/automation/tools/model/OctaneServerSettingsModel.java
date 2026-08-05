@@ -38,7 +38,7 @@ package com.microfocus.application.automation.tools.model;
 
 import com.microfocus.application.automation.tools.octane.exceptions.AggregatedMessagesException;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.annotation.Obsolete;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
