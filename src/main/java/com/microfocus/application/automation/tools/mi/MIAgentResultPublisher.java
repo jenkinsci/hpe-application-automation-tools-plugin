@@ -208,14 +208,16 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                     continue;
                 }
                 JSONObject runItem = (JSONObject) item;
-                RunPublishData runData = parseRunPublishData(resultRoot, runItem);
+                RunPublishData runData = parseRunPublishData(resultRoot, runItem, log);
                 try {
                     RunPublishResult runPublishResult = publishSingleRun(runData, ctx, log);
                     publishedSteps += runPublishResult.publishedSteps;
                     totalSteps += runPublishResult.totalSteps;
                 } catch (Exception e) {
-                    failures.add("Run " + runData.runId + ": " + e.getMessage());
-                    log.println("[MI Agent][WARN] Failed publishing run " + runData.runId + ": " + e.getMessage());
+                    String details = StringUtils.isBlank(e.getMessage()) ? e.getClass().getName() : e.getMessage();
+                    failures.add("Run " + runData.runId + ": " + details);
+                    log.println("[MI Agent][WARN] Failed publishing run " + runData.runId + ": " + details);
+                    e.printStackTrace(log);
                 }
             }
 
@@ -226,7 +228,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
                 summary.setMessage("Published " + runs.size() + " MI Agent run(s), " + publishedSteps + " step result(s).");
             } else {
-                handlePublishFailures(run, failures, summary, log);
+                handlePublishFailures(run, failures, summary);
             }
         } catch (MIAgentValidationException e) {
             summary.setStatus(MIAgentPublishSummary.Status.INVALID);
@@ -302,12 +304,14 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return new PublishContext(client, conf.getUrl(), conf.getSharedSpace(), workspaceId);
     }
 
-    private RunPublishData parseRunPublishData(FilePath resultRoot, JSONObject runItem) throws IOException, InterruptedException, MIAgentValidationException {
+    private RunPublishData parseRunPublishData(FilePath resultRoot, JSONObject runItem, PrintStream log) throws IOException, InterruptedException, MIAgentValidationException {
+        log.println("parseRunPublishData ...");
         String runId = runItem.getAsString("runId");
         String runFolderPath = runItem.getAsString("runFolder");
         if (StringUtils.isBlank(runId) || StringUtils.isBlank(runFolderPath)) {
             throw new MIAgentValidationException("Manifest run entry is missing runId/runFolder.");
         }
+        log.println("parseRunPublishData: runId=" + runId + ", runFolder=" + runFolderPath);
 
         FilePath runFolder = new FilePath(resultRoot.getChannel(), runFolderPath);
         FilePath resultFile = runFolder.child(RUN_STEPS_RESULT_FILE);
@@ -324,12 +328,13 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     private RunPublishResult publishSingleRun(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
+        log.println("BEGIN publishSingleRun ...");
         String overallStatusId = toListNodeStatusId((JSONObject) runData.runResult.get("native_status"));
         if (StringUtils.isBlank(overallStatusId)) {
             overallStatusId = "list_node.run_native_status.failed";
         }
 
-        updateRunStatus(runData.runId, overallStatusId, ctx);
+        updateRunStatus(runData.runId, overallStatusId, ctx, log);
         int publishedSteps = 0;
         int totalSteps = 0;
         JSONObject runSteps = (JSONObject) runData.runResult.get("run_steps");
@@ -356,16 +361,18 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             uploadAttachments(runData, ctx, log);
         }
         log.println("[MI Agent] Published run " + runData.runId + " (steps " + publishedSteps + "/" + totalSteps + ").");
+        log.println("END publishSingleRun.");
         return new RunPublishResult(publishedSteps, totalSteps);
     }
 
-    private void updateRunStatus(String runId, String statusId, PublishContext ctx) throws IOException {
+    private void updateRunStatus(String runId, String statusId, PublishContext ctx, PrintStream log) throws IOException {
         JSONObject payload = new JSONObject();
         JSONObject status = new JSONObject();
         status.put("type", "list_node");
         status.put("id", statusId);
         payload.put("native_status", status);
 
+        log.println("updateRunStatus: statusId=" + statusId);
         String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/runs/%s", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId, runId);
         OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client);
         assertSuccess(response, "Update run status failed for run " + runId);
@@ -389,7 +396,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private void uploadAttachments(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
         FilePath recording = runData.runFolder.child("recording.mp4");
         if (recording.exists()) {
-            uploadAttachment(ctx, recording, "recording.mp4", "owner_run", "run", runData.runId);
+            log.println("Uploading recording.mp4 file ...");
+            uploadAttachment(ctx, recording, "recording.mp4", "owner_run", "run", runData.runId, log);
             log.println("[MI Agent] Uploaded recording.mp4 for run " + runData.runId + ".");
         }
 
@@ -397,50 +405,63 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         if (!images.exists()) {
             return;
         }
-        for (FilePath shot : images.list("screenshot_*.jpg")) {
-            String name = shot.getName();
-            Matcher m = SCREENSHOT_RE.matcher(name);
-            if (!m.find()) {
-                continue;
+        FilePath[] imgs = images.list("screenshot_*.jpg");
+        if (imgs != null && imgs.length > 0) {
+            log.println("Uploading "  + imgs.length + " screenshot(s) ...");
+            for (FilePath shot : imgs) {
+                String name = shot.getName();
+                Matcher m = SCREENSHOT_RE.matcher(name);
+                if (!m.find()) {
+                    continue;
+                }
+                String stepId = m.group("stepId");
+                uploadAttachment(ctx, shot, name, "owner_run_step", "run_step", stepId, log);
             }
-            String stepId = m.group("stepId");
-            uploadAttachment(ctx, shot, name, "owner_run_step", "run_step", stepId);
         }
     }
 
-    private void uploadAttachment(PublishContext ctx, FilePath file, String fileName, String ownerField, String ownerType, String ownerId)
+    private void uploadAttachment(PublishContext ctx, FilePath file, String fileName, String ownerField, String ownerType, String ownerId, PrintStream log)
             throws IOException, InterruptedException {
-        String boundary = "----MIAgentBoundary" + UUID.randomUUID();
-        byte[] fileBytes;
-        try (InputStream in = file.read()) {
-            fileBytes = IOUtils.toByteArray(in);
+        try {
+            String boundary = "----MIAgentBoundary" + UUID.randomUUID();
+            byte[] fileBytes;
+            try (InputStream in = file.read()) {
+                fileBytes = IOUtils.toByteArray(in);
+            }
+            String mime = resolveMime(fileName);
+
+            JSONObject entity = new JSONObject();
+            entity.put("name", fileName);
+            JSONObject owner = new JSONObject();
+            owner.put("type", ownerType);
+            owner.put("id", ownerId);
+            entity.put(ownerField, owner);
+
+            byte[] body = buildMultipart(boundary, entity.toJSONString(), fileBytes, fileName, mime);
+            String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId);
+
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("accept", ACCEPT_JSON);
+            headers.put("Content-Type", "multipart/form-data; boundary=" + boundary);
+            headers.put(OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
+
+            OctaneRequest request = DTOFactory.getInstance()
+                    .newDTO(OctaneRequest.class)
+                    .setMethod(HttpMethod.POST)
+                    .setHeaders(headers)
+                    .setUrl(url)
+                    .setBody(new ByteArrayInputStream(body));
+            OctaneResponse response = ctx.client.getRestService().obtainOctaneRestClient().execute(request);
+            assertSuccess(response, "Attachment upload failed for " + fileName);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (Exception e) {
+            String details = formatExceptionDetails(e);
+            log.println("[MI Agent][ERROR] uploadAttachment failed for file '" + fileName
+                    + "' (ownerType=" + ownerType + ", ownerId=" + ownerId + "): " + details);
+            throw new IOException("Attachment upload failed for [" + fileName + "].", e);
         }
-        String mime = resolveMime(fileName);
-
-        JSONObject entity = new JSONObject();
-        entity.put("name", fileName);
-        JSONObject owner = new JSONObject();
-        owner.put("type", ownerType);
-        owner.put("id", ownerId);
-        entity.put(ownerField, owner);
-
-        byte[] body = buildMultipart(boundary, entity.toJSONString(), fileBytes, fileName, mime);
-        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId);
-
-        Map<String, String> headers = new LinkedHashMap<>();
-        headers.put("accept", ACCEPT_JSON);
-        headers.put("Content-Type", "multipart/form-data; boundary=" + boundary);
-        headers.put("Content-Length", String.valueOf(body.length));
-        headers.put(OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
-
-        OctaneRequest request = DTOFactory.getInstance()
-                .newDTO(OctaneRequest.class)
-                .setMethod(HttpMethod.POST)
-                .setHeaders(headers)
-                .setUrl(url)
-                .setBody(new ByteArrayInputStream(body));
-        OctaneResponse response = ctx.client.getRestService().obtainOctaneRestClient().execute(request);
-        assertSuccess(response, "Attachment upload failed for " + fileName);
     }
 
     private byte[] buildMultipart(String boundary, String entityJson, byte[] fileBytes, String fileName, String mime) {
@@ -550,13 +571,39 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return null;
     }
 
-    void handlePublishFailures(Run<?, ?> run, List<String> failures, MIAgentPublishSummary summary, PrintStream log) {
+    private String formatExceptionDetails(Throwable t) {
+        if (t == null) {
+            return "null exception";
+        }
+        StackTraceElement location = firstStackTraceLine(t);
+        StringBuilder details = new StringBuilder();
+        details.append(t.getClass().getName())
+                .append(": " + t.getMessage());
+        if (location != null) {
+            details.append(" at " + location.getClassName() + "." + location.getMethodName()
+                    + "(" + location.getFileName() + ":" + location.getLineNumber() + ")");
+        }
+        Throwable cause = t.getCause();
+        if (cause != null) {
+            details.append("; cause=" +  cause.getClass().getName() + ": " +  cause.getMessage());
+        }
+        return details.toString();
+    }
+
+    private StackTraceElement firstStackTraceLine(Throwable t) {
+        for (StackTraceElement ste : t.getStackTrace()) {
+            if (ste != null && MIAgentResultPublisher.class.getName().equals(ste.getClassName())) {
+                return ste;
+            }
+        }
+        StackTraceElement[] stack = t.getStackTrace();
+        return (stack != null && stack.length > 0) ? stack[0] : null;
+    }
+
+    void handlePublishFailures(Run<?, ?> run, List<String> failures, MIAgentPublishSummary summary) {
         summary.setStatus(MIAgentPublishSummary.Status.PARTIAL_FAILURE);
         summary.setFailures(failures);
         summary.setMessage("Publish completed with " + failures.size() + " failure(s).");
-        for (String f : failures) {
-            log.println("[MI Agent][WARN] " + f);
-        }
         run.setResult(failBuildOnPublishError ? Result.FAILURE : Result.UNSTABLE);
     }
 
