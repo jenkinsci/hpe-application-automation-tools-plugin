@@ -265,9 +265,8 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(wsRunner.getRemote());
         FilePath confFile = generateConfFile(workspace, runStepsFile.getRemote(), runFolder.getRemote(), build);
-        args.add("--config_file_path " + confFile.getRemote());
+        args.add("--config_file_path=" + confFile.getRemote());
         log.println("[MI Agent] Resolved executable: " + wsRunner.getRemote());
-        log.println("[MI Agent] Executing: " + args.toStringWithQuote());
         int exitCode = launcher.launch().cmds(args).stdout(log).pwd(workspace).join();
         log.println("[MI Agent] Exit code: " + exitCode);
         return exitCode;
@@ -275,8 +274,8 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
     private FilePath generateConfFile(FilePath workspace, String runStepFilePath, String outputBaseDir, Run<?, ?> build)
             throws IOException, InterruptedException {
-        String llmAnalyzerKey = resolveCredentialSecret(build,  "LLM_ANALYZER_KEY");
-        String llmExecutorKey = resolveCredentialSecret(build,  "LLM_EXECUTOR_KEY");
+        String llmAnalyzerKey = resolveCredentialSecret(build, "LLM_ANALYZER_KEY");
+        String llmExecutorKey = resolveCredentialSecret(build, "LLM_EXECUTOR_KEY");
 
         JSONObject conf = new JSONObject();
         conf.put("LLM_EXECUTOR_VENDOR", "GEMINI");
