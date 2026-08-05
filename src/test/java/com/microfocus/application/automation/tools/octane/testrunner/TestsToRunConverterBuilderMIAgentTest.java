@@ -78,41 +78,40 @@ public class TestsToRunConverterBuilderMIAgentTest {
 
     private static final String METADATA_WITH_AU = "{\"data\":[{\"name\":\"au_tester_configuration\",\"entity_name\":\"run\"}]}";
 
-    private static final String RUNS_RESPONSE = "{\n" +
-            "  \"data\": [\n" +
-            "    {\n" +
-            "      \"type\": \"run\",\n" +
-            "      \"id\": \"1042\",\n" +
-            "      \"test_name\": \"Login flow\",\n" +
-            "      \"subtype\": \"run_manual\",\n" +
-            "      \"order_in_suite_run\": 1,\n" +
-            "      \"native_status\": {\"type\": \"list_node\", \"id\": \"status_ready\", \"name\": \"Ready\"},\n" +
-            "      \"test\": {\"subtype\": \"test_manual\"},\n" +
-            "      \"run_steps\": {\n" +
-            "        \"total_count\": 1,\n" +
-            "        \"data\": [{\"id\": \"s1\", \"step_type\": {\"name\": \"Normal\"}, \"description\": \"Open login page\"}]\n" +
-            "      },\n" +
-            "      \"au_tester_configuration\": {\"BROWSER_NAME\": \"chrome\"}\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"type\": \"run\",\n" +
-            "      \"id\": \"1043\",\n" +
-            "      \"test_name\": \"Checkout flow\",\n" +
-            "      \"subtype\": \"run_manual\",\n" +
-            "      \"order_in_suite_run\": 2,\n" +
-            "      \"native_status\": {\"type\": \"list_node\", \"id\": \"status_ready\", \"name\": \"Ready\"},\n" +
-            "      \"test\": {\"subtype\": \"test_manual\"},\n" +
-            "      \"run_steps\": {\n" +
-            "        \"total_count\": 2,\n" +
-            "        \"data\": [\n" +
-            "          {\"id\": \"s2\", \"step_type\": {\"name\": \"Normal\"}, \"description\": \"Add item\"},\n" +
-            "          {\"id\": \"s3\", \"step_type\": {\"name\": \"Validate\"}, \"description\": \"Verify total\"}\n" +
-            "        ]\n" +
-            "      }\n" +
-            "    }\n" +
-            "  ],\n" +
-            "  \"total_count\": 2\n" +
-            "}";
+    private static final String RUNS_RESPONSE = "{\"data\":[{" +
+            "\"type\":\"run\"," +
+            "\"subtype\":\"run_manual\"," +
+            "\"order_in_suite_run\":1," +
+            "\"duration\":null," +
+            "\"name\":\"tsMIAgent\"," +
+            "\"workspace_id\":2001," +
+            "\"id\":\"1042\"," +
+            "\"au_tester_configuration\":{\"browser\":{\"BROWSER_NAME\":\"Google Chrome\",\"BROWSER_LOCALE\":\"en-US\"},\"agent\":{\"MAX_FAILURES\":3,\"MAX_NUMBER_OF_STEPS\":100,\"BROWSER_USE_RUN_TIMEOUT\":2700}}," +
+            "\"test_name\":\"Login flow\"," +
+            "\"has_attachments\":false," +
+            "\"parent_suite\":{\"type\":\"run_suite\",\"id\":\"1041\",\"name\":\"tsMIAgent\"}," +
+            "\"run_steps\":{\"total_count\":1,\"data\":[{" +
+            "\"type\":\"run_step\",\"id\":\"s1\",\"result\":null,\"attachments\":{\"total_count\":0,\"data\":[]},\"index_in_script\":0,\"index_in_report\":\"1\",\"from_call_to_test\":false,\"activity_level\":0,\"actual\":null,\"description\":\"Open login page\",\"step_type\":{\"type\":\"list_node\",\"id\":\"list_node.manual_test_run_step_type.normal\",\"activity_level\":0,\"logical_name\":\"list_node.manual_test_run_step_type.normal\",\"index\":1,\"name\":\"Normal\"},\"run\":{\"type\":\"run_manual\",\"id\":\"1042\",\"name\":\"tsMIAgent\",\"activity_level\":0}}]}," +
+            "\"test\":{\"type\":\"test_manual\",\"id\":\"1001\",\"name\":\"Login flow\",\"activity_level\":0}," +
+            "\"native_status\":{\"type\":\"list_node\",\"id\":\"list_node.run_native_status.not_completed\",\"activity_level\":0,\"logical_name\":\"list_node.run_native_status.not_completed\",\"index\":4,\"name\":\"In Progress\"}," +
+            "\"run_by\":{\"type\":\"workspace_user\",\"id\":\"1001\",\"workspace_id\":2001,\"full_name\":\"sa@nga\",\"activity_level\":0}},{" +
+            "\"type\":\"run\"," +
+            "\"subtype\":\"run_manual\"," +
+            "\"order_in_suite_run\":2," +
+            "\"duration\":null," +
+            "\"name\":\"tsMIAgent\"," +
+            "\"workspace_id\":2001," +
+            "\"id\":\"1043\"," +
+            "\"au_tester_configuration\":{\"browser\":{\"BROWSER_NAME\":\"Google Chrome\",\"BROWSER_LOCALE\":\"en-US\"},\"agent\":{\"MAX_FAILURES\":3,\"MAX_NUMBER_OF_STEPS\":100,\"BROWSER_USE_RUN_TIMEOUT\":2700}}," +
+            "\"test_name\":\"Checkout flow\"," +
+            "\"has_attachments\":false," +
+            "\"parent_suite\":{\"type\":\"run_suite\",\"id\":\"1041\",\"name\":\"tsMIAgent\"}," +
+            "\"run_steps\":{\"total_count\":2,\"data\":[{" +
+            "\"type\":\"run_step\",\"id\":\"s2\",\"result\":null,\"attachments\":{\"total_count\":0,\"data\":[]},\"index_in_script\":0,\"index_in_report\":\"1\",\"from_call_to_test\":false,\"activity_level\":0,\"actual\":null,\"description\":\"Add item\",\"step_type\":{\"type\":\"list_node\",\"id\":\"list_node.manual_test_run_step_type.normal\",\"activity_level\":0,\"logical_name\":\"list_node.manual_test_run_step_type.normal\",\"index\":1,\"name\":\"Normal\"},\"run\":{\"type\":\"run_manual\",\"id\":\"1043\",\"name\":\"tsMIAgent\",\"activity_level\":0}} ,{" +
+            "\"type\":\"run_step\",\"id\":\"s3\",\"result\":null,\"attachments\":{\"total_count\":0,\"data\":[]},\"index_in_script\":1,\"index_in_report\":\"2\",\"from_call_to_test\":false,\"activity_level\":0,\"actual\":null,\"description\":\"Verify total\",\"step_type\":{\"type\":\"list_node\",\"id\":\"list_node.manual_test_run_step_type.validate\",\"activity_level\":0,\"logical_name\":\"list_node.manual_test_run_step_type.validate\",\"index\":0,\"name\":\"Validate\"},\"run\":{\"type\":\"run_manual\",\"id\":\"1043\",\"name\":\"tsMIAgent\",\"activity_level\":0}}]}," +
+            "\"test\":{\"type\":\"test_manual\",\"id\":\"1002\",\"name\":\"Checkout flow\",\"activity_level\":0}," +
+            "\"native_status\":{\"type\":\"list_node\",\"id\":\"list_node.run_native_status.not_completed\",\"activity_level\":0,\"logical_name\":\"list_node.run_native_status.not_completed\",\"index\":4,\"name\":\"In Progress\"}," +
+            "\"run_by\":{\"type\":\"workspace_user\",\"id\":\"1001\",\"workspace_id\":2001,\"full_name\":\"sa@nga\",\"activity_level\":0}}],\"total_count\":2}";
 
     // v1 string format: package|class|testName|key=value
     private static final String RAW_TESTS = "v1:|Login flow|Login flow|runId=1042;|Checkout flow|Checkout flow|runId=1043";
@@ -174,11 +173,16 @@ public class TestsToRunConverterBuilderMIAgentTest {
         assertEquals(2, runs.size());
 
         assertEquals("1042", runs.get(0).path("id").asText());
-        assertTrue(runs.get(0).has("run_steps"));
-        assertEquals("chrome", runs.get(0).path("au_tester_configuration").path("BROWSER_NAME").asText());
+        assertEquals("run_manual", runs.get(0).path("subtype").asText());
+        assertEquals("Login flow", runs.get(0).path("test_name").asText());
+        assertEquals("Google Chrome", runs.get(0).path("au_tester_configuration").path("browser").path("BROWSER_NAME").asText());
+        assertEquals("list_node.run_native_status.not_completed", runs.get(0).path("native_status").path("id").asText());
+        assertEquals("s1", runs.get(0).path("run_steps").path("data").get(0).path("id").asText());
 
         assertEquals("1043", runs.get(1).path("id").asText());
+        assertEquals("Checkout flow", runs.get(1).path("test").path("name").asText());
         assertEquals(2, runs.get(1).path("run_steps").path("data").size());
+        assertEquals("list_node.manual_test_run_step_type.validate", runs.get(1).path("run_steps").path("data").get(1).path("step_type").path("id").asText());
     }
 
     @Test
@@ -213,8 +217,8 @@ public class TestsToRunConverterBuilderMIAgentTest {
         registerOctaneMock();
 
         String jsonTests = "{\"testsToRun\":[" +
-                "{\"testName\":\"Login flow\",\"packageName\":\"\",\"className\":\"Login flow\",\"parameters\":{\"runId\":\"1042\"}}," +
-                "{\"testName\":\"Checkout flow\",\"packageName\":\"\",\"className\":\"Checkout flow\",\"parameters\":{\"runId\":\"1043\"}}" +
+            "{\"testName\":\"Login flow\",\"packageName\":\"\",\"className\":\"Login flow\",\"parameters\":{\"runId\":\"1042\"}}," +
+            "{\"testName\":\"Checkout flow\",\"packageName\":\"\",\"className\":\"Checkout flow\",\"parameters\":{\"runId\":\"1043\"}}" +
                 "]}";
 
         Run build = mockBuild(jsonTests);
@@ -230,6 +234,8 @@ public class TestsToRunConverterBuilderMIAgentTest {
         JsonNode manifest = MAPPER.readTree(extractVariable(action, "testsToRunConverted"));
         assertEquals(2, manifest.path("total_count").asInt());
         assertEquals("1042", manifest.path("data").get(0).path("id").asText());
+        assertEquals("Login flow", manifest.path("data").get(0).path("test_name").asText());
+        assertEquals("Google Chrome", manifest.path("data").get(0).path("au_tester_configuration").path("browser").path("BROWSER_NAME").asText());
     }
 
     // --- helpers ---
