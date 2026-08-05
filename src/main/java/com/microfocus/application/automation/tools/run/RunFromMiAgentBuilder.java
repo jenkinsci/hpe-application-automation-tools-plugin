@@ -286,12 +286,9 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         conf.put("LLM_ANALYZER_KEY", llmAnalyzerKey);
         conf.put("LLM_EXECUTOR_KEY", llmExecutorKey);
         conf.put("STEP_MULTIPLIER", 3);
-        conf.put("MAX_NUMBER_OF_STEPS_SBS", 15);
-        conf.put("MIN_NUMBER_OF_STEPS_SBS", 5);
         conf.put("BROWSER_USE_LOGGING_LEVEL", "debug");
         conf.put("ANONYMIZED_TELEMETRY", false);
         conf.put("CONVERSATION", true);
-        conf.put("MANUAL_RUN_SOURCE_MBT", "mbt");
         conf.put("COST_CALCULATION", true);
         conf.put("EXECUTION_RECORDING_ENABLED", false);
         conf.put("NO_IMAGES", false);
