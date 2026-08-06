@@ -60,7 +60,7 @@ import jenkins.tasks.SimpleBuildStep;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpStatus;
 import org.jenkinsci.Symbol;
@@ -68,14 +68,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
+import java.io.Serial;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -93,6 +94,7 @@ import java.util.regex.Pattern;
  */
 public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep, Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     public static final String DEFAULT_RESULT_FOLDER = "mi-agent-results";
@@ -102,6 +104,12 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final List<String> SUPPORTED_MANIFEST_VERSIONS = Collections.singletonList("1.0");
     private static final String ACCEPT_JSON = "application/json";
     private static final String CONTENT_TYPE_JSON = "application/json";
+    private static final String RUN_NATIVE_STATUS_PREFIX = "list_node.run_native_status.";
+    private static final int MAX_EXCEPTION_STACK_FRAMES = 7;
+    private static final String WARN_PREFIX = "[WARN]";
+    private static final String ERROR_PREFIX = "[ERROR]";
+    private static final Map<String, String> BASE_HEADERS = Map.of("accept", ACCEPT_JSON, OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
+    private static final Map<String, String> JSON_HEADERS = headersWithContentType(CONTENT_TYPE_JSON);
 
     private String resultFolder;
     private String manifestName;
@@ -109,24 +117,19 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private String workspaceId;
     private boolean uploadAttachments = true;
     private boolean failBuildOnPublishError = true;
+    private transient OctaneClientProvider octaneClientProvider;
+    private transient OctaneRequestExecutor octaneRequestExecutor;
 
     @DataBoundConstructor
     public MIAgentResultPublisher() {
         this.resultFolder = DEFAULT_RESULT_FOLDER;
         this.manifestName = DEFAULT_MANIFEST_NAME;
-    }
-
-    public String getResultFolder() {
-        return resultFolder;
+        initTransientCollaborators();
     }
 
     @DataBoundSetter
     public void setResultFolder(String resultFolder) {
         this.resultFolder = StringUtils.isBlank(resultFolder) ? DEFAULT_RESULT_FOLDER : resultFolder.trim();
-    }
-
-    public String getManifestName() {
-        return manifestName;
     }
 
     @DataBoundSetter
@@ -143,17 +146,9 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         this.configurationId = configurationId;
     }
 
-    public String getWorkspaceId() {
-        return workspaceId;
-    }
-
     @DataBoundSetter
     public void setWorkspaceId(String workspaceId) {
         this.workspaceId = workspaceId;
-    }
-
-    public boolean isUploadAttachments() {
-        return uploadAttachments;
     }
 
     @DataBoundSetter
@@ -161,13 +156,19 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         this.uploadAttachments = uploadAttachments;
     }
 
-    public boolean isFailBuildOnPublishError() {
-        return failBuildOnPublishError;
-    }
-
     @DataBoundSetter
     public void setFailBuildOnPublishError(boolean failBuildOnPublishError) {
         this.failBuildOnPublishError = failBuildOnPublishError;
+    }
+
+    void setOctaneClientProvider(OctaneClientProvider octaneClientProvider) {
+        this.octaneClientProvider = octaneClientProvider != null ? octaneClientProvider : OctaneSDK::getClientByInstanceId;
+    }
+
+    void setOctaneRequestExecutor(OctaneRequestExecutor octaneRequestExecutor) {
+        this.octaneRequestExecutor = octaneRequestExecutor != null
+                ? octaneRequestExecutor
+                : (client, request) -> client.getRestService().obtainOctaneRestClient().execute(request);
     }
 
     @Override
@@ -182,7 +183,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                         @Nonnull TaskListener listener) throws IOException, InterruptedException {
 
         PrintStream log = listener.getLogger();
-        log.println("[MI Agent] Autonomous-Tester result publisher started.");
+        log.println("Autonomous-Tester result publisher started.");
 
         MIAgentPublishSummary summary = new MIAgentPublishSummary();
         try {
@@ -204,20 +205,19 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             int totalSteps = 0;
 
             for (Object item : runs) {
-                if (!(item instanceof JSONObject)) {
+                if (!(item instanceof JSONObject runItem)) {
                     continue;
                 }
-                JSONObject runItem = (JSONObject) item;
                 RunPublishData runData = parseRunPublishData(resultRoot, runItem, log);
                 try {
                     RunPublishResult runPublishResult = publishSingleRun(runData, ctx, log);
-                    publishedSteps += runPublishResult.publishedSteps;
-                    totalSteps += runPublishResult.totalSteps;
+                    publishedSteps += runPublishResult.publishedSteps();
+                    totalSteps += runPublishResult.totalSteps();
                 } catch (Exception e) {
                     String details = StringUtils.isBlank(e.getMessage()) ? e.getClass().getName() : e.getMessage();
-                    failures.add("Run " + runData.runId + ": " + details);
-                    log.println("[MI Agent][WARN] Failed publishing run " + runData.runId + ": " + details);
-                    e.printStackTrace(log);
+                    failures.add("Run " + runData.runId() + ": " + details);
+                    log.println(WARN_PREFIX + " Failed publishing run " + runData.runId() + ": " + details);
+                    log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
                 }
             }
 
@@ -237,12 +237,12 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         } catch (Exception e) {
             summary.setStatus(MIAgentPublishSummary.Status.ERROR);
             summary.setMessage("Unexpected error: " + e.getMessage());
-            log.println("[MI Agent][ERROR] " + summary.getMessage());
-            e.printStackTrace(log);
+            log.println(ERROR_PREFIX + " " + summary.getMessage());
+            log.println(ERROR_PREFIX + " " + formatExceptionDetails(e));
             run.setResult(failBuildOnPublishError ? Result.FAILURE : Result.UNSTABLE);
         } finally {
             run.addAction(new MIAgentPublishSummaryAction(summary));
-            log.println("[MI Agent] " + summary.getMessage());
+            log.println(summary.getMessage());
         }
     }
 
@@ -251,13 +251,27 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             return Collections.emptyList();
         }
         List<FilePath> files = new ArrayList<>();
-        files.addAll(Arrays.asList(resultDir.list("**/*.json")));
-        files.addAll(Arrays.asList(resultDir.list("**/*.xml")));
-        files.addAll(Arrays.asList(resultDir.list("**/*.html")));
-        files.addAll(Arrays.asList(resultDir.list("**/*.mp4")));
-        files.addAll(Arrays.asList(resultDir.list("**/*.jpg")));
-        log.println("[MI Agent] Collected " + files.size() + " result file(s) from '" + resultDir.getRemote() + "'.");
+        for (FilePath file : resultDir.list("**/*")) {
+            if (hasSupportedResultExtension(file.getName())) {
+                files.add(file);
+            }
+        }
+        log.println("Collected " + files.size() + " result file(s) from '" + resultDir.getRemote() + "'.");
         return files;
+    }
+
+    private boolean hasSupportedResultExtension(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return false;
+        }
+        String ext = FilenameUtils.getExtension(fileName);
+        if (ext.isEmpty()) {
+            return false;
+        }
+        return switch (ext.toLowerCase(Locale.ROOT)) {
+            case "json", "xml", "html", "mp4", "jpg", "jpeg" -> true;
+            default -> false;
+        };
     }
 
     private JSONObject readManifest(FilePath manifest) throws IOException, InterruptedException, MIAgentValidationException {
@@ -284,6 +298,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     private PublishContext createPublishContext() throws MIAgentValidationException {
+        initTransientCollaborators();
         if (StringUtils.isBlank(configurationId)) {
             throw new MIAgentValidationException("Missing configurationId.");
         }
@@ -291,7 +306,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             throw new MIAgentValidationException("Missing workspaceId.");
         }
 
-        OctaneClient client = OctaneSDK.getClientByInstanceId(configurationId);
+        OctaneClient client = octaneClientProvider.getClientByInstanceId(configurationId);
         if (client == null) {
             throw new MIAgentValidationException("Octane client not found for configurationId=" + configurationId);
         }
@@ -305,7 +320,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     private RunPublishData parseRunPublishData(FilePath resultRoot, JSONObject runItem, PrintStream log) throws IOException, InterruptedException, MIAgentValidationException {
-        log.println("parseRunPublishData ...");
         String runId = runItem.getAsString("runId");
         String runFolderPath = runItem.getAsString("runFolder");
         if (StringUtils.isBlank(runId) || StringUtils.isBlank(runFolderPath)) {
@@ -313,7 +327,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         }
         log.println("parseRunPublishData: runId=" + runId + ", runFolder=" + runFolderPath);
 
-        FilePath runFolder = new FilePath(resultRoot.getChannel(), runFolderPath);
+        FilePath runFolder = resolveRunFolder(resultRoot, runFolderPath, runId);
         FilePath resultFile = runFolder.child(RUN_STEPS_RESULT_FILE);
         if (!resultFile.exists()) {
             throw new MIAgentValidationException("Missing run_steps_result.json for run " + runId);
@@ -327,25 +341,57 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return new RunPublishData(runId, runFolder, (JSONObject) parsedResult);
     }
 
+    private FilePath resolveRunFolder(FilePath resultRoot, String runFolderPath, String runId)
+            throws IOException, InterruptedException, MIAgentValidationException {
+        FilePath normalizedRoot = resultRoot.absolutize();
+        FilePath runFolder = resultRoot.child(runFolderPath).absolutize();
+        if (!isPathUnderRoot(normalizedRoot.getRemote(), runFolder.getRemote())) {
+            throw new MIAgentValidationException("Run folder for run " + runId
+                    + " points outside result root: " + runFolderPath);
+        }
+        return runFolder;
+    }
+
+    private boolean isPathUnderRoot(String rootPath, String candidatePath) {
+        String normalizedRoot = normalizePathForComparison(rootPath);
+        String normalizedCandidate = normalizePathForComparison(candidatePath);
+        if (isWindowsStylePath(normalizedRoot) || isWindowsStylePath(normalizedCandidate)) {
+            normalizedRoot = normalizedRoot.toLowerCase(Locale.ROOT);
+            normalizedCandidate = normalizedCandidate.toLowerCase(Locale.ROOT);
+        }
+        return normalizedCandidate.equals(normalizedRoot)
+                || normalizedCandidate.startsWith(normalizedRoot + "/");
+    }
+
+    private String normalizePathForComparison(String path) {
+        String normalized = path.replace('\\', '/');
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
+    }
+
+    private boolean isWindowsStylePath(String path) {
+        return path.length() > 1 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':';
+    }
+
     private RunPublishResult publishSingleRun(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
-        log.println("BEGIN publishSingleRun ...");
-        String overallStatusId = toListNodeStatusId((JSONObject) runData.runResult.get("native_status"));
+        String overallStatusId = toListNodeStatusId((JSONObject) runData.runResult().get("native_status"));
         if (StringUtils.isBlank(overallStatusId)) {
-            overallStatusId = "list_node.run_native_status.failed";
+            overallStatusId = RUN_NATIVE_STATUS_PREFIX + "failed";
         }
 
-        updateRunStatus(runData.runId, overallStatusId, ctx, log);
+        updateRunStatus(runData.runId(), overallStatusId, ctx, log);
         int publishedSteps = 0;
         int totalSteps = 0;
-        JSONObject runSteps = (JSONObject) runData.runResult.get("run_steps");
+        JSONObject runSteps = (JSONObject) runData.runResult().get("run_steps");
         JSONArray steps = runSteps == null ? null : (JSONArray) runSteps.get("data");
         if (steps != null) {
             for (Object item : steps) {
-                if (!(item instanceof JSONObject)) {
+                if (!(item instanceof JSONObject step)) {
                     continue;
                 }
                 totalSteps++;
-                JSONObject step = (JSONObject) item;
                 String stepId = String.valueOf(step.get("id"));
                 String stepStatusId = toListNodeStatusId((JSONObject) step.get("result"));
                 if (StringUtils.isBlank(stepId) || StringUtils.isBlank(stepStatusId)) {
@@ -360,8 +406,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         if (uploadAttachments) {
             uploadAttachments(runData, ctx, log);
         }
-        log.println("[MI Agent] Published run " + runData.runId + " (steps " + publishedSteps + "/" + totalSteps + ").");
-        log.println("END publishSingleRun.");
+        log.println("Published run " + runData.runId() + " (steps " + publishedSteps + "/" + totalSteps + ").");
         return new RunPublishResult(publishedSteps, totalSteps);
     }
 
@@ -373,8 +418,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         payload.put("native_status", status);
 
         log.println("updateRunStatus: statusId=" + statusId);
-        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/runs/%s", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId, runId);
-        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client);
+        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/runs/%s", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId(), runId);
+        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client());
         assertSuccess(response, "Update run status failed for run " + runId);
     }
 
@@ -388,25 +433,25 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             payload.put("actual", actual);
         }
 
-        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/run_steps/%s", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId, stepId);
-        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client);
+        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/run_steps/%s", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId(), stepId);
+        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client());
         assertSuccess(response, "Update run step failed for step " + stepId);
     }
 
     private void uploadAttachments(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
-        FilePath recording = runData.runFolder.child("recording.mp4");
+        FilePath recording = runData.runFolder().child("recording.mp4");
         if (recording.exists()) {
             log.println("Uploading recording.mp4 file ...");
-            uploadAttachment(ctx, recording, "recording.mp4", "owner_run", "run", runData.runId, log);
-            log.println("[MI Agent] Uploaded recording.mp4 for run " + runData.runId + ".");
+            uploadAttachment(ctx, recording, "recording.mp4", "owner_run", "run", runData.runId(), log);
+            log.println("Uploaded recording.mp4 for run " + runData.runId() + ".");
         }
 
-        FilePath images = runData.runFolder.child("images");
+        FilePath images = runData.runFolder().child("images");
         if (!images.exists()) {
             return;
         }
         FilePath[] imgs = images.list("screenshot_*.jpg");
-        if (imgs != null && imgs.length > 0) {
+        if (imgs.length > 0) {
             log.println("Uploading "  + imgs.length + " screenshot(s) ...");
             for (FilePath shot : imgs) {
                 String name = shot.getName();
@@ -421,13 +466,9 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     private void uploadAttachment(PublishContext ctx, FilePath file, String fileName, String ownerField, String ownerType, String ownerId, PrintStream log)
-            throws IOException, InterruptedException {
+            throws IOException {
         try {
             String boundary = "----MIAgentBoundary" + UUID.randomUUID();
-            byte[] fileBytes;
-            try (InputStream in = file.read()) {
-                fileBytes = IOUtils.toByteArray(in);
-            }
             String mime = resolveMime(fileName);
 
             JSONObject entity = new JSONObject();
@@ -437,79 +478,85 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             owner.put("id", ownerId);
             entity.put(ownerField, owner);
 
-            byte[] body = buildMultipart(boundary, entity.toJSONString(), fileBytes, fileName, mime);
-            String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments", ctx.baseUrl, ctx.sharedSpaceId, ctx.workspaceId);
+            String entityJson = entity.toJSONString();
+            String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId());
 
-            Map<String, String> headers = new LinkedHashMap<>();
-            headers.put("accept", ACCEPT_JSON);
-            headers.put("Content-Type", "multipart/form-data; boundary=" + boundary);
-            headers.put(OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
-
-            OctaneRequest request = DTOFactory.getInstance()
-                    .newDTO(OctaneRequest.class)
-                    .setMethod(HttpMethod.POST)
-                    .setHeaders(headers)
-                    .setUrl(url)
-                    .setBody(new ByteArrayInputStream(body));
-            OctaneResponse response = ctx.client.getRestService().obtainOctaneRestClient().execute(request);
-            assertSuccess(response, "Attachment upload failed for " + fileName);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw e;
+            try (InputStream body = buildMultipartBodyStream(boundary, entityJson, file, fileName, mime)) {
+                OctaneRequest request = buildOctaneRequest(
+                        HttpMethod.POST,
+                        url,
+                        headersWithContentType("multipart/form-data; boundary=" + boundary),
+                        body);
+                OctaneResponse response = octaneRequestExecutor.execute(ctx.client(), request);
+                assertSuccess(response, "Attachment upload failed for " + fileName);
+            }
         } catch (Exception e) {
-            String details = formatExceptionDetails(e);
-            log.println("[MI Agent][ERROR] uploadAttachment failed for file '" + fileName
-                    + "' (ownerType=" + ownerType + ", ownerId=" + ownerId + "): " + details);
+            log.println(ERROR_PREFIX + " uploadAttachment failed for file '" + fileName
+                    + "' (ownerType=" + ownerType + ", ownerId=" + ownerId + "): " + e.getMessage());
             throw new IOException("Attachment upload failed for [" + fileName + "].", e);
         }
     }
 
-    private byte[] buildMultipart(String boundary, String entityJson, byte[] fileBytes, String fileName, String mime) {
+    private InputStream buildMultipartBodyStream(String boundary, String entityJson, FilePath file, String fileName, String mime)
+            throws IOException, InterruptedException {
         String crlf = "\r\n";
-        StringBuilder builder = new StringBuilder();
-        builder.append("--").append(boundary).append(crlf)
-                .append("Content-Disposition: form-data; name=\"entity\"; filename=\"blob\"").append(crlf)
-                .append("Content-Type: application/json").append(crlf).append(crlf)
-                .append(entityJson).append(crlf)
-                .append("--").append(boundary).append(crlf)
-                .append("Content-Disposition: form-data; name=\"content\"; filename=\"").append(fileName).append("\"").append(crlf)
-                .append("Content-Type: ").append(mime).append(crlf).append(crlf);
-        byte[] prefix = builder.toString().getBytes(StandardCharsets.UTF_8);
-        byte[] suffix = (crlf + "--" + boundary + "--" + crlf).getBytes(StandardCharsets.UTF_8);
-        byte[] body = new byte[prefix.length + fileBytes.length + suffix.length];
-        System.arraycopy(prefix, 0, body, 0, prefix.length);
-        System.arraycopy(fileBytes, 0, body, prefix.length, fileBytes.length);
-        System.arraycopy(suffix, 0, body, prefix.length + fileBytes.length, suffix.length);
-        return body;
+        String prefix = String.join(crlf,
+                "--" + boundary,
+                "Content-Disposition: form-data; name=\"entity\"; filename=\"blob\"",
+                "Content-Type: application/json",
+                "",
+                entityJson,
+                "--" + boundary,
+                "Content-Disposition: form-data; name=\"content\"; filename=\"" + fileName + "\"",
+                "Content-Type: " + mime,
+                "",
+                "");
+        String suffix = crlf + "--" + boundary + "--" + crlf;
+        return new SequenceInputStream(Collections.enumeration(List.of(
+                new ByteArrayInputStream(prefix.getBytes(StandardCharsets.UTF_8)),
+                file.read(),
+                new ByteArrayInputStream(suffix.getBytes(StandardCharsets.UTF_8)))));
     }
 
     private String resolveMime(String fileName) {
-        String lower = fileName.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(".mp4")) {
-            return "video/mp4";
-        }
-        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
-            return "image/jpeg";
-        }
-        if (lower.endsWith(".png")) {
-            return "image/png";
-        }
-        return "application/octet-stream";
+        String ext = FilenameUtils.getExtension(fileName);
+        return switch (ext.toLowerCase(Locale.ROOT)) {
+            case "jpg","jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "mp4" -> "video/mp4";
+            default -> "application/octet-stream";
+        };
     }
 
     private OctaneResponse executeJsonRequest(HttpMethod method, String url, String jsonBody, OctaneClient client) throws IOException {
-        Map<String, String> headers = new LinkedHashMap<>();
-        headers.put("accept", ACCEPT_JSON);
-        headers.put("Content-Type", CONTENT_TYPE_JSON);
-        headers.put(OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
+        OctaneRequest request = buildOctaneRequest(method, url, JSON_HEADERS, jsonBody);
+        initTransientCollaborators();
+        return octaneRequestExecutor.execute(client, request);
+    }
 
-        OctaneRequest request = DTOFactory.getInstance()
+    private static Map<String, String> headersWithContentType(String contentType) {
+        Map<String, String> headers = new LinkedHashMap<>(BASE_HEADERS);
+        headers.put("Content-Type", contentType);
+        return headers;
+    }
+
+    private OctaneRequest buildOctaneRequest(HttpMethod method, String url, Map<String, String> headers, String body) {
+        return DTOFactory.getInstance()
                 .newDTO(OctaneRequest.class)
                 .setMethod(method)
                 .setHeaders(headers)
                 .setUrl(url)
-                .setBody(jsonBody);
-        return client.getRestService().obtainOctaneRestClient().execute(request);
+                .setBody(body);
+    }
+
+    private OctaneRequest buildOctaneRequest(HttpMethod method, String url, Map<String, String> headers, InputStream body) {
+        return DTOFactory.getInstance()
+                .newDTO(OctaneRequest.class)
+                .setMethod(method)
+                .setHeaders(headers)
+                .setUrl(url)
+                .setBody(body);
     }
 
     private void assertSuccess(OctaneResponse response, String message) throws IOException {
@@ -519,7 +566,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         if (response.getStatus() >= HttpStatus.SC_OK && response.getStatus() < HttpStatus.SC_MULTIPLE_CHOICES) {
             return;
         }
-        throw new IOException(message + ". HTTP " + response.getStatus() + ", body: " + String.valueOf(response.getBody()));
+        throw new IOException(message + ". HTTP " + response.getStatus() + ", body: " + response.getBody());
     }
 
     private String toListNodeStatusId(JSONObject statusObject) {
@@ -541,25 +588,15 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             return null;
         }
         String s = raw.trim().toLowerCase(Locale.ROOT).replace("-", "").replace("_", "").replace(" ", "");
-        switch (s) {
-            case "passed":
-            case "pass":
-            case "success":
-                return "list_node.run_native_status.passed";
-            case "failed":
-            case "fail":
-            case "failure":
-                return "list_node.run_native_status.failed";
-            case "skipped":
-            case "skip":
-                return "list_node.run_native_status.skipped";
-            case "notcompleted":
-                return "list_node.run_native_status.not_completed";
-            case "needsattention":
-                return "list_node.run_native_status.needs_attention";
-            default:
-                return null;
-        }
+        String suffix = switch (s) {
+            case "passed", "pass", "success" -> "passed";
+            case "failed", "fail", "failure" -> "failed";
+            case "skipped", "skip" -> "skipped";
+            case "notcompleted" -> "not_completed";
+            case "needsattention" -> "needs_attention";
+            default -> null;
+        };
+        return suffix == null ? null : RUN_NATIVE_STATUS_PREFIX + suffix;
     }
 
     private String firstNonBlank(String... values) {
@@ -575,29 +612,31 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         if (t == null) {
             return "null exception";
         }
-        StackTraceElement location = firstStackTraceLine(t);
         StringBuilder details = new StringBuilder();
-        details.append(t.getClass().getName())
-                .append(": " + t.getMessage());
-        if (location != null) {
-            details.append(" at " + location.getClassName() + "." + location.getMethodName()
-                    + "(" + location.getFileName() + ":" + location.getLineNumber() + ")");
-        }
-        Throwable cause = t.getCause();
-        if (cause != null) {
-            details.append("; cause=" +  cause.getClass().getName() + ": " +  cause.getMessage());
-        }
-        return details.toString();
-    }
+        details.append(t.getClass().getName()).append(": ").append(t.getMessage());
 
-    private StackTraceElement firstStackTraceLine(Throwable t) {
-        for (StackTraceElement ste : t.getStackTrace()) {
-            if (ste != null && MIAgentResultPublisher.class.getName().equals(ste.getClassName())) {
-                return ste;
+        StackTraceElement[] stack = t.getStackTrace();
+        if (stack != null && stack.length > 0) {
+            String nl = System.lineSeparator();
+            int framesToPrint = Math.min(MAX_EXCEPTION_STACK_FRAMES, stack.length);
+            details.append("; stack:");
+            for (int i = 0; i < framesToPrint; i++) {
+                details.append(nl).append("\tat ").append(stack[i]);
+            }
+            if (stack.length > framesToPrint) {
+                details.append(nl).append("\t... (").append(stack.length - framesToPrint).append(" more)");
             }
         }
-        StackTraceElement[] stack = t.getStackTrace();
-        return (stack != null && stack.length > 0) ? stack[0] : null;
+
+        Throwable cause = t.getCause();
+        if (cause != null) {
+            details.append(System.lineSeparator())
+                    .append("caused by: ")
+                    .append(cause.getClass().getName())
+                    .append(": ")
+                    .append(cause.getMessage());
+        }
+        return details.toString();
     }
 
     void handlePublishFailures(Run<?, ?> run, List<String> failures, MIAgentPublishSummary summary) {
@@ -608,11 +647,13 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     public static class MIAgentValidationException extends Exception {
+        @Serial
         private static final long serialVersionUID = 1L;
         public MIAgentValidationException(String message) { super(message); }
     }
 
     public static class MIAgentPublishSummary implements Serializable {
+        @Serial
         private static final long serialVersionUID = 1L;
 
         public enum Status { PUBLISHED, PARTIAL_FAILURE, NO_RESULTS, INVALID, ERROR }
@@ -639,6 +680,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     public static class MIAgentPublishSummaryAction extends hudson.model.InvisibleAction implements Serializable {
+        @Serial
         private static final long serialVersionUID = 1L;
         private final MIAgentPublishSummary summary;
         public MIAgentPublishSummaryAction(MIAgentPublishSummary summary) { this.summary = summary; }
@@ -662,42 +704,35 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     static List<String> supportedManifestVersions() {
-        return new ArrayList<>(Arrays.asList(SUPPORTED_MANIFEST_VERSIONS.toArray(new String[0])));
+        return new ArrayList<>(SUPPORTED_MANIFEST_VERSIONS);
     }
 
-    private static class PublishContext {
-        private final OctaneClient client;
-        private final String baseUrl;
-        private final String sharedSpaceId;
-        private final String workspaceId;
-
-        private PublishContext(OctaneClient client, String baseUrl, String sharedSpaceId, String workspaceId) {
-            this.client = client;
-            this.baseUrl = baseUrl;
-            this.sharedSpaceId = sharedSpaceId;
-            this.workspaceId = workspaceId;
+    private void initTransientCollaborators() {
+        if (octaneClientProvider == null) {
+            octaneClientProvider = OctaneSDK::getClientByInstanceId;
+        }
+        if (octaneRequestExecutor == null) {
+            octaneRequestExecutor = (client, request) -> client.getRestService().obtainOctaneRestClient().execute(request);
         }
     }
 
-    private static class RunPublishData {
-        private final String runId;
-        private final FilePath runFolder;
-        private final JSONObject runResult;
-
-        private RunPublishData(String runId, FilePath runFolder, JSONObject runResult) {
-            this.runId = runId;
-            this.runFolder = runFolder;
-            this.runResult = runResult;
-        }
+    @Serial
+    private Object readResolve() {
+        initTransientCollaborators();
+        return this;
     }
 
-    private static class RunPublishResult {
-        private final int publishedSteps;
-        private final int totalSteps;
-
-        private RunPublishResult(int publishedSteps, int totalSteps) {
-            this.publishedSteps = publishedSteps;
-            this.totalSteps = totalSteps;
-        }
+    interface OctaneClientProvider {
+        OctaneClient getClientByInstanceId(String instanceId);
     }
+
+    interface OctaneRequestExecutor {
+        OctaneResponse execute(OctaneClient client, OctaneRequest request) throws IOException;
+    }
+
+    private record PublishContext(OctaneClient client, String baseUrl, String sharedSpaceId, String workspaceId) {}
+
+    private record RunPublishData(String runId, FilePath runFolder, JSONObject runResult) {}
+
+    private record RunPublishResult(int publishedSteps, int totalSteps) {}
 }
