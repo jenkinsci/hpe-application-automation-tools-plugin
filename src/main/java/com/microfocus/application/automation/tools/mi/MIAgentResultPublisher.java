@@ -101,7 +101,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     public static final String DEFAULT_MANIFEST_NAME = "manifest.json";
     private static final String RUN_STEPS_RESULT_FILE = "run_steps_result.json";
     private static final Pattern SCREENSHOT_RE = Pattern.compile("^screenshot_(?<stepId>[^_]+)_");
-    private static final List<String> SUPPORTED_MANIFEST_VERSIONS = Collections.singletonList("1.0");
+    private static final List<String> SUPPORTED_MANIFEST_VERSIONS = List.of("1.0");
     private static final String ACCEPT_JSON = "application/json";
     private static final String CONTENT_TYPE_JSON = "application/json";
     private static final String RUN_NATIVE_STATUS_PREFIX = "list_node.run_native_status.";
@@ -701,10 +701,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         public String getDisplayName() {
             return "Publish MI Agent (Autonomous-Tester) results to Software Delivery Management";
         }
-    }
-
-    static List<String> supportedManifestVersions() {
-        return new ArrayList<>(SUPPORTED_MANIFEST_VERSIONS);
     }
 
     private void initTransientCollaborators() {
