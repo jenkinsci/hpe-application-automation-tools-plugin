@@ -255,21 +255,34 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                               Launcher launcher,
                               PrintStream log,
                               Run<?, ?> build) throws IOException, InterruptedException {
-        FilePath wsRunner = workspace.child(MI_AGENT_EXE);
-        if (!wsRunner.exists()) {
-            throw new IOException("[MI Agent][ERROR] MI Agent executable not found at: "
-                    + wsRunner.getRemote()
-                    + ". Expected location: ${WORKSPACE}\\mi-agent.exe");
+        FilePath sharedRunner = resolveRunnerExecutable(workspace);
+        if (sharedRunner == null) {
+            throw new IOException("[MI Agent][ERROR] MI Agent executable not found at required shared location: ${WORKSPACE}/../"
+                    + MI_AGENT_EXE);
         }
 
         ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(wsRunner.getRemote());
+        args.add(sharedRunner.getRemote());
         FilePath confFile = generateConfFile(workspace, runStepsFile.getRemote(), runFolder.getRemote(), build);
         args.add("--config_file_path=" + confFile.getRemote());
-        log.println("[MI Agent] Resolved executable: " + wsRunner.getRemote());
+        log.println("[MI Agent] Resolved executable: " + sharedRunner.getRemote());
         int exitCode = launcher.launch().cmds(args).stdout(log).pwd(workspace).join();
         log.println("[MI Agent] Exit code: " + exitCode);
         return exitCode;
+    }
+
+    private FilePath resolveRunnerExecutable(FilePath workspace) throws IOException, InterruptedException {
+        FilePath sharedWorkspace = workspace.getParent();
+        if (sharedWorkspace == null) {
+            return null;
+        }
+
+        FilePath sharedRunner = sharedWorkspace.child(MI_AGENT_EXE);
+        if (sharedRunner.exists() && !sharedRunner.isDirectory()) {
+            return sharedRunner;
+        }
+
+        return null;
     }
 
     private FilePath generateConfFile(FilePath workspace, String runStepFilePath, String outputBaseDir, Run<?, ?> build)

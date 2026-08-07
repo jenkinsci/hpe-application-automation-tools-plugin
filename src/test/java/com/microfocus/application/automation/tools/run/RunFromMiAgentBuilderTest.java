@@ -63,6 +63,7 @@ import java.nio.file.Files;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
@@ -218,6 +219,72 @@ public class RunFromMiAgentBuilderTest {
         assertEquals(2, json.path("run_steps").path("data").size());
         assertEquals("s1", json.path("run_steps").path("data").get(0).path("id").asText());
         assertEquals("runner failed", json.path("run_steps").path("data").get(1).path("actual").asText());
+    }
+
+    @Test
+    public void resolveRunnerExecutable_usesSharedWorkspaceParent() throws Exception {
+        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
+        File sharedWorkspace = tempFolder.newFolder("shared-workspace");
+        File runnerWorkspace = new File(sharedWorkspace, "runner-1");
+        assertTrue(runnerWorkspace.mkdir());
+        File miAgentExe = new File(sharedWorkspace, "mi-agent.exe");
+        assertTrue(miAgentExe.createNewFile());
+
+        Method resolveMethod = RunFromMiAgentBuilder.class.getDeclaredMethod("resolveRunnerExecutable", FilePath.class);
+        resolveMethod.setAccessible(true);
+
+        FilePath resolved = (FilePath) resolveMethod.invoke(builder, new FilePath(runnerWorkspace));
+        assertNotNull(resolved);
+        assertEquals(miAgentExe.getAbsolutePath(), resolved.getRemote());
+    }
+
+    @Test
+    public void resolveRunnerExecutable_returnsNullWhenExeExistsOnlyInRunnerWorkspace() throws Exception {
+        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
+        File sharedWorkspace = tempFolder.newFolder("shared-workspace-only-runner-has-exe");
+        File runnerWorkspace = new File(sharedWorkspace, "runner-2");
+        assertTrue(runnerWorkspace.mkdir());
+        File miAgentExeInRunner = new File(runnerWorkspace, "mi-agent.exe");
+        assertTrue(miAgentExeInRunner.createNewFile());
+
+        Method resolveMethod = RunFromMiAgentBuilder.class.getDeclaredMethod("resolveRunnerExecutable", FilePath.class);
+        resolveMethod.setAccessible(true);
+
+        FilePath resolved = (FilePath) resolveMethod.invoke(builder, new FilePath(runnerWorkspace));
+        assertNull(resolved);
+    }
+
+    @Test
+    public void executeRunner_throwsWhenSharedExecutableMissing() throws Exception {
+        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
+        File sharedWorkspace = tempFolder.newFolder("shared-workspace-missing-exe");
+        File runnerWorkspace = new File(sharedWorkspace, "runner-3");
+        assertTrue(runnerWorkspace.mkdir());
+        File runFolderDir = new File(runnerWorkspace, "mi-agent-results\\1042");
+        assertTrue(runFolderDir.mkdirs());
+        File runSteps = new File(runFolderDir, "run_steps.json");
+        Files.writeString(runSteps.toPath(), "{}", StandardCharsets.UTF_8);
+
+        Method executeMethod = RunFromMiAgentBuilder.class.getDeclaredMethod(
+                "executeRunner", FilePath.class, FilePath.class, FilePath.class,
+                Launcher.class, PrintStream.class, Run.class);
+        executeMethod.setAccessible(true);
+
+        try {
+            executeMethod.invoke(
+                    builder,
+                    new FilePath(runFolderDir),
+                    new FilePath(runSteps),
+                    new FilePath(runnerWorkspace),
+                    mock(Launcher.class),
+                    new PrintStream(System.out),
+                    mock(FreeStyleBuild.class));
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            assertTrue(e.getCause() instanceof java.io.IOException);
+            assertTrue(e.getCause().getMessage().contains("${WORKSPACE}/../mi-agent.exe"));
+            return;
+        }
+        throw new AssertionError("Expected IOException");
     }
 
     private Run<?, ?> mockBuild(String convertedTests, MIAgentBuildAction existingAction) throws Exception {
