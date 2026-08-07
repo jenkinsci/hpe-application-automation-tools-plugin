@@ -247,12 +247,32 @@
         </pluginManagement>
 
         <plugins>
-            <!-- Explicitly pin release to 21 so the maven-hpi-plugin's java-level-17 file-based
-                 profile (which resets maven.compiler.release to 17) cannot override it. -->
+            <!-- maven-hpi-plugin's ValidateMojo derives the Java level from the Jenkins baseline
+                 (2.504 -> 17) and writes the target/java-level/17 marker, which activates a parent-POM
+                 profile that resets maven.compiler.release to 17. Pin both release and testRelease
+                 here: explicit plugin configuration wins over that profile property. Note the parent
+                 defaults maven.compiler.testRelease to ${maven.compiler.release}, so testRelease must
+                 be set too, otherwise tests would still compile at 17. -->
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <release>21</release>
+                    <testRelease>21</testRelease>
+                </configuration>
+            </plugin>
+
+            <!-- The plugin is compiled to class file version 65, so it cannot load on a controller
+                 running Java 17 (still supported by Jenkins 2.504). Declaring the requirement makes
+                 Jenkins reject it with a clear message instead of an UnsupportedClassVersionError. -->
+            <plugin>
+                <groupId>org.jenkins-ci.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Minimum-Java-Version>21</Minimum-Java-Version>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
 
