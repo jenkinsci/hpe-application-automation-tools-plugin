@@ -83,6 +83,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -439,20 +443,15 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     private void uploadAttachments(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
+        List<AttachmentUploadData> attachmentUploads = new ArrayList<>();
         FilePath recording = runData.runFolder().child("recording.mp4");
         if (recording.exists()) {
-            log.println("Uploading recording.mp4 file ...");
-            uploadAttachment(ctx, recording, "recording.mp4", "owner_run", "run", runData.runId(), log);
-            log.println("Uploaded recording.mp4 for run " + runData.runId() + ".");
+            attachmentUploads.add(new AttachmentUploadData(recording, "recording.mp4", "owner_run", "run", runData.runId()));
         }
 
         FilePath images = runData.runFolder().child("images");
-        if (!images.exists()) {
-            return;
-        }
-        FilePath[] imgs = images.list("screenshot_*.jpg");
-        if (imgs.length > 0) {
-            log.println("Uploading "  + imgs.length + " screenshot(s) ...");
+        if (images.exists()) {
+            FilePath[] imgs = images.list("screenshot_*.jpg");
             for (FilePath shot : imgs) {
                 String name = shot.getName();
                 Matcher m = SCREENSHOT_RE.matcher(name);
@@ -460,12 +459,70 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                     continue;
                 }
                 String stepId = m.group("stepId");
-                uploadAttachment(ctx, shot, name, "owner_run_step", "run_step", stepId, log);
+                attachmentUploads.add(new AttachmentUploadData(shot, name, "owner_run_step", "run_step", stepId));
+            }
+        }
+
+        if (attachmentUploads.isEmpty()) {
+            return;
+        }
+
+        log.println("Uploading " + attachmentUploads.size() + " attachment(s) in parallel ...");
+        // Virtual threads are ideal for I/O-bound work: one lightweight thread per upload, no pool sizing required.
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<Void>> futures = new ArrayList<>(attachmentUploads.size());
+            for (AttachmentUploadData upload : attachmentUploads) {
+                futures.add(executor.submit(() -> {
+                    uploadAttachment(ctx, upload.file(), upload.fileName(), upload.ownerField(), upload.ownerType(), upload.ownerId());
+                    return null;
+                }));
+            }
+
+            List<String> failedFiles = new ArrayList<>();
+            List<IOException> uploadFailures = new ArrayList<>();
+            for (int i = 0; i < futures.size(); i++) {
+                Future<Void> future = futures.get(i);
+                AttachmentUploadData upload = attachmentUploads.get(i);
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    // Cancel still-pending uploads immediately, then propagate.
+                    futures.forEach(f -> f.cancel(true));
+                    Thread.currentThread().interrupt();
+                    throw e;
+                } catch (ExecutionException e) {
+                    failedFiles.add(upload.fileName());
+                    uploadFailures.add(toAttachmentIOException(e.getCause()));
+                }
+            }
+            if (!failedFiles.isEmpty()) {
+                log.println(ERROR_PREFIX + " Failed to upload attachment(s):");
+                for (int i = 0; i < failedFiles.size(); i++) {
+                    String details = "Unknown error";
+                    if (i < uploadFailures.size()) {
+                        IOException failure = uploadFailures.get(i);
+                        Throwable original = failure.getCause() != null ? failure.getCause() : failure;
+                        details = StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName());
+                    }
+                    log.println(ERROR_PREFIX + " - " + failedFiles.get(i) + " :: " + details);
+                }
+                IOException finalExc = new IOException("Attachment upload failed for file(s): " + String.join(", ", failedFiles) + ".");
+                for (IOException uploadFailure : uploadFailures) {
+                    finalExc.addSuppressed(uploadFailure);
+                }
+                throw finalExc;
             }
         }
     }
 
-    private void uploadAttachment(PublishContext ctx, FilePath file, String fileName, String ownerField, String ownerType, String ownerId, PrintStream log)
+    private IOException toAttachmentIOException(Throwable cause) {
+        if (cause instanceof IOException ioe) {
+            return ioe;
+        }
+        return new IOException("Attachment upload failed.", cause);
+    }
+
+    private void uploadAttachment(PublishContext ctx, FilePath file, String fileName, String ownerField, String ownerType, String ownerId)
             throws IOException {
         try {
             String boundary = "----MIAgentBoundary" + UUID.randomUUID();
@@ -491,8 +548,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 assertSuccess(response, "Attachment upload failed for " + fileName);
             }
         } catch (Exception e) {
-            log.println(ERROR_PREFIX + " uploadAttachment failed for file '" + fileName
-                    + "' (ownerType=" + ownerType + ", ownerId=" + ownerId + "): " + e.getMessage());
             throw new IOException("Attachment upload failed for [" + fileName + "].", e);
         }
     }
@@ -731,4 +786,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private record RunPublishData(String runId, FilePath runFolder, JSONObject runResult) {}
 
     private record RunPublishResult(int publishedSteps, int totalSteps) {}
+
+    private record AttachmentUploadData(FilePath file, String fileName, String ownerField, String ownerType, String ownerId) {}
 }

@@ -80,10 +80,10 @@
         <hpi.bundledArtifacts>SVConfigurator,bcpg-jdk18on,bcpkix-jdk18on,bcprov-jdk18on,bcutil-jdk18on,commons-cli,commons-csv,commons-lang,integrations-dto,integrations-sdk,log4j-api,log4j-core,log4j-web,plugins-common,poi,tape,zip4j</hpi.bundledArtifacts>
         <jenkins-test-harness.version>2545.va_5c4d760c7ef
         </jenkins-test-harness.version> <!-- TODO newer versions than 2.55 require debugging an issue with open file handles -->
-        <java.level>21</java.level>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <maven.compiler.release>21</maven.compiler.release>
+        <!-- java.level is deprecated and ignored by maven-hpi-plugin's ValidateMojo; it creates
+             target/java-level/17 based on the Jenkins baseline, activating a parent-POM profile that
+             resets maven.compiler.release to 17.  Configure the compiler plugin directly below so
+             that the explicit <release> value always wins over that profile property. -->
 
 		<!-- The ending year for copyright information -->
 		<copyright.end.year>2026</copyright.end.year>
@@ -246,10 +246,19 @@
             </plugins>
         </pluginManagement>
 
+        <plugins>
+            <!-- Explicitly pin release to 21 so the maven-hpi-plugin's java-level-17 file-based
+                 profile (which resets maven.compiler.release to 17) cannot override it. -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>21</release>
+                </configuration>
+            </plugin>
+
 		<!-- This is the plugin that is used to add license headers to the source files
 		Run the following Maven command to apply the license headers to your files
 		mvn license:format-->
-        <plugins>
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>

@@ -64,6 +64,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -426,7 +429,131 @@ public class MIAgentResultPublisherTest {
         MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
         assertEquals(1, summary.getFailures().size());
-        assertTrue(summary.getFailures().get(0).contains("Attachment upload failed for [recording.mp4]"));
+        assertTrue(summary.getFailures().get(0).contains("recording.mp4"));
+        verify(run).setResult(Result.UNSTABLE);
+    }
+
+    @Test
+    public void perform_multipleAttachments_uploadsInParallel() throws Exception {
+        Run<?, ?> run = mock(FreeStyleBuild.class);
+        TaskListener listener = mockListener();
+        FilePath workspace = new FilePath(tempFolder.getRoot());
+        FilePath resultRoot = workspace.child(MIAgentResultPublisher.DEFAULT_RESULT_FOLDER);
+        FilePath runFolder = resultRoot.child("2242");
+        FilePath imagesFolder = runFolder.child("images");
+        imagesFolder.mkdirs();
+
+        JSONObject runResult = new JSONObject();
+        JSONObject nativeStatus = new JSONObject();
+        nativeStatus.put("name", "passed");
+        runResult.put("native_status", nativeStatus);
+        runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
+        runFolder.child("recording.mp4").write("dummy-video", StandardCharsets.UTF_8.name());
+        imagesFolder.child("screenshot_s11_1.jpg").write("img-1", StandardCharsets.UTF_8.name());
+        imagesFolder.child("screenshot_s12_2.jpg").write("img-2", StandardCharsets.UTF_8.name());
+
+        JSONObject runEntry = new JSONObject();
+        runEntry.put("runId", "2242");
+        runEntry.put("runFolder", runFolder.getRemote());
+        JSONArray runs = new JSONArray();
+        runs.add(runEntry);
+        JSONObject manifest = new JSONObject();
+        manifest.put("schemaVersion", "1.0");
+        manifest.put("runs", runs);
+        resultRoot.child(MIAgentResultPublisher.DEFAULT_MANIFEST_NAME)
+                .write(manifest.toJSONString(), StandardCharsets.UTF_8.name());
+
+        OctaneClient client = mockOctaneClient("http://octane.example", "1001");
+        MIAgentResultPublisher publisher = new MIAgentResultPublisher();
+        publisher.setConfigurationId("cfg");
+        publisher.setWorkspaceId("2001");
+        publisher.setUploadAttachments(true);
+        publisher.setOctaneClientProvider(instanceId -> client);
+
+        CountDownLatch attachmentsStarted = new CountDownLatch(2);
+        AtomicInteger inFlightAttachments = new AtomicInteger(0);
+        AtomicInteger maxInFlightAttachments = new AtomicInteger(0);
+        publisher.setOctaneRequestExecutor((ignored, request) -> {
+            String url = extractRequestUrl(request);
+            if (url != null && url.endsWith("/attachments")) {
+                int currentInFlight = inFlightAttachments.incrementAndGet();
+                maxInFlightAttachments.updateAndGet(previous -> Math.max(previous, currentInFlight));
+                try {
+                    attachmentsStarted.countDown();
+                    if (!attachmentsStarted.await(2, TimeUnit.SECONDS)) {
+                        throw new IOException("Attachment uploads did not overlap.");
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    inFlightAttachments.decrementAndGet();
+                }
+            }
+            return mockResponse(200);
+        });
+
+        publisher.perform(run, workspace, mock(Launcher.class), listener);
+
+        assertTrue("Expected at least two concurrent attachment uploads.", maxInFlightAttachments.get() >= 2);
+        MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PUBLISHED, summary.getStatus());
+    }
+
+    @Test
+    public void perform_twoAttachmentUploadsFail_setsPartialFailureAndReportsBothFiles() throws Exception {
+        Run<?, ?> run = mock(FreeStyleBuild.class);
+        TaskListener listener = mockListener();
+        FilePath workspace = new FilePath(tempFolder.getRoot());
+        FilePath resultRoot = workspace.child(MIAgentResultPublisher.DEFAULT_RESULT_FOLDER);
+        FilePath runFolder = resultRoot.child("2342");
+        FilePath imagesFolder = runFolder.child("images");
+        imagesFolder.mkdirs();
+
+        JSONObject runResult = new JSONObject();
+        JSONObject nativeStatus = new JSONObject();
+        nativeStatus.put("name", "passed");
+        runResult.put("native_status", nativeStatus);
+        runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
+        runFolder.child("recording.mp4").write("dummy-video", StandardCharsets.UTF_8.name());
+        imagesFolder.child("screenshot_s11_1.jpg").write("img-1", StandardCharsets.UTF_8.name());
+
+        JSONObject runEntry = new JSONObject();
+        runEntry.put("runId", "2342");
+        runEntry.put("runFolder", runFolder.getRemote());
+        JSONArray runs = new JSONArray();
+        runs.add(runEntry);
+        JSONObject manifest = new JSONObject();
+        manifest.put("schemaVersion", "1.0");
+        manifest.put("runs", runs);
+        resultRoot.child(MIAgentResultPublisher.DEFAULT_MANIFEST_NAME)
+                .write(manifest.toJSONString(), StandardCharsets.UTF_8.name());
+
+        OctaneClient client = mockOctaneClient("http://octane.example", "1001");
+        MIAgentResultPublisher publisher = new MIAgentResultPublisher();
+        publisher.setConfigurationId("cfg");
+        publisher.setWorkspaceId("2001");
+        publisher.setFailBuildOnPublishError(false);
+        publisher.setUploadAttachments(true);
+        publisher.setOctaneClientProvider(instanceId -> client);
+
+        AtomicInteger attachmentRequests = new AtomicInteger(0);
+        publisher.setOctaneRequestExecutor((ignored, request) -> {
+            String url = extractRequestUrl(request);
+            if (url != null && url.endsWith("/attachments")) {
+                int idx = attachmentRequests.incrementAndGet();
+                throw new IOException("simulated upload failure " + idx);
+            }
+            return mockResponse(200);
+        });
+
+        publisher.perform(run, workspace, mock(Launcher.class), listener);
+
+        MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
+        assertEquals(1, summary.getFailures().size());
+        assertTrue(summary.getFailures().get(0).contains("Attachment upload failed for file(s):"));
+        assertTrue(summary.getFailures().get(0).contains("recording.mp4"));
+        assertTrue(summary.getFailures().get(0).contains("screenshot_s11_1.jpg"));
         verify(run).setResult(Result.UNSTABLE);
     }
 
@@ -500,6 +627,17 @@ public class MIAgentResultPublisherTest {
             return new String(((InputStream) body).readAllBytes(), StandardCharsets.UTF_8);
         }
         return String.valueOf(body);
+    }
+
+    private String extractRequestUrl(OctaneRequest request) throws IOException {
+        try {
+            Method getter = request.getClass().getDeclaredMethod("getUrl");
+            getter.setAccessible(true);
+            Object url = getter.invoke(request);
+            return url == null ? null : String.valueOf(url);
+        } catch (Exception e) {
+            throw new IOException("Failed reading request URL.", e);
+        }
     }
 
     private TaskListener mockListener() {
