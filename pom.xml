@@ -80,10 +80,10 @@
         <hpi.bundledArtifacts>SVConfigurator,bcpg-jdk18on,bcpkix-jdk18on,bcprov-jdk18on,bcutil-jdk18on,commons-cli,commons-csv,commons-lang,integrations-dto,integrations-sdk,log4j-api,log4j-core,log4j-web,plugins-common,poi,tape,zip4j</hpi.bundledArtifacts>
         <jenkins-test-harness.version>2545.va_5c4d760c7ef
         </jenkins-test-harness.version> <!-- TODO newer versions than 2.55 require debugging an issue with open file handles -->
-        <java.level>21</java.level>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <maven.compiler.release>21</maven.compiler.release>
+        <!-- java.level is deprecated and ignored by maven-hpi-plugin's ValidateMojo; it creates
+             target/java-level/17 based on the Jenkins baseline, activating a parent-POM profile that
+             resets maven.compiler.release to 17.  Configure the compiler plugin directly below so
+             that the explicit <release> value always wins over that profile property. -->
 
 		<!-- The ending year for copyright information -->
 		<copyright.end.year>2026</copyright.end.year>
@@ -246,10 +246,39 @@
             </plugins>
         </pluginManagement>
 
+        <plugins>
+            <!-- maven-hpi-plugin's ValidateMojo derives the Java level from the Jenkins baseline
+                 (2.504 -> 17) and writes the target/java-level/17 marker, which activates a parent-POM
+                 profile that resets maven.compiler.release to 17. Pin both release and testRelease
+                 here: explicit plugin configuration wins over that profile property. Note the parent
+                 defaults maven.compiler.testRelease to ${maven.compiler.release}, so testRelease must
+                 be set too, otherwise tests would still compile at 17. -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>21</release>
+                    <testRelease>21</testRelease>
+                </configuration>
+            </plugin>
+
+            <!-- The plugin is compiled to class file version 65, so it cannot load on a controller
+                 running Java 17 (still supported by Jenkins 2.504). Declaring the requirement makes
+                 Jenkins reject it with a clear message instead of an UnsupportedClassVersionError. -->
+            <plugin>
+                <groupId>org.jenkins-ci.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Minimum-Java-Version>21</Minimum-Java-Version>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
 		<!-- This is the plugin that is used to add license headers to the source files
 		Run the following Maven command to apply the license headers to your files
 		mvn license:format-->
-        <plugins>
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>

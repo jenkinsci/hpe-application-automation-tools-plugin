@@ -189,7 +189,6 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
             }
 
             printToConsole(listener, "Found #tests : " + convertResult.getTestsData().size());
-            printToConsole(listener, "Set to parameter : " + convertResult.getTestsToRunConvertedParameterName() + " = " + convertResult.getConvertedTestsString());
             printToConsole(listener, "********************* Conversion is done *********************");
             if (JobProcessorFactory.WORKFLOW_RUN_NAME.equals(build.getClass().getName())) {
                 List<ParameterValue> newParams = (parameterAction != null) ? new ArrayList<>(parameterAction.getAllParameters()) : new ArrayList<>();
