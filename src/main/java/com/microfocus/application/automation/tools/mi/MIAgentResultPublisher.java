@@ -492,7 +492,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                     if (i < uploadFailures.size()) {
                         IOException failure = uploadFailures.get(i);
                         Throwable original = failure.getCause() != null ? failure.getCause() : failure;
-                        details = StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName());
+                        details = summarizeExceptionMessage(
+                                StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName()));
                     }
                     log.println(WARN_PREFIX + " - " + failedFiles.get(i) + " :: " + details);
                     failures.add("Run " + runData.runId() + " attachment " + failedFiles.get(i) + " upload failed: " + details);
@@ -607,7 +608,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         if (response.getStatus() >= HttpStatus.SC_OK && response.getStatus() < HttpStatus.SC_MULTIPLE_CHOICES) {
             return;
         }
-        throw new IOException(message + ". HTTP " + response.getStatus() + ", body: " + response.getBody());
+        throw new IOException(message + ". HTTP " + response.getStatus() + ", body: " + summarizeResponseBody(response.getBody()));
     }
 
     private String toListNodeStatusId(JSONObject statusObject) {
@@ -654,7 +655,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             return "null exception";
         }
         StringBuilder details = new StringBuilder();
-        details.append(t.getClass().getName()).append(": ").append(t.getMessage());
+        details.append(t.getClass().getName()).append(": ").append(summarizeExceptionMessage(t.getMessage()));
 
         StackTraceElement[] stack = t.getStackTrace();
         if (stack != null && stack.length > 0) {
@@ -675,9 +676,60 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                     .append("caused by: ")
                     .append(cause.getClass().getName())
                     .append(": ")
-                    .append(cause.getMessage());
+                    .append(summarizeExceptionMessage(cause.getMessage()));
         }
         return details.toString();
+    }
+
+    private String summarizeExceptionMessage(String message) {
+        if (StringUtils.isBlank(message)) {
+            return message;
+        }
+        return truncateServerStackTraceField(message);
+    }
+
+    private String summarizeResponseBody(String body) {
+        if (StringUtils.isBlank(body)) {
+            return body;
+        }
+        return truncateServerStackTraceField(body);
+    }
+
+    private String truncateServerStackTraceField(String text) {
+        if (StringUtils.isBlank(text)) {
+            return text;
+        }
+        Object parsed = JSONValue.parse(text);
+        if (parsed instanceof JSONObject obj && obj.containsKey("stack_trace")) {
+            JSONObject copy = new JSONObject();
+            copy.putAll(obj);
+            Object stackTraceObj = obj.get("stack_trace");
+            if (stackTraceObj instanceof String stackTrace) {
+                copy.put("stack_trace", truncateByLines(stackTrace, MAX_EXCEPTION_STACK_FRAMES));
+            }
+            return copy.toJSONString();
+        }
+        return text;
+    }
+
+    private String truncateByLines(String text, int maxLines) {
+        if (StringUtils.isBlank(text) || maxLines <= 0) {
+            return text;
+        }
+        String normalized = text.replace("\r\n", "\n").replace('\r', '\n');
+        String[] lines = normalized.split("\n");
+        if (lines.length <= maxLines) {
+            return text;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < maxLines; i++) {
+            if (i > 0) {
+                sb.append('\n');
+            }
+            sb.append(lines[i]);
+        }
+        sb.append('\n').append("... (").append(lines.length - maxLines).append(" more lines)");
+        return sb.toString();
     }
 
     void handlePublishFailures(Run<?, ?> run, List<String> failures, MIAgentPublishSummary summary) {

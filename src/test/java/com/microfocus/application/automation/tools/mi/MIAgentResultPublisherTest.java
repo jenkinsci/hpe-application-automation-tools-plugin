@@ -598,6 +598,62 @@ public class MIAgentResultPublisherTest {
     }
 
     @Test
+    public void perform_attachmentUploadFailureWithServerStackTrace_truncatesStackTraceByLinesInFailureSummary() throws Exception {
+        Run<?, ?> run = mock(FreeStyleBuild.class);
+        TaskListener listener = mockListener();
+        FilePath workspace = new FilePath(tempFolder.getRoot());
+        FilePath resultRoot = workspace.child(MIAgentResultPublisher.DEFAULT_RESULT_FOLDER);
+        FilePath runFolder = resultRoot.child("2442");
+        runFolder.mkdirs();
+
+        JSONObject runResult = new JSONObject();
+        JSONObject nativeStatus = new JSONObject();
+        nativeStatus.put("name", "passed");
+        runResult.put("native_status", nativeStatus);
+        runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
+        runFolder.child("recording.mp4").write("dummy-video", StandardCharsets.UTF_8.name());
+
+        JSONObject runEntry = new JSONObject();
+        runEntry.put("runId", "2442");
+        runEntry.put("runFolder", runFolder.getRemote());
+        JSONArray runs = new JSONArray();
+        runs.add(runEntry);
+        JSONObject manifest = new JSONObject();
+        manifest.put("schemaVersion", "1.0");
+        manifest.put("runs", runs);
+        resultRoot.child(MIAgentResultPublisher.DEFAULT_MANIFEST_NAME)
+                .write(manifest.toJSONString(), StandardCharsets.UTF_8.name());
+
+        OctaneClient client = mockOctaneClient("http://octane.example", "1001");
+        MIAgentResultPublisher publisher = new MIAgentResultPublisher();
+        publisher.setConfigurationId("cfg");
+        publisher.setWorkspaceId("2001");
+        publisher.setFailBuildOnPublishError(false);
+        publisher.setUploadAttachments(true);
+        publisher.setOctaneClientProvider(instanceId -> client);
+        publisher.setOctaneRequestExecutor((ignored, request) -> {
+            String url = extractRequestUrl(request);
+            if (url != null && url.endsWith("/attachments")) {
+                return mockResponse(500,
+                        "{\"error_code\":\"platform.general_error\",\"stack_trace\":\"l1\\nl2\\nl3\\nl4\\nl5\\nl6\\nl7\\nl8\\nl9\",\"description\":\"attachment failed\"}");
+            }
+            return mockResponse(200);
+        });
+
+        publisher.perform(run, workspace, mock(Launcher.class), listener);
+
+        MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
+        assertEquals(1, summary.getFailures().size());
+        String failure = summary.getFailures().get(0);
+        assertTrue(failure.contains("recording.mp4"));
+        assertTrue(failure.contains("\"stack_trace\":\"l1\\nl2\\nl3\\nl4\\nl5\\nl6\\nl7\\n... (2 more lines)\""));
+        assertTrue(!failure.contains("l8\\n"));
+        assertTrue(!failure.contains("\\nl9"));
+        verify(run).setResult(Result.UNSTABLE);
+    }
+
+    @Test
     public void perform_manifestRunFolderOutsideResultRoot_setsInvalidAndFailure() throws Exception {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
@@ -647,9 +703,13 @@ public class MIAgentResultPublisherTest {
     }
 
     private OctaneResponse mockResponse(int statusCode) {
+        return mockResponse(statusCode, "{}");
+    }
+
+    private OctaneResponse mockResponse(int statusCode, String body) {
         OctaneResponse response = mock(OctaneResponse.class);
         when(response.getStatus()).thenReturn(statusCode);
-        when(response.getBody()).thenReturn("{}");
+        when(response.getBody()).thenReturn(body);
         return response;
     }
 
