@@ -55,6 +55,7 @@ import com.microfocus.application.automation.tools.octane.executor.scmmanager.Sc
 import com.microfocus.application.automation.tools.octane.model.processors.projects.JobProcessorFactory;
 import com.microfocus.application.automation.tools.octane.testrunner.TestsToRunConverterBuilder;
 import com.microfocus.application.automation.tools.results.RunResultRecorder;
+import com.microfocus.application.automation.tools.run.MiAgentPreflightBuilder;
 import com.microfocus.application.automation.tools.run.RunFromCodelessBuilder;
 import com.microfocus.application.automation.tools.run.RunFromFileBuilder;
 import com.microfocus.application.automation.tools.run.RunFromMiAgentBuilder;
@@ -437,7 +438,8 @@ public class TestExecutionJobCreatorService {
 		addTimestamper(proj);
 		addConcurrentBuildFlag(proj);
 
-		// Build steps - MI Agent converter + runner
+		// Build steps - preflight check, then MI Agent converter + runner
+		proj.getBuildersList().add(new MiAgentPreflightBuilder());
 		Builder converterBuilder = new TestsToRunConverterBuilder(TestsToRunFramework.MF_MI_AGENT.value());
 		proj.getBuildersList().add(converterBuilder);
 		RunFromMiAgentBuilder miAgentRunner = new RunFromMiAgentBuilder();
