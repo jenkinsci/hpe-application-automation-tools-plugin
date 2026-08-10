@@ -81,19 +81,23 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
     }
 
     private static void printToConsole(TaskListener listener, String msg) {
-        listener.getLogger().println(MiAgentPreflightBuilder.class.getSimpleName() + " : " + msg);
+        listener.getLogger().println(formatMessage(msg));
+    }
+
+    private static String formatMessage(String msg) {
+        return MiAgentPreflightBuilder.class.getSimpleName() + " : " + msg;
     }
 
     private FilePath checkMiAgentExecutable(FilePath workspace) throws IOException, InterruptedException {
         // mi-agent.exe lives in the shared workspace root, one level above the job workspace
         FilePath sharedWorkspace = workspace.getParent();
         if (sharedWorkspace == null) {
-            throw new AbortException("[MI Agent][PREFLIGHT] Cannot resolve shared workspace root from: " + workspace.getRemote());
+            throw new AbortException(formatMessage("Cannot resolve shared workspace root from: " + workspace.getRemote()));
         }
 
         FilePath miAgentExe = sharedWorkspace.child(MI_AGENT_EXE);
         if (!miAgentExe.exists() || miAgentExe.isDirectory()) {
-            throw new AbortException("[MI Agent][PREFLIGHT] mi-agent.exe not found at: " + miAgentExe.getRemote());
+            throw new AbortException(formatMessage("mi-agent.exe not found at: " + miAgentExe.getRemote()));
         }
 
         return miAgentExe;
@@ -101,7 +105,7 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
 
     private void validateSignerName(FilePath miAgentExe, Launcher launcher) throws IOException, InterruptedException {
         if (launcher.isUnix()) {
-            throw new AbortException("[MI Agent][PREFLIGHT] Signer validation requires a Windows agent.");
+            throw new AbortException(formatMessage("Signer validation requires a Windows agent."));
         }
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -117,17 +121,17 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
 
         String outputText = output.toString(StandardCharsets.UTF_8).trim();
         if (exitCode != 0) {
-            throw new AbortException("[MI Agent][PREFLIGHT] Failed to validate mi-agent.exe signer. "
-                    + "PowerShell exit code=" + exitCode + ". Output: " + outputText);
+            throw new AbortException(formatMessage("Failed to validate mi-agent.exe signer. "
+                    + "PowerShell exit code=" + exitCode + ". Output: " + outputText));
         }
 
         String signerName = extractOutputValue(outputText, SIGNER_PREFIX);
         if (signerName == null || signerName.trim().isEmpty()) {
-            throw new AbortException("[MI Agent][PREFLIGHT] mi-agent.exe is not digitally signed.");
+            throw new AbortException(formatMessage("mi-agent.exe is not digitally signed."));
         }
         if (!EXPECTED_SIGNER_NAME.equals(signerName.trim())) {
-            throw new AbortException("[MI Agent][PREFLIGHT] Invalid mi-agent.exe signer: '" + signerName + "'. "
-                    + "Expected signer: '" + EXPECTED_SIGNER_NAME + "'.");
+            throw new AbortException(formatMessage("Invalid mi-agent.exe signer: '" + signerName + "'. "
+                    + "Expected signer: '" + EXPECTED_SIGNER_NAME + "'."));
         }
     }
 
