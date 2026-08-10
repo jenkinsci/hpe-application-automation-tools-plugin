@@ -61,9 +61,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -92,41 +90,8 @@ public class MIAgentResultPublisherTest {
 
         MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.NO_RESULTS, summary.getStatus());
-        assertTrue(summary.getMessage().contains("No MI Agent result files found"));
+        assertTrue(summary.getMessage().contains("Result folder"));
         verify(run, never()).setResult(any());
-    }
-
-    @Test
-    public void collectResultFiles_filtersSupportedExtensionsCaseInsensitively() throws Exception {
-        MIAgentResultPublisher publisher = new MIAgentResultPublisher();
-        FilePath resultRoot = new FilePath(tempFolder.getRoot()).child(MIAgentResultPublisher.DEFAULT_RESULT_FOLDER);
-        resultRoot.mkdirs();
-
-        resultRoot.child("a.json").write("{}", StandardCharsets.UTF_8.name());
-        resultRoot.child("b.XML").write("x", StandardCharsets.UTF_8.name());
-        resultRoot.child("c.html").write("<html/>", StandardCharsets.UTF_8.name());
-        resultRoot.child("d.MP4").write("video", StandardCharsets.UTF_8.name());
-        resultRoot.child("e.jpg").write("img", StandardCharsets.UTF_8.name());
-        resultRoot.child("f.JPEG").write("img", StandardCharsets.UTF_8.name());
-
-        resultRoot.child("g.png").write("img", StandardCharsets.UTF_8.name());
-        resultRoot.child("h.txt").write("txt", StandardCharsets.UTF_8.name());
-        resultRoot.child("i").write("none", StandardCharsets.UTF_8.name());
-        resultRoot.child("j.").write("dot", StandardCharsets.UTF_8.name());
-
-        List<FilePath> files = publisher.collectResultFiles(resultRoot, new PrintStream(System.out));
-        Set<String> names = new HashSet<>();
-        for (FilePath file : files) {
-            names.add(file.getName());
-        }
-
-        assertEquals(6, names.size());
-        assertTrue(names.contains("a.json"));
-        assertTrue(names.contains("b.XML"));
-        assertTrue(names.contains("c.html"));
-        assertTrue(names.contains("d.MP4"));
-        assertTrue(names.contains("e.jpg"));
-        assertTrue(names.contains("f.JPEG"));
     }
 
     @Test
@@ -382,6 +347,82 @@ public class MIAgentResultPublisherTest {
     }
 
     @Test
+    public void perform_stepUpdateFailure_continuesOtherStepsAndReportsPartialFailure() throws Exception {
+        Run<?, ?> run = mock(FreeStyleBuild.class);
+        TaskListener listener = mockListener();
+        FilePath workspace = new FilePath(tempFolder.getRoot());
+        FilePath resultRoot = workspace.child(MIAgentResultPublisher.DEFAULT_RESULT_FOLDER);
+        FilePath runFolder = resultRoot.child("2099");
+        runFolder.mkdirs();
+
+        JSONObject runResult = new JSONObject();
+        JSONObject nativeStatus = new JSONObject();
+        nativeStatus.put("name", "passed");
+        runResult.put("native_status", nativeStatus);
+
+        JSONArray steps = new JSONArray();
+        JSONObject step1 = new JSONObject();
+        step1.put("id", "s1");
+        JSONObject step1Status = new JSONObject();
+        step1Status.put("name", "passed");
+        step1.put("result", step1Status);
+        step1.put("actual", "first");
+        steps.add(step1);
+
+        JSONObject step2 = new JSONObject();
+        step2.put("id", "s2");
+        JSONObject step2Status = new JSONObject();
+        step2Status.put("name", "passed");
+        step2.put("result", step2Status);
+        step2.put("actual", "second");
+        steps.add(step2);
+
+        JSONObject runSteps = new JSONObject();
+        runSteps.put("data", steps);
+        runResult.put("run_steps", runSteps);
+        runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
+
+        JSONObject runEntry = new JSONObject();
+        runEntry.put("runId", "2099");
+        runEntry.put("runFolder", runFolder.getRemote());
+        JSONArray runs = new JSONArray();
+        runs.add(runEntry);
+        JSONObject manifest = new JSONObject();
+        manifest.put("schemaVersion", "1.0");
+        manifest.put("runs", runs);
+        resultRoot.child(MIAgentResultPublisher.DEFAULT_MANIFEST_NAME)
+                .write(manifest.toJSONString(), StandardCharsets.UTF_8.name());
+
+        OctaneClient client = mockOctaneClient("http://octane.example", "1001");
+        List<OctaneRequest> requests = new ArrayList<>();
+        MIAgentResultPublisher publisher = new MIAgentResultPublisher();
+        publisher.setConfigurationId("cfg");
+        publisher.setWorkspaceId("2001");
+        publisher.setFailBuildOnPublishError(false);
+        publisher.setUploadAttachments(false);
+        publisher.setOctaneClientProvider(instanceId -> client);
+        publisher.setOctaneRequestExecutor((ignored, request) -> {
+            requests.add(request);
+            String url = extractRequestUrl(request);
+            if (url != null && url.endsWith("/run_steps/s1")) {
+                return mockResponse(500);
+            }
+            return mockResponse(200);
+        });
+
+        publisher.perform(run, workspace, mock(Launcher.class), listener);
+
+        MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
+        assertEquals(2, summary.getTotalTests());
+        assertEquals(1, summary.getPublishedSteps());
+        assertEquals(1, summary.getFailures().size());
+        assertTrue(summary.getFailures().get(0).contains("step s1 update failed"));
+        assertEquals(3, requests.size());
+        verify(run).setResult(Result.UNSTABLE);
+    }
+
+    @Test
     public void perform_attachmentUploadContentLengthAlreadySet_setsPartialFailure() throws Exception {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
@@ -550,10 +591,9 @@ public class MIAgentResultPublisherTest {
 
         MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
-        assertEquals(1, summary.getFailures().size());
-        assertTrue(summary.getFailures().get(0).contains("Attachment upload failed for file(s):"));
-        assertTrue(summary.getFailures().get(0).contains("recording.mp4"));
-        assertTrue(summary.getFailures().get(0).contains("screenshot_s11_1.jpg"));
+        assertEquals(2, summary.getFailures().size());
+        assertTrue(summary.getFailures().stream().anyMatch(f -> f.contains("recording.mp4")));
+        assertTrue(summary.getFailures().stream().anyMatch(f -> f.contains("screenshot_s11_1.jpg")));
         verify(run).setResult(Result.UNSTABLE);
     }
 

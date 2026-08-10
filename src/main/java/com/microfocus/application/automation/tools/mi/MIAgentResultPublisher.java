@@ -192,14 +192,20 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         MIAgentPublishSummary summary = new MIAgentPublishSummary();
         try {
             FilePath resultRoot = workspace.child(resultFolder);
-            List<FilePath> resultFiles = collectResultFiles(resultRoot, log);
-            if (resultFiles.isEmpty()) {
+            if (!resultRoot.exists()) {
                 summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
-                summary.setMessage("No MI Agent result files found under '" + resultFolder + "'.");
+                summary.setMessage("Result folder '" + resultFolder + "' was not found under workspace.");
                 return;
             }
 
-            JSONObject manifest = readManifest(resultRoot.child(manifestName));
+            FilePath manifestPath = resultRoot.child(manifestName);
+            if (!manifestPath.exists()) {
+                summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
+                summary.setMessage("Manifest '" + manifestName + "' not found under '" + resultFolder + "'.");
+                return;
+            }
+
+            JSONObject manifest = readManifest(manifestPath);
             validateManifest(manifest);
 
             PublishContext ctx = createPublishContext();
@@ -207,26 +213,21 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             List<String> failures = new ArrayList<>();
             int publishedSteps = 0;
             int totalSteps = 0;
+            int consumedResultFiles = 1; // manifest.json
 
             for (Object item : runs) {
                 if (!(item instanceof JSONObject runItem)) {
                     continue;
                 }
                 RunPublishData runData = parseRunPublishData(resultRoot, runItem, log);
-                try {
-                    RunPublishResult runPublishResult = publishSingleRun(runData, ctx, log);
-                    publishedSteps += runPublishResult.publishedSteps();
-                    totalSteps += runPublishResult.totalSteps();
-                } catch (Exception e) {
-                    String details = StringUtils.isBlank(e.getMessage()) ? e.getClass().getName() : e.getMessage();
-                    failures.add("Run " + runData.runId() + ": " + details);
-                    log.println(WARN_PREFIX + " Failed publishing run " + runData.runId() + ": " + details);
-                    log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
-                }
+                consumedResultFiles++; // per-run run_steps_result.json
+                RunPublishResult runPublishResult = publishSingleRun(runData, ctx, log, failures);
+                publishedSteps += runPublishResult.publishedSteps();
+                totalSteps += runPublishResult.totalSteps();
             }
 
             summary.setTotalTests(totalSteps);
-            summary.setPublishedFiles(resultFiles.size());
+            summary.setPublishedFiles(consumedResultFiles);
             summary.setPublishedSteps(publishedSteps);
             if (failures.isEmpty()) {
                 summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
@@ -248,34 +249,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             run.addAction(new MIAgentPublishSummaryAction(summary));
             log.println(summary.getMessage());
         }
-    }
-
-    List<FilePath> collectResultFiles(FilePath resultDir, PrintStream log) throws IOException, InterruptedException {
-        if (!resultDir.exists()) {
-            return Collections.emptyList();
-        }
-        List<FilePath> files = new ArrayList<>();
-        for (FilePath file : resultDir.list("**/*")) {
-            if (hasSupportedResultExtension(file.getName())) {
-                files.add(file);
-            }
-        }
-        log.println("Collected " + files.size() + " result file(s) from '" + resultDir.getRemote() + "'.");
-        return files;
-    }
-
-    private boolean hasSupportedResultExtension(String fileName) {
-        if (fileName == null || fileName.isEmpty()) {
-            return false;
-        }
-        String ext = FilenameUtils.getExtension(fileName);
-        if (ext.isEmpty()) {
-            return false;
-        }
-        return switch (ext.toLowerCase(Locale.ROOT)) {
-            case "json", "xml", "html", "mp4", "jpg", "jpeg" -> true;
-            default -> false;
-        };
     }
 
     private JSONObject readManifest(FilePath manifest) throws IOException, InterruptedException, MIAgentValidationException {
@@ -379,13 +352,22 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return path.length() > 1 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':';
     }
 
-    private RunPublishResult publishSingleRun(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
+    private RunPublishResult publishSingleRun(RunPublishData runData, PublishContext ctx, PrintStream log, List<String> failures)
+            throws InterruptedException, IOException {
         String overallStatusId = toListNodeStatusId((JSONObject) runData.runResult().get("native_status"));
         if (StringUtils.isBlank(overallStatusId)) {
             overallStatusId = RUN_NATIVE_STATUS_PREFIX + "failed";
         }
 
-        updateRunStatus(runData.runId(), overallStatusId, ctx, log);
+        try {
+            updateRunStatus(runData.runId(), overallStatusId, ctx, log);
+        } catch (Exception e) {
+            String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
+            failures.add("Run " + runData.runId() + " status update failed: " + details);
+            log.println(WARN_PREFIX + " Run " + runData.runId() + " status update failed: " + details);
+            log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
+        }
+
         int publishedSteps = 0;
         int totalSteps = 0;
         JSONObject runSteps = (JSONObject) runData.runResult().get("run_steps");
@@ -402,13 +384,20 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                     continue;
                 }
                 String actual = step.get("actual") == null ? null : String.valueOf(step.get("actual"));
-                updateRunStep(stepId, stepStatusId, actual, ctx);
-                publishedSteps++;
+                try {
+                    updateRunStep(stepId, stepStatusId, actual, ctx);
+                    publishedSteps++;
+                } catch (Exception e) {
+                    String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
+                    failures.add("Run " + runData.runId() + " step " + stepId + " update failed: " + details);
+                    log.println(WARN_PREFIX + " Run " + runData.runId() + " step " + stepId + " update failed: " + details);
+                    log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
+                }
             }
         }
 
         if (uploadAttachments) {
-            uploadAttachments(runData, ctx, log);
+            uploadAttachments(runData, ctx, log, failures);
         }
         log.println("Published run " + runData.runId() + " (steps " + publishedSteps + "/" + totalSteps + ").");
         return new RunPublishResult(publishedSteps, totalSteps);
@@ -442,7 +431,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         assertSuccess(response, "Update run step failed for step " + stepId);
     }
 
-    private void uploadAttachments(RunPublishData runData, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
+    private void uploadAttachments(RunPublishData runData, PublishContext ctx, PrintStream log, List<String> failures)
+            throws InterruptedException, IOException {
         List<AttachmentUploadData> attachmentUploads = new ArrayList<>();
         FilePath recording = runData.runFolder().child("recording.mp4");
         if (recording.exists()) {
@@ -496,7 +486,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 }
             }
             if (!failedFiles.isEmpty()) {
-                log.println(ERROR_PREFIX + " Failed to upload attachment(s):");
+                log.println(WARN_PREFIX + " Failed to upload attachment(s):");
                 for (int i = 0; i < failedFiles.size(); i++) {
                     String details = "Unknown error";
                     if (i < uploadFailures.size()) {
@@ -504,13 +494,9 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                         Throwable original = failure.getCause() != null ? failure.getCause() : failure;
                         details = StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName());
                     }
-                    log.println(ERROR_PREFIX + " - " + failedFiles.get(i) + " :: " + details);
+                    log.println(WARN_PREFIX + " - " + failedFiles.get(i) + " :: " + details);
+                    failures.add("Run " + runData.runId() + " attachment " + failedFiles.get(i) + " upload failed: " + details);
                 }
-                IOException finalExc = new IOException("Attachment upload failed for file(s): " + String.join(", ", failedFiles) + ".");
-                for (IOException uploadFailure : uploadFailures) {
-                    finalExc.addSuppressed(uploadFailure);
-                }
-                throw finalExc;
             }
         }
     }
