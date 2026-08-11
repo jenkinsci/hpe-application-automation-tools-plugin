@@ -144,7 +144,6 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
                         printToConsole(listener, CHECKOUT_DIRECTORY_PARAMETER + " parameter found, but its value is empty or its type is not String. Using default value.");
                     }
                 }
-                printToConsole(listener, "checkout directory : " + executingDirectory);
             }
             if (StringUtils.isEmpty(rawTests)) {
                 printToConsole(listener, TESTS_TO_RUN_PARAMETER + " is not found or has empty value. Skipping.");
