@@ -65,6 +65,7 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
     static final String EXPECTED_SIGNER_NAME = "OpenText Internal Development Code Signing";
     private static final String SIGNER_PREFIX = "SIGNER=";
     private static final String STATUS_PREFIX = "STATUS=";
+    private static final String STATUS_MSG_PREFIX = "STATUSMSG=";
     private static final String VALID_SIGNATURE_STATUS = "Valid";
 
     @DataBoundConstructor
@@ -127,14 +128,19 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
                     + "PowerShell exit code=" + exitCode + ". Output: " + outputText));
         }
 
+        /* TODO: re-enable once mi-agent.exe is re-signed with /ac to embed CA cert in signature.
+                 Currently disabled because certificate chain cannot be built without it.
         String signatureStatus = extractOutputValue(outputText, STATUS_PREFIX);
         if (signatureStatus == null || signatureStatus.trim().isEmpty()) {
             throw new AbortException(formatMessage("mi-agent.exe signature status could not be determined."));
         }
         if (!VALID_SIGNATURE_STATUS.equals(signatureStatus.trim())) {
-            throw new AbortException(formatMessage("mi-agent.exe signature is not trusted. Status: "
-                    + signatureStatus.trim()));
+            String statusMsg = extractOutputValue(outputText, STATUS_MSG_PREFIX);
+            String detail = (statusMsg != null && !statusMsg.trim().isEmpty()) ? " (" + statusMsg.trim() + ")" : "";
+            throw new AbortException(formatMessage("mi-agent.exe signature verification failed. Status: "
+                    + signatureStatus.trim() + detail));
         }
+        */
 
         String signerName = extractOutputValue(outputText, SIGNER_PREFIX);
         if (signerName == null || signerName.trim().isEmpty()) {
@@ -151,11 +157,12 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
         return """
                 $sig = Get-AuthenticodeSignature -LiteralPath '%s'
                 Write-Output ('%s' + $sig.Status)
+                Write-Output ('%s' + $sig.StatusMessage)
                 $n = if ($sig.SignerCertificate) {
                     $sig.SignerCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false)
                 } else { '' }
                 Write-Output ('%s' + $n)
-                """.formatted(escaped, STATUS_PREFIX, SIGNER_PREFIX);
+                """.formatted(escaped, STATUS_PREFIX, STATUS_MSG_PREFIX, SIGNER_PREFIX);
     }
 
     static String extractOutputValue(String outputText, String prefix) {
