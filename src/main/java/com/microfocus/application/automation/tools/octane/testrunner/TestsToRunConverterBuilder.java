@@ -132,7 +132,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
                 ParameterValue testsParameter = parameterAction.getParameter(TESTS_TO_RUN_PARAMETER);
                 if (testsParameter != null && testsParameter.getValue() instanceof String) {
                     rawTests = (String) testsParameter.getValue();
-                    printToConsole(listener, TESTS_TO_RUN_PARAMETER + " found : " + rawTests);
+                    printToConsole(listener, TESTS_TO_RUN_PARAMETER + " : " + rawTests);
                 }
 
                 ParameterValue checkoutDirParameter = parameterAction.getParameter(CHECKOUT_DIRECTORY_PARAMETER);
