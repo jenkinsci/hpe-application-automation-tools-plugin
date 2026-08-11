@@ -313,7 +313,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         conf.put("OUTPUT_BASE_DIR", outputBaseDir);
         conf.put("LOG_TO_CONSOLE", 2);
         conf.put("DISABLE_LOG_REDIRECT", 2);
-        conf.put("AWS_CLUSTER_NAME", "dorin");
+        conf.put("AWS_CLUSTER_NAME", "jenkins-mi-agent"); // TODO ask Idan
 
         FilePath confFile = workspace.child(CONF_FILE_NAME);
         confFile.write(conf.toJSONString(), "UTF-8");

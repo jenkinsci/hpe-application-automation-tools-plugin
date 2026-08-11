@@ -62,9 +62,6 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -456,10 +453,9 @@ public class MIAgentResultPublisherTest {
         publisher.setFailBuildOnPublishError(false);
         publisher.setUploadAttachments(true);
         publisher.setOctaneClientProvider(instanceId -> client);
-        final int[] requestCount = {0};
         publisher.setOctaneRequestExecutor((ignored, request) -> {
-            requestCount[0]++;
-            if (requestCount[0] == 2) {
+            String url = extractRequestUrl(request);
+            if (url != null && url.endsWith("/attachments/bulk")) {
                 throw new IOException("Content-Length header already present");
             }
             return mockResponse(200);
@@ -470,12 +466,12 @@ public class MIAgentResultPublisherTest {
         MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
         assertEquals(1, summary.getFailures().size());
-        assertTrue(summary.getFailures().get(0).contains("recording.mp4"));
+        assertTrue(summary.getFailures().get(0).contains("Content-Length header already present"));
         verify(run).setResult(Result.UNSTABLE);
     }
 
     @Test
-    public void perform_multipleAttachments_uploadsInParallel() throws Exception {
+    public void perform_multipleAttachments_uploadsInSingleBulkRequest() throws Exception {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
@@ -511,31 +507,18 @@ public class MIAgentResultPublisherTest {
         publisher.setUploadAttachments(true);
         publisher.setOctaneClientProvider(instanceId -> client);
 
-        CountDownLatch attachmentsStarted = new CountDownLatch(2);
-        AtomicInteger inFlightAttachments = new AtomicInteger(0);
-        AtomicInteger maxInFlightAttachments = new AtomicInteger(0);
+        final int[] bulkAttachmentRequests = {0};
         publisher.setOctaneRequestExecutor((ignored, request) -> {
             String url = extractRequestUrl(request);
-            if (url != null && url.endsWith("/attachments")) {
-                int currentInFlight = inFlightAttachments.incrementAndGet();
-                maxInFlightAttachments.updateAndGet(previous -> Math.max(previous, currentInFlight));
-                try {
-                    attachmentsStarted.countDown();
-                    if (!attachmentsStarted.await(2, TimeUnit.SECONDS)) {
-                        throw new IOException("Attachment uploads did not overlap.");
-                    }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    inFlightAttachments.decrementAndGet();
-                }
+            if (url != null && url.endsWith("/attachments/bulk")) {
+                bulkAttachmentRequests[0]++;
             }
             return mockResponse(200);
         });
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
-        assertTrue("Expected at least two concurrent attachment uploads.", maxInFlightAttachments.get() >= 2);
+        assertEquals("Expected a single bulk attachment upload request.", 1, bulkAttachmentRequests[0]);
         MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PUBLISHED, summary.getStatus());
     }
@@ -577,12 +560,10 @@ public class MIAgentResultPublisherTest {
         publisher.setUploadAttachments(true);
         publisher.setOctaneClientProvider(instanceId -> client);
 
-        AtomicInteger attachmentRequests = new AtomicInteger(0);
         publisher.setOctaneRequestExecutor((ignored, request) -> {
             String url = extractRequestUrl(request);
-            if (url != null && url.endsWith("/attachments")) {
-                int idx = attachmentRequests.incrementAndGet();
-                throw new IOException("simulated upload failure " + idx);
+            if (url != null && url.endsWith("/attachments/bulk")) {
+                throw new IOException("simulated bulk upload failure");
             }
             return mockResponse(200);
         });
@@ -591,9 +572,8 @@ public class MIAgentResultPublisherTest {
 
         MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
-        assertEquals(2, summary.getFailures().size());
-        assertTrue(summary.getFailures().stream().anyMatch(f -> f.contains("recording.mp4")));
-        assertTrue(summary.getFailures().stream().anyMatch(f -> f.contains("screenshot_s11_1.jpg")));
+        assertEquals(1, summary.getFailures().size());
+        assertTrue(summary.getFailures().get(0).contains("bulk upload failed"));
         verify(run).setResult(Result.UNSTABLE);
     }
 
@@ -633,7 +613,7 @@ public class MIAgentResultPublisherTest {
         publisher.setOctaneClientProvider(instanceId -> client);
         publisher.setOctaneRequestExecutor((ignored, request) -> {
             String url = extractRequestUrl(request);
-            if (url != null && url.endsWith("/attachments")) {
+            if (url != null && url.endsWith("/attachments/bulk")) {
                 return mockResponse(500,
                         "{\"error_code\":\"platform.general_error\",\"stack_trace\":\"l1\\nl2\\nl3\\nl4\\nl5\\nl6\\nl7\\nl8\\nl9\",\"description\":\"attachment failed\"}");
             }
@@ -646,7 +626,6 @@ public class MIAgentResultPublisherTest {
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
         assertEquals(1, summary.getFailures().size());
         String failure = summary.getFailures().get(0);
-        assertTrue(failure.contains("recording.mp4"));
         assertTrue(failure.contains("\"stack_trace\":\"l1\\nl2\\nl3\\nl4\\nl5\\nl6\\nl7\\n... (2 more lines)\""));
         assertTrue(!failure.contains("l8\\n"));
         assertTrue(!failure.contains("\\nl9"));

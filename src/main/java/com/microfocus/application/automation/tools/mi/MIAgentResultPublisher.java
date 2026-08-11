@@ -69,6 +69,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
 import java.io.Serial;
+import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,10 +84,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -112,6 +109,13 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final int MAX_EXCEPTION_STACK_FRAMES = 7;
     private static final String WARN_PREFIX = "[WARN]";
     private static final String ERROR_PREFIX = "[ERROR]";
+    private static final String CONTENT_PART_NAME = "content";
+    private static final String ENTITY_PART_NAME = "entity";
+    // Keep bulk requests in practical limits similar to execution-service defaults.
+    private static final int BULK_ATTACHMENTS_LIMIT = 50;
+    private static final long BULK_ATTACHMENT_SIZE_ESTIMATE_BYTES = 1_048_576L;
+    private static final long BULK_REQUEST_MAX_SIZE_BYTES = BULK_ATTACHMENTS_LIMIT * BULK_ATTACHMENT_SIZE_ESTIMATE_BYTES;
+    private static final long MULTIPART_PER_ATTACHMENT_OVERHEAD_BYTES = 512L;
     private static final Map<String, String> BASE_HEADERS = Map.of("accept", ACCEPT_JSON, OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
     private static final Map<String, String> JSON_HEADERS = headersWithContentType(CONTENT_TYPE_JSON);
 
@@ -457,113 +461,117 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             return;
         }
 
-        log.println("Uploading " + attachmentUploads.size() + " attachment(s) in parallel ...");
-        // Virtual threads are ideal for I/O-bound work: one lightweight thread per upload, no pool sizing required.
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            List<Future<Void>> futures = new ArrayList<>(attachmentUploads.size());
-            for (AttachmentUploadData upload : attachmentUploads) {
-                futures.add(executor.submit(() -> {
-                    uploadAttachment(ctx, upload.file(), upload.fileName(), upload.ownerField(), upload.ownerType(), upload.ownerId());
-                    return null;
-                }));
-            }
-
-            List<String> failedFiles = new ArrayList<>();
-            List<IOException> uploadFailures = new ArrayList<>();
-            for (int i = 0; i < futures.size(); i++) {
-                Future<Void> future = futures.get(i);
-                AttachmentUploadData upload = attachmentUploads.get(i);
-                try {
-                    future.get();
-                } catch (InterruptedException e) {
-                    // Cancel still-pending uploads immediately, then propagate.
-                    futures.forEach(f -> f.cancel(true));
-                    Thread.currentThread().interrupt();
-                    throw e;
-                } catch (ExecutionException e) {
-                    failedFiles.add(upload.fileName());
-                    uploadFailures.add(toAttachmentIOException(e.getCause()));
-                }
-            }
-            if (!failedFiles.isEmpty()) {
-                log.println(WARN_PREFIX + " Failed to upload attachment(s):");
-                for (int i = 0; i < failedFiles.size(); i++) {
-                    String details = "Unknown error";
-                    if (i < uploadFailures.size()) {
-                        IOException failure = uploadFailures.get(i);
-                        Throwable original = failure.getCause() != null ? failure.getCause() : failure;
-                        details = summarizeExceptionMessage(
-                                StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName()));
-                    }
-                    log.println(WARN_PREFIX + " - " + failedFiles.get(i) + " :: " + details);
-                    failures.add("Run " + runData.runId() + " attachment " + failedFiles.get(i) + " upload failed: " + details);
-                }
+        List<List<AttachmentUploadData>> batches = createAttachmentBatches(attachmentUploads);
+        log.println("Uploading " + attachmentUploads.size() + " attachment(s) in " + batches.size() + " bulk chunk(s) ...");
+        for (int i = 0; i < batches.size(); i++) {
+            List<AttachmentUploadData> batch = batches.get(i);
+            try {
+                uploadAttachmentsBulk(ctx, batch);
+            } catch (IOException e) {
+                Throwable original = e.getCause() != null ? e.getCause() : e;
+                String details = summarizeExceptionMessage(StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName()));
+                log.println(WARN_PREFIX + " Bulk attachment upload failed for run " + runData.runId()
+                        + " (chunk " + (i + 1) + "/" + batches.size() + "): " + details);
+                log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
+                failures.add("Run " + runData.runId() + " attachment bulk upload failed (chunk "
+                        + (i + 1) + "/" + batches.size() + "): " + details);
             }
         }
     }
 
-    private IOException toAttachmentIOException(Throwable cause) {
-        if (cause instanceof IOException ioe) {
-            return ioe;
-        }
-        return new IOException("Attachment upload failed.", cause);
-    }
-
-    private void uploadAttachment(PublishContext ctx, FilePath file, String fileName, String ownerField, String ownerType, String ownerId)
-            throws IOException {
-        try {
-            String boundary = "----MIAgentBoundary" + UUID.randomUUID();
-            String mime = resolveMime(fileName);
-
-            JSONObject entity = new JSONObject();
-            entity.put("name", fileName);
-            JSONObject owner = new JSONObject();
-            owner.put("type", ownerType);
-            owner.put("id", ownerId);
-            entity.put(ownerField, owner);
-
-            String entityJson = entity.toJSONString();
-            String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId());
-
-            try (InputStream body = buildMultipartBodyStream(boundary, entityJson, file, fileName, mime)) {
-                OctaneRequest request = buildOctaneRequest(
-                        HttpMethod.POST,
-                        url,
-                        headersWithContentType("multipart/form-data; boundary=" + boundary),
-                        body);
-                OctaneResponse response = octaneRequestExecutor.execute(ctx.client(), request);
-                assertSuccess(response, "Attachment upload failed for " + fileName);
-            }
-        } catch (Exception e) {
-            throw new IOException("Attachment upload failed for [" + fileName + "].", e);
-        }
-    }
-
-    private InputStream buildMultipartBodyStream(String boundary, String entityJson, FilePath file, String fileName, String mime)
+    private List<List<AttachmentUploadData>> createAttachmentBatches(List<AttachmentUploadData> uploads)
             throws IOException, InterruptedException {
-        String crlf = "\r\n";
-        String prefix = String.join(crlf,
-                "--" + boundary,
-                "Content-Disposition: form-data; name=\"entity\"; filename=\"blob\"",
-                "Content-Type: application/json",
-                "",
-                entityJson,
-                "--" + boundary,
-                "Content-Disposition: form-data; name=\"content\"; filename=\"" + fileName + "\"",
-                "Content-Type: " + mime,
-                "",
-                "");
-        String suffix = crlf + "--" + boundary + "--" + crlf;
-        return new SequenceInputStream(Collections.enumeration(List.of(
-                new ByteArrayInputStream(prefix.getBytes(StandardCharsets.UTF_8)),
-                file.read(),
-                new ByteArrayInputStream(suffix.getBytes(StandardCharsets.UTF_8)))));
+        List<List<AttachmentUploadData>> batches = new ArrayList<>();
+        List<AttachmentUploadData> currentBatch = new ArrayList<>();
+        long currentBatchSize = 0L;
+
+        for (AttachmentUploadData upload : uploads) {
+            long fileSize = upload.file().length();
+            long estimatedPartSize = fileSize + MULTIPART_PER_ATTACHMENT_OVERHEAD_BYTES;
+
+            if (!currentBatch.isEmpty()
+                    && (currentBatch.size() >= BULK_ATTACHMENTS_LIMIT
+                    || currentBatchSize + estimatedPartSize > BULK_REQUEST_MAX_SIZE_BYTES)) {
+                batches.add(currentBatch);
+                currentBatch = new ArrayList<>();
+                currentBatchSize = 0L;
+            }
+
+            currentBatch.add(upload);
+            currentBatchSize += estimatedPartSize;
+        }
+
+        if (!currentBatch.isEmpty()) {
+            batches.add(currentBatch);
+        }
+
+        return batches;
+    }
+
+    private void uploadAttachmentsBulk(PublishContext ctx, List<AttachmentUploadData> uploads)
+            throws IOException {
+        String boundary = "----MIAgentBoundary" + UUID.randomUUID();
+        String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments/bulk", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId());
+        try (InputStream body = buildBulkMultipartBodyStream(boundary, uploads)) {
+            OctaneRequest request = buildOctaneRequest(
+                    HttpMethod.POST,
+                    url,
+                    headersWithContentType("multipart/form-data; boundary=" + boundary),
+                    body);
+            OctaneResponse response = octaneRequestExecutor.execute(ctx.client(), request);
+            assertSuccess(response, "Bulk attachment upload failed");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Bulk attachment upload interrupted.", e);
+        } catch (Exception e) {
+            throw new IOException("Bulk attachment upload failed.", e);
+        }
+    }
+
+    private InputStream buildBulkMultipartBodyStream(String boundary, List<AttachmentUploadData> uploads)
+            throws IOException, InterruptedException {
+        List<InputStream> parts = new ArrayList<>(uploads.size() * 4 + 1);
+        for (AttachmentUploadData upload : uploads) {
+            String entityJson = buildAttachmentEntityJson(upload.fileName(), upload.ownerField(), upload.ownerType(), upload.ownerId());
+            String mime = resolveMime(upload.fileName());
+            parts.add(new ByteArrayInputStream(createFormField(ENTITY_PART_NAME, "blob", CONTENT_TYPE_JSON, entityJson, boundary)));
+            parts.add(new ByteArrayInputStream(createFilePart(CONTENT_PART_NAME, upload.fileName(), mime, boundary)));
+            parts.add(upload.file().read());
+            parts.add(new ByteArrayInputStream("\r\n".getBytes(StandardCharsets.UTF_8)));
+        }
+        parts.add(new ByteArrayInputStream(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8)));
+        return new SequenceInputStream(Collections.enumeration(parts));
+    }
+
+    private String buildAttachmentEntityJson(String fileName, String ownerField, String ownerType, String ownerId) {
+        JSONObject entity = new JSONObject();
+        entity.put("name", fileName);
+        JSONObject owner = new JSONObject();
+        owner.put("type", ownerType);
+        owner.put("id", ownerId);
+        entity.put(ownerField, owner);
+        return entity.toJSONString();
+    }
+
+    private byte[] createFormField(String name, String filename, String contentType, String value, String boundary) {
+        String part = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"" + name + "\"; filename=\"" + filename + "\"\r\n"
+                + "Content-Type: " + contentType + "\r\n\r\n"
+                + value + "\r\n";
+        return part.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private byte[] createFilePart(String name, String filename, String contentType, String boundary) {
+        String partHeader = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"" + name + "\"; filename=\"" + filename + "\"\r\n"
+                + "Content-Type: " + contentType + "\r\n\r\n";
+        return partHeader.getBytes(StandardCharsets.UTF_8);
     }
 
     private String resolveMime(String fileName) {
         String ext = FilenameUtils.getExtension(fileName);
         return switch (ext.toLowerCase(Locale.ROOT)) {
-            case "jpg","jpeg" -> "image/jpeg";
+            case "jpg", "jpeg" -> "image/jpeg";
             case "png" -> "image/png";
             case "gif" -> "image/gif";
             case "mp4" -> "video/mp4";
@@ -571,16 +579,16 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         };
     }
 
-    private OctaneResponse executeJsonRequest(HttpMethod method, String url, String jsonBody, OctaneClient client) throws IOException {
-        OctaneRequest request = buildOctaneRequest(method, url, JSON_HEADERS, jsonBody);
-        initTransientCollaborators();
-        return octaneRequestExecutor.execute(client, request);
-    }
-
     private static Map<String, String> headersWithContentType(String contentType) {
         Map<String, String> headers = new LinkedHashMap<>(BASE_HEADERS);
         headers.put("Content-Type", contentType);
         return headers;
+    }
+
+    private OctaneResponse executeJsonRequest(HttpMethod method, String url, String jsonBody, OctaneClient client) throws IOException {
+        OctaneRequest request = buildOctaneRequest(method, url, JSON_HEADERS, jsonBody);
+        initTransientCollaborators();
+        return octaneRequestExecutor.execute(client, request);
     }
 
     private OctaneRequest buildOctaneRequest(HttpMethod method, String url, Map<String, String> headers, String body) {
