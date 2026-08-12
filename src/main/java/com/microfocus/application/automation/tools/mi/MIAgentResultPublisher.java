@@ -75,7 +75,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
-import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -472,7 +471,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             try {
                 uploadAttachmentsBulk(ctx, batch);
             } catch (IOException e) {
-                String details = summarizeExceptionMessage(e.getMessage());
+                Throwable original = e.getCause() != null ? e.getCause() : e;
+                String details = summarizeExceptionMessage(StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName()));
                 log.println(WARN_PREFIX + " Bulk attachment upload failed for run " + runData.runId()
                         + " (chunk " + (i + 1) + "/" + batches.size() + "): " + details);
                 log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
@@ -512,10 +512,11 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     private void uploadAttachmentsBulk(PublishContext ctx, List<AttachmentUploadData> uploads)
-            throws IOException, InterruptedException {
+            throws IOException {
         String boundary = "----MIAgentBoundary" + UUID.randomUUID();
         String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments/bulk", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId());
-        try (InputStream body = buildBulkMultipartBodyStream(boundary, uploads)) {
+        try {
+            byte[] bodyBytes = buildBulkMultipartBodyBytes(boundary, uploads);
             Map<String, String> headers = headersWithContentType("multipart/form-data; boundary=" + boundary);
             headers.put(CLIENT_TYPE_HEADER, CLIENT_TYPE_VALUE);
             headers.put(RETURN_RESPONSE_IMMEDIATELY_HEADER, RETURN_RESPONSE_IMMEDIATELY_VALUE);
@@ -523,25 +524,32 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                     HttpMethod.POST,
                     url,
                     headers,
-                    body);
+                    new ByteArrayInputStream(bodyBytes));
             OctaneResponse response = octaneRequestExecutor.execute(ctx.client(), request);
             assertSuccess(response, "Bulk attachment upload failed");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Bulk attachment upload interrupted.", e);
+        } catch (Exception e) {
+            throw new IOException("Bulk attachment upload failed.", e);
         }
     }
 
-    private InputStream buildBulkMultipartBodyStream(String boundary, List<AttachmentUploadData> uploads)
+    private byte[] buildBulkMultipartBodyBytes(String boundary, List<AttachmentUploadData> uploads)
             throws IOException, InterruptedException {
-        List<InputStream> parts = new ArrayList<>(uploads.size() * 4 + 1);
+        ByteArrayOutputStream requestBody = new ByteArrayOutputStream();
         for (AttachmentUploadData upload : uploads) {
             String entityJson = buildAttachmentEntityJson(upload.fileName(), upload.ownerField(), upload.ownerType(), upload.ownerId());
             String mime = resolveMime(upload.fileName());
-            parts.add(new ByteArrayInputStream(createFormField(ENTITY_PART_NAME, "blob", CONTENT_TYPE_JSON, entityJson, boundary)));
-            parts.add(new ByteArrayInputStream(createFilePart(CONTENT_PART_NAME, upload.fileName(), mime, boundary)));
-            parts.add(upload.file().read());
-            parts.add(new ByteArrayInputStream("\r\n".getBytes(StandardCharsets.UTF_8)));
+            requestBody.write(createFormField(ENTITY_PART_NAME, "blob", CONTENT_TYPE_JSON, entityJson, boundary));
+            requestBody.write(createFilePart(CONTENT_PART_NAME, upload.fileName(), mime, boundary));
+            try (InputStream fileStream = upload.file().read()) {
+                fileStream.transferTo(requestBody);
+            }
+            requestBody.write("\r\n".getBytes(StandardCharsets.UTF_8));
         }
-        parts.add(new ByteArrayInputStream(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8)));
-        return new SequenceInputStream(Collections.enumeration(parts));
+        requestBody.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+        return requestBody.toByteArray();
     }
 
     private String buildAttachmentEntityJson(String fileName, String ownerField, String ownerType, String ownerId) {
