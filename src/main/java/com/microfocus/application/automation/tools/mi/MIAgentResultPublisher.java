@@ -77,7 +77,6 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -110,8 +109,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final String ERROR_PREFIX = "[ERROR]";
     private static final String CONTENT_PART_NAME = "content";
     private static final String ENTITY_PART_NAME = "entity";
-    private static final String CLIENT_TYPE_HEADER = "HPECLIENTTYPE";
-    private static final String CLIENT_TYPE_VALUE = "HPE_CI_CLIENT";
     private static final String RETURN_RESPONSE_IMMEDIATELY_HEADER = "RETURN_RESPONSE_IMMEDIATELY";
     private static final String RETURN_RESPONSE_IMMEDIATELY_VALUE = "true";
     private static final byte[] CRLF_BYTES = "\r\n".getBytes(StandardCharsets.UTF_8);
@@ -517,7 +514,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments/bulk", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId());
         byte[] bodyBytes = buildBulkMultipartBodyBytes(boundary, uploads);
         Map<String, String> headers = headersWithContentType("multipart/form-data; boundary=" + boundary);
-        headers.put(CLIENT_TYPE_HEADER, CLIENT_TYPE_VALUE);
         headers.put(RETURN_RESPONSE_IMMEDIATELY_HEADER, RETURN_RESPONSE_IMMEDIATELY_VALUE);
         try (ByteArrayInputStream bodyStream = new ByteArrayInputStream(bodyBytes)) {
             OctaneRequest request = buildOctaneRequest(
