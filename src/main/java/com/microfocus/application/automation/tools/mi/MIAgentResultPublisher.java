@@ -114,6 +114,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final String CLIENT_TYPE_VALUE = "HPE_CI_CLIENT";
     private static final String RETURN_RESPONSE_IMMEDIATELY_HEADER = "RETURN_RESPONSE_IMMEDIATELY";
     private static final String RETURN_RESPONSE_IMMEDIATELY_VALUE = "true";
+    private static final byte[] CRLF_BYTES = "\r\n".getBytes(StandardCharsets.UTF_8);
     // Keep bulk requests in practical limits similar to execution-service defaults.
     private static final int BULK_ATTACHMENTS_LIMIT = 50;
     private static final long BULK_ATTACHMENT_SIZE_ESTIMATE_BYTES = 1_048_576L;
@@ -471,8 +472,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             try {
                 uploadAttachmentsBulk(ctx, batch);
             } catch (IOException e) {
-                Throwable original = e.getCause() != null ? e.getCause() : e;
-                String details = summarizeExceptionMessage(StringUtils.defaultIfBlank(original.getMessage(), original.getClass().getName()));
+                String details = summarizeExceptionMessage(e.getMessage());
                 log.println(WARN_PREFIX + " Bulk attachment upload failed for run " + runData.runId()
                         + " (chunk " + (i + 1) + "/" + batches.size() + "): " + details);
                 log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
@@ -512,26 +512,21 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     private void uploadAttachmentsBulk(PublishContext ctx, List<AttachmentUploadData> uploads)
-            throws IOException {
+            throws IOException, InterruptedException {
         String boundary = "----MIAgentBoundary" + UUID.randomUUID();
         String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/attachments/bulk", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId());
-        try {
-            byte[] bodyBytes = buildBulkMultipartBodyBytes(boundary, uploads);
-            Map<String, String> headers = headersWithContentType("multipart/form-data; boundary=" + boundary);
-            headers.put(CLIENT_TYPE_HEADER, CLIENT_TYPE_VALUE);
-            headers.put(RETURN_RESPONSE_IMMEDIATELY_HEADER, RETURN_RESPONSE_IMMEDIATELY_VALUE);
+        byte[] bodyBytes = buildBulkMultipartBodyBytes(boundary, uploads);
+        Map<String, String> headers = headersWithContentType("multipart/form-data; boundary=" + boundary);
+        headers.put(CLIENT_TYPE_HEADER, CLIENT_TYPE_VALUE);
+        headers.put(RETURN_RESPONSE_IMMEDIATELY_HEADER, RETURN_RESPONSE_IMMEDIATELY_VALUE);
+        try (ByteArrayInputStream bodyStream = new ByteArrayInputStream(bodyBytes)) {
             OctaneRequest request = buildOctaneRequest(
                     HttpMethod.POST,
                     url,
                     headers,
-                    new ByteArrayInputStream(bodyBytes));
+                    bodyStream);
             OctaneResponse response = octaneRequestExecutor.execute(ctx.client(), request);
             assertSuccess(response, "Bulk attachment upload failed");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Bulk attachment upload interrupted.", e);
-        } catch (Exception e) {
-            throw new IOException("Bulk attachment upload failed.", e);
         }
     }
 
@@ -546,9 +541,10 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             try (InputStream fileStream = upload.file().read()) {
                 fileStream.transferTo(requestBody);
             }
-            requestBody.write("\r\n".getBytes(StandardCharsets.UTF_8));
+            requestBody.write(CRLF_BYTES);
         }
-        requestBody.write(("--" + boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+        requestBody.write(("--" + boundary + "--").getBytes(StandardCharsets.UTF_8));
+        requestBody.write(CRLF_BYTES);
         return requestBody.toByteArray();
     }
 
