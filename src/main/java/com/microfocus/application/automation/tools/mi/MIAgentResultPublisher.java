@@ -89,7 +89,7 @@ import java.util.regex.Pattern;
  * Post-build publisher for MI Agent (Autonomous-Tester / AuTe) results.
  *
  * <p>Publishes the run status and per-step results back to Software Delivery Management, then
- * uploads recording/screenshot artifacts as attachments.</p>
+ * uploads screenshot artifacts as attachments.</p>
  */
 public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep, Serializable {
 
@@ -439,11 +439,6 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private void uploadAttachments(RunPublishData runData, PublishContext ctx, PrintStream log, List<String> failures)
             throws InterruptedException, IOException {
         List<AttachmentUploadData> attachmentUploads = new ArrayList<>();
-        FilePath recording = runData.runFolder().child("recording.mp4");
-        if (recording.exists()) {
-            attachmentUploads.add(new AttachmentUploadData(recording, "recording.mp4", "owner_run", "run", runData.runId()));
-        }
-
         FilePath images = runData.runFolder().child("images");
         if (images.exists()) {
             FilePath[] imgs = images.list("screenshot_*.jpg");
@@ -470,13 +465,28 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 uploadAttachmentsBulk(ctx, batch);
             } catch (IOException e) {
                 String details = summarizeExceptionMessage(e.getMessage());
+                String batchFiles = describeAttachmentFiles(batch);
                 log.println(WARN_PREFIX + " Bulk attachment upload failed for run " + runData.runId()
-                        + " (chunk " + (i + 1) + "/" + batches.size() + "): " + details);
+                        + " (chunk " + (i + 1) + "/" + batches.size() + ", files: " + batchFiles + "): " + details);
                 log.println(WARN_PREFIX + " " + formatExceptionDetails(e));
                 failures.add("Run " + runData.runId() + " attachment bulk upload failed (chunk "
-                        + (i + 1) + "/" + batches.size() + "): " + details);
+                        + (i + 1) + "/" + batches.size() + ", files: " + batchFiles + "): " + details);
             }
         }
+    }
+
+    private String describeAttachmentFiles(List<AttachmentUploadData> uploads) {
+        if (uploads == null || uploads.isEmpty()) {
+            return "<none>";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < uploads.size(); i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(uploads.get(i).fileName());
+        }
+        return builder.toString();
     }
 
     private List<List<AttachmentUploadData>> createAttachmentBatches(List<AttachmentUploadData> uploads)

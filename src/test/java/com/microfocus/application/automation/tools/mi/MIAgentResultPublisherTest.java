@@ -426,14 +426,16 @@ public class MIAgentResultPublisherTest {
         FilePath workspace = new FilePath(tempFolder.getRoot());
         FilePath resultRoot = workspace.child(MIAgentResultPublisher.DEFAULT_RESULT_FOLDER);
         FilePath runFolder = resultRoot.child("2142");
+        FilePath imagesFolder = runFolder.child("images");
         runFolder.mkdirs();
+        imagesFolder.mkdirs();
 
         JSONObject runResult = new JSONObject();
         JSONObject nativeStatus = new JSONObject();
         nativeStatus.put("name", "passed");
         runResult.put("native_status", nativeStatus);
         runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
-        runFolder.child("recording.mp4").write("dummy", StandardCharsets.UTF_8.name());
+        imagesFolder.child("screenshot_s11_1.jpg").write("dummy", StandardCharsets.UTF_8.name());
 
         JSONObject runEntry = new JSONObject();
         runEntry.put("runId", "2142");
@@ -485,7 +487,6 @@ public class MIAgentResultPublisherTest {
         nativeStatus.put("name", "passed");
         runResult.put("native_status", nativeStatus);
         runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
-        runFolder.child("recording.mp4").write("dummy-video", StandardCharsets.UTF_8.name());
         imagesFolder.child("screenshot_s11_1.jpg").write("img-1", StandardCharsets.UTF_8.name());
         imagesFolder.child("screenshot_s12_2.jpg").write("img-2", StandardCharsets.UTF_8.name());
 
@@ -538,8 +539,8 @@ public class MIAgentResultPublisherTest {
         nativeStatus.put("name", "passed");
         runResult.put("native_status", nativeStatus);
         runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
-        runFolder.child("recording.mp4").write("dummy-video", StandardCharsets.UTF_8.name());
         imagesFolder.child("screenshot_s11_1.jpg").write("img-1", StandardCharsets.UTF_8.name());
+        imagesFolder.child("screenshot_s11_2.jpg").write("img-2", StandardCharsets.UTF_8.name());
 
         JSONObject runEntry = new JSONObject();
         runEntry.put("runId", "2342");
@@ -573,7 +574,10 @@ public class MIAgentResultPublisherTest {
         MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
         assertEquals(1, summary.getFailures().size());
-        assertTrue(summary.getFailures().get(0).contains("bulk upload failed"));
+        String failure = summary.getFailures().get(0);
+        assertTrue(failure.contains("bulk upload failed"));
+        assertTrue(failure.contains("screenshot_s11_1.jpg"));
+        assertTrue(failure.contains("screenshot_s11_2.jpg"));
         verify(run).setResult(Result.UNSTABLE);
     }
 
@@ -584,14 +588,16 @@ public class MIAgentResultPublisherTest {
         FilePath workspace = new FilePath(tempFolder.getRoot());
         FilePath resultRoot = workspace.child(MIAgentResultPublisher.DEFAULT_RESULT_FOLDER);
         FilePath runFolder = resultRoot.child("2442");
+        FilePath imagesFolder = runFolder.child("images");
         runFolder.mkdirs();
+        imagesFolder.mkdirs();
 
         JSONObject runResult = new JSONObject();
         JSONObject nativeStatus = new JSONObject();
         nativeStatus.put("name", "passed");
         runResult.put("native_status", nativeStatus);
         runFolder.child("run_steps_result.json").write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
-        runFolder.child("recording.mp4").write("dummy-video", StandardCharsets.UTF_8.name());
+        imagesFolder.child("screenshot_s11_1.jpg").write("img-1", StandardCharsets.UTF_8.name());
 
         JSONObject runEntry = new JSONObject();
         runEntry.put("runId", "2442");
