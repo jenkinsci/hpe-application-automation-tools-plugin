@@ -39,6 +39,7 @@ package com.microfocus.application.automation.tools.run;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.executor.TestsToRunConverter;
+import com.microfocus.application.automation.tools.mi.CommonConstants;
 import com.microfocus.application.automation.tools.mi.MIAgentBuildAction;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -99,7 +100,7 @@ public class RunFromMiAgentBuilderTest {
         assertEquals("2001", action.getConfigurationId());
         assertEquals("1001", action.getWorkspaceId());
         verify(build, never()).setResult(any());
-        assertTrue(!new File(tempFolder.getRoot(), RunFromMiAgentBuilder.DEFAULT_RESULT_FOLDER).exists());
+        assertTrue(!new File(tempFolder.getRoot(), CommonConstants.RESULT_FOLDER).exists());
     }
 
     @Test
@@ -127,7 +128,7 @@ public class RunFromMiAgentBuilderTest {
 
         builder.perform(build, new FilePath(tempFolder.getRoot()), mock(Launcher.class), listener);
 
-        File manifestFile = new File(tempFolder.getRoot(), RunFromMiAgentBuilder.DEFAULT_RESULT_FOLDER + "\\manifest.json");
+        File manifestFile = new File(tempFolder.getRoot(), CommonConstants.RESULT_FOLDER + "\\" + CommonConstants.MANIFEST_FILE_NAME);
         assertTrue(manifestFile.exists());
 
         JsonNode manifest = MAPPER.readTree(Files.readString(manifestFile.toPath(), StandardCharsets.UTF_8));

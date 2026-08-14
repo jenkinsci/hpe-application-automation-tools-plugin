@@ -38,6 +38,7 @@ package com.microfocus.application.automation.tools.run;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.hp.octane.integrations.executor.TestsToRunConverter;
+import com.microfocus.application.automation.tools.mi.CommonConstants;
 import com.microfocus.application.automation.tools.mi.MIAgentBuildAction;
 import com.microfocus.application.automation.tools.mi.MIAgentResultPublisher;
 import hudson.*;
@@ -73,12 +74,12 @@ import java.util.Collections;
  */
 public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
-    public static final String DEFAULT_RESULT_FOLDER = MIAgentResultPublisher.DEFAULT_RESULT_FOLDER;
+    private static final String RESULT_FOLDER = CommonConstants.RESULT_FOLDER;
     private static final String MI_AGENT_EXE =  "mi-agent.exe";
-    private static final String RUN_STEPS_FILE_NAME = "run_steps.json";
-    private static final String RUN_STEPS_RESULT_FILE_NAME = "run_steps_result.json";
-    private static final String MANIFEST_FILE_NAME = "manifest.json";
-    private static final String CONF_FILE_NAME = "conf.json";
+    private static final String RUN_STEPS_FILE_NAME = CommonConstants.RUN_STEPS_FILE_NAME;
+    private static final String RUN_STEPS_RESULT_FILE_NAME = CommonConstants.RUN_STEPS_RESULT_FILE_NAME;
+    private static final String MANIFEST_FILE_NAME = CommonConstants.MANIFEST_FILE_NAME;
+    private static final String CONF_FILE_NAME = CommonConstants.CONFIG_FILE_NAME;
     private static final String[] RUN_STEP_SCALAR_FIELDS = {
             "type", "workspace_id", "name", "test_name", "order_in_suite_run",
             "duration", "id", "subtype", "has_attachments", "manual_run_source"
@@ -146,7 +147,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             return;
         }
 
-        FilePath resultRoot = workspace.child(DEFAULT_RESULT_FOLDER);
+        FilePath resultRoot = workspace.child(RESULT_FOLDER);
         if (resultRoot.exists()) {
             resultRoot.deleteRecursive();
         }

@@ -96,13 +96,13 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public static final String DEFAULT_RESULT_FOLDER = "mi-agent-results";
-    public static final String DEFAULT_MANIFEST_NAME = "manifest.json";
-    private static final String RUN_STEPS_RESULT_FILE = "run_steps_result.json";
+    private static final String RESULT_FOLDER = CommonConstants.RESULT_FOLDER;
+    private static final String MANIFEST_NAME = CommonConstants.MANIFEST_FILE_NAME;
+    private static final String CONFIG_FILE_NAME = CommonConstants.CONFIG_FILE_NAME;
+    private static final String RUN_STEPS_RESULT_FILE = CommonConstants.RUN_STEPS_RESULT_FILE_NAME;
     private static final Pattern SCREENSHOT_RE = Pattern.compile("^screenshot_(?<stepId>[^_]+)_");
     private static final List<String> SUPPORTED_MANIFEST_VERSIONS = List.of("1.0");
-    private static final String ACCEPT_JSON = "application/json";
-    private static final String CONTENT_TYPE_JSON = "application/json";
+    private static final String APP_JSON = "application/json";
     private static final String RUN_NATIVE_STATUS_PREFIX = "list_node.run_native_status.";
     private static final int MAX_EXCEPTION_STACK_FRAMES = 7;
     private static final String WARN_PREFIX = "[WARN]";
@@ -117,33 +117,19 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final long BULK_ATTACHMENT_SIZE_ESTIMATE_BYTES = 1_048_576L;
     private static final long BULK_REQUEST_MAX_SIZE_BYTES = BULK_ATTACHMENTS_LIMIT * BULK_ATTACHMENT_SIZE_ESTIMATE_BYTES;
     private static final long MULTIPART_PER_ATTACHMENT_OVERHEAD_BYTES = 512L;
-    private static final Map<String, String> BASE_HEADERS = Map.of("accept", ACCEPT_JSON, OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
-    private static final Map<String, String> JSON_HEADERS = headersWithContentType(CONTENT_TYPE_JSON);
+    private static final Map<String, String> BASE_HEADERS = Map.of("accept", APP_JSON, OctaneRestClient.CLIENT_TYPE_HEADER, OctaneRestClient.CLIENT_TYPE_VALUE);
+    private static final Map<String, String> JSON_HEADERS = headersWithContentType(APP_JSON);
 
-    private String resultFolder;
-    private String manifestName;
     private String configurationId;
     private String workspaceId;
-    private boolean uploadAttachments = true;
     private boolean failBuildOnPublishError = true;
+    private boolean cleanupTempFiles = true;
     private transient OctaneClientProvider octaneClientProvider;
     private transient OctaneRequestExecutor octaneRequestExecutor;
 
     @DataBoundConstructor
     public MIAgentResultPublisher() {
-        this.resultFolder = DEFAULT_RESULT_FOLDER;
-        this.manifestName = DEFAULT_MANIFEST_NAME;
         initTransientCollaborators();
-    }
-
-    @DataBoundSetter
-    public void setResultFolder(String resultFolder) {
-        this.resultFolder = StringUtils.isBlank(resultFolder) ? DEFAULT_RESULT_FOLDER : resultFolder.trim();
-    }
-
-    @DataBoundSetter
-    public void setManifestName(String manifestName) {
-        this.manifestName = StringUtils.isBlank(manifestName) ? DEFAULT_MANIFEST_NAME : manifestName.trim();
     }
 
     public String getConfigurationId() {
@@ -161,13 +147,21 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     @DataBoundSetter
-    public void setUploadAttachments(boolean uploadAttachments) {
-        this.uploadAttachments = uploadAttachments;
+    public void setFailBuildOnPublishError(boolean failBuildOnPublishError) {
+        this.failBuildOnPublishError = failBuildOnPublishError;
+    }
+
+    public boolean isFailBuildOnPublishError() {
+        return failBuildOnPublishError;
+    }
+
+    public boolean isCleanupTempFiles() {
+        return cleanupTempFiles;
     }
 
     @DataBoundSetter
-    public void setFailBuildOnPublishError(boolean failBuildOnPublishError) {
-        this.failBuildOnPublishError = failBuildOnPublishError;
+    public void setCleanupTempFiles(boolean cleanupTempFiles) {
+        this.cleanupTempFiles = cleanupTempFiles;
     }
 
     void setOctaneClientProvider(OctaneClientProvider octaneClientProvider) {
@@ -195,18 +189,18 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         log.println("Autonomous-Tester result publisher started.");
 
         MIAgentPublishSummary summary = new MIAgentPublishSummary();
+        FilePath resultRoot = workspace.child(RESULT_FOLDER);
         try {
-            FilePath resultRoot = workspace.child(resultFolder);
             if (!resultRoot.exists()) {
                 summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
-                summary.setMessage("Result folder '" + resultFolder + "' was not found under workspace.");
+                summary.setMessage("Result folder '" + RESULT_FOLDER + "' was not found under workspace.");
                 return;
             }
 
-            FilePath manifestPath = resultRoot.child(manifestName);
+            FilePath manifestPath = resultRoot.child(MANIFEST_NAME);
             if (!manifestPath.exists()) {
                 summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
-                summary.setMessage("Manifest '" + manifestName + "' not found under '" + resultFolder + "'.");
+                summary.setMessage("Manifest '" + MANIFEST_NAME + "' not found under '" + RESULT_FOLDER + "'.");
                 return;
             }
 
@@ -251,8 +245,38 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             log.println(ERROR_PREFIX + " " + formatExceptionDetails(e));
             run.setResult(failBuildOnPublishError ? Result.FAILURE : Result.UNSTABLE);
         } finally {
+            if (cleanupTempFiles) {
+                cleanupTemporaryFiles(workspace, resultRoot, log);
+            }
             run.addAction(new MIAgentPublishSummaryAction(summary));
             log.println(summary.getMessage());
+        }
+    }
+
+    private void cleanupTemporaryFiles(FilePath workspace,
+                                       FilePath resultRoot,
+                                       PrintStream log) throws InterruptedException {
+        List<String> cleanupFailures = new ArrayList<>();
+        try {
+            resultRoot.deleteRecursive();
+        } catch (IOException e) {
+            cleanupFailures.add("result files: " + e.getMessage());
+        }
+
+        FilePath configFile = workspace.child(CONFIG_FILE_NAME);
+        try {
+            if (configFile.exists()) {
+                configFile.delete();
+            }
+        } catch (IOException e) {
+            cleanupFailures.add(CONFIG_FILE_NAME + ": " + e.getMessage());
+        }
+
+        if (cleanupFailures.isEmpty()) {
+            log.println("Cleaned up MI Agent temporary result files.");
+        } else {
+            String details = String.join("; ", cleanupFailures);
+            log.println(WARN_PREFIX + " Temporary result file cleanup failed; publication status was not affected: " + details);
         }
     }
 
@@ -273,8 +297,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             throw new MIAgentValidationException("Unsupported manifest version: " + schemaVersion
                     + ". Supported: " + SUPPORTED_MANIFEST_VERSIONS);
         }
-        JSONArray runs = (JSONArray) manifest.get("runs");
-        if (runs == null || runs.isEmpty()) {
+        Object runsValue = manifest.get("runs");
+        if (!(runsValue instanceof JSONArray runs) || runs.isEmpty()) {
             throw new MIAgentValidationException("Manifest contains no runs.");
         }
     }
@@ -401,9 +425,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             }
         }
 
-        if (uploadAttachments) {
-            uploadAttachments(runData, ctx, log, failures);
-        }
+        uploadAttachments(runData, ctx, log, failures);
         log.println("Published run " + runData.runId() + " (steps " + publishedSteps + "/" + totalSteps + ").");
         return new RunPublishResult(publishedSteps, totalSteps);
     }
@@ -542,7 +564,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         for (AttachmentUploadData upload : uploads) {
             String entityJson = buildAttachmentEntityJson(upload.fileName(), upload.ownerField(), upload.ownerType(), upload.ownerId());
             String mime = resolveMime(upload.fileName());
-            requestBody.write(createFormField(ENTITY_PART_NAME, "blob", CONTENT_TYPE_JSON, entityJson, boundary));
+            requestBody.write(createFormField(ENTITY_PART_NAME, "blob", APP_JSON, entityJson, boundary));
             requestBody.write(createFilePart(CONTENT_PART_NAME, upload.fileName(), mime, boundary));
             try (InputStream fileStream = upload.file().read()) {
                 fileStream.transferTo(requestBody);
