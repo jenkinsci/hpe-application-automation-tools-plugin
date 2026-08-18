@@ -264,10 +264,12 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(sharedRunner.getRemote());
-        FilePath confFile = generateConfFile(workspace, runStepsFile.getRemote(), runFolder.getRemote(), build);
+        FilePath confFile = generateConfFile(workspace, runFolder.getRemote(), build);
         args.add("--config_file_path=" + confFile.getRemote());
         log.println("[MI Agent] Resolved executable: " + sharedRunner.getRemote());
-        int exitCode = launcher.launch().cmds(args).stdout(log).pwd(workspace).join();
+        int exitCode = launcher.launch().cmds(args)
+                .envs(Collections.singletonMap("RUN_STEP_FILE_PATH", runStepsFile.getRemote()))
+                .stdout(log).pwd(workspace).join();
         log.println("[MI Agent] Exit code: " + exitCode);
         return exitCode;
     }
@@ -286,7 +288,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         return null;
     }
 
-    private FilePath generateConfFile(FilePath workspace, String runStepFilePath, String outputBaseDir, Run<?, ?> build)
+    private FilePath generateConfFile(FilePath workspace, String outputBaseDir, Run<?, ?> build)
             throws IOException, InterruptedException {
         String llmAnalyzerKey = resolveCredentialSecret(build, "LLM_ANALYZER_KEY");
         String llmExecutorKey = resolveCredentialSecret(build, "LLM_EXECUTOR_KEY");
@@ -310,7 +312,6 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         conf.put("MI_DOM_STABILITY_MIN_WAIT", 0.3);
         conf.put("MI_AGENT_MODE", "dev");
         conf.put("VALIDATE_SCHEMA", true);
-        conf.put("RUN_STEP_FILE_PATH", runStepFilePath);
         conf.put("OUTPUT_BASE_DIR", outputBaseDir);
         conf.put("LOG_TO_CONSOLE", 2);
         conf.put("DISABLE_LOG_REDIRECT", 2);
