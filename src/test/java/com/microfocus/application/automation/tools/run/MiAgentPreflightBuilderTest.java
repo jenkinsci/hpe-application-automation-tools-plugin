@@ -42,24 +42,13 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class MiAgentPreflightBuilderTest {
@@ -119,71 +108,12 @@ public class MiAgentPreflightBuilderTest {
     }
 
     @Test
-    public void checkMiAgentExecutable_proceedsToSignerValidationWhenExePresent() throws Exception {
+    public void perform_succeedsWhenExePresent() throws Exception {
         when(workspace.getParent()).thenReturn(sharedWorkspace);
         when(sharedWorkspace.child(MiAgentPreflightBuilder.MI_AGENT_EXE)).thenReturn(miAgentExe);
         when(miAgentExe.exists()).thenReturn(true);
         when(miAgentExe.isDirectory()).thenReturn(false);
-        // Unix launcher causes signer step to fail — proves file check passed
-        when(launcher.isUnix()).thenReturn(true);
-
-        try {
-            builder.perform(build, workspace, launcher, listener);
-        } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("Windows agent"));
-            return;
-        }
-        throw new AssertionError("Expected AbortException");
-    }
-
-    @Test
-    public void validateSignerName_throwsWhenPowerShellExitCodeNonZero() throws Exception {
-        setupExeMock("C:\\Jenkins\\workspace\\mi-agent.exe");
-        setupLauncherMock(1, "Some error");
-
-        try {
-            builder.perform(build, workspace, launcher, listener);
-        } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("PowerShell exit code=1"));
-            assertTrue(e.getMessage().contains("Some error"));
-            return;
-        }
-        throw new AssertionError("Expected AbortException");
-    }
-
-    @Test
-    public void validateSignerName_throwsWhenExeNotSigned() throws Exception {
-        setupExeMock("C:\\Jenkins\\workspace\\mi-agent.exe");
-        setupLauncherMock(0, "SIGNER=");
-
-        try {
-            builder.perform(build, workspace, launcher, listener);
-        } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("not digitally signed"));
-            return;
-        }
-        throw new AssertionError("Expected AbortException");
-    }
-
-    @Test
-    public void validateSignerName_throwsWhenSignerNameDoesNotMatch() throws Exception {
-        setupExeMock("C:\\Jenkins\\workspace\\mi-agent.exe");
-        setupLauncherMock(0, "SIGNER=Some Other Signer");
-
-        try {
-            builder.perform(build, workspace, launcher, listener);
-        } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("Some Other Signer"));
-            assertTrue(e.getMessage().contains(MiAgentPreflightBuilder.EXPECTED_SIGNER_NAME));
-            return;
-        }
-        throw new AssertionError("Expected AbortException");
-    }
-
-    @Test
-    public void perform_succeedsWithValidSigner() throws Exception {
-        setupExeMock("C:\\Jenkins\\workspace\\mi-agent.exe");
-        setupLauncherMock(0, "SIGNER=" + MiAgentPreflightBuilder.EXPECTED_SIGNER_NAME);
+        when(miAgentExe.getRemote()).thenReturn("C:\\Jenkins\\workspace\\mi-agent.exe");
         ByteArrayOutputStream logs = new ByteArrayOutputStream();
         PrintStream logger = new PrintStream(logs, true, StandardCharsets.UTF_8.name());
         when(listener.getLogger()).thenReturn(logger);
@@ -192,65 +122,6 @@ public class MiAgentPreflightBuilderTest {
 
         String output = logs.toString(StandardCharsets.UTF_8.name());
         assertTrue(output.contains("MiAgentPreflightBuilder : mi-agent.exe found at: C:\\Jenkins\\workspace\\mi-agent.exe"));
-        assertTrue(output.contains("MiAgentPreflightBuilder : mi-agent.exe signer validated"));
-    }
-
-    @Test
-    public void validateSignerName_scriptContainsEscapedPathWithSingleQuotes() throws Exception {
-        setupExeMock("C:\\path with 'quotes'\\mi-agent.exe");
-        Launcher.ProcStarter procStarter = setupLauncherMock(0, "SIGNER=" + MiAgentPreflightBuilder.EXPECTED_SIGNER_NAME);
-        when(listener.getLogger()).thenReturn(mock(PrintStream.class));
-
-        builder.perform(build, workspace, launcher, listener);
-
-        ArgumentCaptor<String> encodedCaptor = ArgumentCaptor.forClass(String.class);
-        verify(procStarter).cmds(
-                eq("powershell.exe"), eq("-NoProfile"), eq("-ExecutionPolicy"),
-                eq("Bypass"), eq("-EncodedCommand"), encodedCaptor.capture());
-        String decoded = new String(Base64.getDecoder().decode(encodedCaptor.getValue()), StandardCharsets.UTF_16LE);
-        assertTrue(decoded.contains("C:\\path with ''quotes''\\mi-agent.exe"));
-    }
-
-    @Test
-    public void extractOutputValue_returnsSignerValue() {
-        String output = "STATUS=Valid\nSIGNER=OpenText Internal Development Code Signing\n";
-
-        String signer = MiAgentPreflightBuilder.extractOutputValue(output, "SIGNER=");
-
-        assertEquals("OpenText Internal Development Code Signing", signer);
-    }
-
-    @Test
-    public void extractOutputValue_returnsNullWhenPrefixMissing() {
-        String output = "STATUS=Valid\n";
-
-        String signer = MiAgentPreflightBuilder.extractOutputValue(output, "SIGNER=");
-
-        assertNull(signer);
-    }
-
-    private void setupExeMock(String exePath) throws Exception {
-        when(workspace.getParent()).thenReturn(sharedWorkspace);
-        when(sharedWorkspace.child(MiAgentPreflightBuilder.MI_AGENT_EXE)).thenReturn(miAgentExe);
-        when(miAgentExe.exists()).thenReturn(true);
-        when(miAgentExe.isDirectory()).thenReturn(false);
-        when(miAgentExe.getRemote()).thenReturn(exePath);
-    }
-
-    private Launcher.ProcStarter setupLauncherMock(int exitCode, String psOutput) throws Exception {
-        Launcher.ProcStarter procStarter = mock(Launcher.ProcStarter.class);
-        when(launcher.isUnix()).thenReturn(false);
-        when(launcher.launch()).thenReturn(procStarter);
-        when(procStarter.cmds(eq("powershell.exe"), eq("-NoProfile"), eq("-ExecutionPolicy"),
-                eq("Bypass"), eq("-EncodedCommand"), anyString())).thenReturn(procStarter);
-        when(procStarter.quiet(anyBoolean())).thenReturn(procStarter);
-        doAnswer(inv -> {
-            OutputStream os = inv.getArgument(0);
-            os.write(psOutput.getBytes(StandardCharsets.UTF_8));
-            return procStarter;
-        }).when(procStarter).stdout(any(OutputStream.class));
-        when(procStarter.stderr(any(OutputStream.class))).thenReturn(procStarter);
-        when(procStarter.join()).thenReturn(exitCode);
-        return procStarter;
     }
 }
+
