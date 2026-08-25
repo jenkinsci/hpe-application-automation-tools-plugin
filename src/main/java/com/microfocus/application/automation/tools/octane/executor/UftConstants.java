@@ -68,4 +68,6 @@ public class UftConstants {
 
     public static final String UFT_CHECKOUT_FOLDER = "UFT_CHECKOUT_FOLDER";
     public static final String CODELESS_FOLDER_TEMPLATE = "codeless_%s";
+
+    public static final String AUTONOMOUS_TESTER_LABEL = "autonomous_tester";
 }

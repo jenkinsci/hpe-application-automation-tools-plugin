@@ -82,7 +82,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private static final String CONF_FILE_NAME = CommonConstants.CONFIG_FILE_NAME;
     private static final String[] RUN_STEP_SCALAR_FIELDS = {
             "type", "workspace_id", "name", "test_name", "order_in_suite_run",
-            "duration", "id", "subtype", "has_attachments", "manual_run_source"
+            "duration", "id", "subtype", "has_attachments"
     };
     private static final String[] RUN_STEP_OBJECT_FIELDS = {
             "au_tester_configuration", "parent_suite", "run_steps", "test", "native_status", "run_by"

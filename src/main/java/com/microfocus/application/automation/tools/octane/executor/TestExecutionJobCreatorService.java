@@ -350,6 +350,15 @@ public class TestExecutionJobCreatorService {
 		}
 	}
 
+	// Autonomous Tester nodes are identified by the fixed custom label
+	private static void addAutonomousTesterAssignedNode(FreeStyleProject proj) {
+		try {
+			proj.setAssignedLabel(Label.parseExpression(AUTONOMOUS_TESTER_LABEL));
+		} catch (ANTLRException | IOException e) {
+			logger.error("Failed to set addAutonomousTesterAssignedNode : " + e.getMessage());
+		}
+	}
+
 	public static FreeStyleProject createExecutor(DiscoveryInfo discoveryInfo) {
 		try {
 			TestingToolType testingToolType = discoveryInfo.getTestingToolType();
@@ -434,7 +443,7 @@ public class TestExecutionJobCreatorService {
 		addStringParameter(proj, SdkConstants.JobParameters.SUITE_ID_PARAMETER_NAME, "", "Software Delivery Management test suite ID");
 		addStringParameter(proj, SdkConstants.JobParameters.SUITE_RUN_ID_PARAMETER_NAME, "", "The ID of the Software Delivery Management test suite run to associate with the test run results.");
 
-		addExecutionAssignedNode(proj);
+		addAutonomousTesterAssignedNode(proj);
 		addTimestamper(proj);
 		addConcurrentBuildFlag(proj);
 

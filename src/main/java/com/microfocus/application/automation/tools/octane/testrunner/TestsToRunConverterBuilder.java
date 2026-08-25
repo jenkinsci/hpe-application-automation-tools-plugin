@@ -162,7 +162,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
             }
 
             TestsToRunFramework testsToRunFramework = TestsToRunFramework.fromValue(frameworkName);
-            boolean isMbt = rawTests.contains("mbtData");
+            boolean isMbt = TestsToRunFramework.MF_MBT.equals(testsToRunFramework);
             TestsToRunConverterResult convertResult;
             Map<String, String> globalParameters = getGlobalParameters(parameterAction);
 
