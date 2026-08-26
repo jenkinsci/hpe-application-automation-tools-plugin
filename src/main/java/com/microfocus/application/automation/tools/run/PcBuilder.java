@@ -66,7 +66,7 @@ import hudson.util.ListBoxModel;
 import hudson.util.LogTaskListener;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.ClientProtocolException;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;

@@ -63,7 +63,7 @@ import hudson.model.*;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.Builder;
 import hudson.tasks.test.AbstractTestResultAction;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 import org.jenkinsci.remoting.Role;
 import org.jenkinsci.remoting.RoleChecker;

@@ -102,6 +102,7 @@
 		<sonar-plugin.version>2.14</sonar-plugin.version>
 		<plugins-common.version>1.2.1</plugins-common.version>
 		<jenkins-test-harness-tools.version>2.2</jenkins-test-harness-tools.version>
+		<ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
 	</properties>
 
     <distributionManagement>
