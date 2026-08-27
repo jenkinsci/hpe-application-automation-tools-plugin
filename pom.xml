@@ -80,13 +80,28 @@
         <hpi.bundledArtifacts>SVConfigurator,bcpg-jdk18on,bcpkix-jdk18on,bcprov-jdk18on,bcutil-jdk18on,commons-cli,commons-csv,commons-lang,integrations-dto,integrations-sdk,log4j-api,log4j-core,log4j-web,plugins-common,poi,tape,zip4j</hpi.bundledArtifacts>
         <jenkins-test-harness.version>2545.va_5c4d760c7ef
         </jenkins-test-harness.version> <!-- TODO newer versions than 2.55 require debugging an issue with open file handles -->
-        <!-- java.level is deprecated and ignored by maven-hpi-plugin's ValidateMojo; it creates
-             target/java-level/17 based on the Jenkins baseline, activating a parent-POM profile that
-             resets maven.compiler.release to 17.  Configure the compiler plugin directly below so
-             that the explicit <release> value always wins over that profile property. -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
+        <maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
 
 		<!-- The ending year for copyright information -->
 		<copyright.end.year>2026</copyright.end.year>
+
+		<!-- Dependency versions -->
+		<commons-cli.version>1.4</commons-cli.version>
+		<javax-annotation-api.version>1.3.2</javax-annotation-api.version>
+		<svconfigurator.version>5.8</svconfigurator.version>
+		<integrations-sdk.version>2.26.3.1</integrations-sdk.version>
+		<jenkins-multijob-plugin.version>627.v7c23cef20a_6a</jenkins-multijob-plugin.version>
+		<extended-choice-parameter.version>346.vd87693c5a_86c</extended-choice-parameter.version>
+		<random-string-parameter.version>1.0</random-string-parameter.version>
+		<nodelabelparameter.version>1.10.3.1</nodelabelparameter.version>
+		<jquery.version>1.12.4-3</jquery.version>
+		<bouncycastle.version>1.84</bouncycastle.version>
+		<sonar-plugin.version>2.14</sonar-plugin.version>
+		<plugins-common.version>1.2.1</plugins-common.version>
+		<jenkins-test-harness-tools.version>2.2</jenkins-test-harness-tools.version>
 		<ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
 	</properties>
 
@@ -246,39 +261,10 @@
             </plugins>
         </pluginManagement>
 
-        <plugins>
-            <!-- maven-hpi-plugin's ValidateMojo derives the Java level from the Jenkins baseline
-                 (2.504 -> 17) and writes the target/java-level/17 marker, which activates a parent-POM
-                 profile that resets maven.compiler.release to 17. Pin both release and testRelease
-                 here: explicit plugin configuration wins over that profile property. Note the parent
-                 defaults maven.compiler.testRelease to ${maven.compiler.release}, so testRelease must
-                 be set too, otherwise tests would still compile at 17. -->
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <release>21</release>
-                    <testRelease>21</testRelease>
-                </configuration>
-            </plugin>
-
-            <!-- The plugin is compiled to class file version 65, so it cannot load on a controller
-                 running Java 17 (still supported by Jenkins 2.504). Declaring the requirement makes
-                 Jenkins reject it with a clear message instead of an UnsupportedClassVersionError. -->
-            <plugin>
-                <groupId>org.jenkins-ci.tools</groupId>
-                <artifactId>maven-hpi-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifestEntries>
-                            <Minimum-Java-Version>21</Minimum-Java-Version>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
-
 		<!-- This is the plugin that is used to add license headers to the source files
 		Run the following Maven command to apply the license headers to your files
 		mvn license:format-->
+        <plugins>
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
@@ -358,14 +344,28 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven-enforcer-plugin.version}</version>
                 <executions>
                     <execution>
-                        <phase>none</phase>
+                        <id>enforce-pinned-versions</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <banDynamicVersions>
+                                    <allowSnapshots>false</allowSnapshots>
+                                </banDynamicVersions>
+                                <requireReleaseDeps>
+                                    <message>No SNAPSHOT dependencies are allowed. All dependencies must use pinned release versions.</message>
+                                    <failWhenParentIsSnapshot>false</failWhenParentIsSnapshot>
+                                </requireReleaseDeps>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -465,6 +465,18 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Pinned to resolve RequireUpperBoundDeps convergence errors between
+                 SVConfigurator / org.jenkins-ci.main:maven-plugin transitive versions -->
+            <dependency>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <version>${commons-cli.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>${javax-annotation-api.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -556,7 +568,7 @@
         <dependency>
             <groupId>com.microfocus.sv</groupId>
             <artifactId>SVConfigurator</artifactId>
-            <version>5.8</version>
+            <version>${svconfigurator.version}</version>
             <exclusions>
                 <!-- Provided by Jenkins core -->
                 <exclusion>
@@ -603,7 +615,7 @@
         <dependency>
             <artifactId>integrations-sdk</artifactId>
             <groupId>com.hpe.adm.octane.ciplugins</groupId>
-            <version>2.26.3.1</version>
+            <version>${integrations-sdk.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.commons</groupId>
@@ -654,7 +666,7 @@
         <dependency>
             <artifactId>jenkins-multijob-plugin</artifactId>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <version>627.v7c23cef20a_6a</version>
+            <version>${jenkins-multijob-plugin.version}</version>
             <optional>true</optional>
         </dependency>
 
@@ -692,19 +704,19 @@
         <dependency>
             <artifactId>extended-choice-parameter</artifactId>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <version>346.vd87693c5a_86c</version>
+            <version>${extended-choice-parameter.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <artifactId>random-string-parameter</artifactId>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <version>1.0</version>
+            <version>${random-string-parameter.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <artifactId>nodelabelparameter</artifactId>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <version>1.10.3.1</version>
+            <version>${nodelabelparameter.version}</version>
             <optional>true</optional>
         </dependency>
 
@@ -718,7 +730,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jquery</artifactId>
-            <version>1.12.4-3</version>
+            <version>${jquery.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -751,22 +763,22 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpg-jdk18on</artifactId>
-            <version>1.84</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.84</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.84</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcutil-jdk18on</artifactId>
-            <version>1.84</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
     <!-- Bouncy castle dependencies-->
 
@@ -774,14 +786,14 @@
         <dependency>
             <artifactId>sonar</artifactId>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <version>2.14</version>
+            <version>${sonar-plugin.version}</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>com.microfocus.adm.performancecenter</groupId>
             <artifactId>plugins-common</artifactId>
-            <version>1.2.1</version>
+            <version>${plugins-common.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -906,7 +918,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>jenkins-test-harness-tools</artifactId>
-            <version>2.2</version>
+            <version>${jenkins-test-harness-tools.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
