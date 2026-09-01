@@ -52,6 +52,7 @@ import hudson.model.Queue;
 import hudson.model.queue.Tasks;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -71,7 +72,34 @@ public class JellyUtils {
         return m;
     }
 
-    public static ListBoxModel fillWorkspaceModel(String configurationId, String workspaceId) {
+    /**
+     * Checks whether the caller is allowed to enumerate the Software Delivery Management
+     * configurations / workspaces.
+     * <p>
+     * When the request was made in the context of an item (i.e. the job configuration form that
+     * owns the field), {@link Item#CONFIGURE} is required - it is the permission that grants write
+     * access to a job, and therefore the permission required to legitimately pick a value for one
+     * of these fields. When no ancestor item is available (for example a direct
+     * {@code /descriptorByName/...} call, or the global Pipeline Syntax page), there is no object
+     * to authorize against, so {@link Jenkins#ADMINISTER} is required instead.
+     *
+     * @param project the ancestor item of the request, or {@code null} if there is none
+     * @return {@code true} if the current user may see the listing
+     */
+    public static boolean hasConfigurationReadPermission(Item project) {
+        if (project != null) {
+            return project.hasPermission(Item.CONFIGURE);
+        }
+        return Jenkins.get().hasPermission(Jenkins.ADMINISTER);
+    }
+
+    public static ListBoxModel fillWorkspaceModel(Item project, String configurationId, String workspaceId) {
+        //do not leak the workspace inventory - and do not issue the outbound authenticated
+        //call to the Octane server - to users that are not allowed to configure this item
+        if (!hasConfigurationReadPermission(project)) {
+            return new ListBoxModel();
+        }
+
         ListBoxModel m = createComboModelWithNoneValue();
         if (StringUtils.isNotEmpty(configurationId) && !NONE.equals(configurationId)) {
             try {
@@ -89,7 +117,13 @@ public class JellyUtils {
         return m;
     }
 
-    public static ListBoxModel fillConfigurationIdModel() {
+    public static ListBoxModel fillConfigurationIdModel(Item project) {
+        //do not leak the configured Octane instances (the caption contains the server location
+        //and shared space) to users that are not allowed to configure this item
+        if (!hasConfigurationReadPermission(project)) {
+            return new ListBoxModel();
+        }
+
         ListBoxModel m = createComboModelWithNoneValue();
 
         for (OctaneClient octaneClient : OctaneSDK.getClients()) {
