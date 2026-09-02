@@ -65,6 +65,7 @@ import hudson.tasks.Recorder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang3.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -330,12 +331,12 @@ public class UFTTestDetectionPublisher extends Recorder {
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
-        public ListBoxModel doFillConfigurationIdItems() {
-            return JellyUtils.fillConfigurationIdModel();
+        public ListBoxModel doFillConfigurationIdItems(@AncestorInPath Item project) {
+            return JellyUtils.fillConfigurationIdModel(project);
         }
 
-        public ListBoxModel doFillWorkspaceNameItems(@QueryParameter String configurationId, @QueryParameter(value = "workspaceName") String workspaceName) {
-            return JellyUtils.fillWorkspaceModel(configurationId, workspaceName);
+        public ListBoxModel doFillWorkspaceNameItems(@AncestorInPath Item project, @QueryParameter String configurationId, @QueryParameter(value = "workspaceName") String workspaceName) {
+            return JellyUtils.fillWorkspaceModel(project, configurationId, workspaceName);
         }
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
