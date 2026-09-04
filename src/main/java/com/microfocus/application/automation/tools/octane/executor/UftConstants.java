@@ -38,6 +38,8 @@ package com.microfocus.application.automation.tools.octane.executor;
 
 import com.hp.octane.integrations.dto.executor.impl.TestingToolType;
 
+import java.util.Set;
+
 /**
  * Constants for UFT executors jobs
  */
@@ -70,4 +72,5 @@ public class UftConstants {
     public static final String CODELESS_FOLDER_TEMPLATE = "codeless_%s";
 
     public static final String AUTONOMOUS_TESTER_LABEL = "autonomous_tester";
+    public static final Set<String> AUTONOMOUS_TESTER_LABELS = Set.of(AUTONOMOUS_TESTER_LABEL, "at", "autonomous tester");
 }

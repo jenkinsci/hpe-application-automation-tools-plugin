@@ -350,11 +350,11 @@ public class TestExecutionJobCreatorService {
 		}
 	}
 
-	// Autonomous Tester nodes are identified by the fixed custom label
 	private static void addAutonomousTesterAssignedNode(FreeStyleProject proj) {
 		try {
-			proj.setAssignedLabel(Label.parseExpression(AUTONOMOUS_TESTER_LABEL));
-		} catch (ANTLRException | IOException e) {
+			// AutonomousTesterLabelFinder puts this label on every node named as an Autonomous Tester node
+			proj.setAssignedLabel(Jenkins.getInstanceOrNull().getLabelAtom(AUTONOMOUS_TESTER_LABEL));
+		} catch (IOException e) {
 			logger.error("Failed to set addAutonomousTesterAssignedNode : " + e.getMessage());
 		}
 	}
