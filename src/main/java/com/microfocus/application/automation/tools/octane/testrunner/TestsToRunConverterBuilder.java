@@ -132,19 +132,18 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
                 ParameterValue testsParameter = parameterAction.getParameter(TESTS_TO_RUN_PARAMETER);
                 if (testsParameter != null && testsParameter.getValue() instanceof String) {
                     rawTests = (String) testsParameter.getValue();
-                    printToConsole(listener, TESTS_TO_RUN_PARAMETER + " found with value : " + rawTests);
+                    printToConsole(listener, TESTS_TO_RUN_PARAMETER + " : " + rawTests);
                 }
 
                 ParameterValue checkoutDirParameter = parameterAction.getParameter(CHECKOUT_DIRECTORY_PARAMETER);
                 if (checkoutDirParameter != null) {
                     if (testsParameter.getValue() instanceof String && StringUtils.isNotEmpty((String) checkoutDirParameter.getValue())) {
                         executingDirectory = (String) checkoutDirParameter.getValue();//"%" + CHECKOUT_DIRECTORY_PARAMETER + "%";
-                        printToConsole(listener, CHECKOUT_DIRECTORY_PARAMETER + " parameter found with value : " + executingDirectory);
+                        printToConsole(listener, CHECKOUT_DIRECTORY_PARAMETER + " parameter found : " + executingDirectory);
                     } else {
                         printToConsole(listener, CHECKOUT_DIRECTORY_PARAMETER + " parameter found, but its value is empty or its type is not String. Using default value.");
                     }
                 }
-                printToConsole(listener, "checkout directory : " + executingDirectory);
             }
             if (StringUtils.isEmpty(rawTests)) {
                 printToConsole(listener, TESTS_TO_RUN_PARAMETER + " is not found or has empty value. Skipping.");
@@ -163,7 +162,7 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
             }
 
             TestsToRunFramework testsToRunFramework = TestsToRunFramework.fromValue(frameworkName);
-            boolean isMbt = rawTests.contains("mbtData");
+            boolean isMbt = TestsToRunFramework.MF_MBT.equals(testsToRunFramework);
             TestsToRunConverterResult convertResult;
             Map<String, String> globalParameters = getGlobalParameters(parameterAction);
 
@@ -189,7 +188,6 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
             }
 
             printToConsole(listener, "Found #tests : " + convertResult.getTestsData().size());
-            printToConsole(listener, "Set to parameter : " + convertResult.getTestsToRunConvertedParameterName() + " = " + convertResult.getConvertedTestsString());
             printToConsole(listener, "********************* Conversion is done *********************");
             if (JobProcessorFactory.WORKFLOW_RUN_NAME.equals(build.getClass().getName())) {
                 List<ParameterValue> newParams = (parameterAction != null) ? new ArrayList<>(parameterAction.getAllParameters()) : new ArrayList<>();
