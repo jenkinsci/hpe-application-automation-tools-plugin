@@ -43,7 +43,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>6.2116.v7501b_67dc517</version> <!-- TODO newer versions require an upgrade of the test harness -->
+        <version>6.2221.va_045130417c9</version>
         <relativePath />
     </parent>
 
@@ -73,13 +73,12 @@
         <concurrency>1</concurrency>
         <msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
         <msbuild.configuration>Release</msbuild.configuration>
-        <jenkins.baseline>2.504</jenkins.baseline>
+        <!-- 2.568.x is the first LTS line shipping Spring Framework 7 / Spring Security 7 -->
+        <jenkins.baseline>2.568</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
         <maven.exec.skip>false</maven.exec.skip>
         <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
         <hpi.bundledArtifacts>SVConfigurator,bcpg-jdk18on,bcpkix-jdk18on,bcprov-jdk18on,bcutil-jdk18on,commons-cli,commons-csv,commons-lang,integrations-dto,integrations-sdk,log4j-api,log4j-core,log4j-web,plugins-common,poi,tape,zip4j</hpi.bundledArtifacts>
-        <jenkins-test-harness.version>2545.va_5c4d760c7ef
-        </jenkins-test-harness.version> <!-- TODO newer versions than 2.55 require debugging an issue with open file handles -->
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <maven.compiler.release>21</maven.compiler.release>
@@ -461,7 +460,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>5983.v443959746f1f</version>
+                <version>7002.v028a_3607ddc8</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
