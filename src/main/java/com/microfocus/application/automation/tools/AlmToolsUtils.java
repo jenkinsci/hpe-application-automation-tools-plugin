@@ -37,6 +37,7 @@
 package com.microfocus.application.automation.tools;
 
 import com.microfocus.application.automation.tools.settings.UFTEncryptionGlobalConfiguration;
+import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
@@ -57,9 +58,10 @@ import java.util.*;
 @SuppressWarnings("squid:S1160")
 public final class AlmToolsUtils {
 
-	private AlmToolsUtils() {
+    private AlmToolsUtils() {
         // no meaning instantiating
-	}
+    }
+
     public static void runOnBuildEnv(
             Run<?, ?> build,
             Launcher launcher,
@@ -69,7 +71,8 @@ public final class AlmToolsUtils {
             Node node) throws IOException, InterruptedException {
         runOnBuildEnv(build, launcher, listener, file, paramFileName, node, "UTF-8");
     }
-	public static void runOnBuildEnv(
+
+    public static void runOnBuildEnv(
             Run<?, ?> build,
             Launcher launcher,
             TaskListener listener,
@@ -78,63 +81,73 @@ public final class AlmToolsUtils {
             Node node,
             String encoding) throws IOException, InterruptedException {
 
-            ArgumentListBuilder args = new ArgumentListBuilder();
-            PrintStream out = listener.getLogger();
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        PrintStream out = listener.getLogger();
 
-            // Use script to run the cmdLine and get the console output
-            args.add(file);
-            args.add("-paramfile");
-            args.add(paramFileName);
-            if (StringUtils.isNotBlank(encoding)) {
-                args.add("-encoding");
-                args.add(encoding);
-            }
+        // Use script to run the cmdLine and get the console output
+        args.add(file);
+        args.add("-paramfile");
+        args.add(paramFileName);
+        if (StringUtils.isNotBlank(encoding)) {
+            args.add("-encoding");
+            args.add(encoding);
+        }
 
-            // for encryption
-            Map<String, String> envs = new HashMap<>();
+        /*// for encryption
+        Map<String, String> envs = new HashMap<>();
 
-            try {
-                UFTEncryptionGlobalConfiguration config = UFTEncryptionGlobalConfiguration.getInstance();
-                envs.put("hptoolslauncher.key", Secret.fromString(config.getEncKey()).getPlainText());
-            } catch (NullPointerException ignored) {
-                throw new IOException("Failed to access encryption key, the module UFTEncryption is unavailable.");
-            }
+        try {
+            UFTEncryptionGlobalConfiguration config = UFTEncryptionGlobalConfiguration.getInstance();
+            envs.put("hptoolslauncher.key", Secret.fromString(config.getEncKey()).getPlainText());
+        } catch (NullPointerException ignored) {
+            throw new IOException("Failed to access encryption key, the module UFTEncryption is unavailable.");
+        }
+
+        if (node == null) {
+            node = JenkinsUtils.getCurrentNode(file);
 
             if (node == null) {
-                node = JenkinsUtils.getCurrentNode(file);
-
-                if (node == null) {
-                    throw new IOException("Failed to access current executor node.");
-                }
+                throw new IOException("Failed to access current executor node.");
             }
+        }
 
-            try {
-                envs.put("hptoolslauncher.rootpath", Objects.requireNonNull(node.getRootPath()).getRemote());
-            } catch (NullPointerException e) {
-                throw new IOException(e.getMessage());
-            }
+        try {
+            envs.put("hptoolslauncher.rootpath", Objects.requireNonNull(node.getRootPath()).getRemote());
+        } catch (NullPointerException e) {
+            throw new IOException(e.getMessage());
+        }*/
 
+        int returnCode;
+        byte[] pk = Aes256Encrypter.getPrivateKey();
+        if (pk == null) {
             // Run the script on node
             // Execution result should be 0
-            int returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).envs(envs).join();
+            //returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).envs(envs).join();
+            returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).join();
+        } else {
+            args.add("--use-stdin-key");
+            String input = Base64.getEncoder().encodeToString(Aes256Encrypter.getPrivateKey());
+            InputStream in = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
+            returnCode = launcher.launch().cmds(args).stdin(in).stdout(out).pwd(file.getParent()).join();
+        }
 
-            if (returnCode != 0) {
-                if (returnCode == -1) {
-                    build.setResult(Result.FAILURE);
-                } else if (returnCode == -2) {
-                    build.setResult(Result.UNSTABLE);
-                } else if (returnCode == -3) {
-                    build.setResult(Result.ABORTED);
-                    // throwing this exception ensures we enter into the respective catch branch in the callstack
-                    throw new InterruptedException();
-                } else {
-                    listener.getLogger().println("Launch return code " + returnCode);
-                    build.setResult(Result.FAILURE);
-                    if(returnCode == -2146232576 && file.getRemote().toLowerCase(Locale.ROOT).contains("\\system32\\config")) {
-                        listener.getLogger().println("!!! Move 'JENKINS_HOME' out of the 'windows\\\\system32' folder because the plugin may not have permissions to launch tests under this folder.");
-                    }
+        if (returnCode != 0) {
+            if (returnCode == -1) {
+                build.setResult(Result.FAILURE);
+            } else if (returnCode == -2) {
+                build.setResult(Result.UNSTABLE);
+            } else if (returnCode == -3) {
+                build.setResult(Result.ABORTED);
+                // throwing this exception ensures we enter into the respective catch branch in the callstack
+                throw new InterruptedException();
+            } else {
+                listener.getLogger().println("Launch return code " + returnCode);
+                build.setResult(Result.FAILURE);
+                if (returnCode == -2146232576 && file.getRemote().toLowerCase(Locale.ROOT).contains("\\system32\\config")) {
+                    listener.getLogger().println("!!! Move 'JENKINS_HOME' out of the 'windows\\\\system32' folder because the plugin may not have permissions to launch tests under this folder.");
                 }
             }
+        }
     }
 
     public static void runHpToolsAborterOnBuildEnv(
@@ -143,11 +156,11 @@ public final class AlmToolsUtils {
             BuildListener listener,
             String paramFileName) throws IOException, InterruptedException {
 
-            runHpToolsAborterOnBuildEnv(build, launcher, listener, paramFileName, build.getWorkspace());
+        runHpToolsAborterOnBuildEnv(build, launcher, listener, paramFileName, build.getWorkspace());
     }
 
-	@SuppressWarnings("squid:S2259")
-	public static void runHpToolsAborterOnBuildEnv(
+    @SuppressWarnings("squid:S2259")
+    public static void runHpToolsAborterOnBuildEnv(
             Run<?, ?> build,
             Launcher launcher,
             TaskListener listener,
@@ -158,7 +171,7 @@ public final class AlmToolsUtils {
 
         String hpToolsAborter_exe = "HpToolsAborter.exe";
 
-		URL hpToolsAborterUrl = Jenkins.get().pluginManager.uberClassLoader.getResource("HpToolsAborter.exe");
+        URL hpToolsAborterUrl = Jenkins.get().pluginManager.uberClassLoader.getResource("HpToolsAborter.exe");
         FilePath hpToolsAborterFile = runWorkspace.child(hpToolsAborter_exe);
 
         args.add(hpToolsAborterFile);
@@ -169,10 +182,10 @@ public final class AlmToolsUtils {
         int returnCode = launcher.launch().cmds(args).stdout(out).pwd(hpToolsAborterFile.getParent()).join();
 
         try {
-        	hpToolsAborterFile.delete();
-		} catch (Exception e) {
-			 listener.error("failed copying HpToolsAborter: " + e);
-		}
+            hpToolsAborterFile.delete();
+        } catch (Exception e) {
+            listener.error("failed copying HpToolsAborter: " + e);
+        }
 
 
         if (returnCode != 0) {

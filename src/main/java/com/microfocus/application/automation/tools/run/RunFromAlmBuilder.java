@@ -42,6 +42,7 @@ import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.uft.model.FilterTestsModel;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsGlobalConfiguration;
 import com.microfocus.application.automation.tools.uft.model.SpecifyParametersModel;
+import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -332,7 +333,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                 }
             }
 
-            encAlmPass = EncryptionUtils.encrypt(almPassword, currNode);
+            //encAlmPass = EncryptionUtils.encrypt(almPassword, currNode);
+            encAlmPass = Aes256Encrypter.encrypt(almPassword);
 
             mergedProps.remove(RunFromAlmModel.ALM_PASSWORD_KEY);
             mergedProps.put(RunFromAlmModel.ALM_PASSWORD_KEY, encAlmPass);
@@ -352,7 +354,8 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
                 }
             }
 
-            encAlmApiKey = EncryptionUtils.encrypt(almApiKeySecret, currNode);
+            //encAlmApiKey = EncryptionUtils.encrypt(almApiKeySecret, currNode);
+            encAlmApiKey = Aes256Encrypter.encrypt(almApiKeySecret);
             mergedProps.remove(RunFromAlmModel.ALM_API_KEY_SECRET);
             mergedProps.put(RunFromAlmModel.ALM_API_KEY_SECRET, encAlmApiKey);
             mergedProps.put("almClientID", getAlmClientID());
