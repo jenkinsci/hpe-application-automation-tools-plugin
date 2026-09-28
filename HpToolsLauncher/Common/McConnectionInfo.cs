@@ -68,7 +68,6 @@ namespace HpToolsLauncher
         private const string MOBILEUSESSL = "MobileUseSSL";
         private const string MOBILEUSERNAME = "MobileUserName";
         private const string MOBILEPASSWORD = "MobilePassword";
-        private const string MOBILETENANTID = "MobileTenantId";
         private const string MOBILEWORKSPACE = "MobileWorkspaceName";
         private const string MOBILEDEVICEMETRICS = "MobileDeviceMetrics";
         private const string MOBILEEXECTOKEN = "MobileExecToken";
@@ -133,60 +132,58 @@ namespace HpToolsLauncher
             }
             set
             {
-                var previous = _execToken;
+                ClearExecTokenState();
                 if (value == null)
                 {
-                    _execToken = null;
-                    _token.Dispose();
-                    _token = new AuthTokenInfo();
-                    if (previous != null)
-                    {
-                        previous.Dispose();
-                    }
-                    _authType = AuthType.UsernamePassword;
+                    return;
                 }
-                else
+
+                var trimmed = value.Trim(DBL_QUOTE_CH);
+                AuthTokenInfo parsed = null;
+                try
                 {
-                    string tenantId;
-                    var trimmed = value.Trim(DBL_QUOTE_CH);
-                    AuthTokenInfo parsed = null;
-                    try
+                    if (trimmed.Length == 0)
                     {
-                        parsed = ParseExecToken(trimmed, out tenantId);
-
-                        _token.Dispose();
-                        if (previous != null)
-                        {
-                            previous.Dispose();
-                        }
-
-                        _execToken = trimmed;
-                        _token = parsed;
-                        if (trimmed.Length > 0)
-                        {
-                            if (tenantId != null)
-                            {
-                                TenantId = tenantId;
-                            }
-                            _authType = AuthType.AuthToken;
-                        }
-
                         trimmed = null;
-                        parsed = null;
+                        return;
                     }
-                    finally
+
+                    string tenantId;
+                    parsed = ParseExecToken(trimmed, out tenantId);
+
+                    _execToken = trimmed;
+                    _token = parsed;
+                    TenantId = tenantId;
+                    _authType = AuthType.AuthToken;
+
+                    trimmed = null;
+                    parsed = null;
+                }
+                finally
+                {
+                    if (parsed != null)
                     {
-                        if (parsed != null)
-                        {
-                            parsed.Dispose();
-                        }
-                        if (trimmed != null)
-                        {
-                            trimmed.Dispose();
-                        }
+                        parsed.Dispose();
+                    }
+                    if (trimmed != null)
+                    {
+                        trimmed.Dispose();
                     }
                 }
             }
+        }
+
+        private void ClearExecTokenState()
+        {
+            if (_execToken != null)
+            {
+                _execToken.Dispose();
+                _execToken = null;
+            }
+            _token.Dispose();
+            _token = new AuthTokenInfo();
+            TenantId = string.Empty;
+            _authType = AuthType.UsernamePassword;
         }
 
         public AuthType MobileAuthType
@@ -234,9 +231,6 @@ namespace HpToolsLauncher
                 WorkspaceName =
                 ProxyAddress =
                 ProxyUserName = string.Empty;
-            ExecToken = new SecureString();
-            Password = new SecureString();
-            ProxyPassword = new SecureString();
         }
 
         public McConnectionInfo(JavaProperties ciParams) : this()
@@ -310,16 +304,6 @@ namespace HpToolsLauncher
                     if (!mcPassword.IsNullOrEmpty())
                     {
                         Password = Encrypter.DecryptToSecureString(mcPassword);
-                    }
-                }
-
-                //mc tenantId
-                if (ciParams.ContainsKey(MOBILETENANTID))
-                {
-                    string mcTenantId = ciParams[MOBILETENANTID];
-                    if (!mcTenantId.IsNullOrEmpty())
-                    {
-                        TenantId = mcTenantId;
                     }
                 }
 
