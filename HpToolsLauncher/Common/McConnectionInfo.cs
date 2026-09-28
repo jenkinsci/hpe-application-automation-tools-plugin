@@ -574,7 +574,7 @@ namespace HpToolsLauncher
                 strProxy += string.Format(", ProxyAuth: {0}", _useProxyAuth ? YES : NO);
                 if (_useProxy && !ProxyUserName.IsNullOrWhiteSpace())
                 {
-                    strProxy += string.Format(", ProxyUserName: {0}", ProxyUserName);
+                    strProxy += string.Format(", ProxyUserName: {0}", MASKED);
                 }
             }
             return string.Format("HostAddress: {0}, Port: {1}, AuthType: {2}, {3}{4}, {5}, {6}", HostAddress, HostPort, MobileAuthType, strUserNameOrClientId, strTenantId, strUseSsl, strProxy);
