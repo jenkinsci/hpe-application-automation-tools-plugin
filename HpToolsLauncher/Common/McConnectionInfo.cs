@@ -144,7 +144,6 @@ namespace HpToolsLauncher
                 {
                     if (trimmed.Length == 0)
                     {
-                        trimmed = null;
                         return;
                     }
 
