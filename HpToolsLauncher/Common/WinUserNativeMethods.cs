@@ -36,6 +36,7 @@
  */
  using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace HpToolsLauncher
 {
@@ -48,6 +49,9 @@ namespace HpToolsLauncher
 
             [DllImport("EncodeUtilsWrap", CallingConvention = CallingConvention.Cdecl)]
             public static extern void ProtectBSTRToBase64([MarshalAs(UnmanagedType.BStr)] string input, [MarshalAs(UnmanagedType.BStr)] out string result, [MarshalAs(UnmanagedType.Bool)] bool bCrypt);
+
+            [DllImport("EncodeUtilsWrap", CallingConvention = CallingConvention.Cdecl, EntryPoint = "ProtectBSTRToBase64")]
+            public static extern void ProtectBSTRToBase64(IntPtr input, [MarshalAs(UnmanagedType.BStr)] out string result, [MarshalAs(UnmanagedType.Bool)] bool bCrypt);
         }
 
         private static class EncodeUtilsWrapD
@@ -57,6 +61,9 @@ namespace HpToolsLauncher
 
             [DllImport("EncodeUtilsWrapD", CallingConvention = CallingConvention.Cdecl)]
             public static extern void ProtectBSTRToBase64([MarshalAs(UnmanagedType.BStr)] string input, [MarshalAs(UnmanagedType.BStr)] out string result, [MarshalAs(UnmanagedType.Bool)] bool bCrypt);
+
+            [DllImport("EncodeUtilsWrapD", CallingConvention = CallingConvention.Cdecl, EntryPoint = "ProtectBSTRToBase64")]
+            public static extern void ProtectBSTRToBase64(IntPtr input, [MarshalAs(UnmanagedType.BStr)] out string result, [MarshalAs(UnmanagedType.Bool)] bool bCrypt);
         }
 
         public static string ProtectBSTRToBase64(string clearData)
@@ -76,6 +83,48 @@ namespace HpToolsLauncher
                 catch (DllNotFoundException)
                 {
 
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Protects the secret by handing the native encoder an unmanaged BSTR, which is zeroed right after the call.
+        /// </summary>
+        public static string ProtectBSTRToBase64(SecureString clearData)
+        {
+            if (clearData == null)
+            {
+                return ProtectBSTRToBase64((string)null);
+            }
+
+            string result = null;
+            IntPtr bstr = IntPtr.Zero;
+            try
+            {
+                bstr = Marshal.SecureStringToBSTR(clearData);
+                try
+                {
+                    EncodeUtilsWrap.ProtectBSTRToBase64(bstr, out result, true);
+                }
+                catch (DllNotFoundException)
+                {
+                    try
+                    {
+                        EncodeUtilsWrapD.ProtectBSTRToBase64(bstr, out result, true);
+                    }
+                    catch (DllNotFoundException)
+                    {
+
+                    }
+                }
+            }
+            finally
+            {
+                if (bstr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeBSTR(bstr);
                 }
             }
 

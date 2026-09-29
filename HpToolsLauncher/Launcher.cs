@@ -592,8 +592,7 @@ namespace HpToolsLauncher
                         }
                         else if (!string.IsNullOrEmpty(encryptedPwd))
                         {
-                            string plainTextPwd = Encrypter.Decrypt(encryptedPwd);
-                            uftRunAsUser = new RunAsUser(username, plainTextPwd.ToSecureString());
+                            uftRunAsUser = new RunAsUser(username, Encrypter.DecryptToSecureString(encryptedPwd));
                         }
                     }
 

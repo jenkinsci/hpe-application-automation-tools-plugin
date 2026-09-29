@@ -370,7 +370,7 @@ namespace HpToolsLauncher.ParallelRunner
             AuthenticationSettings authenticationSettings = null;
 
             if (!string.IsNullOrEmpty(mcConnectionInfo.ProxyUserName)
-                && !string.IsNullOrEmpty(mcConnectionInfo.ProxyPassword))
+                && !mcConnectionInfo.ProxyPassword.IsNullOrEmpty())
             {
                 authenticationSettings = new AuthenticationSettings
                 {
@@ -415,7 +415,7 @@ namespace HpToolsLauncher.ParallelRunner
                 protocol = mc.UseSSL ? "https" : "http",
                 tenantId = mc.TenantId,
                 authType = (int)mc.MobileAuthType,
-                accessKey = Convert.ToBase64String(Encoding.UTF8.GetBytes(mc.ExecToken))
+                accessKey = mc.ExecToken.ToBase64()
             };
 
             var proxy = GetMCProxySettings(mc);
