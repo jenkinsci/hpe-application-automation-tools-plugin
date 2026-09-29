@@ -42,7 +42,6 @@ import com.microfocus.application.automation.tools.mi.AuTeLlmCredentials;
 import com.microfocus.application.automation.tools.mi.MIAgentConstants;
 import com.microfocus.application.automation.tools.mi.MIAgentBuildAction;
 import com.microfocus.application.automation.tools.mi.MIAgentResultPublisher;
-import com.microfocus.application.automation.tools.settings.MiAgentGlobalConfiguration;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -74,20 +73,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 /**
- * Build step that executes MI Agent runs from the converted tests payload.
+ * Build step that executes Autonomous Tester (AuTe) runs from the converted tests payload.
  *
  * <p>The converter ({@code TestsToRunConverterBuilder} with {@code MF_MI_AGENT}) provides a
  * manifest where each item under {@code data[]} is a manual run payload including its
- * {@code run_steps}. For each run, this builder assembles a single JSON document
- * ({@code run_step} + {@code manual_run} + {@code credentials}) and pipes it to the configured
- * MI Agent runner over stdin, then writes a manifest consumed by {@link MIAgentResultPublisher}.</p>
+ * {@code run_steps}. For each run, this builder writes the normalized run data to a
+ * {@code run_steps.json} file, writes a {@code conf.json} engine configuration in the run folder
+ * (static defaults plus the per-run {@code RUN_STEP_FILE_PATH}/{@code OUTPUT_BASE_DIR}), and
+ * invokes mi-agent.exe with {@code --config_file_path=<conf.json>}. Only the LLM
+ * credentials resolved from Jenkins credentials are piped over stdin. A manifest consumed by
+ * {@link MIAgentResultPublisher} is written at the end.</p>
  */
 public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
     private static final String MI_AGENT_EXE = "mi-agent.exe";
     private static final String RUN_STEPS_RESULT_FILE_NAME = MIAgentConstants.RUN_STEPS_RESULT_FILE_NAME;
     private static final String MANIFEST_FILE_NAME = MIAgentConstants.MANIFEST_FILE_NAME;
-    private static final String EXECUTION_RECORDING_ENABLED_ENVIRONMENT_VARIABLE = "EXECUTION_RECORDING_ENABLED";
+    private static final String RUN_STEPS_FILE_NAME = "run_steps.json";
+    private static final String CONF_FILE_NAME = "conf.json";
 
     private static final String AU_TESTER_CONFIGURATION_FIELD = "au_tester_configuration";
     private static final String LLM_CONFIGURATION_FIELD = "llm_configuration";
@@ -100,10 +103,17 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private static final String MODEL_PARAMETERS_FIELD = "MODEL_PARAMETERS";
     private static final String PARAMETER_NAME_FIELD = "Name";
     private static final String PARAMETER_VALUE_FIELD = "Value";
-    private static final String RUN_STEP_FIELD = "run_step";
-    private static final String MANUAL_RUN_FIELD = "manual_run";
     private static final String CREDENTIALS_FIELD = "credentials";
-    private static final String OUTPUT_BASE_DIR_FIELD = "OUTPUT_BASE_DIR";
+    private static final String CONFIG_FILE_PATH_ARG_PREFIX = "--config_file_path=";
+
+    private static final String DEFAULT_LLM_VENDOR = "GEMINI";
+    private static final String DEFAULT_LLM_EXECUTOR_MODEL = "gemini-2.5-flash";
+    private static final String DEFAULT_LLM_ANALYZER_MODEL = "gemini-2.5-pro";
+    private static final double DEFAULT_LLM_TEMPERATURE = 0.2;
+    private static final int DEFAULT_STEP_MULTIPLIER = 3;
+    private static final int DEFAULT_MAX_FAILURES = 1;
+    private static final int DEFAULT_LOG_TO_CONSOLE = 2;
+    private static final int DEFAULT_DISABLE_LOG_REDIRECT = 2;
 
     private static final String[] RUN_STEP_SCALAR_FIELDS = {
             "type", "workspace_id", "name", "test_name", "order_in_suite_run", "duration", "id", "subtype", "has_attachments"
@@ -111,6 +121,10 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private static final String[] RUN_STEP_OBJECT_FIELDS = {
             AU_TESTER_CONFIGURATION_FIELD, "parent_suite", "run_steps", "test", "native_status", "run_by"
     };
+
+    private static final String SKIPPED_NATIVE_STATUS_ID = "list_node.run_native_status.skipped";
+    private static final String SKIPPED_STEP_MESSAGE = "This run step was skipped";
+    private static final String ERROR_PREFIX = "ErrorCode: ";
 
     private String executorId;
     private String executorLogicalName;
@@ -151,7 +165,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         if (build.getAction(MIAgentBuildAction.class) == null) {
             build.addAction(new MIAgentBuildAction(executorId, executorLogicalName, configurationId, workspaceId));
         }
-        log.println("[MI Agent] Tagged build as MI Agent run.");
+        log.println("[AuTe] Tagged build as Autonomous Tester run.");
 
         JSONArray data = resolveConvertedRuns(build, listener);
         if (data.isEmpty()) {
@@ -173,42 +187,41 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             JSONObject runData = (JSONObject) o;
             String runId = String.valueOf(runData.get("id"));
             if (StringUtils.isBlank(runId) || "null".equalsIgnoreCase(runId)) {
-                log.println("[MI Agent][WARN] Skipping run with missing id.");
+                log.println("[AuTe][WARN] Skipping run with missing id.");
                 continue;
             }
-
-            JSONObject credentials = resolveLlmCredentials(build, log, extractLlmLogicalName(runData), runId);
 
             FilePath runFolder = resultRoot.child(runId);
             runFolder.mkdirs();
             JSONObject runStep = toRunStep(runData);
-            JSONObject configuration = buildAgentConfiguration(runStep, credentials, runFolder.getRemote());
+            FilePath runStepsFile = runFolder.child(RUN_STEPS_FILE_NAME);
+            runStepsFile.write(runStep.toJSONString(), "UTF-8");
 
-            RunOutcome outcome = executeRunner(configuration, build, workspace, launcher, listener, log);
+            RunOutcome outcome;
+            try {
+                JSONObject credentials = resolveLlmCredentials(build, log, extractLlmLogicalName(runData), runId);
+                FilePath confFile = writeConfFile(runFolder, runStepsFile.getRemote(), runFolder.getRemote());
+                JSONObject credentialsDocument = buildCredentialsDocument(credentials);
+                outcome = executeRunner(confFile, credentialsDocument, build, workspace, launcher, listener, log);
+            } catch (IOException e) {
+                log.println(e.getMessage());
+                synthesizeSkippedResult(runFolder, runStep, e.getMessage());
+                failures++;
+                manifestRuns.add(buildRunManifestEntry(runId, runFolder));
+                continue;
+            }
+
             boolean hasResult = runFolder.child(RUN_STEPS_RESULT_FILE_NAME).exists();
-
-            if (outcome.exitCode() != 0 || !hasResult) {
+            if (!hasResult) {
+                String detailedError = extractMiAgentError(outcome.consoleOutput());
+                String message = detailedError != null ? detailedError
+                        : "Autonomous Tester exited with code " + outcome.exitCode() + " and did not produce " + RUN_STEPS_RESULT_FILE_NAME;
+                log.println("[AuTe][WARN] " + message);
+                synthesizeSkippedResult(runFolder, runStep, message);
                 failures++;
             }
 
-            if (outcome.exitCode() != 0) {
-                String detailedError = extractMiAgentError(outcome.consoleOutput());
-                String message = detailedError != null ? detailedError
-                        : "MI Agent exited with code " + outcome.exitCode() + " and did not produce " + RUN_STEPS_RESULT_FILE_NAME;
-                if (!hasResult) {
-                    synthesizeFailureResult(runFolder, runStep, message);
-                } else {
-                    annotateResultWithError(runFolder, message);
-                }
-            }
-
-            JSONObject runManifest = new JSONObject();
-            runManifest.put("runId", runId);
-            runManifest.put("runFolder", runFolder.getRemote());
-            runManifest.put("runStepsResultFile", RUN_STEPS_RESULT_FILE_NAME);
-            runManifest.put("exitCode", outcome.exitCode());
-            runManifest.put("hasResult", runFolder.child(RUN_STEPS_RESULT_FILE_NAME).exists());
-            manifestRuns.add(runManifest);
+            manifestRuns.add(buildRunManifestEntry(runId, runFolder));
         }
 
         JSONObject manifest = new JSONObject();
@@ -244,27 +257,27 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.println("[MI Agent][WARN] Interrupted while reading build environment: " + e.getMessage());
+            log.println("[AuTe][WARN] Interrupted while reading build environment: " + e.getMessage());
         } catch (IOException e) {
-            log.println("[MI Agent][WARN] Failed to read build environment: " + e.getMessage());
+            log.println("[AuTe][WARN] Failed to read build environment: " + e.getMessage());
         }
 
         if (StringUtils.isBlank(converted)) {
-            log.println("[MI Agent] No MI Agent tests were found.");
+            log.println("[AuTe] No Autonomous Tester tests were found.");
             return new JSONArray();
         }
 
         Object parsed = JSONValue.parse(converted);
         if (!(parsed instanceof JSONObject)) {
-            throw new IOException("[MI Agent][ERROR] Converted tests payload is not a JSON object.");
+            throw new IOException("[AuTe][ERROR] Converted tests payload is not a JSON object.");
         }
 
         Object data = ((JSONObject) parsed).get("data");
         if (data != null && !(data instanceof JSONArray)) {
-            throw new IOException("[MI Agent][ERROR] Converted tests payload 'data' is not a JSON array.");
+            throw new IOException("[AuTe][ERROR] Converted tests payload 'data' is not a JSON array.");
         }
         if (data == null || ((JSONArray) data).isEmpty()) {
-            log.println("[MI Agent] Converted tests payload contains no runs.");
+            log.println("[AuTe] Converted tests payload contains no runs.");
             return new JSONArray();
         }
         return (JSONArray) data;
@@ -275,24 +288,24 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                                              String logicalName,
                                              String runId) throws IOException {
         if (StringUtils.isBlank(logicalName)) {
-            throw new IOException("[MI Agent][ERROR] Run " + runId + " has no '" + LLM_LOGICAL_NAME_FIELD
+            throw new IOException("[AuTe][ERROR] Run " + runId + " has no '" + LLM_LOGICAL_NAME_FIELD
                     + "' in '" + LLM_CONFIGURATION_FIELD + "'. It must name an Autonomous Tester LLM Configuration credential.");
         }
 
         AuTeLlmCredentials llmConfig = CredentialsProvider.findCredentialById(
                 logicalName, AuTeLlmCredentials.class, build, Collections.emptyList());
         if (llmConfig == null) {
-            throw new IOException("[MI Agent][ERROR] No Autonomous Tester LLM Configuration with id '"
+            throw new IOException("[AuTe][ERROR] No Autonomous Tester LLM Configuration with id '"
                     + logicalName + "' is available to this job.");
         }
 
         Object parsedConfig = JSONValue.parse(Secret.toString(llmConfig.getConfigurationJson()));
         if (!(parsedConfig instanceof JSONObject)) {
-            throw new IOException("[MI Agent][ERROR] LLM configuration '" + logicalName
+            throw new IOException("[AuTe][ERROR] LLM configuration '" + logicalName
                     + "' must contain a JSON object.");
         }
 
-        log.println("[MI Agent] Run " + runId + ": LLM configuration '" + logicalName + "' selected.");
+        log.println("[AuTe] Run " + runId + ": LLM configuration '" + logicalName + "' selected.");
         return (JSONObject) parsedConfig;
     }
 
@@ -395,21 +408,43 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     }
 
     /**
-     * Assembles the single stdin document: Octane's per-run {@code run_step} first, then the runtime
-     * values the plugin owns, then {@code credentials} last so nothing may override them.
+     * Wraps the resolved LLM credentials in the single-key document mi-agent reads from stdin.
      */
-    private JSONObject buildAgentConfiguration(JSONObject runStep, JSONObject credentials, String outputBaseDir) {
-        JSONObject manualRun = new JSONObject();
-        manualRun.put(OUTPUT_BASE_DIR_FIELD, outputBaseDir);
-
+    private JSONObject buildCredentialsDocument(JSONObject credentials) {
         JSONObject document = new JSONObject();
-        document.put(RUN_STEP_FIELD, runStep);
-        document.put(MANUAL_RUN_FIELD, manualRun);
         document.put(CREDENTIALS_FIELD, credentials);
         return document;
     }
 
-    private RunOutcome executeRunner(JSONObject configuration,
+    /**
+    * Writes the run-specific {@code conf.json}: static engine defaults plus the per-run
+     * {@code RUN_STEP_FILE_PATH}/{@code OUTPUT_BASE_DIR}. Any LLM vendor/model default here is
+     * overwritten once mi-agent loads the run_step file's {@code au_tester_configuration}.
+     */
+    private FilePath writeConfFile(FilePath runFolder, String runStepFilePath, String outputBaseDir)
+            throws IOException, InterruptedException {
+        JSONObject conf = new JSONObject();
+        conf.put(LLM_EXECUTOR_VENDOR_FIELD, DEFAULT_LLM_VENDOR);
+        conf.put("LLM_EXECUTOR_MODEL", DEFAULT_LLM_EXECUTOR_MODEL);
+        conf.put("LLM_EXECUTOR_TEMPERATURE", DEFAULT_LLM_TEMPERATURE);
+        conf.put(LLM_ANALYZER_VENDOR_FIELD, DEFAULT_LLM_VENDOR);
+        conf.put("LLM_ANALYZER_MODEL", DEFAULT_LLM_ANALYZER_MODEL);
+        conf.put("LLM_ANALYZER_TEMPERATURE", DEFAULT_LLM_TEMPERATURE);
+        conf.put("STEP_MULTIPLIER", DEFAULT_STEP_MULTIPLIER);
+        conf.put("MAX_FAILURES", DEFAULT_MAX_FAILURES);
+        conf.put("LOG_TO_CONSOLE", DEFAULT_LOG_TO_CONSOLE);
+        conf.put("DISABLE_LOG_REDIRECT", DEFAULT_DISABLE_LOG_REDIRECT);
+        conf.put("EXECUTION_RECORDING_ENABLED", false);
+        conf.put("RUN_STEP_FILE_PATH", runStepFilePath);
+        conf.put("OUTPUT_BASE_DIR", outputBaseDir);
+
+        FilePath confFile = runFolder.child(CONF_FILE_NAME);
+        confFile.write(conf.toJSONString(), "UTF-8");
+        return confFile;
+    }
+
+    private RunOutcome executeRunner(FilePath confFile,
+                              JSONObject credentialsDocument,
                               Run<?, ?> build,
                               FilePath workspace,
                               Launcher launcher,
@@ -417,19 +452,18 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                               PrintStream log) throws IOException, InterruptedException {
         FilePath sharedRunner = resolveRunnerExecutable(workspace);
         if (sharedRunner == null) {
-            throw new IOException("[MI Agent][ERROR] MI Agent executable not found at required shared location: ${WORKSPACE}/../"
+            throw new IOException("[AuTe][ERROR] mi-agent.exe not found at required shared location: ${WORKSPACE}/../"
                     + MI_AGENT_EXE);
         }
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(sharedRunner.getRemote());
-        log.println("[MI Agent] Resolved executable: " + sharedRunner.getRemote());
+        args.add(CONFIG_FILE_PATH_ARG_PREFIX + confFile.getRemote());
+        log.println("[AuTe] Resolved executable: " + sharedRunner.getRemote());
 
         EnvVars environment = new EnvVars(build.getEnvironment(listener));
-        environment.put(EXECUTION_RECORDING_ENABLED_ENVIRONMENT_VARIABLE,
-            Boolean.toString(MiAgentGlobalConfiguration.getInstance().isExecutionRecordingEnabled()));
 
-        byte[] stdinBytes = configuration.toJSONString().getBytes(StandardCharsets.UTF_8);
+        byte[] stdinBytes = credentialsDocument.toJSONString().getBytes(StandardCharsets.UTF_8);
 
         // Tee stdout so its error diagnostic can be recovered after the process exits.
         ByteArrayOutputStream consoleCapture = new ByteArrayOutputStream();
@@ -440,7 +474,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                 .stdin(new ByteArrayInputStream(stdinBytes))
                 .stdout(teeStream).pwd(workspace).join();
 
-        log.println("[MI Agent] Exit code: " + exitCode);
+        log.println("[AuTe] Exit code: " + exitCode);
         return new RunOutcome(exitCode, consoleCapture.toString(StandardCharsets.UTF_8));
     }
 
@@ -448,14 +482,16 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private record RunOutcome(int exitCode, String consoleOutput) {
     }
 
-    /** Returns mi-agent's last non-blank console line, or {@code null} if none. */
+    /** Returns the first console line containing the {@value #ERROR_PREFIX} marker, or {@code null} if none. */
     private String extractMiAgentError(String output) {
         String trimmed = StringUtils.trimToNull(output);
         if (trimmed == null) {
             return null;
         }
-        int lastNewline = trimmed.lastIndexOf('\n');
-        return lastNewline < 0 ? trimmed : trimmed.substring(lastNewline + 1).trim();
+        return trimmed.lines()
+                .filter(line -> line.contains(ERROR_PREFIX))
+                .findFirst()
+                .orElse(null);
     }
 
     private FilePath resolveRunnerExecutable(FilePath workspace) throws IOException, InterruptedException {
@@ -472,14 +508,10 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         return null;
     }
 
-    private void synthesizeFailureResult(FilePath runFolder, JSONObject runStepsInput, String message) throws IOException, InterruptedException {
-        JSONObject failedStatus = new JSONObject();
-        failedStatus.put("type", "list_node");
-        failedStatus.put("id", "list_node.run_native_status.failed");
-        failedStatus.put("logical_name", "list_node.run_native_status.failed");
-        failedStatus.put("name", "Failed");
+    private void synthesizeSkippedResult(FilePath runFolder, JSONObject runStepsInput, String message) throws IOException, InterruptedException {
+        JSONObject skippedStatus = buildSkippedStatus();
 
-        JSONArray failedSteps = new JSONArray();
+        JSONArray skippedSteps = new JSONArray();
         JSONObject runSteps = (JSONObject) runStepsInput.get("run_steps");
         JSONArray data = runSteps == null ? null : (JSONArray) runSteps.get("data");
         if (data != null) {
@@ -489,42 +521,40 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                 }
                 JSONObject source = (JSONObject) o;
                 JSONObject step = new JSONObject();
-                step.put("type", "run_step");
+                step.put("type", source.get("type"));
                 step.put("id", source.get("id"));
-                step.put("result", failedStatus);
-                // Only Octane's step 'actual' field is published, so put the message on the first step only.
-                if (failedSteps.isEmpty()) {
-                    step.put("actual", message);
-                }
-                failedSteps.add(step);
+                step.put("result", skippedStatus);
+                step.put("actual", SKIPPED_STEP_MESSAGE);
+                skippedSteps.add(step);
             }
         }
 
         JSONObject result = new JSONObject();
-        result.put("type", "run_manual_test");
+        result.put("type", runStepsInput.get("type"));
         result.put("id", runStepsInput.get("id"));
-        result.put("duration", 0);
-        result.put("native_status", failedStatus);
+        result.put("native_status", skippedStatus);
+        result.put("description", message);
         JSONObject steps = new JSONObject();
-        steps.put("data", failedSteps);
+        steps.put("data", skippedSteps);
         result.put("run_steps", steps);
         runFolder.child(RUN_STEPS_RESULT_FILE_NAME).write(result.toJSONString(), "UTF-8");
     }
 
-    /** mi-agent still wrote a result despite failing: stamp the diagnostic onto the first step. */
-    private void annotateResultWithError(FilePath runFolder, String message) throws IOException, InterruptedException {
-        FilePath resultFile = runFolder.child(RUN_STEPS_RESULT_FILE_NAME);
-        Object parsed = JSONValue.parse(resultFile.readToString());
-        if (!(parsed instanceof JSONObject result)) {
-            return;
-        }
-        Object runSteps = result.get("run_steps");
-        JSONArray steps = runSteps instanceof JSONObject ? (JSONArray) ((JSONObject) runSteps).get("data") : null;
-        if (steps == null || steps.isEmpty() || !(steps.get(0) instanceof JSONObject firstStep)) {
-            return;
-        }
-        firstStep.put("actual", message);
-        resultFile.write(result.toJSONString(), "UTF-8");
+    private JSONObject buildSkippedStatus() {
+        JSONObject status = new JSONObject();
+        status.put("type", "list_node");
+        status.put("id", SKIPPED_NATIVE_STATUS_ID);
+        status.put("logical_name", SKIPPED_NATIVE_STATUS_ID);
+        status.put("name", "Skipped");
+        return status;
+    }
+
+    private JSONObject buildRunManifestEntry(String runId, FilePath runFolder) {
+        JSONObject runManifest = new JSONObject();
+        runManifest.put("runId", runId);
+        runManifest.put("runFolder", runFolder.getRemote());
+        runManifest.put("runStepsResultFile", RUN_STEPS_RESULT_FILE_NAME);
+        return runManifest;
     }
 
     @Extension
@@ -539,7 +569,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Run MI Agent (Autonomous-Tester)";
+            return "Run Autonomous Tester (AuTe)";
         }
     }
 }

@@ -225,7 +225,7 @@ public class RunFromMiAgentBuilderTest {
     }
 
     @Test
-    public void synthesizeFailureResult_createsFailedResultFile() throws Exception {
+    public void synthesizeSkippedResult_marksStepsSkippedAndCarriesErrorInRunDescription() throws Exception {
         RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
 
         FilePath runFolder = new FilePath(new File(tempFolder.getRoot(), "mi-agent-results\\1042"));
@@ -245,7 +245,7 @@ public class RunFromMiAgentBuilderTest {
         runStepsInput.put("run_steps", runSteps);
 
         Method synthesizeMethod = RunFromMiAgentBuilder.class.getDeclaredMethod(
-                "synthesizeFailureResult", FilePath.class, JSONObject.class, String.class);
+                "synthesizeSkippedResult", FilePath.class, JSONObject.class, String.class);
         synthesizeMethod.setAccessible(true);
         synthesizeMethod.invoke(builder, runFolder, runStepsInput, "runner failed");
 
@@ -254,10 +254,32 @@ public class RunFromMiAgentBuilderTest {
 
         JsonNode json = MAPPER.readTree(Files.readString(resultFile.toPath(), StandardCharsets.UTF_8));
         assertEquals("1042", json.path("id").asText());
-        assertEquals("list_node.run_native_status.failed", json.path("native_status").path("id").asText());
+        assertEquals("list_node.run_native_status.skipped", json.path("native_status").path("id").asText());
+        assertEquals("runner failed", json.path("description").asText());
         assertEquals(2, json.path("run_steps").path("data").size());
         assertEquals("s1", json.path("run_steps").path("data").get(0).path("id").asText());
-        assertEquals("runner failed", json.path("run_steps").path("data").get(1).path("actual").asText());
+        assertEquals("list_node.run_native_status.skipped",
+                json.path("run_steps").path("data").get(0).path("result").path("id").asText());
+        assertEquals("This run step was skipped", json.path("run_steps").path("data").get(1).path("actual").asText());
+    }
+
+    @Test
+    public void buildRunManifestEntry_locatesRunWithoutFabricatingProcessState() throws Exception {
+        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
+        FilePath runFolder = new FilePath(new File(tempFolder.getRoot(), "mi-agent-results\\2042"));
+
+        Method buildEntry = RunFromMiAgentBuilder.class.getDeclaredMethod(
+                "buildRunManifestEntry", String.class, FilePath.class);
+        buildEntry.setAccessible(true);
+        JSONObject entry = (JSONObject) buildEntry.invoke(builder, "2042", runFolder);
+
+        assertEquals("2042", entry.get("runId"));
+        assertEquals(runFolder.getRemote(), entry.get("runFolder"));
+        assertEquals("run_steps_result.json", entry.get("runStepsResultFile"));
+        // The exit code never reaches the result contract in ai-executor, so it must not be invented here
+        // for runs where mi-agent was never launched.
+        assertNull(entry.get("exitCode"));
+        assertNull(entry.get("hasResult"));
     }
 
     @Test
@@ -301,12 +323,13 @@ public class RunFromMiAgentBuilderTest {
         assertTrue(runnerWorkspace.mkdir());
 
         Method executeMethod = RunFromMiAgentBuilder.class.getDeclaredMethod(
-                "executeRunner", JSONObject.class, Run.class, FilePath.class, Launcher.class, TaskListener.class, PrintStream.class);
+                "executeRunner", FilePath.class, JSONObject.class, Run.class, FilePath.class, Launcher.class, TaskListener.class, PrintStream.class);
         executeMethod.setAccessible(true);
 
         try {
             executeMethod.invoke(
                     builder,
+                    new FilePath(new File(runnerWorkspace, "conf.json")),
                     new JSONObject(),
                     mock(FreeStyleBuild.class),
                     new FilePath(runnerWorkspace),

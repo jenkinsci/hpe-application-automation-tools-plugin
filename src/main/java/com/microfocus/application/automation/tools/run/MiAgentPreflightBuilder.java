@@ -36,6 +36,7 @@
  */
 package com.microfocus.application.automation.tools.run;
 
+import com.microfocus.application.automation.tools.mi.MIAgentPreflightFailure;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
@@ -53,7 +54,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 
 /**
- * First build step in every MI Agent job — verifies that mi-agent.exe is present in the
+ * First build step in every Autonomous Tester (AuTe) job — verifies that mi-agent.exe is present in the
  * shared workspace root before conversion or execution begins.
  */
 public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep {
@@ -69,7 +70,7 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
                         @Nonnull FilePath workspace,
                         @Nonnull Launcher launcher,
                         @Nonnull TaskListener listener) throws IOException, InterruptedException {
-        FilePath miAgentExe = checkMiAgentExecutable(workspace);
+        FilePath miAgentExe = checkMiAgentExecutable(build, workspace);
         printToConsole(listener, "mi-agent.exe found at: " + miAgentExe.getRemote());
     }
 
@@ -78,26 +79,32 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
     }
 
     private static String formatMessage(String msg) {
-        return MiAgentPreflightBuilder.class.getSimpleName() + " : " + msg;
+        return "AuTe Preflight Check : " + msg;
     }
 
-    private FilePath checkMiAgentExecutable(FilePath workspace) throws IOException, InterruptedException {
+    private FilePath checkMiAgentExecutable(Run<?, ?> build, FilePath workspace) throws IOException, InterruptedException {
         // mi-agent.exe lives in the shared workspace root, one level above the job workspace
         FilePath sharedWorkspace = workspace.getParent();
         if (sharedWorkspace == null) {
-            throw new AbortException(formatMessage("Cannot resolve shared workspace root from: " + workspace.getRemote()));
+            throw abort(build, "Cannot resolve shared workspace root from: " + workspace.getRemote());
         }
 
         FilePath miAgentExe = sharedWorkspace.child(MI_AGENT_EXE);
         if (!miAgentExe.exists() || miAgentExe.isDirectory()) {
-            throw new AbortException(formatMessage("mi-agent.exe not found at: " + miAgentExe.getRemote()));
+            throw abort(build, "mi-agent.exe not found at: " + miAgentExe.getRemote());
         }
 
         return miAgentExe;
     }
 
+    private AbortException abort(Run<?, ?> build, String reason) {
+        String message = formatMessage(reason);
+        build.addAction(new MIAgentPreflightFailure(message));
+        return new AbortException(message);
+    }
+
     @Extension
-    @Symbol("miAgentPreflight")
+    @Symbol("AuTePreflight")
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         @Override
@@ -108,7 +115,7 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "MI Agent Preflight Check";
+            return "AuTe Preflight Check";
         }
     }
 }

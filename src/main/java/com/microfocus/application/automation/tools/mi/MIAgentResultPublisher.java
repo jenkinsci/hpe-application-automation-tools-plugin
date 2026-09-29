@@ -45,6 +45,9 @@ import com.hp.octane.integrations.dto.connectivity.OctaneRequest;
 import com.hp.octane.integrations.dto.connectivity.OctaneResponse;
 import com.hp.octane.integrations.services.rest.OctaneRestClient;
 import com.hp.octane.integrations.utils.SdkStringUtils;
+import com.hp.octane.integrations.executor.TestToRunData;
+import com.hp.octane.integrations.executor.TestsToRunConverter;
+import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -103,6 +106,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final List<String> SUPPORTED_MANIFEST_VERSIONS = List.of("1.0");
     private static final String APP_JSON = "application/json";
     private static final String RUN_NATIVE_STATUS_PREFIX = "list_node.run_native_status.";
+    private static final String RUN_ID_PARAMETER = "runId";
     private static final int MAX_EXCEPTION_STACK_FRAMES = 7;
     private static final String WARN_PREFIX = "[WARN]";
     private static final String ERROR_PREFIX = "[ERROR]";
@@ -180,6 +184,12 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         MIAgentPublishSummary summary = new MIAgentPublishSummary();
         FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
         try {
+            MIAgentPreflightFailure preflightFailure = run.getAction(MIAgentPreflightFailure.class);
+            if (preflightFailure != null) {
+                publishPreflightFailure(run, listener, preflightFailure.getReason(), summary, log);
+                return;
+            }
+
             if (!resultRoot.exists()) {
                 summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
                 summary.setMessage("Result folder '" + RESULT_FOLDER + "' was not found under workspace.");
@@ -219,7 +229,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             summary.setPublishedSteps(publishedSteps);
             if (failures.isEmpty()) {
                 summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
-                summary.setMessage("Published " + runs.size() + " MI Agent run(s), " + publishedSteps + " step result(s).");
+                summary.setMessage("Published " + runs.size() + " Autonomous Tester run(s), " + publishedSteps + " step result(s).");
             } else {
                 handlePublishFailures(run, failures, summary);
             }
@@ -236,6 +246,51 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         } finally {
             run.addAction(new MIAgentPublishSummaryAction(summary));
             log.println(summary.getMessage());
+        }
+    }
+
+    /**
+     * Preflight aborted the build before the converter ran, so nothing was executed and no result
+     * files exist. The run IDs are still in the raw {@code testsToRun} parameter, which is enough to
+     * mark every test run skipped and show why on its description.
+     */
+    private void publishPreflightFailure(Run<?, ?> run,
+                                         TaskListener listener,
+                                         String reason,
+                                         MIAgentPublishSummary summary,
+                                         PrintStream log) throws IOException, InterruptedException, MIAgentValidationException {
+        List<TestToRunData> tests = TestsToRunConverter.parse(
+                run.getEnvironment(listener).get(UftConstants.TESTS_TO_RUN_PARAMETER_NAME));
+        if (tests == null || tests.isEmpty()) {
+            summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
+            summary.setMessage("Preflight check failed and no test runs were available to report it on: " + reason);
+            return;
+        }
+
+        PublishContext ctx = createPublishContext();
+        List<String> failures = new ArrayList<>();
+        int published = 0;
+        for (TestToRunData test : tests) {
+            String runId = test.getParameter(RUN_ID_PARAMETER);
+            if (StringUtils.isBlank(runId)) {
+                continue;
+            }
+            try {
+                updateRunStatus(runId, RUN_NATIVE_STATUS_PREFIX + "skipped", reason, ctx, log);
+                published++;
+            } catch (Exception e) {
+                String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
+                failures.add("Run " + runId + " status update failed: " + details);
+                log.println(WARN_PREFIX + " Run " + runId + " status update failed: " + details);
+            }
+        }
+
+        summary.setTotalTests(tests.size());
+        if (failures.isEmpty()) {
+            summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
+            summary.setMessage("Preflight check failed; reported " + published + " test run(s) as skipped: " + reason);
+        } else {
+            handlePublishFailures(run, failures, summary);
         }
     }
 
@@ -347,8 +402,10 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             overallStatusId = RUN_NATIVE_STATUS_PREFIX + "failed";
         }
 
+        String runDescription = runData.runResult().get("description") == null ? null : String.valueOf(runData.runResult().get("description"));
+
         try {
-            updateRunStatus(runData.runId(), overallStatusId, ctx, log);
+            updateRunStatus(runData.runId(), overallStatusId, runDescription, ctx, log);
         } catch (Exception e) {
             String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
             failures.add("Run " + runData.runId() + " status update failed: " + details);
@@ -389,12 +446,15 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return new RunPublishResult(publishedSteps, totalSteps);
     }
 
-    private void updateRunStatus(String runId, String statusId, PublishContext ctx, PrintStream log) throws IOException {
+    private void updateRunStatus(String runId, String statusId, String description, PublishContext ctx, PrintStream log) throws IOException {
         JSONObject payload = new JSONObject();
         JSONObject status = new JSONObject();
         status.put("type", "list_node");
         status.put("id", statusId);
         payload.put("native_status", status);
+        if (StringUtils.isNotBlank(description)) {
+            payload.put("description", description);
+        }
 
         log.println("updateRunStatus: statusId=" + statusId);
         String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/runs/%s", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId(), runId);
@@ -792,7 +852,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Publish MI Agent (Autonomous-Tester) results to Software Delivery Management";
+            return "Publish Autonomous Tester (AuTe) results to Software Delivery Management";
         }
     }
 

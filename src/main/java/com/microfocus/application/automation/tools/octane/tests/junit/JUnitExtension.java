@@ -103,7 +103,7 @@ public class JUnitExtension extends OctaneTestsExtension {
 			logger.debug("AbstractTestResultAction found, JUnit results expected");
 			return true;
 		} else if (build.getAction(MIAgentBuildAction.class) != null) {
-			logger.debug("MI Agent (Autonomous-Tester) run detected. JUnit processing is skipped; results are published by MIAgentResultPublisher.");
+			logger.debug("Autonomous Tester (AuTe) run detected. JUnit processing is skipped; results are published by MIAgentResultPublisher.");
 			return false;
 		} else {
 			logger.debug("AbstractTestResultAction not found, no JUnit results expected");

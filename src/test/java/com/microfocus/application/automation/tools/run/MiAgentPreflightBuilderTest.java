@@ -121,7 +121,7 @@ public class MiAgentPreflightBuilderTest {
         builder.perform(build, workspace, launcher, listener);
 
         String output = logs.toString(StandardCharsets.UTF_8.name());
-        assertTrue(output.contains("MiAgentPreflightBuilder : mi-agent.exe found at: C:\\Jenkins\\workspace\\mi-agent.exe"));
+        assertTrue(output.contains("AuTe Preflight Check : mi-agent.exe found at: C:\\Jenkins\\workspace\\mi-agent.exe"));
     }
 }
 

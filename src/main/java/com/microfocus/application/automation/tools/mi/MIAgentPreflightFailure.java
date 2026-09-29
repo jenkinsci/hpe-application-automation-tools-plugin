@@ -34,53 +34,31 @@
  *  limitations under the License.
  *  ___________________________________________________________________
  */
-package com.microfocus.application.automation.tools.settings;
+package com.microfocus.application.automation.tools.mi;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.Extension;
-import jenkins.model.GlobalConfiguration;
+import hudson.model.InvisibleAction;
 
+import java.io.Serial;
 import java.io.Serializable;
 
-@Extension
-public class MiAgentGlobalConfiguration extends GlobalConfiguration implements Serializable {
+/**
+ * Carries the preflight failure reason to {@link MIAgentResultPublisher}.
+ *
+ * <p>Preflight aborts the build before the converter and the runner execute, so no result files are
+ * ever produced. This action is how the publisher learns why, and what to report on each test run.</p>
+ */
+public class MIAgentPreflightFailure extends InvisibleAction implements Serializable {
 
-    private int maxBuildsToKeep = 50;
-    private int maxDaysToKeep = 7;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-    public MiAgentGlobalConfiguration() {
-        load();
+    private final String reason;
+
+    public MIAgentPreflightFailure(String reason) {
+        this.reason = reason;
     }
 
-    public static MiAgentGlobalConfiguration getInstance() throws NullPointerException {
-        MiAgentGlobalConfiguration configuration = GlobalConfiguration.all().get(MiAgentGlobalConfiguration.class);
-        if (configuration == null) {
-            throw new NullPointerException();
-        }
-        return configuration;
-    }
-
-    @NonNull
-    @Override
-    public String getDisplayName() {
-        return "Autonomous Tester settings";
-    }
-
-    public int getMaxBuildsToKeep() {
-        return maxBuildsToKeep;
-    }
-
-    public void setMaxBuildsToKeep(int maxBuildsToKeep) {
-        this.maxBuildsToKeep = maxBuildsToKeep;
-        save();
-    }
-
-    public int getMaxDaysToKeep() {
-        return maxDaysToKeep;
-    }
-
-    public void setMaxDaysToKeep(int maxDaysToKeep) {
-        this.maxDaysToKeep = maxDaysToKeep;
-        save();
+    public String getReason() {
+        return reason;
     }
 }

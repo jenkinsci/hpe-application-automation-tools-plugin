@@ -156,7 +156,8 @@ public class TestsToRunConverterBuilder extends Builder implements SimpleBuildSt
             }
             String frameworkName = getFramework();
             String frameworkFormat = getFormat();
-            printToConsole(listener, "Selected framework = " + frameworkName);
+            String frameworkDisplayName = TestsToRunFramework.MF_MI_AGENT.value().equals(frameworkName) ? "Autonomous Tester (AuTe)" : frameworkName;
+            printToConsole(listener, "Selected framework = " + frameworkDisplayName);
             if (SdkStringUtils.isNotEmpty(frameworkFormat)) {
                 printToConsole(listener, "Using format = " + frameworkFormat);
             }

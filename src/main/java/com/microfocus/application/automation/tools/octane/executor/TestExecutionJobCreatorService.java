@@ -433,13 +433,13 @@ public class TestExecutionJobCreatorService {
 	 */
 	private static FreeStyleProject createMiAgentExecutor(DiscoveryInfo discoveryInfo) throws IOException {
 		String projectName = String.format("%s-%s-%s",
-				MI_AGENT_EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW,
+				AUTE_EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW,
 				discoveryInfo.getExecutorId(),
 				discoveryInfo.getExecutorLogicalName().substring(0, 5));
 		FreeStyleProject proj = createProject(discoveryInfo.getConfigurationId(), projectName);
 
 		proj.setDescription(String.format(
-				"This job was created by the OpenText Application Automation Tools plugin for running MI Agent (Autonomous-Tester) tests. It is associated with Software Delivery Management test runner #%s.",
+				"This job was created by the OpenText Application Automation Tools plugin for running Autonomous Tester (AuTe) tests. It is associated with Software Delivery Management test runner #%s.",
 				discoveryInfo.getExecutorId()));
 
 		addStringParameter(proj, UftConstants.TESTS_TO_RUN_PARAMETER_NAME, "", "Tests to run");
@@ -454,7 +454,7 @@ public class TestExecutionJobCreatorService {
 		MiAgentGlobalConfiguration configuration = MiAgentGlobalConfiguration.getInstance();
 		proj.setBuildDiscarder(new LogRotator(-1, configuration.getMaxBuildsToKeep(), -1, configuration.getMaxDaysToKeep()));
 
-		// Build steps - preflight check, then MI Agent converter + runner
+		// Build steps - preflight check, then Autonomous Tester converter + runner
 		proj.getBuildersList().add(new MiAgentPreflightBuilder());
 		Builder converterBuilder = new TestsToRunConverterBuilder(TestsToRunFramework.MF_MI_AGENT.value());
 		proj.getBuildersList().add(converterBuilder);
