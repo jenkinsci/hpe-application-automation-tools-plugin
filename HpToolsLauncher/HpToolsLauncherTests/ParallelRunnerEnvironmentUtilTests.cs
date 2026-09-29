@@ -39,6 +39,7 @@ using HpToolsLauncher.ParallelRunner;
 using HpToolsLauncher.ParallelTestRunConfiguraion;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using System.Security;
 
 namespace HpToolsLauncherTests
 {
@@ -47,6 +48,16 @@ namespace HpToolsLauncherTests
     {
         private static readonly string MobileEnvironment = "osType : Android,osVersion : 4.4.2,manufacturerAndModel : \"samsung GT-I9515\"";
         private static readonly string WebEnvironment = "browser : chrome";
+
+        private static SecureString ToSecureString(string value)
+        {
+            var secret = new SecureString();
+            foreach (char c in value)
+            {
+                secret.AppendChar(c);
+            }
+            return secret;
+        }
 
         [TestMethod]
         public void GetEnvironmentPropertiesTest_ValidEnvironment_ReturnsExpectedProperties()
@@ -355,7 +366,7 @@ namespace HpToolsLauncherTests
             mcConnectionInfo.ProxyPort = 8080;
             mcConnectionInfo.UseProxyAuth = true;
             mcConnectionInfo.ProxyUserName = "test";
-            mcConnectionInfo.ProxyPassword = "test";
+            mcConnectionInfo.ProxyPassword = ToSecureString("test");
 
             ProxySettings settings = ParallelRunnerEnvironmentUtil.GetMCProxySettings(mcConnectionInfo);
 
@@ -384,7 +395,7 @@ namespace HpToolsLauncherTests
             mcConnectionInfo.HostAddress = "192.168.1.1";
             mcConnectionInfo.HostPort = "8080";
             mcConnectionInfo.UserName = "test";
-            mcConnectionInfo.Password = "test";
+            mcConnectionInfo.Password = ToSecureString("test");
             mcConnectionInfo.UseSSL = true;
 
             UFTSettings settings = ParallelRunnerEnvironmentUtil.ParseMCSettings(mcConnectionInfo);
@@ -405,7 +416,7 @@ namespace HpToolsLauncherTests
             mcConnectionInfo.HostAddress = "192.168.1.1";
             mcConnectionInfo.HostPort = "8080";
             mcConnectionInfo.UserName = "test";
-            mcConnectionInfo.Password = "test";
+            mcConnectionInfo.Password = ToSecureString("test");
 
             UFTSettings settings = ParallelRunnerEnvironmentUtil.ParseMCSettings(mcConnectionInfo);
 

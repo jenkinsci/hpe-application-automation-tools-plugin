@@ -54,7 +54,7 @@ namespace HpToolsLauncher.Utils
         {
             _username = username;
             _pwd = pwd;
-            _encodedPwd = Encoder.Encode(_pwd.ToPlainString());
+            _encodedPwd = Encoder.Encode(_pwd);
         }
         public string Username
         {
