@@ -71,7 +71,7 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
                         @Nonnull Launcher launcher,
                         @Nonnull TaskListener listener) throws IOException, InterruptedException {
         FilePath miAgentExe = checkMiAgentExecutable(build, workspace);
-        printToConsole(listener, "mi-agent.exe found at: " + miAgentExe.getRemote());
+        printToConsole(listener, "mi-agent.exe found at: %s".formatted(miAgentExe.getRemote()));
     }
 
     private static void printToConsole(TaskListener listener, String msg) {
@@ -79,19 +79,19 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
     }
 
     private static String formatMessage(String msg) {
-        return "AuTe Preflight Check : " + msg;
+        return "AuTe Preflight Check : %s".formatted(msg);
     }
 
     private FilePath checkMiAgentExecutable(Run<?, ?> build, FilePath workspace) throws IOException, InterruptedException {
         // mi-agent.exe lives in the shared workspace root, one level above the job workspace
         FilePath sharedWorkspace = workspace.getParent();
         if (sharedWorkspace == null) {
-            throw abort(build, "Cannot resolve shared workspace root from: " + workspace.getRemote());
+            throw abort(build, "Cannot resolve shared workspace root from: %s".formatted(workspace.getRemote()));
         }
 
         FilePath miAgentExe = sharedWorkspace.child(MI_AGENT_EXE);
         if (!miAgentExe.exists() || miAgentExe.isDirectory()) {
-            throw abort(build, "mi-agent.exe not found at: " + miAgentExe.getRemote());
+            throw abort(build, "mi-agent.exe not found at: %s".formatted(miAgentExe.getRemote()));
         }
 
         return miAgentExe;

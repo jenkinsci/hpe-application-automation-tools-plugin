@@ -229,7 +229,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             summary.setPublishedSteps(publishedSteps);
             if (failures.isEmpty()) {
                 summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
-                summary.setMessage("Published " + runs.size() + " Autonomous Tester run(s), " + publishedSteps + " step result(s).");
+                summary.setMessage("Published %s Autonomous Tester run(s), %s step result(s).".formatted(runs.size(), publishedSteps));
             } else {
                 handlePublishFailures(run, failures, summary);
             }
@@ -263,7 +263,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 run.getEnvironment(listener).get(UftConstants.TESTS_TO_RUN_PARAMETER_NAME));
         if (tests == null || tests.isEmpty()) {
             summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
-            summary.setMessage("Preflight check failed and no test runs were available to report it on: " + reason);
+            summary.setMessage("Preflight check failed and no test runs were available to report it on: %s".formatted(reason));
             return;
         }
 
@@ -280,15 +280,16 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 published++;
             } catch (Exception e) {
                 String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
-                failures.add("Run " + runId + " status update failed: " + details);
-                log.println(WARN_PREFIX + " Run " + runId + " status update failed: " + details);
+                var failure = "Run %s status update failed: %s".formatted(runId, details);
+                failures.add(failure);
+                log.println("%s %s".formatted(WARN_PREFIX, failure));
             }
         }
 
         summary.setTotalTests(tests.size());
         if (failures.isEmpty()) {
             summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
-            summary.setMessage("Preflight check failed; reported " + published + " test run(s) as skipped: " + reason);
+            summary.setMessage("Preflight check failed; reported %s test run(s) as skipped: %s".formatted(published, reason));
         } else {
             handlePublishFailures(run, failures, summary);
         }

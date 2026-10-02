@@ -215,8 +215,9 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             if (!hasResult) {
                 String detailedError = extractMiAgentError(outcome.consoleOutput());
                 String message = detailedError != null ? detailedError
-                        : "Autonomous Tester exited with code " + outcome.exitCode() + " and did not produce " + RUN_STEPS_RESULT_FILE_NAME;
-                log.println("[AuTe][WARN] " + message);
+                    : "Autonomous Tester exited with code %s and did not produce %s"
+                        .formatted(outcome.exitCode(), RUN_STEPS_RESULT_FILE_NAME);
+                log.println("[AuTe][WARN] %s".formatted(message));
                 synthesizeSkippedResult(runFolder, runStep, message);
                 failures++;
             }
@@ -257,9 +258,9 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.println("[AuTe][WARN] Interrupted while reading build environment: " + e.getMessage());
+            log.println("[AuTe][WARN] Interrupted while reading build environment: %s".formatted(e.getMessage()));
         } catch (IOException e) {
-            log.println("[AuTe][WARN] Failed to read build environment: " + e.getMessage());
+            log.println("[AuTe][WARN] Failed to read build environment: %s".formatted(e.getMessage()));
         }
 
         if (StringUtils.isBlank(converted)) {
@@ -288,24 +289,24 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                                              String logicalName,
                                              String runId) throws IOException {
         if (StringUtils.isBlank(logicalName)) {
-            throw new IOException("[AuTe][ERROR] Run " + runId + " has no '" + LLM_LOGICAL_NAME_FIELD
-                    + "' in '" + LLM_CONFIGURATION_FIELD + "'. It must name an Autonomous Tester LLM Configuration credential.");
+            throw new IOException("[AuTe][ERROR] Run %s has no '%s' in '%s'. It must name an Autonomous Tester LLM Configuration credential."
+                .formatted(runId, LLM_LOGICAL_NAME_FIELD, LLM_CONFIGURATION_FIELD));
         }
 
         AuTeLlmCredentials llmConfig = CredentialsProvider.findCredentialById(
                 logicalName, AuTeLlmCredentials.class, build, Collections.emptyList());
         if (llmConfig == null) {
-            throw new IOException("[AuTe][ERROR] No Autonomous Tester LLM Configuration with id '"
-                    + logicalName + "' is available to this job.");
+            throw new IOException("[AuTe][ERROR] No Autonomous Tester LLM Configuration with id '%s' is available to this job."
+                .formatted(logicalName));
         }
 
         Object parsedConfig = JSONValue.parse(Secret.toString(llmConfig.getConfigurationJson()));
         if (!(parsedConfig instanceof JSONObject)) {
-            throw new IOException("[AuTe][ERROR] LLM configuration '" + logicalName
-                    + "' must contain a JSON object.");
+            throw new IOException("[AuTe][ERROR] LLM configuration '%s' must contain a JSON object."
+                .formatted(logicalName));
         }
 
-        log.println("[AuTe] Run " + runId + ": LLM configuration '" + logicalName + "' selected.");
+        log.println("[AuTe] Run %s: LLM configuration '%s' selected.".formatted(runId, logicalName));
         return (JSONObject) parsedConfig;
     }
 
@@ -452,14 +453,14 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                               PrintStream log) throws IOException, InterruptedException {
         FilePath sharedRunner = resolveRunnerExecutable(workspace);
         if (sharedRunner == null) {
-            throw new IOException("[AuTe][ERROR] mi-agent.exe not found at required shared location: ${WORKSPACE}/../"
-                    + MI_AGENT_EXE);
+            throw new IOException("[AuTe][ERROR] mi-agent.exe not found at required shared location: ${WORKSPACE}/../%s"
+                .formatted(MI_AGENT_EXE));
         }
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(sharedRunner.getRemote());
         args.add(CONFIG_FILE_PATH_ARG_PREFIX + confFile.getRemote());
-        log.println("[AuTe] Resolved executable: " + sharedRunner.getRemote());
+        log.println("[AuTe] Resolved executable: %s".formatted(sharedRunner.getRemote()));
 
         EnvVars environment = new EnvVars(build.getEnvironment(listener));
 
@@ -474,7 +475,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                 .stdin(new ByteArrayInputStream(stdinBytes))
                 .stdout(teeStream).pwd(workspace).join();
 
-        log.println("[AuTe] Exit code: " + exitCode);
+        log.println("[AuTe] Exit code: %s".formatted(exitCode));
         return new RunOutcome(exitCode, consoleCapture.toString(StandardCharsets.UTF_8));
     }
 

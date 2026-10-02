@@ -89,7 +89,7 @@ public class MIAgentWorkspaceCleanupPublisher extends Recorder implements Simple
         FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
         if (resultRoot.exists()) {
             resultRoot.deleteRecursive();
-            log.println("[AuTe] Deleted workspace results folder: " + resultRoot.getRemote());
+            log.println("[AuTe] Deleted workspace results folder: %s".formatted(resultRoot.getRemote()));
         }
     }
 
