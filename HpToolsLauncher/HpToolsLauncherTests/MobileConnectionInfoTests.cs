@@ -38,6 +38,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 using HpToolsLauncher;
+using HpToolsLauncher.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace HpToolsLauncherTests
@@ -143,6 +144,170 @@ namespace HpToolsLauncherTests
                 Assert.AreEqual(McConnectionInfo.AuthType.UsernamePassword, connectionInfo.MobileAuthType);
                 Assert.IsNull(connectionInfo.GetAuthToken().ClientId);
                 Assert.IsTrue(connectionInfo.GetAuthToken().SecretKey == null);
+            }
+        }
+
+        [TestMethod]
+        public void ToString_DoesNotExposeProxyPassword()
+        {
+            const string proxyPassword = "proxy-password-canary";
+
+            using (var connectionInfo = new McConnectionInfo())
+            {
+                connectionInfo.UseProxy = true;
+                connectionInfo.ProxyPassword = ToSecureString(proxyPassword);
+
+                Assert.IsFalse(connectionInfo.ToString().Contains(proxyPassword));
+            }
+        }
+
+        [TestMethod]
+        public void UseAsCharArray_ClearsBufferAfterCallback()
+        {
+            const string expected = "secret-value";
+            char[] captured = null;
+
+            using (var secret = ToSecureString(expected))
+            {
+                secret.UseAsCharArray(chars =>
+                {
+                    captured = chars;
+                    Assert.AreEqual(expected.Length, chars.Length);
+                    for (int i = 0; i < chars.Length; i++)
+                    {
+                        Assert.AreEqual(expected[i], chars[i]);
+                    }
+                    return true;
+                });
+            }
+
+            Assert.IsNotNull(captured);
+            for (int i = 0; i < captured.Length; i++)
+            {
+                Assert.AreEqual('\0', captured[i]);
+            }
+        }
+
+        [TestMethod]
+        public void UseAsCharArray_ClearsBufferWhenCallbackThrows()
+        {
+            char[] captured = null;
+
+            using (var secret = ToSecureString("secret-value"))
+            {
+                try
+                {
+                    secret.UseAsCharArray<int>(chars =>
+                    {
+                        captured = chars;
+                        throw new InvalidOperationException("Expected callback failure.");
+                    });
+                    Assert.Fail("The callback exception should propagate.");
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            }
+
+            Assert.IsNotNull(captured);
+            for (int i = 0; i < captured.Length; i++)
+            {
+                Assert.AreEqual('\0', captured[i]);
+            }
+        }
+
+        [TestMethod]
+        public void UseAsCharArray_HandlesEmptySecret()
+        {
+            char[] captured = null;
+
+            using (var secret = ToSecureString(string.Empty))
+            {
+                secret.UseAsCharArray(chars =>
+                {
+                    captured = chars;
+                    Assert.AreEqual(0, chars.Length);
+                    return true;
+                });
+            }
+
+            Assert.IsNotNull(captured);
+            Assert.AreEqual(0, captured.Length);
+        }
+
+        [TestMethod]
+        public void UseAsCharArray_LeavesSourceUnchanged()
+        {
+            const string expected = "secret-value";
+
+            using (var secret = ToSecureString(expected))
+            {
+                secret.UseAsCharArray(chars => true);
+
+                Assert.AreEqual(expected, ReadSecureString(secret));
+            }
+        }
+
+        [TestMethod]
+        public void UseAsPlainText_ClearsBufferAfterCallback()
+        {
+            const string expected = "secret-value";
+            string captured = null;
+
+            using (var secret = ToSecureString(expected))
+            {
+                secret.UseAsPlainText(value =>
+                {
+                    captured = value;
+                    Assert.AreEqual(expected, value);
+                });
+            }
+
+            Assert.IsNotNull(captured);
+            for (int i = 0; i < captured.Length; i++)
+            {
+                Assert.AreEqual('\0', captured[i]);
+            }
+        }
+
+        [TestMethod]
+        public void UseAsPlainText_ClearsBufferWhenCallbackThrows()
+        {
+            string captured = null;
+
+            using (var secret = ToSecureString("secret-value"))
+            {
+                try
+                {
+                    secret.UseAsPlainText<int>(value =>
+                    {
+                        captured = value;
+                        throw new InvalidOperationException("Expected callback failure.");
+                    });
+                    Assert.Fail("The callback exception should propagate.");
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            }
+
+            Assert.IsNotNull(captured);
+            for (int i = 0; i < captured.Length; i++)
+            {
+                Assert.AreEqual('\0', captured[i]);
+            }
+        }
+
+        [TestMethod]
+        public void SecureStringTrim_RemovesWhitespaceAndQuotes()
+        {
+            const string original = " \t\"token-value\" \r\n";
+
+            using (var secret = ToSecureString(original))
+            using (var trimmed = secret.Trim('"'))
+            {
+                Assert.AreEqual("token-value", ReadSecureString(trimmed));
+                Assert.AreEqual(original, ReadSecureString(secret));
             }
         }
 
