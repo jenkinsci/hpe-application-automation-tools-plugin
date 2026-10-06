@@ -58,12 +58,12 @@ namespace HpToolsLauncher.Utils
             return secureString;
         }
 
-        /// <summary>
-        /// Copies the secret into a char array, the caller is responsible for zeroing it once done with it.
-        /// </summary>
-        public static char[] ToCharArray(this SecureString secret)
+        public static T UseAsCharArray<T>(this SecureString secret, Func<char[], T> func)
         {
+            if (secret == null) return func(null);
+
             char[] chars = new char[secret.Length];
+            GCHandle pin = GCHandle.Alloc(chars, GCHandleType.Pinned);
             IntPtr bstr = IntPtr.Zero;
             try
             {
@@ -72,15 +72,26 @@ namespace HpToolsLauncher.Utils
                 {
                     chars[i] = (char)Marshal.ReadInt16(bstr, i * sizeof(char));
                 }
+
+                Marshal.ZeroFreeBSTR(bstr);
+                bstr = IntPtr.Zero;
+                return func(chars);
             }
             finally
             {
-                if (bstr != IntPtr.Zero)
+                try
                 {
-                    Marshal.ZeroFreeBSTR(bstr);
+                    Array.Clear(chars, 0, chars.Length);
+                    if (bstr != IntPtr.Zero)
+                    {
+                        Marshal.ZeroFreeBSTR(bstr);
+                    }
+                }
+                finally
+                {
+                    pin.Free();
                 }
             }
-            return chars;
         }
 
         public static SecureString ToSecureString(this char[] chars, int start, int length)
@@ -108,8 +119,7 @@ namespace HpToolsLauncher.Utils
         /// </summary>
         public static SecureString Trim(this SecureString secret, params char[] trimChars)
         {
-            char[] buf = secret.ToCharArray();
-            try
+            return secret.UseAsCharArray(buf =>
             {
                 int start = 0, end = buf.Length;
                 buf.TrimRange(ref start, ref end, char.IsWhiteSpace);
@@ -118,11 +128,7 @@ namespace HpToolsLauncher.Utils
                     buf.TrimRange(ref start, ref end, c => Array.IndexOf(trimChars, c) >= 0);
                 }
                 return buf.ToSecureString(start, end - start);
-            }
-            finally
-            {
-                Array.Clear(buf, 0, buf.Length);
-            }
+            });
         }
 
         /// <summary>
@@ -138,22 +144,19 @@ namespace HpToolsLauncher.Utils
             string plain = new string('\0', len);
             GCHandle pin = GCHandle.Alloc(plain, GCHandleType.Pinned);
             IntPtr buffer = pin.AddrOfPinnedObject();
-            char[] chars = null;
             try
             {
-                chars = secret.ToCharArray();
-                for (int i = 0; i < len; i++)
+                return secret.UseAsCharArray(chars =>
                 {
-                    Marshal.WriteInt16(buffer, i * sizeof(char), chars[i]);
-                }
-                return func(plain);
+                    for (int i = 0; i < len; i++)
+                    {
+                        Marshal.WriteInt16(buffer, i * sizeof(char), chars[i]);
+                    }
+                    return func(plain);
+                });
             }
             finally
             {
-                if (chars != null)
-                {
-                    Array.Clear(chars, 0, chars.Length);
-                }
                 for (int i = 0; i < len; i++)
                 {
                     Marshal.WriteInt16(buffer, i * sizeof(char), 0);
@@ -174,21 +177,22 @@ namespace HpToolsLauncher.Utils
         {
             if (secret.IsNullOrEmpty()) return string.Empty;
 
-            char[] chars = secret.ToCharArray();
-            byte[] bytes = null;
-            try
+            return secret.UseAsCharArray(chars =>
             {
-                bytes = Encoding.UTF8.GetBytes(chars);
-                return Convert.ToBase64String(bytes);
-            }
-            finally
-            {
-                Array.Clear(chars, 0, chars.Length);
-                if (bytes != null)
+                byte[] bytes = null;
+                try
                 {
-                    Array.Clear(bytes, 0, bytes.Length);
+                    bytes = Encoding.UTF8.GetBytes(chars);
+                    return Convert.ToBase64String(bytes);
                 }
-            }
+                finally
+                {
+                    if (bytes != null)
+                    {
+                        Array.Clear(bytes, 0, bytes.Length);
+                    }
+                }
+            });
         }
 
         public static bool IsNullOrEmpty(this SecureString value)
