@@ -135,6 +135,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep {
     private String junitResultsFileName;
     private File WorkspacePath;
     private FilePath Workspace;
+    transient private PcClient pcClientForInterrupt;
 
     @DataBoundConstructor
     public PcBuilder(
@@ -397,8 +398,12 @@ public class PcBuilder extends Builder implements SimpleBuildStep {
             return run(pcClient, build);
 
         } catch (InterruptedException e) {
+            // An explicit interrupt check can leave the flag set; cleanup needs usable I/O.
+            Thread.interrupted();
             build.setResult(Result.ABORTED);
-            pcClient.stopRun(runId);
+            if (runId > 0) {
+                pcClient.stopRun(runId);
+            }
             throw e;
         } catch (NullPointerException e) {
             logger.println(String.format("%s - %s: %s",
@@ -933,6 +938,7 @@ public class PcBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
                         @Nonnull TaskListener listener) throws InterruptedException, IOException {
+        runId = 0;
         Workspace = workspace;
         WorkspacePath = new File(workspace.toURI());
         Result resultStatus = Result.FAILURE;
@@ -942,8 +948,8 @@ public class PcBuilder extends Builder implements SimpleBuildStep {
             usernamePCPasswordCredentials = getCredentialsById(credentialsId, build, logger);
         if (credentialsProxyId != null && !credentialsProxyId.isEmpty())
             usernamePCPasswordCredentialsForProxy = getCredentialsById(credentialsProxyId, build, logger);
-        PcClient pcClient = new PcClient(getPcModel(), logger);
-        Testsuites testsuites = execute(pcClient, build);
+        pcClientForInterrupt = new PcClient(build, getPcModel(), logger);
+        Testsuites testsuites = execute(pcClientForInterrupt, build);
 
 //        // Create Trend Report
 //        if(trendReportReady){
@@ -1057,6 +1063,15 @@ public class PcBuilder extends Builder implements SimpleBuildStep {
         return getPcModel().httpsProtocol();
     }
 
+    public int getRunId() {
+        return runId;
+    }
+
+    public PcClient getPcClientForInterrupt() {
+        return pcClientForInterrupt;
+    }
+
+
     public boolean isStatusBySLA() {
         return statusBySLA;
     }
@@ -1068,7 +1083,6 @@ public class PcBuilder extends Builder implements SimpleBuildStep {
     // This indicates to Jenkins that this is an implementation of an extension
     // point
     @Extension
-    @Symbol("pcBuild")
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         public DescriptorImpl() {
