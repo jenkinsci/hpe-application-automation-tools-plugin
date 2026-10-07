@@ -40,11 +40,7 @@
   <configuration default="false" name="Jenkins debug" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
       <option name="myGeneralSettings" />
-      <option name="myRunnerSettings">
-        <MavenRunnerSettings>
-          <option name="jreName" value="dragonwell-21" />
-        </MavenRunnerSettings>
-      </option>
+      <option name="myRunnerSettings" />
       <option name="myRunnerParameters">
         <MavenRunnerParameters>
           <option name="profiles">
