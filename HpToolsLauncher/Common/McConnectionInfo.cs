@@ -441,39 +441,40 @@ namespace HpToolsLauncher
             var ret = new AuthTokenInfo();
             if (execToken.Length == 0) return ret; // empty string was given as token, may signal that it wasn't specified
 
-            char[] buf = execToken.ToCharArray();
-            try
+            string parsedTenantId = null;
+            AuthTokenInfo parsed = execToken.UseAsCharArray(buf =>
             {
-                int pairCount = 0;
-                int pos = 0;
-                while (pos < buf.Length)
+                try
                 {
-                    int end = Array.IndexOf(buf, SEMI_COLON_CH, pos);
-                    if (end < 0) end = buf.Length;
-                    if (end > pos)
+                    int pairCount = 0;
+                    int pos = 0;
+                    while (pos < buf.Length)
                     {
-                        pairCount++;
-                        if (pairCount > 3)
-                            throw new ArgumentException(Resources.McInvalidToken);
+                        int end = Array.IndexOf(buf, SEMI_COLON_CH, pos);
+                        if (end < 0) end = buf.Length;
+                        if (end > pos)
+                        {
+                            pairCount++;
+                            if (pairCount > 3)
+                                throw new ArgumentException(Resources.McInvalidToken);
 
-                        ParseExecTokenPart(buf, pos, end, ret, ref tenantId);
+                            ParseExecTokenPart(buf, pos, end, ret, ref parsedTenantId);
+                        }
+                        pos = end + 1;
                     }
-                    pos = end + 1;
+
+                    if (pairCount != 3) throw new ArgumentException(Resources.McInvalidToken);
+                    return ret;
                 }
+                catch
+                {
+                    ret.Dispose();
+                    throw;
+                }
+            });
 
-                if (pairCount != 3) throw new ArgumentException(Resources.McInvalidToken);
-            }
-            catch
-            {
-                ret.Dispose();
-                throw;
-            }
-            finally
-            {
-                Array.Clear(buf, 0, buf.Length);
-            }
-
-            return ret;
+            tenantId = parsedTenantId;
+            return parsed;
         }
 
         private static void ParseExecTokenPart(char[] buf, int start, int end, AuthTokenInfo ret, ref string tenantId)
