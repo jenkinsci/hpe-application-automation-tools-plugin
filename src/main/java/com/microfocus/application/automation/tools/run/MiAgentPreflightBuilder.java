@@ -1,0 +1,121 @@
+/*
+ *  Certain versions of software accessible here may contain branding from
+ *  Hewlett-Packard Company (now HP Inc.) and Hewlett Packard Enterprise Company.
+ *  This software was acquired by Micro Focus on September 1, 2017, and is now
+ *  offered by OpenText.
+ *  Any reference to the HP and Hewlett Packard Enterprise/HPE marks is historical
+ *  in nature, and the HP and Hewlett Packard Enterprise/HPE marks are the
+ *  property of their respective owners.
+ *  OpenText is a trademark of Open Text.
+ *  __________________________________________________________________
+ *  MIT License
+ *
+ *  Copyright 2012-2026 Open Text.
+ *
+ *  The only warranties for products and services of Open Text and
+ *  its affiliates and licensors ("Open Text") are as may be set forth
+ *  in the express warranty statements accompanying such products and services.
+ *  Nothing herein should be construed as constituting an additional warranty.
+ *  Open Text shall not be liable for technical or editorial errors or
+ *  omissions contained herein. The information contained herein is subject
+ *  to change without notice.
+ *
+ *  Except as specifically indicated otherwise, this document contains
+ *  confidential information and a valid license is required for possession,
+ *  use or copying. If this work is provided to the U.S. Government,
+ *  consistent with FAR 12.211 and 12.212, Commercial Computer Software,
+ *  Computer Software Documentation, and Technical Data for Commercial Items are
+ *  licensed to the U.S. Government under vendor's standard commercial license.
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *  ___________________________________________________________________
+ */
+package com.microfocus.application.automation.tools.run;
+
+import com.microfocus.application.automation.tools.mi.MIAgentPreflightFailure;
+import hudson.AbortException;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+import jenkins.tasks.SimpleBuildStep;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import javax.annotation.Nonnull;
+import java.io.IOException;
+
+/**
+ * First build step in every Autonomous Tester (AuTe) job — verifies that mi-agent.exe is present in the
+ * shared workspace root before conversion or execution begins.
+ */
+public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep {
+
+    static final String MI_AGENT_EXE = "mi-agent.exe";
+
+    @DataBoundConstructor
+    public MiAgentPreflightBuilder() {
+    }
+
+    @Override
+    public void perform(@Nonnull Run<?, ?> build,
+                        @Nonnull FilePath workspace,
+                        @Nonnull Launcher launcher,
+                        @Nonnull TaskListener listener) throws IOException, InterruptedException {
+        FilePath miAgentExe = checkMiAgentExecutable(build, workspace);
+        printToConsole(listener, "mi-agent.exe found at: %s".formatted(miAgentExe.getRemote()));
+    }
+
+    private static void printToConsole(TaskListener listener, String msg) {
+        listener.getLogger().println(formatMessage(msg));
+    }
+
+    private static String formatMessage(String msg) {
+        return "AuTe Preflight Check : %s".formatted(msg);
+    }
+
+    private FilePath checkMiAgentExecutable(Run<?, ?> build, FilePath workspace) throws IOException, InterruptedException {
+        // mi-agent.exe lives in the shared workspace root, one level above the job workspace
+        FilePath sharedWorkspace = workspace.getParent();
+        if (sharedWorkspace == null) {
+            throw abort(build, "Cannot resolve shared workspace root from: %s".formatted(workspace.getRemote()));
+        }
+
+        FilePath miAgentExe = sharedWorkspace.child(MI_AGENT_EXE);
+        if (!miAgentExe.exists() || miAgentExe.isDirectory()) {
+            throw abort(build, "mi-agent.exe not found at: %s".formatted(miAgentExe.getRemote()));
+        }
+
+        return miAgentExe;
+    }
+
+    private AbortException abort(Run<?, ?> build, String reason) {
+        String message = formatMessage(reason);
+        build.addAction(new MIAgentPreflightFailure(message));
+        return new AbortException(message);
+    }
+
+    @Extension
+    @Symbol("AuTePreflight")
+    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return true;
+        }
+
+        @Nonnull
+        @Override
+        public String getDisplayName() {
+            return "AuTe Preflight Check";
+        }
+    }
+}
