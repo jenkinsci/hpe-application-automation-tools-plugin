@@ -75,10 +75,13 @@ import java.io.Serial;
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.EOFException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -107,6 +110,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final String APP_JSON = "application/json";
     private static final String RUN_NATIVE_STATUS_PREFIX = "list_node.run_native_status.";
     private static final String RUN_ID_PARAMETER = "runId";
+    private static final int MAX_UPDATE_ATTEMPTS = 3;
+    private static final long RETRY_DELAY_MS = 1000L;
     private static final int MAX_EXCEPTION_STACK_FRAMES = 7;
     private static final String WARN_PREFIX = "[WARN]";
     private static final String ERROR_PREFIX = "[ERROR]";
@@ -237,6 +242,11 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             summary.setStatus(MIAgentPublishSummary.Status.INVALID);
             summary.setMessage("Validation failed: " + e.getMessage());
             run.setResult(Result.FAILURE);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            summary.setStatus(MIAgentPublishSummary.Status.ERROR);
+            summary.setMessage("Result publication interrupted.");
+            throw e;
         } catch (Exception e) {
             summary.setStatus(MIAgentPublishSummary.Status.ERROR);
             summary.setMessage("Unexpected error: " + e.getMessage());
@@ -278,6 +288,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             try {
                 updateRunStatus(runId, RUN_NATIVE_STATUS_PREFIX + "skipped", reason, ctx, log);
                 published++;
+            } catch (InterruptedException e) {
+                throw e;
             } catch (Exception e) {
                 String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
                 var failure = "Run %s status update failed: %s".formatted(runId, details);
@@ -407,6 +419,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
 
         try {
             updateRunStatus(runData.runId(), overallStatusId, runDescription, ctx, log);
+        } catch (InterruptedException e) {
+            throw e;
         } catch (Exception e) {
             String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
             failures.add("Run " + runData.runId() + " status update failed: " + details);
@@ -431,8 +445,10 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 }
                 String actual = step.get("actual") == null ? null : String.valueOf(step.get("actual"));
                 try {
-                    updateRunStep(stepId, stepStatusId, actual, ctx);
+                    updateRunStep(stepId, stepStatusId, actual, ctx, log);
                     publishedSteps++;
+                } catch (InterruptedException e) {
+                    throw e;
                 } catch (Exception e) {
                     String details = StringUtils.defaultIfBlank(e.getMessage(), e.getClass().getName());
                     failures.add("Run " + runData.runId() + " step " + stepId + " update failed: " + details);
@@ -447,7 +463,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return new RunPublishResult(publishedSteps, totalSteps);
     }
 
-    private void updateRunStatus(String runId, String statusId, String description, PublishContext ctx, PrintStream log) throws IOException {
+    private void updateRunStatus(String runId, String statusId, String description, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
         JSONObject payload = new JSONObject();
         JSONObject status = new JSONObject();
         status.put("type", "list_node");
@@ -459,11 +475,11 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
 
         log.println("updateRunStatus: statusId=" + statusId);
         String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/runs/%s", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId(), runId);
-        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client());
+        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client(), log);
         assertSuccess(response, "Update run status failed for run " + runId);
     }
 
-    private void updateRunStep(String stepId, String statusId, String actual, PublishContext ctx) throws IOException {
+    private void updateRunStep(String stepId, String statusId, String actual, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
         JSONObject payload = new JSONObject();
         JSONObject status = new JSONObject();
         status.put("type", "list_node");
@@ -474,7 +490,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         }
 
         String url = String.format("%s/api/shared_spaces/%s/workspaces/%s/run_steps/%s", ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId(), stepId);
-        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client());
+        OctaneResponse response = executeJsonRequest(HttpMethod.PUT, url, payload.toJSONString(), ctx.client(), log);
         assertSuccess(response, "Update run step failed for step " + stepId);
     }
 
@@ -638,10 +654,37 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return headers;
     }
 
-    private OctaneResponse executeJsonRequest(HttpMethod method, String url, String jsonBody, OctaneClient client) throws IOException {
-        OctaneRequest request = buildOctaneRequest(method, url, JSON_HEADERS, jsonBody);
+    private OctaneResponse executeJsonRequest(HttpMethod method, String url, String jsonBody, OctaneClient client, PrintStream log) throws IOException, InterruptedException {
         initTransientCollaborators();
-        return octaneRequestExecutor.execute(client, request);
+        for (int attempt = 1; attempt <= MAX_UPDATE_ATTEMPTS; attempt++) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException("Result publication interrupted.");
+            }
+            try {
+                OctaneRequest request = buildOctaneRequest(method, url, JSON_HEADERS, jsonBody);
+                return octaneRequestExecutor.execute(client, request);
+            } catch (IOException e) {
+                if (method != HttpMethod.PUT || !isTransientConnectionFailure(e) || attempt == MAX_UPDATE_ATTEMPTS) {
+                    throw e;
+                }
+                log.println("%s %s %s failed: %s; retrying in %d ms."
+                    .formatted(WARN_PREFIX, method, url, e.getMessage(), RETRY_DELAY_MS));
+                waitBeforeRetry(RETRY_DELAY_MS);
+            }
+        }
+        throw new IOException("Result update retry attempts exhausted.");
+    }
+
+    void waitBeforeRetry(long delayMs) throws InterruptedException {
+        Thread.sleep(delayMs);
+    }
+
+    private boolean isTransientConnectionFailure(IOException exception) {
+        return exception instanceof SocketException
+                || exception instanceof SocketTimeoutException
+                || exception instanceof EOFException
+                || exception instanceof org.apache.http.NoHttpResponseException
+                || exception instanceof org.apache.http.conn.ConnectTimeoutException;
     }
 
     private OctaneRequest buildOctaneRequest(HttpMethod method, String url, Map<String, String> headers, String body) {

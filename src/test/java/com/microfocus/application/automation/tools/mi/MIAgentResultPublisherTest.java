@@ -59,9 +59,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -82,6 +85,171 @@ public class MIAgentResultPublisherTest {
     public void publisherDefaultsToFailingBuildOnPublishError() {
         MIAgentResultPublisher publisher = new MIAgentResultPublisher();
         assertTrue(publisher.isFailBuildOnPublishError());
+    }
+
+    @Test
+    public void perform_twoRuns_firstStatusConnectionReset_recoversWithFreshRequestBody() throws Exception {
+        Run<?, ?> run = mock(FreeStyleBuild.class);
+        FilePath workspace = new FilePath(tempFolder.getRoot());
+        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath runFolder = resultRoot.child("6024");
+        runFolder.mkdirs();
+
+        JSONObject status = new JSONObject();
+        status.put("name", "passed");
+        JSONObject runResult = new JSONObject();
+        runResult.put("native_status", status);
+        runFolder.child(MIAgentConstants.RUN_STEPS_RESULT_FILE_NAME)
+                .write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
+        JSONObject runEntry = new JSONObject();
+        runEntry.put("runId", "6024");
+        runEntry.put("runFolder", runFolder.getRemote());
+        JSONArray runs = new JSONArray();
+        runs.add(runEntry);
+        FilePath secondRunFolder = resultRoot.child("6025");
+        secondRunFolder.mkdirs();
+        secondRunFolder.child(MIAgentConstants.RUN_STEPS_RESULT_FILE_NAME)
+            .write(runResult.toJSONString(), StandardCharsets.UTF_8.name());
+        JSONObject secondRunEntry = new JSONObject();
+        secondRunEntry.put("runId", "6025");
+        secondRunEntry.put("runFolder", secondRunFolder.getRemote());
+        runs.add(secondRunEntry);
+        JSONObject manifest = new JSONObject();
+        manifest.put("schemaVersion", "1.0");
+        manifest.put("runs", runs);
+        resultRoot.child(MIAgentConstants.MANIFEST_FILE_NAME)
+                .write(manifest.toJSONString(), StandardCharsets.UTF_8.name());
+
+        List<Long> delays = new ArrayList<>();
+        MIAgentResultPublisher publisher = publisherWithoutWaiting(delays);
+        publisher.setConfigurationId("cfg");
+        publisher.setWorkspaceId("2001");
+        publisher.setOctaneClientProvider(instanceId -> mockOctaneClient("http://octane.example", "1001"));
+        AtomicInteger attempts = new AtomicInteger();
+        List<String> bodies = new ArrayList<>();
+        List<String> urls = new ArrayList<>();
+        publisher.setOctaneRequestExecutor((ignored, request) -> {
+            bodies.add(new String(request.getBody().readAllBytes(), StandardCharsets.UTF_8));
+            urls.add(extractRequestUrl(request));
+            if (attempts.incrementAndGet() == 1) {
+                throw new SocketException("Connection reset");
+            }
+            return mockResponse(200);
+        });
+
+        publisher.perform(run, workspace, mock(Launcher.class), mockListener());
+
+        assertEquals(3, attempts.get());
+        assertEquals(1, delays.size());
+        assertEquals(Long.valueOf(1000L), delays.get(0));
+        assertEquals(bodies.get(0), bodies.get(1));
+        assertTrue(bodies.get(1).contains("list_node.run_native_status.passed"));
+        assertEquals(urls.get(0), urls.get(1));
+        assertTrue(urls.get(1).endsWith("/runs/6024"));
+        assertTrue(urls.get(2).endsWith("/runs/6025"));
+        MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(run);
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PUBLISHED, summary.getStatus());
+        assertTrue(summary.getFailures().isEmpty());
+        verify(run, never()).setResult(any());
+    }
+
+    @Test
+    public void perform_connectionResetExhaustsRetries_reportsOneFailure() throws Exception {
+        RetryFixture fixture = retryFixture(false);
+        AtomicInteger attempts = new AtomicInteger();
+        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+            attempts.incrementAndGet();
+            throw new SocketException("Connection reset");
+        });
+
+        fixture.publish();
+
+        assertEquals(3, attempts.get());
+        assertEquals(2, fixture.delays().size());
+        assertEquals(List.of(1000L, 1000L), fixture.delays());
+        MIAgentResultPublisher.MIAgentPublishSummary summary = captureSummary(fixture.run());
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PARTIAL_FAILURE, summary.getStatus());
+        assertEquals(1, summary.getFailures().size());
+        verify(fixture.run()).setResult(Result.FAILURE);
+    }
+
+    @Test
+    public void perform_httpErrors_areNotRetried() throws Exception {
+        for (int status : List.of(400, 401, 403, 404, 422, 429, 500, 503)) {
+            RetryFixture fixture = retryFixture(false);
+            AtomicInteger attempts = new AtomicInteger();
+            fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+                attempts.incrementAndGet();
+                return mockResponse(status);
+            });
+
+            fixture.publish();
+
+            assertEquals(1, attempts.get());
+            assertTrue(fixture.delays().isEmpty());
+            verify(fixture.run()).setResult(Result.FAILURE);
+        }
+    }
+
+    @Test
+    public void perform_nonTransientIOException_isNotRetried() throws Exception {
+        RetryFixture fixture = retryFixture(false);
+        AtomicInteger attempts = new AtomicInteger();
+        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+            attempts.incrementAndGet();
+            throw new IOException("Invalid request body");
+        });
+
+        fixture.publish();
+
+        assertEquals(1, attempts.get());
+        assertTrue(fixture.delays().isEmpty());
+        verify(fixture.run()).setResult(Result.FAILURE);
+    }
+
+    @Test
+    public void perform_stepTimeout_recoversWithoutRepeatingRunUpdate() throws Exception {
+        RetryFixture fixture = retryFixture(true);
+        AtomicInteger runAttempts = new AtomicInteger();
+        AtomicInteger stepAttempts = new AtomicInteger();
+        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+            if (extractRequestUrl(request).endsWith("/runs/6024")) {
+                runAttempts.incrementAndGet();
+            } else if (stepAttempts.incrementAndGet() == 1) {
+                throw new SocketTimeoutException("Read timed out");
+            }
+            return mockResponse(200);
+        });
+
+        fixture.publish();
+
+        assertEquals(1, runAttempts.get());
+        assertEquals(2, stepAttempts.get());
+        assertEquals(1, captureSummary(fixture.run()).getPublishedSteps());
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.PUBLISHED, captureSummary(fixture.run()).getStatus());
+        verify(fixture.run(), never()).setResult(any());
+    }
+
+    @Test
+    public void perform_interruptedRetry_stopsPublication() throws Exception {
+        RetryFixture fixture = retryFixture(true);
+        AtomicInteger attempts = new AtomicInteger();
+        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+            attempts.incrementAndGet();
+            Thread.currentThread().interrupt();
+            throw new SocketException("Connection reset");
+        });
+
+        try {
+            fixture.publish();
+            org.junit.Assert.fail("Expected InterruptedException");
+        } catch (InterruptedException expected) {
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
+        assertEquals(1, attempts.get());
+        assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.ERROR, captureSummary(fixture.run()).getStatus());
     }
 
     @Test
@@ -684,6 +852,64 @@ public class MIAgentResultPublisherTest {
         when(conf.getUrl()).thenReturn(url);
         when(conf.getSharedSpace()).thenReturn(sharedSpace);
         return client;
+    }
+
+    private MIAgentResultPublisher publisherWithoutWaiting(List<Long> delays) {
+        return new MIAgentResultPublisher() {
+            @Override
+            void waitBeforeRetry(long delayMs) throws InterruptedException {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException("Result publication interrupted.");
+                }
+                delays.add(delayMs);
+            }
+        };
+    }
+
+    private RetryFixture retryFixture(boolean includeStep) throws Exception {
+        Run<?, ?> run = mock(FreeStyleBuild.class);
+        FilePath workspace = new FilePath(tempFolder.newFolder());
+        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath runFolder = resultRoot.child("6024");
+        runFolder.mkdirs();
+        JSONObject status = new JSONObject();
+        status.put("name", "passed");
+        JSONObject result = new JSONObject();
+        result.put("native_status", status);
+        if (includeStep) {
+            JSONObject step = new JSONObject();
+            step.put("id", "s1");
+            step.put("result", status);
+            JSONArray steps = new JSONArray();
+            steps.add(step);
+            JSONObject runSteps = new JSONObject();
+            runSteps.put("data", steps);
+            result.put("run_steps", runSteps);
+        }
+        runFolder.child(MIAgentConstants.RUN_STEPS_RESULT_FILE_NAME).write(result.toJSONString(), StandardCharsets.UTF_8.name());
+        JSONObject entry = new JSONObject();
+        entry.put("runId", "6024");
+        entry.put("runFolder", runFolder.getRemote());
+        JSONArray runs = new JSONArray();
+        runs.add(entry);
+        JSONObject manifest = new JSONObject();
+        manifest.put("schemaVersion", "1.0");
+        manifest.put("runs", runs);
+        resultRoot.child(MIAgentConstants.MANIFEST_FILE_NAME).write(manifest.toJSONString(), StandardCharsets.UTF_8.name());
+        List<Long> delays = new ArrayList<>();
+        MIAgentResultPublisher publisher = publisherWithoutWaiting(delays);
+        publisher.setConfigurationId("cfg");
+        publisher.setWorkspaceId("2001");
+        publisher.setOctaneClientProvider(instanceId -> mockOctaneClient("http://octane.example", "1001"));
+        return new RetryFixture(run, workspace, publisher, delays);
+    }
+
+    private record RetryFixture(Run<?, ?> run, FilePath workspace, MIAgentResultPublisher publisher, List<Long> delays) {
+        void publish() throws Exception {
+            TaskListener listener = mock(TaskListener.class);
+            when(listener.getLogger()).thenReturn(new PrintStream(System.out));
+            publisher.perform(run, workspace, mock(Launcher.class), listener);
+        }
     }
 
     private OctaneResponse mockResponse(int statusCode) {
