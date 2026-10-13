@@ -55,9 +55,9 @@ Version 26.4 introduced the following enhancements and fixes:
 
 **Software Delivery Management**
 - Security enhancements.
-- Fixed an issue where the dropdowns listing configured Octane server instances and workspaces could be retrieved by any user with Overall/Read permission,
-including directly through the underlying endpoint. These dropdowns now require Configure permission on the job, falling back to Administer permission when
-accessed outside of a job context. Administrators are advised to upgrade to this version to apply the fix.
+- Fixed an issue where the Octane server and workspace dropdowns in the Branches publisher, Pull Request publisher, Execute Tests in Octane builder, and UFT Test Detection publisher
+could be retrieved by any user with Overall/Read permission, including directly through the underlying endpoint. These dropdowns now require Configure permission on the job, falling
+back to Administer permission when accessed outside of a job context. Administrators are advised to upgrade to this version to apply the fix.
 
 **Functional Testing**
 - Security enhancements.
