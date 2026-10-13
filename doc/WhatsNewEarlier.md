@@ -3,6 +3,8 @@
 
 This page shows a history of the enhancements made to the OpenText Application Automation Tools Jenkins plugin.
 
+[What&#39;s New in version 26.3](#whats-new-in-version-263)
+
 [What&#39;s New in version 26.2](#whats-new-in-version-262)
 
 [What&#39;s New in version 26.1](#whats-new-in-version-261)
@@ -58,6 +60,17 @@ This page shows a history of the enhancements made to the OpenText Application A
 [What&#39;s New in version 6.0 ](#what&#39;s-new-in-version-6.0)
 
 [What&#39;s New in version 5.9 ](#what&#39;s-new-in-version-5.9)
+
+## what&#39;s-new-in-version-26&#46;3
+
+Version 26.3 introduced the following enhancements and fixes:
+
+**Software Delivery Management**
+- Several areas of the Jenkins plugin were modified to reduce the size of the .hpi files.
+- Added support for pipeline comparison in multibranch and custom branch pipelines. Previously, pipeline comparison with 
+referral pipelines was only available for freestyle projects. Users can now compare both multibranch pipelines and custom 
+branch pipelines to their main referral pipeline in Octane by configuring the DEFAULT_PROJECT_BRANCH string parameter with 
+the full remote ref path (e.g., refs/remotes/origin/main). This enables proper common_hash resolution and establishes a shared baseline between branches for comparison purposes.
 
 ## what&#39;s-new-in-version-26&#46;2
 Version 26.2 introduced the following enhancements and fixes:
