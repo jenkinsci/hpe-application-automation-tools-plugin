@@ -39,7 +39,6 @@ package com.microfocus.application.automation.tools.mi;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.FreeStyleBuild;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,31 +58,34 @@ public class MIAgentWorkspaceCleanupPublisherTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Test
-    public void perform_deletesOnlyThisBuildsResultFolder() throws Exception {
-        File thisBuildFolder = new File(tempFolder.getRoot(), MIAgentConstants.RESULT_FOLDER + "\\7");
-        File otherBuildFolder = new File(tempFolder.getRoot(), MIAgentConstants.RESULT_FOLDER + "\\8");
-        assertTrue(thisBuildFolder.mkdirs());
-        assertTrue(otherBuildFolder.mkdirs());
-
-        Run<?, ?> build = mock(FreeStyleBuild.class);
-        when(build.getNumber()).thenReturn(7);
+    public void perform_deletesWorkspaceAndTmpFolderButKeepsParentAndSiblings() throws Exception {
+        File parent = tempFolder.getRoot();
+        File workspace = new File(parent, "AuTe-job");
+        File tmp = new File(parent, "AuTe-job@tmp");
+        File sibling = new File(parent, "AuTe-job@2");
+        File executable = new File(parent, "mi-agent.exe");
+        assertTrue(new File(workspace, MIAgentConstants.RESULT_FOLDER).mkdirs());
+        assertTrue(tmp.mkdirs());
+        assertTrue(sibling.mkdirs());
+        assertTrue(executable.createNewFile());
 
         new MIAgentWorkspaceCleanupPublisher()
-                .perform(build, new FilePath(tempFolder.getRoot()), mock(Launcher.class), mockListener());
+                .perform(mock(FreeStyleBuild.class), new FilePath(workspace), mock(Launcher.class), mockListener());
 
-        assertFalse(thisBuildFolder.exists());
-        assertTrue(otherBuildFolder.exists());
+        assertFalse(workspace.exists());
+        assertFalse(tmp.exists());
+        assertTrue(sibling.exists());
+        assertTrue(executable.exists());
     }
 
     @Test
-    public void perform_noResultFolderForBuild_doesNothing() throws Exception {
-        Run<?, ?> build = mock(FreeStyleBuild.class);
-        when(build.getNumber()).thenReturn(1);
+    public void perform_missingWorkspace_doesNothing() throws Exception {
+        File workspace = new File(tempFolder.getRoot(), "never-created");
 
         new MIAgentWorkspaceCleanupPublisher()
-                .perform(build, new FilePath(tempFolder.getRoot()), mock(Launcher.class), mockListener());
+                .perform(mock(FreeStyleBuild.class), new FilePath(workspace), mock(Launcher.class), mockListener());
 
-        assertFalse(new File(tempFolder.getRoot(), MIAgentConstants.RESULT_FOLDER).exists());
+        assertFalse(workspace.exists());
     }
 
     private TaskListener mockListener() {

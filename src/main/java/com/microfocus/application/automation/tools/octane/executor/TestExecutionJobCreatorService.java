@@ -47,6 +47,7 @@ import com.hp.octane.integrations.executor.TestsToRunFramework;
 import com.hp.octane.integrations.services.configurationparameters.UftTestRunnerFolderParameter;
 import com.hp.octane.integrations.utils.SdkConstants;
 import com.microfocus.application.automation.tools.mi.MIAgentConstants;
+import com.microfocus.application.automation.tools.mi.AuTeConfigurationStore;
 import com.microfocus.application.automation.tools.mi.MIAgentResultPublisher;
 import com.microfocus.application.automation.tools.mi.MIAgentWorkspaceCleanupPublisher;
 import com.microfocus.application.automation.tools.model.ResultsPublisherModel;
@@ -58,6 +59,7 @@ import com.microfocus.application.automation.tools.octane.model.processors.proje
 import com.microfocus.application.automation.tools.octane.testrunner.TestsToRunConverterBuilder;
 import com.microfocus.application.automation.tools.results.RunResultRecorder;
 import com.microfocus.application.automation.tools.run.MiAgentPreflightBuilder;
+import com.microfocus.application.automation.tools.run.AuTeConfigurationSnapshotBuilder;
 import com.microfocus.application.automation.tools.run.RunFromCodelessBuilder;
 import com.microfocus.application.automation.tools.run.RunFromFileBuilder;
 import com.microfocus.application.automation.tools.run.RunFromMiAgentBuilder;
@@ -432,6 +434,13 @@ public class TestExecutionJobCreatorService {
 	 * </p>
 	 */
 	private static FreeStyleProject createMiAgentExecutor(DiscoveryInfo discoveryInfo) throws IOException {
+		String configurationId = discoveryInfo.getConfigurationId();
+		OctaneClient client = OctaneSDK.getClientByInstanceId(configurationId);
+		if (client == null) {
+			throw new IOException("Octane connection not found for AuTe job creation");
+		}
+		String spaceId = client.getConfigurationService().getConfiguration().getSharedSpace();
+		AuTeConfigurationStore.ensureTemplate(configurationId, spaceId);
 		String projectName = String.format("%s-%s-%s",
 				AUTE_EXECUTION_JOB_MIDDLE_NAME_WITH_TEST_RUNNERS_NEW,
 				discoveryInfo.getExecutorId(),
@@ -454,7 +463,8 @@ public class TestExecutionJobCreatorService {
 		MiAgentGlobalConfiguration configuration = MiAgentGlobalConfiguration.getInstance();
 		proj.setBuildDiscarder(new LogRotator(-1, configuration.getMaxBuildsToKeep(), -1, configuration.getMaxDaysToKeep()));
 
-		// Build steps - preflight check, then Autonomous Tester converter + runner
+		// Build steps - copy shared space configuration, preflight check, then Autonomous Tester converter + runner
+		proj.getBuildersList().add(new AuTeConfigurationSnapshotBuilder(configurationId, spaceId));
 		proj.getBuildersList().add(new MiAgentPreflightBuilder());
 		Builder converterBuilder = new TestsToRunConverterBuilder(TestsToRunFramework.MF_MI_AGENT.value());
 		proj.getBuildersList().add(converterBuilder);
@@ -483,6 +493,7 @@ public class TestExecutionJobCreatorService {
 
 		addMiAgentArtifactArchiverIfNeeded(publishers);
 		addMiAgentWorkspaceCleanupIfNeeded(publishers);
+		proj.save();
 		return proj;
 	}
 
@@ -492,7 +503,8 @@ public class TestExecutionJobCreatorService {
 				return;
 			}
 		}
-		ArtifactArchiver archiver = new ArtifactArchiver(MIAgentConstants.RESULT_FOLDER + "/${BUILD_NUMBER}/**");
+		ArtifactArchiver archiver = new ArtifactArchiver(MIAgentConstants.RESULT_FOLDER + "/**,"
+				+ AuTeConfigurationStore.SNAPSHOT_PATH);
 		archiver.setAllowEmptyArchive(true);
 		archiver.setOnlyIfSuccessful(false);
 		archiver.setFingerprint(false);

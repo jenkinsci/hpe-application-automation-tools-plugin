@@ -78,10 +78,8 @@ import java.util.Collections;
  * <p>The converter ({@code TestsToRunConverterBuilder} with {@code MF_MI_AGENT}) provides a
  * manifest where each item under {@code data[]} is a manual run payload including its
  * {@code run_steps}. For each run, this builder writes the normalized run data to a
- * {@code run_steps.json} file, writes a {@code conf.json} engine configuration in the run folder
- * (static defaults plus the per-run {@code RUN_STEP_FILE_PATH}/{@code OUTPUT_BASE_DIR}), and
- * invokes mi-agent.exe with {@code --config_file_path=<conf.json>}. Only the LLM
- * credentials resolved from Jenkins credentials are piped over stdin. A manifest consumed by
+ * {@code run_steps.json} file and invokes mi-agent.exe with the run-step path and output directory.
+ * The LLM credentials resolved from Jenkins credentials are piped over stdin. A manifest consumed by
  * {@link MIAgentResultPublisher} is written at the end.</p>
  */
 public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
@@ -90,7 +88,6 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private static final String RUN_STEPS_RESULT_FILE_NAME = MIAgentConstants.RUN_STEPS_RESULT_FILE_NAME;
     private static final String MANIFEST_FILE_NAME = MIAgentConstants.MANIFEST_FILE_NAME;
     private static final String RUN_STEPS_FILE_NAME = "run_steps.json";
-    private static final String CONF_FILE_NAME = "conf.json";
 
     private static final String AU_TESTER_CONFIGURATION_FIELD = "au_tester_configuration";
     private static final String LLM_CONFIGURATION_FIELD = "llm_configuration";
@@ -104,16 +101,6 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private static final String PARAMETER_NAME_FIELD = "Name";
     private static final String PARAMETER_VALUE_FIELD = "Value";
     private static final String CREDENTIALS_FIELD = "credentials";
-    private static final String CONFIG_FILE_PATH_ARG_PREFIX = "--config_file_path=";
-
-    private static final String DEFAULT_LLM_VENDOR = "GEMINI";
-    private static final String DEFAULT_LLM_EXECUTOR_MODEL = "gemini-2.5-flash";
-    private static final String DEFAULT_LLM_ANALYZER_MODEL = "gemini-2.5-pro";
-    private static final double DEFAULT_LLM_TEMPERATURE = 0.2;
-    private static final int DEFAULT_STEP_MULTIPLIER = 3;
-    private static final int DEFAULT_MAX_FAILURES = 1;
-    private static final int DEFAULT_LOG_TO_CONSOLE = 2;
-    private static final int DEFAULT_DISABLE_LOG_REDIRECT = 2;
 
     private static final String[] RUN_STEP_SCALAR_FIELDS = {
             "type", "workspace_id", "name", "test_name", "order_in_suite_run", "duration", "id", "subtype", "has_attachments"
@@ -172,7 +159,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             return;
         }
 
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, build);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         if (resultRoot.exists()) {
             resultRoot.deleteRecursive();
         }
@@ -200,9 +187,8 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
             RunOutcome outcome;
             try {
                 JSONObject credentials = resolveLlmCredentials(build, log, extractLlmLogicalName(runData), runId);
-                FilePath confFile = writeConfFile(runFolder, runStepsFile.getRemote(), runFolder.getRemote());
                 JSONObject credentialsDocument = buildCredentialsDocument(credentials);
-                outcome = executeRunner(confFile, credentialsDocument, build, workspace, launcher, listener, log);
+                outcome = executeRunner(runStepsFile, credentialsDocument, build, workspace, launcher, listener, log);
             } catch (IOException e) {
                 log.println(e.getMessage());
                 synthesizeSkippedResult(runFolder, runStep, e.getMessage());
@@ -417,34 +403,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         return document;
     }
 
-    /**
-    * Writes the run-specific {@code conf.json}: static engine defaults plus the per-run
-     * {@code RUN_STEP_FILE_PATH}/{@code OUTPUT_BASE_DIR}. Any LLM vendor/model default here is
-     * overwritten once mi-agent loads the run_step file's {@code au_tester_configuration}.
-     */
-    private FilePath writeConfFile(FilePath runFolder, String runStepFilePath, String outputBaseDir)
-            throws IOException, InterruptedException {
-        JSONObject conf = new JSONObject();
-        conf.put(LLM_EXECUTOR_VENDOR_FIELD, DEFAULT_LLM_VENDOR);
-        conf.put("LLM_EXECUTOR_MODEL", DEFAULT_LLM_EXECUTOR_MODEL);
-        conf.put("LLM_EXECUTOR_TEMPERATURE", DEFAULT_LLM_TEMPERATURE);
-        conf.put(LLM_ANALYZER_VENDOR_FIELD, DEFAULT_LLM_VENDOR);
-        conf.put("LLM_ANALYZER_MODEL", DEFAULT_LLM_ANALYZER_MODEL);
-        conf.put("LLM_ANALYZER_TEMPERATURE", DEFAULT_LLM_TEMPERATURE);
-        conf.put("STEP_MULTIPLIER", DEFAULT_STEP_MULTIPLIER);
-        conf.put("MAX_FAILURES", DEFAULT_MAX_FAILURES);
-        conf.put("LOG_TO_CONSOLE", DEFAULT_LOG_TO_CONSOLE);
-        conf.put("DISABLE_LOG_REDIRECT", DEFAULT_DISABLE_LOG_REDIRECT);
-        conf.put("EXECUTION_RECORDING_ENABLED", false);
-        conf.put("RUN_STEP_FILE_PATH", runStepFilePath);
-        conf.put("OUTPUT_BASE_DIR", outputBaseDir);
-
-        FilePath confFile = runFolder.child(CONF_FILE_NAME);
-        confFile.write(conf.toJSONString(), "UTF-8");
-        return confFile;
-    }
-
-    private RunOutcome executeRunner(FilePath confFile,
+    private RunOutcome executeRunner(FilePath runStepsFile,
                               JSONObject credentialsDocument,
                               Run<?, ?> build,
                               FilePath workspace,
@@ -459,7 +418,8 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(sharedRunner.getRemote());
-        args.add(CONFIG_FILE_PATH_ARG_PREFIX + confFile.getRemote());
+        args.add("--run_step_file_path=" + runStepsFile.getRemote());
+        args.add("--output_base_dir=" + runStepsFile.getParent().getRemote());
         log.println("[AuTe] Resolved executable: %s".formatted(sharedRunner.getRemote()));
 
         EnvVars environment = new EnvVars(build.getEnvironment(listener));

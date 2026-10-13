@@ -127,7 +127,7 @@ public class RunFromMiAgentBuilderTest {
         builder.perform(build, new FilePath(tempFolder.getRoot()), mock(Launcher.class), listener);
 
         File manifestFile = new File(tempFolder.getRoot(),
-                MIAgentConstants.RESULT_FOLDER + "\\" + build.getNumber() + "\\" + MIAgentConstants.MANIFEST_FILE_NAME);
+                MIAgentConstants.RESULT_FOLDER + "\\" + MIAgentConstants.MANIFEST_FILE_NAME);
         assertTrue(manifestFile.exists());
 
         JsonNode manifest = MAPPER.readTree(Files.readString(manifestFile.toPath(), StandardCharsets.UTF_8));
@@ -329,7 +329,7 @@ public class RunFromMiAgentBuilderTest {
         try {
             executeMethod.invoke(
                     builder,
-                    new FilePath(new File(runnerWorkspace, "conf.json")),
+                    new FilePath(new File(runnerWorkspace, "run_steps.json")),
                     new JSONObject(),
                     mock(FreeStyleBuild.class),
                     new FilePath(runnerWorkspace),

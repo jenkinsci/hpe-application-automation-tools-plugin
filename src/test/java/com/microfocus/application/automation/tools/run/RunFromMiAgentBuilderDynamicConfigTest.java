@@ -77,8 +77,8 @@ import static org.mockito.Mockito.when;
  * Verifies the per-run dynamic configuration flow: each run's LLM credential (looked up by
  * {@code ENDPOINT_LOGICAL_NAME} against an {@link AuTeLlmCredentials}) is the only thing piped over
  * stdin, while its adapted {@code llm_configuration} (vendor fan-out, MODEL_PARAMETERS
- * array-to-object) goes to the run folder's {@code run_steps.json} and its {@code OUTPUT_BASE_DIR}
- * to that folder's {@code conf.json}.
+ * array-to-object) goes to the run folder's {@code run_steps.json}, whose path is passed to mi-agent
+ * as a launch argument.
  */
 public class RunFromMiAgentBuilderDynamicConfigTest {
 
@@ -130,8 +130,7 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         assertEquals("GEMINI", llmConfiguration.path("executor_model").path("LLM_EXECUTOR_VENDOR").asText());
         assertEquals("0.2", llmConfiguration.path("executor_model").path("MODEL_PARAMETERS").path("temperature").asText());
 
-        JsonNode conf = MAPPER.readTree(new File(runFolder, "conf.json"));
-        assertEquals(runFolder.getAbsolutePath(), conf.path("OUTPUT_BASE_DIR").asText());
+        assertFalse(new File(runFolder, "conf.json").exists());
     }
 
     @Test
@@ -154,12 +153,19 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         builder.perform(mockBuild(convertedTests), new FilePath(buildWorkspace), launcher, mockListener());
 
         verify(procStarter, times(2)).stdin(any(InputStream.class));
+        ArgumentCaptor<ArgumentListBuilder> argumentsCaptor = ArgumentCaptor.forClass(ArgumentListBuilder.class);
+        verify(procStarter, times(2)).cmds(argumentsCaptor.capture());
 
+        int runIndex = 0;
         for (String runId : new String[]{"2001", "2002"}) {
             File runFolder = runFolder(buildWorkspace, runId);
             assertEquals(runId, MAPPER.readTree(new File(runFolder, "run_steps.json")).path("id").asText());
-            assertEquals(runFolder.getAbsolutePath(),
-                    MAPPER.readTree(new File(runFolder, "conf.json")).path("OUTPUT_BASE_DIR").asText());
+            assertEquals("--run_step_file_path=" + new File(runFolder, "run_steps.json").getAbsolutePath(),
+                argumentsCaptor.getAllValues().get(runIndex).toList().get(1));
+            assertEquals("--output_base_dir=" + runFolder.getAbsolutePath(),
+                argumentsCaptor.getAllValues().get(runIndex).toList().get(2));
+            assertFalse(new File(runFolder, "conf.json").exists());
+            runIndex++;
         }
     }
 
@@ -192,7 +198,7 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
     }
 
     @Test
-    public void perform_writesConfFileInIndividualRunFolder() throws Exception {
+    public void perform_launchesWithoutCreatingConfFile() throws Exception {
         File sharedWorkspace = tempFolder.newFolder("shared-workspace-no-conf-file");
         assertTrue(new File(sharedWorkspace, "mi-agent.exe").createNewFile());
         File buildWorkspace = new File(sharedWorkspace, "build-workspace");
@@ -211,12 +217,14 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         assertFalse(new File(buildWorkspace, "conf.json").exists());
 
         File runFolder = runFolder(buildWorkspace, "3001");
-        File confFile = new File(runFolder, "conf.json");
-        assertTrue(confFile.exists());
-
-        JsonNode conf = MAPPER.readTree(confFile);
-        assertEquals(new File(runFolder, "run_steps.json").getAbsolutePath(), conf.path("RUN_STEP_FILE_PATH").asText());
-        assertEquals(runFolder.getAbsolutePath(), conf.path("OUTPUT_BASE_DIR").asText());
+        assertFalse(new File(runFolder, "conf.json").exists());
+        ArgumentCaptor<ArgumentListBuilder> argumentsCaptor = ArgumentCaptor.forClass(ArgumentListBuilder.class);
+        verify(procStarter).cmds(argumentsCaptor.capture());
+        assertEquals(3, argumentsCaptor.getValue().toList().size());
+        assertEquals("--run_step_file_path=" + new File(runFolder, "run_steps.json").getAbsolutePath(),
+            argumentsCaptor.getValue().toList().get(1));
+        assertEquals("--output_base_dir=" + runFolder.getAbsolutePath(),
+            argumentsCaptor.getValue().toList().get(2));
     }
 
     /**
@@ -240,9 +248,8 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         return listener;
     }
 
-    /** {@code <workspace>/mi-agent-results/<buildNumber>/<runId>}, where the mocked build number is 0. */
     private File runFolder(File buildWorkspace, String runId) {
-        return new File(new File(new File(buildWorkspace, "mi-agent-results"), "0"), runId);
+        return new File(new File(buildWorkspace, "mi-agent-results"), runId);
     }
 
     private Launcher.ProcStarter mockProcStarter() throws Exception {

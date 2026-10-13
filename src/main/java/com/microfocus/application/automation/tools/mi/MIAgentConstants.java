@@ -37,7 +37,6 @@
 package com.microfocus.application.automation.tools.mi;
 
 import hudson.FilePath;
-import hudson.model.Run;
 
 public final class MIAgentConstants {
     public static final String RESULT_FOLDER = "mi-agent-results";
@@ -48,7 +47,7 @@ public final class MIAgentConstants {
         // Prevent instantiation
     }
 
-    public static FilePath resultRootForBuild(FilePath workspace, Run<?, ?> run) {
-        return workspace.child(RESULT_FOLDER).child(String.valueOf(run.getNumber()));
+    public static FilePath resultRoot(FilePath workspace) {
+        return workspace.child(RESULT_FOLDER);
     }
 }

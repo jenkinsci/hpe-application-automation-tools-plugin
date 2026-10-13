@@ -42,19 +42,17 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * Carries the preflight failure reason to {@link MIAgentResultPublisher}.
- *
- * <p>Preflight aborts the build before the converter and the runner execute, so no result files are
- * ever produced. This action is how the publisher learns why, and what to report on each test run.</p>
+ * Carries the reason a setup step (configuration copy, preflight) aborted the build to
+ * {@link MIAgentResultPublisher}, which reports it on each test run since no results were produced.
  */
-public class MIAgentPreflightFailure extends InvisibleAction implements Serializable {
+public class AuTeSetupFailure extends InvisibleAction implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     private final String reason;
 
-    public MIAgentPreflightFailure(String reason) {
+    public AuTeSetupFailure(String reason) {
         this.reason = reason;
     }
 

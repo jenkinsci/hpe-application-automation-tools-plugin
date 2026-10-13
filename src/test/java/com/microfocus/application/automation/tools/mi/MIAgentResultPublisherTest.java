@@ -91,7 +91,7 @@ public class MIAgentResultPublisherTest {
     public void perform_twoRuns_firstStatusConnectionReset_recoversWithFreshRequestBody() throws Exception {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("6024");
         runFolder.mkdirs();
 
@@ -271,7 +271,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         resultRoot.mkdirs();
 
         JSONObject manifest = new JSONObject();
@@ -293,7 +293,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("1042");
         runFolder.mkdirs();
 
@@ -352,7 +352,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("1142");
         runFolder.mkdirs();
 
@@ -430,7 +430,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("1242");
         runFolder.mkdirs();
 
@@ -478,7 +478,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("2042");
         runFolder.mkdirs();
 
@@ -520,7 +520,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("2099");
         runFolder.mkdirs();
 
@@ -595,7 +595,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("2142");
         FilePath imagesFolder = runFolder.child("images");
         runFolder.mkdirs();
@@ -647,7 +647,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("2242");
         FilePath imagesFolder = runFolder.child("images");
         imagesFolder.mkdirs();
@@ -698,7 +698,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("2342");
         FilePath imagesFolder = runFolder.child("images");
         imagesFolder.mkdirs();
@@ -754,7 +754,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("2442");
         FilePath imagesFolder = runFolder.child("images");
         runFolder.mkdirs();
@@ -810,7 +810,7 @@ public class MIAgentResultPublisherTest {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         TaskListener listener = mockListener();
         FilePath workspace = new FilePath(tempFolder.getRoot());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         resultRoot.mkdirs();
 
         JSONObject runEntry = new JSONObject();
@@ -869,7 +869,7 @@ public class MIAgentResultPublisherTest {
     private RetryFixture retryFixture(boolean includeStep) throws Exception {
         Run<?, ?> run = mock(FreeStyleBuild.class);
         FilePath workspace = new FilePath(tempFolder.newFolder());
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         FilePath runFolder = resultRoot.child("6024");
         runFolder.mkdirs();
         JSONObject status = new JSONObject();

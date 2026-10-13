@@ -187,11 +187,11 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         log.println("Autonomous-Tester result publisher started.");
 
         MIAgentPublishSummary summary = new MIAgentPublishSummary();
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
         try {
-            MIAgentPreflightFailure preflightFailure = run.getAction(MIAgentPreflightFailure.class);
-            if (preflightFailure != null) {
-                publishPreflightFailure(run, listener, preflightFailure.getReason(), summary, log);
+            AuTeSetupFailure setupFailure = run.getAction(AuTeSetupFailure.class);
+            if (setupFailure != null) {
+                publishSetupFailure(run, listener, setupFailure.getReason(), summary, log);
                 return;
             }
 
@@ -260,20 +260,20 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     }
 
     /**
-     * Preflight aborted the build before the converter ran, so nothing was executed and no result
+     * A setup step aborted the build before the converter ran, so nothing was executed and no result
      * files exist. The run IDs are still in the raw {@code testsToRun} parameter, which is enough to
      * mark every test run skipped and show why on its description.
      */
-    private void publishPreflightFailure(Run<?, ?> run,
-                                         TaskListener listener,
-                                         String reason,
-                                         MIAgentPublishSummary summary,
-                                         PrintStream log) throws IOException, InterruptedException, MIAgentValidationException {
+    private void publishSetupFailure(Run<?, ?> run,
+                                     TaskListener listener,
+                                     String reason,
+                                     MIAgentPublishSummary summary,
+                                     PrintStream log) throws IOException, InterruptedException, MIAgentValidationException {
         List<TestToRunData> tests = TestsToRunConverter.parse(
                 run.getEnvironment(listener).get(UftConstants.TESTS_TO_RUN_PARAMETER_NAME));
         if (tests == null || tests.isEmpty()) {
             summary.setStatus(MIAgentPublishSummary.Status.NO_RESULTS);
-            summary.setMessage("Preflight check failed and no test runs were available to report it on: %s".formatted(reason));
+            summary.setMessage("Build setup failed and no test runs were available to report it on: %s".formatted(reason));
             return;
         }
 
@@ -301,7 +301,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         summary.setTotalTests(tests.size());
         if (failures.isEmpty()) {
             summary.setStatus(MIAgentPublishSummary.Status.PUBLISHED);
-            summary.setMessage("Preflight check failed; reported %s test run(s) as skipped: %s".formatted(published, reason));
+            summary.setMessage("Build setup failed; reported %s test run(s) as skipped: %s".formatted(published, reason));
         } else {
             handlePublishFailures(run, failures, summary);
         }

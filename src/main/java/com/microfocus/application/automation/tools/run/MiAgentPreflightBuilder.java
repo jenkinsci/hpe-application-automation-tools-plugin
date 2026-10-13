@@ -36,7 +36,7 @@
  */
 package com.microfocus.application.automation.tools.run;
 
-import com.microfocus.application.automation.tools.mi.MIAgentPreflightFailure;
+import com.microfocus.application.automation.tools.mi.AuTeSetupFailure;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
@@ -99,7 +99,7 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
 
     private AbortException abort(Run<?, ?> build, String reason) {
         String message = formatMessage(reason);
-        build.addAction(new MIAgentPreflightFailure(message));
+        build.addAction(new AuTeSetupFailure(message));
         return new AbortException(message);
     }
 

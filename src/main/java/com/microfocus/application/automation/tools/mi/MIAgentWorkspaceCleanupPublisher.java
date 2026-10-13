@@ -42,6 +42,7 @@ import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.slaves.WorkspaceList;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -52,19 +53,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * Post-build step for MI Agent (Autonomous-Tester / AuTe) jobs that deletes this build's
- * {@code mi-agent-results/<build-number>} folder from the agent workspace.
- * <p>
- * Must run AFTER {@link MIAgentResultPublisher} and the artifact archiver, since both need the
- * folder's contents to still be on disk. The result folder is confined to a single build number
- * ({@link MIAgentConstants#resultRootForBuild(FilePath, Run)}), so this never touches other builds'
- * data or any other part of the workspace.
- * </p>
+ * Last post-build step of AuTe jobs: deletes the build workspace and its {@code @tmp} folder.
+ * Runs after the artifact archiver; Jenkins still runs it when archiving fails.
  */
 public class MIAgentWorkspaceCleanupPublisher extends Recorder implements SimpleBuildStep, Serializable {
 
@@ -85,11 +79,14 @@ public class MIAgentWorkspaceCleanupPublisher extends Recorder implements Simple
                          @Nonnull FilePath workspace,
                          @Nonnull Launcher launcher,
                          @Nonnull TaskListener listener) throws IOException, InterruptedException {
-        PrintStream log = listener.getLogger();
-        FilePath resultRoot = MIAgentConstants.resultRootForBuild(workspace, run);
-        if (resultRoot.exists()) {
-            resultRoot.deleteRecursive();
-            log.println("[AuTe] Deleted workspace results folder: %s".formatted(resultRoot.getRemote()));
+        deleteIfExists(workspace);
+        deleteIfExists(WorkspaceList.tempDir(workspace));
+        listener.getLogger().println("[AuTe] Deleted workspace folder: " + workspace.getRemote());
+    }
+
+    private static void deleteIfExists(FilePath folder) throws IOException, InterruptedException {
+        if (folder != null && folder.exists()) {
+            folder.deleteRecursive();
         }
     }
 
@@ -105,7 +102,7 @@ public class MIAgentWorkspaceCleanupPublisher extends Recorder implements Simple
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "AuTe: Delete workspace results folder";
+            return "AuTe: Delete build workspace folder";
         }
     }
 }
