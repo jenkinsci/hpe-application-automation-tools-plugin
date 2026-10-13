@@ -190,9 +190,10 @@ public class TestExecutionJobCreatorServiceTest {
     }
 
     @Test
-    public void lifecycle_invalidConfigurationJsonStopsBeforeCopy() throws Exception {
+    public void lifecycle_invalidConfigurationJsonIsArchivedAndFailsBuild() throws Exception {
         FreeStyleProject project = lifecycleJob("invalid-json");
-        Files.writeString(AuTeConfigurationStore.ensureTemplate("aute-lifecycle", "1001"), "{ invalid }");
+        byte[] invalid = "{ invalid }".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        Files.write(AuTeConfigurationStore.ensureTemplate("aute-lifecycle", "1001"), invalid);
 
         FreeStyleBuild build = project.scheduleBuild2(0).get();
 
@@ -200,7 +201,8 @@ public class TestExecutionJobCreatorServiceTest {
         var failure = build.getAction(com.microfocus.application.automation.tools.mi.AuTeSetupFailure.class);
         assertNotNull(failure);
         assertTrue(failure.getReason().contains("must be a valid JSON object"));
-        assertFalse(build.getWorkspace().child(AuTeConfigurationStore.SNAPSHOT_PATH).exists());
+        jenkins.assertLogNotContains("[AuTe] Copied shared space configuration", build);
+        assertSnapshot(build, invalid);
         assertFalse(build.getWorkspace().exists());
     }
 

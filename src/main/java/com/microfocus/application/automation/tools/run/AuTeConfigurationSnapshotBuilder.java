@@ -90,12 +90,7 @@ public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleB
             throw setupFailure(run, listener, COPY_FAILED_REASON, e);
         }
 
-        try {
-            validateJsonObject(template);
-        } catch (IOException e) {
-            throw setupFailure(run, listener, INVALID_JSON_REASON, e);
-        }
-
+        // Written before validation so an invalid configuration is still archived for diagnosis.
         FilePath target = workspace.child(AuTeConfigurationStore.SNAPSHOT_PATH);
         try {
             workspace.mkdirs();
@@ -105,6 +100,12 @@ public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleB
         } catch (IOException e) {
             throw setupFailure(run, listener, COPY_FAILED_REASON, e);
         }
+
+        try {
+            validateJsonObject(template);
+        } catch (IOException e) {
+            throw setupFailure(run, listener, INVALID_JSON_REASON, e);
+        }
         listener.getLogger().println("[AuTe] Copied shared space configuration to: " + target.getRemote());
     }
 
@@ -113,15 +114,15 @@ public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleB
         try {
             parsed = JSONValue.parseStrict(new String(contents, StandardCharsets.UTF_8));
         } catch (Exception e) {
-            throw new IOException(INVALID_JSON_REASON, e);
+            throw new IOException("Invalid JSON: " + e.getMessage(), e);
         }
         if (!(parsed instanceof JSONObject)) {
-            throw new IOException(INVALID_JSON_REASON);
+            throw new IOException("The top-level JSON value is not an object.");
         }
     }
 
     private static AbortException setupFailure(Run<?, ?> run, TaskListener listener, String reason, IOException cause) {
-        listener.getLogger().println("[AuTe] " + reason + " " + cause);
+        listener.getLogger().println("[AuTe] Cause: " + cause.getMessage());
         run.addAction(new AuTeSetupFailure(reason));
         return new AbortException(reason);
     }
