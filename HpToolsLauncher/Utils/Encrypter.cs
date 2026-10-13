@@ -114,7 +114,8 @@ namespace HpToolsLauncher.Utils
             byte[] text;
             try
             {
-                text = _rsa.Decrypt(encryptedBytes, false);
+                // OAEP (SHA-1) padding, must match the RSA/ECB/OAEPWithSHA-1AndMGF1Padding used on the Jenkins server side
+                text = _rsa.Decrypt(encryptedBytes, true);
             }
             catch (CryptographicException)
             {
@@ -123,6 +124,50 @@ namespace HpToolsLauncher.Utils
             }
 
             return Encoding.UTF8.GetString(text);
+        }
+
+        /// <summary>
+        /// Decrypts the data with the node's private key, straight into a SecureString so that the secret never becomes a managed string.
+        /// </summary>
+        /// <param name="textToDecrypt"></param>
+        /// <returns></returns>
+        public static SecureString DecryptToSecureString(string textToDecrypt)
+        {
+            if (_rsa == null)
+                return textToDecrypt.ToSecureString();
+
+            var encryptedBytes = Convert.FromBase64String(textToDecrypt);
+            byte[] text;
+            try
+            {
+                text = _rsa.Decrypt(encryptedBytes, true);
+            }
+            catch (CryptographicException)
+            {
+                ConsoleWriter.WriteErrLine("Failed to decrypt data using private key, try forcing a new public-private key pair.");
+                throw new ArgumentException("Decryption failed using private key.");
+            }
+
+            char[] chars = null;
+            try
+            {
+                chars = Encoding.UTF8.GetChars(text);
+                var secret = new SecureString();
+                foreach (char c in chars)
+                {
+                    secret.AppendChar(c);
+                }
+                secret.MakeReadOnly();
+                return secret;
+            }
+            finally
+            {
+                Array.Clear(text, 0, text.Length);
+                if (chars != null)
+                {
+                    Array.Clear(chars, 0, chars.Length);
+                }
+            }
         }
 
         /// <summary>

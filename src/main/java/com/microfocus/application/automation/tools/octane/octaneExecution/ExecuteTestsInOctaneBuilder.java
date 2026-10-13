@@ -68,6 +68,7 @@ import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -336,12 +337,12 @@ public class ExecuteTestsInOctaneBuilder extends Builder implements SimpleBuildS
             return m;
         }
 
-        public ListBoxModel doFillConfigurationIdItems() {
-            return JellyUtils.fillConfigurationIdModel();
+        public ListBoxModel doFillConfigurationIdItems(@AncestorInPath Item project) {
+            return JellyUtils.fillConfigurationIdModel(project);
         }
 
-        public ListBoxModel doFillWorkspaceIdItems(@QueryParameter String configurationId, @QueryParameter(value = "workspaceId") String workspaceId) {
-            return JellyUtils.fillWorkspaceModel(configurationId, workspaceId);
+        public ListBoxModel doFillWorkspaceIdItems(@AncestorInPath Item project, @QueryParameter String configurationId, @QueryParameter(value = "workspaceId") String workspaceId) {
+            return JellyUtils.fillWorkspaceModel(project, configurationId, workspaceId);
         }
 
     }

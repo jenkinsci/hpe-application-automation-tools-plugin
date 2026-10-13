@@ -66,6 +66,8 @@ public final class EncryptionUtils {
 
     private static final int KEY_SIZE = 3072; // should be secure for some time
     private static final String ENC_TYPE_FOR_PROPS = "RSA";
+    // OAEP (SHA-1) padding, must match RSACryptoServiceProvider.Decrypt(bytes, fOAEP: true) used by the HpToolsLauncher
+    private static final String ENC_TRANSFORMATION_FOR_PROPS = "RSA/ECB/OAEPWithSHA-1AndMGF1Padding";
     private static final String ENC_TYPE_FOR_NODE = "AES/CBC/PKCS7Padding";
     private static final String PRIVATE_SPEC_FOR_NODE = "AES";
     private static final String KEY_PATH = "secrets/.hptoolslaunchersecret.key";
@@ -280,9 +282,9 @@ public final class EncryptionUtils {
     public static String encrypt(String text, PublicKey publicKey) throws EncryptionException {
         Cipher encryptCipher;
         try {
-            encryptCipher = Cipher.getInstance(ENC_TYPE_FOR_PROPS);
+            encryptCipher = Cipher.getInstance(ENC_TRANSFORMATION_FOR_PROPS);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException ignored) {
-            throw new EncryptionException("Failed to obtain " + ENC_TYPE_FOR_PROPS + " cipher.");
+            throw new EncryptionException("Failed to obtain " + ENC_TRANSFORMATION_FOR_PROPS + " cipher.");
         }
 
         try {
