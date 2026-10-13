@@ -49,15 +49,19 @@ import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import jenkins.tasks.SimpleBuildStep;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 /** First AuTe build step: copies the shared space default configuration from the controller into the build workspace. */
 public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleBuildStep {
     static final String COPY_FAILED_REASON = "Failed to copy the shared space default configuration to the build workspace.";
+    static final String INVALID_JSON_REASON = "The shared space default configuration must be a valid JSON object.";
 
     private final String configurationId;
     private final String spaceId;
@@ -79,21 +83,47 @@ public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleB
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
                         @Nonnull TaskListener listener) throws IOException, InterruptedException {
+        byte[] template;
+        try {
+            template = AuTeConfigurationStore.readTemplate(configurationId, spaceId);
+        } catch (IOException e) {
+            throw setupFailure(run, listener, COPY_FAILED_REASON, e);
+        }
+
+        try {
+            validateJsonObject(template);
+        } catch (IOException e) {
+            throw setupFailure(run, listener, INVALID_JSON_REASON, e);
+        }
+
         FilePath target = workspace.child(AuTeConfigurationStore.SNAPSHOT_PATH);
         try {
-            byte[] template = AuTeConfigurationStore.readTemplate(configurationId, spaceId);
             workspace.mkdirs();
-            // FilePath writes work on remote agents too.
             try (OutputStream output = target.write()) {
                 output.write(template);
             }
         } catch (IOException e) {
-            listener.getLogger().println("[AuTe] " + COPY_FAILED_REASON + " " + e);
-            // The publisher reports this reason to Octane; the details above may contain controller paths.
-            run.addAction(new AuTeSetupFailure(COPY_FAILED_REASON));
-            throw new AbortException(COPY_FAILED_REASON);
+            throw setupFailure(run, listener, COPY_FAILED_REASON, e);
         }
         listener.getLogger().println("[AuTe] Copied shared space configuration to: " + target.getRemote());
+    }
+
+    static void validateJsonObject(byte[] contents) throws IOException {
+        Object parsed;
+        try {
+            parsed = JSONValue.parseStrict(new String(contents, StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new IOException(INVALID_JSON_REASON, e);
+        }
+        if (!(parsed instanceof JSONObject)) {
+            throw new IOException(INVALID_JSON_REASON);
+        }
+    }
+
+    private static AbortException setupFailure(Run<?, ?> run, TaskListener listener, String reason, IOException cause) {
+        listener.getLogger().println("[AuTe] " + reason + " " + cause);
+        run.addAction(new AuTeSetupFailure(reason));
+        return new AbortException(reason);
     }
 
     @Extension

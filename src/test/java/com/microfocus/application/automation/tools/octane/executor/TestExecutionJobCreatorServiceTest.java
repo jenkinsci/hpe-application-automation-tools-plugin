@@ -190,6 +190,21 @@ public class TestExecutionJobCreatorServiceTest {
     }
 
     @Test
+    public void lifecycle_invalidConfigurationJsonStopsBeforeCopy() throws Exception {
+        FreeStyleProject project = lifecycleJob("invalid-json");
+        Files.writeString(AuTeConfigurationStore.ensureTemplate("aute-lifecycle", "1001"), "{ invalid }");
+
+        FreeStyleBuild build = project.scheduleBuild2(0).get();
+
+        jenkins.assertBuildStatus(Result.FAILURE, build);
+        var failure = build.getAction(com.microfocus.application.automation.tools.mi.AuTeSetupFailure.class);
+        assertNotNull(failure);
+        assertTrue(failure.getReason().contains("must be a valid JSON object"));
+        assertFalse(build.getWorkspace().child(AuTeConfigurationStore.SNAPSHOT_PATH).exists());
+        assertFalse(build.getWorkspace().exists());
+    }
+
+    @Test
     public void lifecycle_failedArchiveStillDeletesWorkspace() throws Exception {
         FreeStyleProject project = lifecycleJob("archive-failure");
         project.getPublishersList().remove(ArtifactArchiver.class);
