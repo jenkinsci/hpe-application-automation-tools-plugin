@@ -87,7 +87,7 @@ public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleB
         try {
             template = AuTeConfigurationStore.readTemplate(configurationId, spaceId);
         } catch (IOException e) {
-            throw setupFailure(run, listener, COPY_FAILED_REASON, e);
+            throw setupFailure(run, COPY_FAILED_REASON);
         }
 
         // Written before validation so an invalid configuration is still archived for diagnosis.
@@ -98,13 +98,13 @@ public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleB
                 output.write(template);
             }
         } catch (IOException e) {
-            throw setupFailure(run, listener, COPY_FAILED_REASON, e);
+            throw setupFailure(run, COPY_FAILED_REASON);
         }
 
         try {
             validateJsonObject(template);
         } catch (IOException e) {
-            throw setupFailure(run, listener, INVALID_JSON_REASON, e);
+            throw setupFailure(run, INVALID_JSON_REASON);
         }
         listener.getLogger().println("[AuTe] Copied shared space configuration to: " + target.getRemote());
     }
@@ -114,15 +114,14 @@ public class AuTeConfigurationSnapshotBuilder extends Builder implements SimpleB
         try {
             parsed = JSONValue.parseStrict(new String(contents, StandardCharsets.UTF_8));
         } catch (Exception e) {
-            throw new IOException("Invalid JSON: " + e.getMessage(), e);
+            throw new IOException(INVALID_JSON_REASON, e);
         }
         if (!(parsed instanceof JSONObject)) {
-            throw new IOException("The top-level JSON value is not an object.");
+            throw new IOException(INVALID_JSON_REASON);
         }
     }
 
-    private static AbortException setupFailure(Run<?, ?> run, TaskListener listener, String reason, IOException cause) {
-        listener.getLogger().println("[AuTe] Cause: " + cause.getMessage());
+    private static AbortException setupFailure(Run<?, ?> run, String reason) {
         run.addAction(new AuTeSetupFailure(reason));
         return new AbortException(reason);
     }
