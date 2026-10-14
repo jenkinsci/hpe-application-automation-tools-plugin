@@ -46,5 +46,9 @@
         <f:entry title="Maximum days to keep builds" field="maxDaysToKeep">
             <f:number name="maxDaysToKeep" value="${instance.maxDaysToKeep}" default="7" style="width: 60px;"/>
         </f:entry>
+        <f:entry title="Default LLM logical name" field="defaultLlmLogicalName"
+                 description="LLM Configuration credential id used when a run does not specify ENDPOINT_LOGICAL_NAME.">
+            <f:textbox value="${instance.defaultLlmLogicalName}"/>
+        </f:entry>
     </f:section>
 </j:jelly>

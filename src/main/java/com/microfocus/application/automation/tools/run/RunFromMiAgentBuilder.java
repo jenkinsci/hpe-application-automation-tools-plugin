@@ -42,6 +42,7 @@ import com.microfocus.application.automation.tools.mi.AuTeLlmCredentials;
 import com.microfocus.application.automation.tools.mi.MIAgentConstants;
 import com.microfocus.application.automation.tools.mi.MIAgentBuildAction;
 import com.microfocus.application.automation.tools.mi.MIAgentResultPublisher;
+import com.microfocus.application.automation.tools.settings.MiAgentGlobalConfiguration;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -275,7 +276,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                                              String logicalName,
                                              String runId) throws IOException {
         if (StringUtils.isBlank(logicalName)) {
-            throw new IOException("[AuTe][ERROR] Run %s has no '%s' in '%s'. It must name an Autonomous Tester LLM Configuration credential."
+            throw new IOException("[AuTe][ERROR] Run %s has no '%s' in '%s' and no default is set in the Autonomous Tester settings. It must name an Autonomous Tester LLM Configuration credential."
                 .formatted(runId, LLM_LOGICAL_NAME_FIELD, LLM_CONFIGURATION_FIELD));
         }
 
@@ -296,17 +297,24 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         return (JSONObject) parsedConfig;
     }
 
+    /** Octane value first, then the Jenkins global default; null when neither is set. */
     private String extractLlmLogicalName(JSONObject runData) {
+        // Null when no default is configured in the Jenkins global settings.
+        String defaultName = MiAgentGlobalConfiguration.getInstance().getDefaultLlmLogicalName();
+
         Object configuration = runData.get(AU_TESTER_CONFIGURATION_FIELD);
         if (!(configuration instanceof JSONObject)) {
-            return null;
+            return defaultName;
         }
         Object llmConfiguration = ((JSONObject) configuration).get(LLM_CONFIGURATION_FIELD);
         if (!(llmConfiguration instanceof JSONObject)) {
-            return null;
+            return defaultName;
         }
         Object logicalName = ((JSONObject) llmConfiguration).get(LLM_LOGICAL_NAME_FIELD);
-        return logicalName == null ? null : StringUtils.trimToNull(String.valueOf(logicalName));
+        if (logicalName == null || StringUtils.isBlank(String.valueOf(logicalName))) {
+            return defaultName;
+        }
+        return String.valueOf(logicalName).trim();
     }
 
     private JSONObject toRunStep(JSONObject runData) {

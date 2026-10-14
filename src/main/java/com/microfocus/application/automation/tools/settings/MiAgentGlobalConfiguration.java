@@ -38,7 +38,9 @@ package com.microfocus.application.automation.tools.settings;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import hudson.Util;
 import jenkins.model.GlobalConfiguration;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.Serializable;
 
@@ -47,6 +49,7 @@ public class MiAgentGlobalConfiguration extends GlobalConfiguration implements S
 
     private int maxBuildsToKeep = 50;
     private int maxDaysToKeep = 7;
+    private String defaultLlmLogicalName;
 
     public MiAgentGlobalConfiguration() {
         load();
@@ -81,6 +84,16 @@ public class MiAgentGlobalConfiguration extends GlobalConfiguration implements S
 
     public void setMaxDaysToKeep(int maxDaysToKeep) {
         this.maxDaysToKeep = maxDaysToKeep;
+        save();
+    }
+
+    public String getDefaultLlmLogicalName() {
+        return defaultLlmLogicalName;
+    }
+
+    @DataBoundSetter
+    public void setDefaultLlmLogicalName(String defaultLlmLogicalName) {
+        this.defaultLlmLogicalName = Util.fixEmptyAndTrim(defaultLlmLogicalName);
         save();
     }
 }
