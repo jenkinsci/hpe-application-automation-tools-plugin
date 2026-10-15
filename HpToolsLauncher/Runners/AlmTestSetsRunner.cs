@@ -50,7 +50,6 @@ using System.Security;
 using HpToolsLauncher.Utils.Alm;
 using HpToolsLauncher.Utils;
 using Microsoft.Win32;
-using System.Globalization;
 using System.Web.UI.WebControls.Expressions;
 
 namespace HpToolsLauncher
@@ -72,6 +71,7 @@ namespace HpToolsLauncher
         private const string ALM_CLIENT_PATH = "ALM_CLIENT_PATH";
         private const string API_TEST = "SERVICE-TEST";
         private const string GUI_TEST = "QUICKTEST_TEST";
+        private const string BUSINESS_PROCESS = "BUSINESS-PROCESS";
         private List<TestParameter> _params;
         private const string PASSWORD = "password";
         private const string REGSVR32_EXE = "regsvr32.exe";
@@ -285,7 +285,7 @@ namespace HpToolsLauncher
             try
             {
                 val = Environment.GetEnvironmentVariable(ALM_CLIENT_PATH, EnvironmentVariableTarget.User);
-                if (string.IsNullOrEmpty(val))
+                if (val.IsNullOrEmpty())
                 {
                     val = Environment.GetEnvironmentVariable(ALM_CLIENT_PATH, EnvironmentVariableTarget.Machine);
                 }
@@ -388,7 +388,7 @@ namespace HpToolsLauncher
                     // 1) Sort subfolders by folder name
                     foreach (var child in _children.Values.OrderBy(n => n.Name))
                     {
-                        string childPath = string.IsNullOrEmpty(currentPath) ? child.Name: currentPath + BackSlash_ + child.Name;
+                        string childPath = currentPath.IsNullOrEmpty() ? child.Name: currentPath + BackSlash_ + child.Name;
                         child.SortAndFlatten(result, childPath, almTestSetsRunOrderByCriteria);
                     }
 
@@ -399,7 +399,7 @@ namespace HpToolsLauncher
 
                     foreach (var leaf in sortedLeaves)
                     {
-                        result.Add(string.IsNullOrEmpty(currentPath) ? leaf.Name : currentPath + BackSlash_ + leaf.Name);
+                        result.Add(currentPath.IsNullOrEmpty() ? leaf.Name : currentPath + BackSlash_ + leaf.Name);
                     }
                 }
             }
@@ -512,12 +512,12 @@ namespace HpToolsLauncher
         /// <returns></returns>
         public bool ConnectToProject(string qcServerUrl, string qcLogin, string qcPass, string qcDomain, string qcProject, bool SSOEnabled, string qcClientID, string qcApiKey)
         {
-            if (string.IsNullOrWhiteSpace(qcServerUrl)
-                || (string.IsNullOrWhiteSpace(qcLogin) && !SSOEnabled)
-                || string.IsNullOrWhiteSpace(qcDomain)
-                || string.IsNullOrWhiteSpace(qcProject)
-                || (SSOEnabled && (string.IsNullOrWhiteSpace(qcClientID)
-                || string.IsNullOrWhiteSpace(qcApiKey))))
+            if (qcServerUrl.IsNullOrWhiteSpace()
+                || (qcLogin.IsNullOrWhiteSpace() && !SSOEnabled)
+                || qcDomain.IsNullOrWhiteSpace()
+                || qcProject.IsNullOrWhiteSpace()
+                || (SSOEnabled && (qcClientID.IsNullOrWhiteSpace()
+                || qcApiKey.IsNullOrWhiteSpace())))
             {
                 ConsoleWriter.WriteLine(Resources.AlmRunnerConnParamEmpty);
                 return false;
@@ -679,15 +679,15 @@ namespace HpToolsLauncher
                 {
                     sb.Append("Step: " + step.Name);
 
-                    if (!string.IsNullOrWhiteSpace(step.Status))
+                    if (!step.Status.IsNullOrWhiteSpace())
                         sb.Append(", Status: " + step.Status);
 
                     string desc = step["ST_DESCRIPTION"] as string;
 
-                    if (string.IsNullOrEmpty(desc)) continue;
+                    if (desc.IsNullOrEmpty()) continue;
 
                     desc = "\n\t" + desc.Trim().Replace("\n", "\t").Replace("\r", string.Empty);
-                    if (!string.IsNullOrWhiteSpace(desc))
+                    if (!desc.IsNullOrWhiteSpace())
                         sb.AppendLine(desc);
                 }
             }
@@ -972,7 +972,7 @@ namespace HpToolsLauncher
 
             List<ITSTest> testsFilteredByStatus = new List<ITSTest>();
 
-            if (isFilterSelected.Equals(true) && (!string.IsNullOrEmpty(filterByName) || filterByStatuses.Count > 0))
+            if (isFilterSelected.Equals(true) && (!filterByName.IsNullOrEmpty() || filterByStatuses.Count > 0))
             {
                 //filter by status
                 foreach (string status in filterByStatuses)
@@ -991,7 +991,7 @@ namespace HpToolsLauncher
                     string tListIndexName = testList[index].Name;
                     string tListIndexTestName = testList[index].TestName;
 
-                    if (!string.IsNullOrEmpty(filterByName))
+                    if (!filterByName.IsNullOrEmpty())
                     {
                         if (filterByStatuses.Count == 0)
                         {
@@ -1049,7 +1049,7 @@ namespace HpToolsLauncher
                     string tListIndexName = testList[index].Name;
                     string tListIndexTestName = testList[index].TestName;
 
-                    if (!string.IsNullOrEmpty(tListIndexName) && !string.IsNullOrEmpty(testName) && !testName.Equals(tListIndexTestName))
+                    if (!tListIndexName.IsNullOrEmpty() && !testName.IsNullOrEmpty() && !testName.Equals(tListIndexTestName))
                     {
                         testList.Remove(index);
                     }
@@ -1083,21 +1083,19 @@ namespace HpToolsLauncher
         /// <param name="runDesc"></param>
         /// <param name="initialFullTsPath"></param>
         /// <param name="params"></param>
-        public void CollectInlineTestParams(IList tList, string strParams, string initialFullTsPath, List<TestParameter> @params)
+        private void CollectInlineTestParams(IList tList, string strParams, string initialFullTsPath, List<TestParameter> @params)
         {
+            if (strParams.IsNullOrEmpty()) { return; }
+
             int idx = 1;
 
             foreach (ITSTest3 test in tList)
             {
                 try
                 {
-                    if (test.Type.Equals(API_TEST) && !string.IsNullOrEmpty(strParams)) //API test
+                    if (test.Type.In(API_TEST, GUI_TEST, BUSINESS_PROCESS))
                     {
-                        CollectInlineApiTestParams(test, strParams, @params, idx);
-                    }
-                    else if (test.Type.Equals(GUI_TEST) && !string.IsNullOrEmpty(strParams)) //GUI test
-                    {
-                        CollectInlineGuiTestParams(test, strParams, @params, idx);
+                        CollectInlineParams(strParams, @params, idx);
                     }
                 }
                 catch (ArgumentException)
@@ -1152,56 +1150,29 @@ namespace HpToolsLauncher
         }
 
         /// <summary>
-        /// Set test parameters for an API test
+        /// Collects inline parameter values for an ALM test.
         /// </summary>
-        /// <param name="test"></param>
-        /// <param name="strParams"></param>
-        /// <param name="testParams"></param>
-        /// <param name="idx"></param>
-        private void CollectInlineApiTestParams(ITSTest3 test, string strParams, IList<TestParameter> testParams, int idx)
+        /// <param name="strParams">The inline parameter specification.</param>
+        /// <param name="testParams">The collection to populate.</param>
+        /// <param name="idx">The test index.</param>
+        private void CollectInlineParams(string strParams, IList<TestParameter> testParams, int idx)
         {
-            if (!string.IsNullOrEmpty(strParams))
+            if (strParams.IsNullOrWhiteSpace())
             {
-                string[] @params = strParams.Split(COMMA, StringSplitOptions.RemoveEmptyEntries);
-                IList<string> paramNames, paramValues;
-
-                if (!Helper.ValidateInlineParams(@params, out paramNames, out paramValues))
-                {
-                    throw new ArgumentException();
-                }
-
-                for (int i = 0; i < @params.Length; ++i)
-                {
-                    testParams.Add(new TestParameter(idx, paramNames[i], paramValues[i], null));
-                }
+                return;
             }
-        }
 
-        /// <summary>
-        /// Set test parameters for a GUI test
-        /// </summary>
-        /// <param name="test"></param>
-        /// <param name="strParams"></param>
-        /// <param name="testParams"></param>
-        /// <param name="idx"></param>
-        private void CollectInlineGuiTestParams(ITSTest3 test, string strParams, IList<TestParameter> testParams, int idx)
-        {
-            var xmlParams = new StringBuilder();
+            string[] @params = strParams.Split(COMMA, StringSplitOptions.RemoveEmptyEntries);
+            IList<string> paramNames, paramValues;
 
-            if (!string.IsNullOrWhiteSpace(strParams))
+            if (!Helper.ValidateInlineParams(@params, out paramNames, out paramValues))
             {
-                string[] @params = strParams.Split(COMMA, StringSplitOptions.RemoveEmptyEntries);
-                IList<string> paramNames, paramValues;
+                throw new ArgumentException();
+            }
 
-                if (!Helper.ValidateInlineParams(@params, out paramNames, out paramValues))
-                {
-                    throw new ArgumentException();
-                }
-
-                for (int i = 0; i < @params.Length; ++i)
-                {
-                    testParams.Add(new TestParameter(idx, paramNames[i], paramValues[i], null));
-                }
+            for (int i = 0; i < @params.Length; ++i)
+            {
+                testParams.Add(new TestParameter(idx, paramNames[i], paramValues[i], null));
             }
         }
 
@@ -1250,31 +1221,27 @@ namespace HpToolsLauncher
             {
                 string testSet = testSetItem.TrimEnd(BACK_SLASH);
                 string tsName = testSet;
-                int pos = testSetItem.LastIndexOf('\\');
                 string testSetDir = string.Empty;
                 string inlineTestParams = string.Empty;
 
+                int paramStart = testSet.IndexOf(" \"", StringComparison.Ordinal);
+                if (paramStart != -1)
+                {
+                    // Inline parameters start with a quoted name. This also supports
+                    // the optional quotes around the complete test-set path.
+                    inlineTestParams = testSet.Substring(paramStart + 1).Trim(BACK_SLASH);
+                    testSet = testSet.Substring(0, paramStart).Trim(BACK_SLASH).Trim('"');
+                }
+
+                int pos = testSet.LastIndexOf('\\');
                 if (pos != -1)
                 {
-                    // check for inline params
-                    testSetDir = testSet.Substring(0, pos).Trim(BACK_SLASH);
-                    if (testSetItem.IndexOf(" ", StringComparison.Ordinal) != -1 && testSet.Count(x => x == ' ') >= 1)
-                    {
-                        if (!testSet.Contains(':'))//test has no parameters attached
-                            tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
-                        else
-                        {
-                            int quotationMarkIndex = testSet.IndexOf("\"", StringComparison.Ordinal);
-
-                            if (quotationMarkIndex > pos)
-                            {
-                                tsName = testSet.Substring(pos, quotationMarkIndex - pos).Trim(BACK_SLASH).TrimEnd(' ');
-                                inlineTestParams = testSet.Substring(quotationMarkIndex, testSet.Length - quotationMarkIndex).Trim(BACK_SLASH);
-                            }
-                        }
-                    }
-                    else
-                        tsName = testSet.Substring(pos, testSet.Length - pos).Trim(BACK_SLASH);
+                    testSetDir = testSet.Substring(0, pos).Trim(BACK_SLASH).Trim('"');
+                    tsName = testSet.Substring(pos + 1).Trim(BACK_SLASH).Trim('"');
+                }
+                else
+                {
+                    tsName = testSet.Trim('"');
                 }
 
                 TestSuiteRunResults runResults = RunTestSet(testSetDir, tsName, inlineTestParams, swForTimeout, idx, testSetItem);
@@ -1285,14 +1252,14 @@ namespace HpToolsLauncher
                     {
                         TestSetResult testSetRes = new TestSetResult
                         {
-                            TestSetName = Path.GetFileName(testSetItem),
+                            TestSetName = tsName,
                             TestSetPath = testSetItem,
                             FinishedAt = DateTime.Now,
                             Tests = runResults.TestRuns.Select(test => new TestRunResult
                             {
                                 TestName = test.TestName,
                                 Status = test.TestState.ToString(),
-                                Message = !string.IsNullOrWhiteSpace(test.ErrorDesc) ? test.ErrorDesc : test.FailureDesc,
+                                Message = !test.ErrorDesc.IsNullOrWhiteSpace() ? test.ErrorDesc : test.FailureDesc,
                                 AlmLink = GetTestRunLink(test.PrevRunId)
                             }).ToList(),
                             CumulativeSummary = string.Format(
@@ -1394,7 +1361,7 @@ namespace HpToolsLauncher
                 return runDesc;
             }
 
-            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Name = {2}, Path = \"{3}\"", testIdx, targetTestSet.ID, targetTestSet.Name, Path.GetDirectoryName(testSetItem)));
+            ConsoleWriter.WriteLine(string.Format("TestSet {0}: ID = {1}, Name = {2}, Path = \"{3}\"", testIdx, targetTestSet.ID, targetTestSet.Name, tsFolderName));
             ConsoleWriter.WriteLine(Resources.SingleSeperator);
 
             //start execution
@@ -1583,8 +1550,9 @@ namespace HpToolsLauncher
         /// </summary>
         /// <param name="test"></param>
         /// <param name="params"></param>
-        private static void SetParams(ITSTest3 test, List<TestParameter> @params)
+        private void SetParams(ITSTest3 test, List<TestParameter> @params)
         {
+            ConsoleWriter.WriteLine("SetParams: type = " + test.Type);
             switch (test.Type)
             {
                 case API_TEST:
@@ -1593,9 +1561,68 @@ namespace HpToolsLauncher
                 case GUI_TEST:
                     SetGUITestParams(test, @params);
                     break;
+                case BUSINESS_PROCESS:
+                    SetBPTTestParams(test, @params, TdConnection);
+                    break;
             }
         }
 
+        /// <summary>
+        /// Sets the parameters for all iterations of a Business Process test.
+        /// </summary>
+        /// <param name="test">The Business Process test instance.</param>
+        /// <param name="params">The parameter values to apply.</param>
+        /// <param name="connection">The active ALM connection.</param>
+        private static void SetBPTTestParams(ITSTest3 test, List<TestParameter> @params, ITDConnection13 connection)
+        {
+            Console.WriteLine("SetBPTTestParams ...");
+            if (@params.Count == 0) return;
+
+            Dictionary<string, TestParameter> paramsByName = new Dictionary<string, TestParameter>();
+            @params.ForEach(param => paramsByName[param.ParamName] = param);
+
+            uint currentTestId = Convert.ToUInt32(test.TestId);
+
+            IBPComponentFactory componentFactory = (IBPComponentFactory)connection.BPComponentFactory;
+            List components = componentFactory.NewList(string.Empty);
+
+            foreach (IBPComponent2 component in components)
+            {
+                ITest3 componentTest = component.Test as ITest3;
+                if (componentTest == null)
+                {
+                    continue;
+                }
+
+                uint componentTestId = Convert.ToUInt32(componentTest.ID);
+                if (componentTestId != currentTestId)
+                    continue;
+
+                foreach (IBPIteration2 iteration in component.Iterations)
+                {
+                    IBPIterationParamFactory paramFactory = (IBPIterationParamFactory)iteration.BPIterationParamFactory;
+                    List iterationParams = paramFactory.NewList(string.Empty);
+
+                    foreach (IBPIterationParam iterationParam in iterationParams)
+                    {
+                        IBPParam parameter = iterationParam.BPParameter as IBPParam;
+                        if (parameter == null) continue;
+
+                        string name = parameter.ComponentParamName;
+                        TestParameter testParam;
+                        if (!paramsByName.TryGetValue(name, out testParam)) continue;
+
+                        iterationParam.Value = testParam.ParamVal;
+                        iterationParam.Post();
+
+                        if (testParam.ParamType == PASSWORD)
+                            ConsoleWriter.WriteLine(string.Format(Resources.GeneralParameterUsageMask, testParam.ParamName));
+                        else
+                            ConsoleWriter.WriteLine(string.Format(Resources.GeneralParameterUsage, testParam.ParamName, testParam.ParamVal));
+                    }
+                }
+            }
+        }
         /// <summary>
         /// Sets the GUI Test's parameters.
         /// </summary>
@@ -1603,6 +1630,7 @@ namespace HpToolsLauncher
         /// <param name="params"></param>
         private static void SetGUITestParams(ITSTest3 test, List<TestParameter> @params)
         {
+            Console.WriteLine("SetGUITestParams ...");
             var xmlParams = new StringBuilder();
 
             if (@params.Count > 0)
@@ -1637,6 +1665,7 @@ namespace HpToolsLauncher
         /// <param name="params"></param>
         private static void SetAPITestParams(ITSTest3 test, List<TestParameter> @params)
         {
+            Console.WriteLine("SetAPITestParams ...");
             ISupportParameterValues paramTestValues = (ISupportParameterValues)test;
             ParameterValueFactory paramValFactory = paramTestValues.ParameterValueFactory;
             List listOfParams = paramValFactory.NewList(string.Empty);
@@ -1719,7 +1748,7 @@ namespace HpToolsLauncher
                 if (testDesc.TestGroup == null)
                 {
                     var currentFolder = targetTestSet.TestSetFolder as ITestSetFolder;
-                    string folderName = "";
+                    string folderName = string.Empty;
 
                     if (currentFolder != null)
                     {
@@ -1851,7 +1880,7 @@ namespace HpToolsLauncher
                         case TestState.Failed:
                             qTest.FailureDesc = GenerateFailedLog(currentTest.LastRun);
 
-                            if (string.IsNullOrWhiteSpace(qTest.FailureDesc))
+                            if (qTest.FailureDesc.IsNullOrWhiteSpace())
                                 qTest.FailureDesc = string.Format("{0} : {1}", testExecStatusObj.Status, testExecStatusObj.Message);
                             break;
                         case TestState.Error:
@@ -2115,10 +2144,10 @@ namespace HpToolsLauncher
 
                 string stepsString = GetTestStepsDescFromQc(prevTest);
 
-                if (string.IsNullOrWhiteSpace(stepsString) && ConsoleWriter.ActiveTestRun.TestState != TestState.Error)
+                if (stepsString.IsNullOrWhiteSpace() && ConsoleWriter.ActiveTestRun.TestState != TestState.Error)
                     stepsString = GetTestRunLog(prevTest);
 
-                if (!string.IsNullOrWhiteSpace(stepsString))
+                if (!stepsString.IsNullOrWhiteSpace())
                     ConsoleWriter.WriteLine(stepsString);
 
                 string linkStr = GetTestRunLink(runId);
