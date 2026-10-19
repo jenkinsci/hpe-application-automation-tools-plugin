@@ -56,7 +56,7 @@ import hudson.model.Item;
 import hudson.model.User;
 import hudson.security.Permission;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.logging.log4j.Logger;
 

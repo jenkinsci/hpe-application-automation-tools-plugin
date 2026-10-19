@@ -48,7 +48,7 @@ import hudson.remoting.VirtualChannel;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.EditType;
 import jenkins.MasterToSlaveFileCallable;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.jenkinsci.remoting.RoleChecker;
 
 import java.io.File;

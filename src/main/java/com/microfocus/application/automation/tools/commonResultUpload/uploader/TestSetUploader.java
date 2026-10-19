@@ -41,7 +41,7 @@ import com.microfocus.application.automation.tools.commonResultUpload.service.Fo
 import com.microfocus.application.automation.tools.commonResultUpload.service.RestService;
 import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.model.XmlResultEntity;
 import com.microfocus.application.automation.tools.results.service.AttachmentUploadService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;

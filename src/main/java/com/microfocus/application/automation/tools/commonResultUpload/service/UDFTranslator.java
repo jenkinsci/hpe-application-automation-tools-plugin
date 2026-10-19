@@ -40,7 +40,7 @@ import com.microfocus.application.automation.tools.commonResultUpload.CommonUplo
 import com.microfocus.application.automation.tools.commonResultUpload.uploader.RunUploader;
 import com.microfocus.application.automation.tools.commonResultUpload.uploader.TestSetUploader;
 import com.microfocus.application.automation.tools.commonResultUpload.uploader.TestUploader;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -40,7 +40,7 @@ import com.microfocus.application.automation.tools.EncryptionUtils;
 import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import hudson.model.Node;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import static com.microfocus.application.automation.tools.uft.utils.Constants.*;
 

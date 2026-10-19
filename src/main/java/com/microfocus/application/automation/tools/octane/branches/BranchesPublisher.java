@@ -323,12 +323,12 @@ public class BranchesPublisher extends Recorder implements SimpleBuildStep {
             return true;
         }
 
-        public ListBoxModel doFillConfigurationIdItems() {
-            return JellyUtils.fillConfigurationIdModel();
+        public ListBoxModel doFillConfigurationIdItems(@AncestorInPath Item project) {
+            return JellyUtils.fillConfigurationIdModel(project);
         }
 
-        public ListBoxModel doFillWorkspaceIdItems(@QueryParameter String configurationId, @QueryParameter(value = "workspaceId") String workspaceId) {
-            return JellyUtils.fillWorkspaceModel(configurationId, workspaceId);
+        public ListBoxModel doFillWorkspaceIdItems(@AncestorInPath Item project, @QueryParameter String configurationId, @QueryParameter(value = "workspaceId") String workspaceId) {
+            return JellyUtils.fillWorkspaceModel(project, configurationId, workspaceId);
         }
 
         public String getDisplayName() {

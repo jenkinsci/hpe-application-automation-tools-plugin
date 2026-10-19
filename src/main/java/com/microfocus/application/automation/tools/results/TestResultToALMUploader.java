@@ -85,7 +85,7 @@ import java.util.List;
 import hudson.util.ListBoxModel;
 import hudson.util.VariableResolver;
 import jenkins.tasks.SimpleBuildStep;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.DirectoryScanner;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;

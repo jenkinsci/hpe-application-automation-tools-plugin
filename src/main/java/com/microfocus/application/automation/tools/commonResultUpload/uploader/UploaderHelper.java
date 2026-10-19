@@ -36,7 +36,7 @@
  */
 package com.microfocus.application.automation.tools.commonResultUpload.uploader;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;

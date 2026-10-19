@@ -46,7 +46,7 @@ import hudson.model.Item;
 import hudson.model.Job;
 import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.tmatesoft.svn.core.SVNException;
 

@@ -44,7 +44,7 @@ import com.microfocus.application.automation.tools.results.service.AttachmentUpl
 import com.microfocus.application.automation.tools.results.service.almentities.AlmCommonProperties;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmTest;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmTestInstance;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;

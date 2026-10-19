@@ -44,7 +44,7 @@ import com.microfocus.application.automation.tools.commonResultUpload.service.Re
 import com.microfocus.application.automation.tools.commonResultUpload.service.VersionControlService;
 import com.microfocus.application.automation.tools.commonResultUpload.xmlreader.model.XmlResultEntity;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmCommonProperties;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;

@@ -46,8 +46,8 @@ import com.microfocus.application.automation.tools.results.service.almentities.A
 import com.microfocus.application.automation.tools.results.service.almentities.AlmRun;
 import com.microfocus.application.automation.tools.results.service.almentities.AlmTestInstance;
 import com.microfocus.application.automation.tools.results.service.almentities.IAlmConsts;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.microfocus.application.automation.tools.sse.sdk.Base64Encoder;
 
 import java.util.*;
@@ -237,7 +237,7 @@ public class RunUploader {
         if (StringUtils.isEmpty(actualValue)) {
             return "";
         }
-        actualValue = StringEscapeUtils.escapeHtml(actualValue);
+        actualValue = StringEscapeUtils.escapeHtml4(actualValue);
         String [] lines = actualValue.split("(\\r?\\n)");
         StringBuilder htmlBodyBuilder = new StringBuilder();
         for (String line : lines) {

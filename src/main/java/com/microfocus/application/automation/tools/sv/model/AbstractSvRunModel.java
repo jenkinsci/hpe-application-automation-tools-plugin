@@ -39,7 +39,7 @@ package com.microfocus.application.automation.tools.sv.model;
 import java.io.Serializable;
 
 import com.microfocus.application.automation.tools.model.SvServiceSelectionModel;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class AbstractSvRunModel implements Serializable {
     /**

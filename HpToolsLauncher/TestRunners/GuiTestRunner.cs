@@ -44,6 +44,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Threading;
 using Resources = HpToolsLauncher.Properties.Resources;
 using AuthType = HpToolsLauncher.McConnectionInfo.AuthType;
@@ -423,7 +424,7 @@ namespace HpToolsLauncher
                     case AuthType.AuthToken:
                         var token = _mcConnection.GetAuthToken();
                         tulip.SetTestOptionsVal(MOBILE_CLIENTID, token.ClientId);
-                        tulip.SetTestOptionsVal(MOBILE_SECRET, token.SecretKey);
+                        token.SecretKey.UseAsPlainText(secret => tulip.SetTestOptionsVal(MOBILE_SECRET, secret));
                         break;
                     case AuthType.UsernamePassword:
                         if (!_mcConnection.UserName.IsNullOrEmpty())
@@ -475,7 +476,7 @@ namespace HpToolsLauncher
             #endregion
         }
 
-        private string GetEncryptedPassword(string clearPassword)
+        private string GetEncryptedPassword(SecureString clearPassword)
         {
             string encPassword = WinUserNativeMethods.ProtectBSTRToBase64(clearPassword);
             if (encPassword == null)
@@ -802,13 +803,13 @@ namespace HpToolsLauncher
                 if (_mcConnection.MobileAuthType == AuthType.AuthToken)
                 {
                     opt.AuthType = AuthType.AuthToken.GetEnumDescription();
-                    opt.AccessKey = _mcConnection.ExecToken;
+                    _mcConnection.ExecToken.UseAsPlainText(token => opt.AccessKey = token);
                 }
                 else if (!_mcConnection.UserName.IsNullOrEmpty())
                 {
                     opt.AuthType = AuthType.UsernamePassword.GetEnumDescription();
                     opt.UserName = _mcConnection.UserName;
-                    opt.Password = _mcConnection.Password;
+                    _mcConnection.Password.UseAsPlainText(pwd => opt.Password = pwd);
                 }
                 opt.Server = _mcConnection.HostAddress;
                 opt.Port = _mcConnection.HostPort;
@@ -823,7 +824,7 @@ namespace HpToolsLauncher
                     {
                         opt.SpecifyAuthentication = true;
                         opt.ProxyUserName = _mcConnection.ProxyUserName;
-                        opt.ProxyPassword = _mcConnection.ProxyPassword;
+                        _mcConnection.ProxyPassword.UseAsPlainText(pwd => opt.ProxyPassword = pwd);
                     }
                 }
                 opt.ShowRemoteWndOnRun = true;

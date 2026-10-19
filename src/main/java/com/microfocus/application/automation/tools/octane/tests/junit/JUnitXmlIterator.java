@@ -61,7 +61,7 @@ import hudson.tasks.Builder;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileSystem;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 

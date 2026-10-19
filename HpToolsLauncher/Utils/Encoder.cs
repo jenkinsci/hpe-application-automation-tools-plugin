@@ -36,6 +36,7 @@
  */
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace HpToolsLauncher.Utils
 {
@@ -43,6 +44,9 @@ namespace HpToolsLauncher.Utils
     {
         [DllImport("Encode.dll")]
         private static extern IntPtr MicCryptEncrypt([MarshalAs(UnmanagedType.LPWStr)] string dataToBeEncrypted);
+
+        [DllImport("Encode.dll", EntryPoint = "MicCryptEncrypt")]
+        private static extern IntPtr MicCryptEncryptPtr(IntPtr dataToBeEncrypted);
 
         [DllImport("Encode.dll")]
         private static extern IntPtr MicCryptDecrypt([MarshalAs(UnmanagedType.LPWStr)] string dataToBeDecrypted);
@@ -52,7 +56,7 @@ namespace HpToolsLauncher.Utils
 
         public static string Encode(string dataToBeEncrypted)
         {
-            if (string.IsNullOrEmpty(dataToBeEncrypted))
+            if (dataToBeEncrypted.IsNullOrEmpty())
             {
                 return dataToBeEncrypted;
             }
@@ -64,9 +68,38 @@ namespace HpToolsLauncher.Utils
             return encrpted;
         }
 
+        /// <summary>
+        /// Encodes the secret without ever materializing it as a managed string, the plaintext only lives in unmanaged memory which is zeroed afterwards.
+        /// </summary>
+        public static string Encode(SecureString dataToBeEncrypted)
+        {
+            if (dataToBeEncrypted.IsNullOrEmpty())
+            {
+                return string.Empty;
+            }
+
+            IntPtr plainPtr = IntPtr.Zero;
+            try
+            {
+                plainPtr = Marshal.SecureStringToGlobalAllocUnicode(dataToBeEncrypted);
+                var encryptedDataPtr = MicCryptEncryptPtr(plainPtr);
+                string encrypted = Marshal.PtrToStringAuto(encryptedDataPtr);
+
+                MicCryptDestroyStr(encryptedDataPtr);
+                return encrypted;
+            }
+            finally
+            {
+                if (plainPtr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(plainPtr);
+                }
+            }
+        }
+
         public static string Decode(string dataToBeDecrypted)
         {
-            if (string.IsNullOrEmpty(dataToBeDecrypted))
+            if (dataToBeDecrypted.IsNullOrEmpty())
             {
                 return dataToBeDecrypted;
             }

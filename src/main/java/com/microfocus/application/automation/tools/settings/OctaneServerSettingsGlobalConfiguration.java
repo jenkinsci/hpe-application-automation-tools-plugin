@@ -59,8 +59,8 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.kohsuke.stapler.QueryParameter;
@@ -426,7 +426,7 @@ public class OctaneServerSettingsGlobalConfiguration extends GlobalConfiguration
                 fails.add(suspendMessage);
             }
             String errorMsg = "Validation failed : <ul data-aid=\"validation-errors\"><li>" +
-                    fails.stream().map(s -> StringEscapeUtils.escapeHtml(s)).collect(Collectors.joining("</li><li>")) +
+                    fails.stream().map(s -> StringEscapeUtils.escapeHtml4(s)).collect(Collectors.joining("</li><li>")) +
                     "</li></ul>";
             return ConfigurationValidator.wrapWithFormValidation(false, errorMsg);
         }
