@@ -60,8 +60,10 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,16 +76,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies the per-run dynamic configuration flow: each run's LLM credential (looked up by
- * {@code ENDPOINT_LOGICAL_NAME} against an {@link AuTeLlmCredentials}) is the only thing piped over
- * stdin, while its adapted {@code llm_configuration} (vendor fan-out, MODEL_PARAMETERS
- * array-to-object) goes to the run folder's {@code run_steps.json}, whose path is passed to mi-agent
- * as a launch argument.
+ * Verifies the per-run stdin document: {@code CONFIGURATION} carries the shared space default configuration,
+ * the LLM credential (looked up by {@code ENDPOINT_LOGICAL_NAME}) as {@code LLM_ENDPOINT} and the run
+ * folder as {@code ENVIRONMENT.OUTPUT_DIR}; {@code RUN_TEST} carries the Octane run payload unchanged.
  */
 public class RunFromMiAgentBuilderDynamicConfigTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String CREDENTIAL_ID = "gemini-config";
+    private static final String DEFAULT_CONFIGURATION = "{\"BROWSER\":{\"BROWSER_NAME\":\"chrome\"},\"AGENT\":{},"
+            + "\"LLM_MODELS\":{},\"APLS_LICENSE\":{},\"ENVIRONMENT\":{\"LOG_LEVEL\":\"DEBUG\",\"OUTPUT_DIR\":\"C:\\\\admin\"}}";
 
     @Rule
     public LoggedJenkinsRule jenkins = new LoggedJenkinsRule();
@@ -98,11 +100,8 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
     }
 
     @Test
-    public void perform_pipesOnlyCredentialsOverStdinAndAdaptsConfigurationInRunStepFile() throws Exception {
-        File sharedWorkspace = tempFolder.newFolder("shared-workspace-dynamic-config");
-        assertTrue(new File(sharedWorkspace, "mi-agent.exe").createNewFile());
-        File buildWorkspace = new File(sharedWorkspace, "build-workspace");
-        assertTrue(buildWorkspace.mkdir());
+    public void perform_pipesConfigAndRunTestOverStdin() throws Exception {
+        File buildWorkspace = newBuildWorkspace("shared-workspace-dynamic-config");
 
         String convertedTests = "{\"data\":["
                 + "{\"id\":\"2001\",\"au_tester_configuration\":{"
@@ -121,24 +120,25 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         ArgumentCaptor<InputStream> stdinCaptor = ArgumentCaptor.forClass(InputStream.class);
         verify(procStarter).stdin(stdinCaptor.capture());
         JsonNode document = MAPPER.readTree(stdinCaptor.getValue());
-        assertEquals("secret-value", document.path("credentials").path("apiKey").asText());
-        assertTrue(document.path("run_step").isMissingNode());
-
         File runFolder = runFolder(buildWorkspace, "2001");
-        JsonNode llmConfiguration = MAPPER.readTree(new File(runFolder, "run_steps.json"))
-                .path("au_tester_configuration").path("llm_configuration");
-        assertEquals("GEMINI", llmConfiguration.path("executor_model").path("LLM_EXECUTOR_VENDOR").asText());
-        assertEquals("0.2", llmConfiguration.path("executor_model").path("MODEL_PARAMETERS").path("temperature").asText());
 
-        assertFalse(new File(runFolder, "conf.json").exists());
+        JsonNode config = document.path("CONFIGURATION");
+        assertEquals("secret-value", config.path("LLM_ENDPOINT").path("apiKey").asText());
+        assertEquals("chrome", config.path("BROWSER").path("BROWSER_NAME").asText());
+        assertEquals("DEBUG", config.path("ENVIRONMENT").path("LOG_LEVEL").asText());
+        assertEquals(runFolder.getAbsolutePath(), config.path("ENVIRONMENT").path("OUTPUT_DIR").asText());
+
+        JsonNode llmConfiguration = document.path("RUN_TEST").path("au_tester_configuration").path("llm_configuration");
+        assertEquals("2001", document.path("RUN_TEST").path("id").asText());
+        assertTrue("Octane payload is passed unchanged", llmConfiguration.path("executor_model").path("MODEL_PARAMETERS").isArray());
+        assertTrue(llmConfiguration.path("executor_model").path("LLM_EXECUTOR_VENDOR").isMissingNode());
+
+        assertFalse(new File(runFolder, "run_steps.json").exists());
     }
 
     @Test
-    public void perform_eachRunGetsItsOwnRunStepFileAndOutputBaseDir() throws Exception {
-        File sharedWorkspace = tempFolder.newFolder("shared-workspace-perform");
-        assertTrue(new File(sharedWorkspace, "mi-agent.exe").createNewFile());
-        File buildWorkspace = new File(sharedWorkspace, "build-workspace");
-        assertTrue(buildWorkspace.mkdir());
+    public void perform_eachRunGetsItsOwnRunTestAndOutputDir() throws Exception {
+        File buildWorkspace = newBuildWorkspace("shared-workspace-perform");
 
         String convertedTests = "{\"data\":["
                 + "{\"id\":\"2001\",\"au_tester_configuration\":{\"llm_configuration\":{\"ENDPOINT_LOGICAL_NAME\":\"" + CREDENTIAL_ID + "\"}}},"
@@ -152,19 +152,18 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
         builder.perform(mockBuild(convertedTests), new FilePath(buildWorkspace), launcher, mockListener());
 
-        verify(procStarter, times(2)).stdin(any(InputStream.class));
+        ArgumentCaptor<InputStream> stdinCaptor = ArgumentCaptor.forClass(InputStream.class);
+        verify(procStarter, times(2)).stdin(stdinCaptor.capture());
         ArgumentCaptor<ArgumentListBuilder> argumentsCaptor = ArgumentCaptor.forClass(ArgumentListBuilder.class);
         verify(procStarter, times(2)).cmds(argumentsCaptor.capture());
 
         int runIndex = 0;
         for (String runId : new String[]{"2001", "2002"}) {
-            File runFolder = runFolder(buildWorkspace, runId);
-            assertEquals(runId, MAPPER.readTree(new File(runFolder, "run_steps.json")).path("id").asText());
-            assertEquals("--run_step_file_path=" + new File(runFolder, "run_steps.json").getAbsolutePath(),
-                argumentsCaptor.getAllValues().get(runIndex).toList().get(1));
-            assertEquals("--output_base_dir=" + runFolder.getAbsolutePath(),
-                argumentsCaptor.getAllValues().get(runIndex).toList().get(2));
-            assertFalse(new File(runFolder, "conf.json").exists());
+            JsonNode document = MAPPER.readTree(stdinCaptor.getAllValues().get(runIndex));
+            assertEquals(runId, document.path("RUN_TEST").path("id").asText());
+            assertEquals(runFolder(buildWorkspace, runId).getAbsolutePath(),
+                document.path("CONFIGURATION").path("ENVIRONMENT").path("OUTPUT_DIR").asText());
+            assertEquals(1, argumentsCaptor.getAllValues().get(runIndex).toList().size());
             runIndex++;
         }
     }
@@ -172,10 +171,7 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
     /** Mirrors ai-executor: no result file means every step is reported skipped with the error on the run. */
     @Test
     public void perform_whenAgentProducesNoResult_synthesizesSkippedResult() throws Exception {
-        File sharedWorkspace = tempFolder.newFolder("shared-workspace-skipped");
-        assertTrue(new File(sharedWorkspace, "mi-agent.exe").createNewFile());
-        File buildWorkspace = new File(sharedWorkspace, "build-workspace");
-        assertTrue(buildWorkspace.mkdir());
+        File buildWorkspace = newBuildWorkspace("shared-workspace-skipped");
 
         String convertedTests = "{\"data\":[{\"id\":\"4001\",\"au_tester_configuration\":"
                 + "{\"llm_configuration\":{\"ENDPOINT_LOGICAL_NAME\":\"" + CREDENTIAL_ID + "\"}},"
@@ -197,34 +193,24 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
                 result.path("run_steps").path("data").get(0).path("actual").asText());
     }
 
-    @Test
-    public void perform_launchesWithoutCreatingConfFile() throws Exception {
-        File sharedWorkspace = tempFolder.newFolder("shared-workspace-no-conf-file");
+    @Test(expected = IOException.class)
+    public void perform_failsWhenDefaultConfigurationIsMissing() throws Exception {
+        File buildWorkspace = newBuildWorkspace("shared-workspace-no-default-config");
+        assertTrue(new File(buildWorkspace, "default-configuration.json").delete());
+
+        String convertedTests = "{\"data\":[{\"id\":\"3001\"}]}";
+
+        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
+        builder.perform(mockBuild(convertedTests), new FilePath(buildWorkspace), mock(Launcher.class), mockListener());
+    }
+
+    private File newBuildWorkspace(String name) throws Exception {
+        File sharedWorkspace = tempFolder.newFolder(name);
         assertTrue(new File(sharedWorkspace, "mi-agent.exe").createNewFile());
         File buildWorkspace = new File(sharedWorkspace, "build-workspace");
         assertTrue(buildWorkspace.mkdir());
-
-        String convertedTests = "{\"data\":[{\"id\":\"3001\",\"au_tester_configuration\":"
-                + "{\"llm_configuration\":{\"ENDPOINT_LOGICAL_NAME\":\"" + CREDENTIAL_ID + "\"}}}]}";
-
-        Launcher.ProcStarter procStarter = mockProcStarter();
-        Launcher launcher = mock(Launcher.class);
-        when(launcher.launch()).thenReturn(procStarter);
-
-        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
-        builder.perform(mockBuild(convertedTests), new FilePath(buildWorkspace), launcher, mockListener());
-
-        assertFalse(new File(buildWorkspace, "conf.json").exists());
-
-        File runFolder = runFolder(buildWorkspace, "3001");
-        assertFalse(new File(runFolder, "conf.json").exists());
-        ArgumentCaptor<ArgumentListBuilder> argumentsCaptor = ArgumentCaptor.forClass(ArgumentListBuilder.class);
-        verify(procStarter).cmds(argumentsCaptor.capture());
-        assertEquals(3, argumentsCaptor.getValue().toList().size());
-        assertEquals("--run_step_file_path=" + new File(runFolder, "run_steps.json").getAbsolutePath(),
-            argumentsCaptor.getValue().toList().get(1));
-        assertEquals("--output_base_dir=" + runFolder.getAbsolutePath(),
-            argumentsCaptor.getValue().toList().get(2));
+        Files.writeString(new File(buildWorkspace, "default-configuration.json").toPath(), DEFAULT_CONFIGURATION);
+        return buildWorkspace;
     }
 
     /**

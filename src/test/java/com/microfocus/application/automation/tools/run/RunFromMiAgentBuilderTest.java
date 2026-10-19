@@ -123,6 +123,7 @@ public class RunFromMiAgentBuilderTest {
         builder.setExecutorLogicalName("mi-agent-executor");
         builder.setConfigurationId("2002");
         builder.setWorkspaceId("2001");
+        Files.writeString(new File(tempFolder.getRoot(), "default-configuration.json").toPath(), "{}");
 
         builder.perform(build, new FilePath(tempFolder.getRoot()), mock(Launcher.class), listener);
 
@@ -151,77 +152,6 @@ public class RunFromMiAgentBuilderTest {
         builder.perform(build, new FilePath(tempFolder.getRoot()), mock(Launcher.class), listener);
 
         verify(build, never()).addAction(any());
-    }
-
-    @Test
-    public void toRunStep_deepCopiesNestedObjectsAndSkipsMissingObjectFields() throws Exception {
-        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
-
-        JSONObject runData = new JSONObject();
-        runData.put("id", "1042");
-        runData.put("test_name", "Login flow");
-
-        JSONObject runSteps = new JSONObject();
-        JSONArray steps = new JSONArray();
-        JSONObject step = new JSONObject();
-        step.put("id", "s1");
-        steps.add(step);
-        runSteps.put("data", steps);
-        runData.put("run_steps", runSteps);
-
-        Method toRunStep = RunFromMiAgentBuilder.class.getDeclaredMethod("toRunStep", JSONObject.class);
-        toRunStep.setAccessible(true);
-        JSONObject normalized = (JSONObject) toRunStep.invoke(builder, runData);
-
-        // Mutating the source afterwards must not affect the already-copied object fields.
-        ((JSONObject) ((JSONArray) ((JSONObject) runData.get("run_steps")).get("data")).get(0)).put("id", "changed");
-
-        assertEquals("1042", normalized.get("id"));
-        assertNotNull(normalized.get("run_steps"));
-        assertEquals("s1", ((JSONObject) ((JSONArray) ((JSONObject) normalized.get("run_steps")).get("data")).get(0)).get("id"));
-
-        JSONObject runDataWithoutRunSteps = new JSONObject();
-        runDataWithoutRunSteps.put("id", "2001");
-        JSONObject normalizedWithoutRunSteps = (JSONObject) toRunStep.invoke(builder, runDataWithoutRunSteps);
-        assertNull("Object fields absent from the source are left out, not defaulted", normalizedWithoutRunSteps.get("run_steps"));
-    }
-
-    @Test
-    public void toRunStep_fansOutVendorAndConvertsModelParametersToObject() throws Exception {
-        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
-
-        JSONObject parameter = new JSONObject();
-        parameter.put("Name", "temperature");
-        parameter.put("Value", "0.2");
-        JSONArray modelParameters = new JSONArray();
-        modelParameters.add(parameter);
-
-        JSONObject executorModel = new JSONObject();
-        executorModel.put("MODEL_PARAMETERS", modelParameters);
-
-        JSONObject llmConfiguration = new JSONObject();
-        llmConfiguration.put("VENDOR", "GEMINI");
-        llmConfiguration.put("executor_model", executorModel);
-
-        JSONObject auTesterConfiguration = new JSONObject();
-        auTesterConfiguration.put("llm_configuration", llmConfiguration);
-
-        JSONObject runData = new JSONObject();
-        runData.put("id", "3001");
-        runData.put("au_tester_configuration", auTesterConfiguration);
-
-        Method toRunStep = RunFromMiAgentBuilder.class.getDeclaredMethod("toRunStep", JSONObject.class);
-        toRunStep.setAccessible(true);
-        JSONObject normalized = (JSONObject) toRunStep.invoke(builder, runData);
-
-        JSONObject normalizedLlmConfiguration = (JSONObject)
-                ((JSONObject) normalized.get("au_tester_configuration")).get("llm_configuration");
-        JSONObject normalizedExecutorModel = (JSONObject) normalizedLlmConfiguration.get("executor_model");
-
-        assertEquals("GEMINI", normalizedExecutorModel.get("LLM_EXECUTOR_VENDOR"));
-        Object normalizedParameters = normalizedExecutorModel.get("MODEL_PARAMETERS");
-        assertTrue(normalizedParameters instanceof JSONObject);
-        assertEquals("0.2", ((JSONObject) normalizedParameters).get("temperature"));
     }
 
     @Test
@@ -300,7 +230,7 @@ public class RunFromMiAgentBuilderTest {
     }
 
     @Test
-    public void resolveRunnerExecutable_returnsNullWhenExeExistsOnlyInRunnerWorkspace() throws Exception {
+    public void resolveRunnerExecutable_throwsWhenExeExistsOnlyInRunnerWorkspace() throws Exception {
         RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
         File sharedWorkspace = tempFolder.newFolder("shared-workspace-only-runner-has-exe");
         File runnerWorkspace = new File(sharedWorkspace, "runner-2");
@@ -311,8 +241,16 @@ public class RunFromMiAgentBuilderTest {
         Method resolveMethod = RunFromMiAgentBuilder.class.getDeclaredMethod("resolveRunnerExecutable", FilePath.class);
         resolveMethod.setAccessible(true);
 
-        FilePath resolved = (FilePath) resolveMethod.invoke(builder, new FilePath(runnerWorkspace));
-        assertNull(resolved);
+        try {
+            resolveMethod.invoke(builder, new FilePath(runnerWorkspace));
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            assertTrue(e.getCause() instanceof IOException);
+            assertEquals(
+                    "[AuTe][ERROR] mi-agent.exe not found at required shared location: ${WORKSPACE}/../mi-agent.exe",
+                    e.getCause().getMessage());
+            return;
+        }
+        throw new AssertionError("Expected IOException");
     }
 
     @Test
@@ -323,13 +261,12 @@ public class RunFromMiAgentBuilderTest {
         assertTrue(runnerWorkspace.mkdir());
 
         Method executeMethod = RunFromMiAgentBuilder.class.getDeclaredMethod(
-                "executeRunner", FilePath.class, JSONObject.class, Run.class, FilePath.class, Launcher.class, TaskListener.class, PrintStream.class);
+                "executeRunner", JSONObject.class, Run.class, FilePath.class, Launcher.class, TaskListener.class, PrintStream.class);
         executeMethod.setAccessible(true);
 
         try {
             executeMethod.invoke(
                     builder,
-                    new FilePath(new File(runnerWorkspace, "run_steps.json")),
                     new JSONObject(),
                     mock(FreeStyleBuild.class),
                     new FilePath(runnerWorkspace),

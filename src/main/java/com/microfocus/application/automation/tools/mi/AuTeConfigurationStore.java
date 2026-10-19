@@ -68,6 +68,10 @@ public final class AuTeConfigurationStore {
     private AuTeConfigurationStore() {
     }
 
+    public static byte[] readTemplate(String configurationId, String spaceId) throws IOException {
+        return Files.readAllBytes(ensureTemplate(configurationId, spaceId));
+    }
+
     /** Creates the empty template if it is missing; an existing file is never overwritten. */
     public static Path ensureTemplate(String configurationId, String spaceId) throws IOException {
         return ensureTemplate(Jenkins.get().getRootDir().toPath(), configurationId, spaceId);
@@ -83,10 +87,6 @@ public final class AuTeConfigurationStore {
             Files.writeString(file, EMPTY_TEMPLATE, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
         }
         return file;
-    }
-
-    public static byte[] readTemplate(String configurationId, String spaceId) throws IOException {
-        return Files.readAllBytes(ensureTemplate(configurationId, spaceId));
     }
 
     // The ids become folder names, so reject anything that could point outside aute-config.
