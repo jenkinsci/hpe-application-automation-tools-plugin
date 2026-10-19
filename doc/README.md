@@ -51,11 +51,16 @@ Starting with version 1.641 (or 1.625.3), Jenkins introduced the  **Content-Secu
 
 ## New Features and Enhancements
 
-Version 26.3 introduced the following enhancements and fixes:
+Version 26.4 introduced the following enhancements and fixes:
 
 **Software Delivery Management**
-- Several areas of the Jenkins plugin were modified to reduce the size of the .hpi files.
-- Added support for pipeline comparison in multibranch and custom branch pipelines. Previously, pipeline comparison with referral pipelines was only available for freestyle projects. Users can now compare both multibranch pipelines and custom branch pipelines to their main referral pipeline in Octane by configuring the DEFAULT_PROJECT_BRANCH string parameter with the full remote ref path (e.g., refs/remotes/origin/main). This enables proper common_hash resolution and establishes a shared baseline between branches for comparison purposes.
+- Security enhancements.
+- Fixed an issue where the dropdowns listing configured Octane server instances and workspaces could be retrieved by any user with Overall/Read permission,
+  including directly through the underlying endpoint. These dropdowns now require Configure permission on the job, falling back to Administer permission when
+  accessed outside of a job context. Administrators are advised to upgrade to this version to apply the fix.
+
+**Functional Testing**
+- Security enhancements.
 
 For information about enhancements introduced in previous versions, see [What's new in earlier versions](https://github.com/jenkinsci/hpe-application-automation-tools-plugin/blob/latest/doc/WhatsNewEarlier.md). 
 
