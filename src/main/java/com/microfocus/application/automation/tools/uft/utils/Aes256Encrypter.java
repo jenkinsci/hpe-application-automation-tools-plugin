@@ -40,6 +40,8 @@ import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
@@ -52,60 +54,65 @@ public final class Aes256Encrypter {
     // ATTRIBUTES
     // =========================================================
 
-    private static Aes256Encrypter instance;
+    private static final SecureRandom secureRandom = new SecureRandom();
 
-    private final byte[] aesKey;
-    private final byte[] hmacKey;
-    private final byte[] privateKey;
+    private volatile SecretKeySpec aesKeySpec;
+    private volatile SecretKeySpec hmacKeySpec;
+    private volatile byte[] secureKey;
+    private volatile boolean destroyed;
 
-    public static byte[] getPrivateKey() {
-        return instance == null ? null : instance.privateKey.clone();
+    public Aes256Encrypter() {
     }
 
-    // =========================================================
-    // SINGLETON FACTORY
-    // =========================================================
-
-    public static synchronized void create(byte[] privateKey) {
-        if (instance != null) {
-            throw new IllegalStateException("Encrypter is already initialized.");
+    private synchronized void initializeKey() {
+        if (destroyed) {
+            throw new IllegalStateException("Encrypter has been destroyed.");
         }
 
-        if (privateKey == null || privateKey.length == 0) {
-            privateKey = new byte[64];
-            new SecureRandom().nextBytes(privateKey);
+        if (secureKey != null) {
+            return;
         }
 
-        instance = new Aes256Encrypter(privateKey);
-    }
-
-    private Aes256Encrypter(byte[] privateKey) {
-        if (privateKey == null) {
-            throw new IllegalArgumentException("privateKey cannot be null");
-        }
-
-        if (privateKey.length != 64) {
-            throw new IllegalArgumentException(
-                    "Invalid secure key length. Expected 64 bytes.");
-        }
-
-        this.privateKey = privateKey.clone();
-        this.aesKey = Arrays.copyOfRange(privateKey, 0, 32);
-        this.hmacKey = Arrays.copyOfRange(privateKey, 32, 64);
+        byte[] generatedKey = new byte[64];
+        secureRandom.nextBytes(generatedKey);
+        this.aesKeySpec = new SecretKeySpec(Arrays.copyOfRange(generatedKey, 0, 32), "AES");
+        this.hmacKeySpec = new SecretKeySpec(Arrays.copyOfRange(generatedKey, 32, 64), "HmacSHA256");
+        this.secureKey = generatedKey;
     }
 
     // =========================================================
     // PUBLIC API
     // =========================================================
 
-    public static String encrypt(String plainText) {
-        if (instance == null) {
-            create(null); // lazy initialization
-        }
-
-        return instance.encryptSecure(plainText);
+    public boolean hasSecureKey() {
+        return !destroyed && secureKey != null;
     }
 
+    public InputStream openSecureKeyStream() {
+        if (!hasSecureKey()) {
+            throw new IllegalStateException("No secure key has been generated.");
+        }
+        return new ByteArrayInputStream(Base64.getEncoder().encode(secureKey));
+    }
+
+    public synchronized void destroy() {
+        if (secureKey != null) {
+            Arrays.fill(secureKey, (byte) 0);
+            secureKey = null;
+        }
+        aesKeySpec = null;
+        hmacKeySpec = null;
+        destroyed = true;
+    }
+
+    public String encrypt(String plainText) {
+        if (plainText == null) {
+            throw new IllegalArgumentException("plainText cannot be null");
+        }
+
+        initializeKey();
+        return encryptSecure(plainText);
+    }
     // =========================================================
     // AES-256-CBC + HMAC-SHA256
     // =========================================================
@@ -113,27 +120,21 @@ public final class Aes256Encrypter {
     private String encryptSecure(String plainText) {
         try {
             byte[] iv = new byte[16];
-            new SecureRandom().nextBytes(iv);
+            secureRandom.nextBytes(iv);
 
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(
-                    Cipher.ENCRYPT_MODE,
-                    new SecretKeySpec(aesKey, "AES"),
-                    new IvParameterSpec(iv));
+            cipher.init(Cipher.ENCRYPT_MODE, aesKeySpec, new IvParameterSpec(iv));
 
-            byte[] plaintextBytes =
-                    plainText.getBytes(StandardCharsets.UTF_8);
-
+            byte[] plaintextBytes = plainText.getBytes(StandardCharsets.UTF_8);
             byte[] ciphertext = cipher.doFinal(plaintextBytes);
 
             // [IV | CipherText]
             byte[] data = new byte[iv.length + ciphertext.length];
             System.arraycopy(iv, 0, data, 0, iv.length);
-            System.arraycopy(ciphertext, 0, data, iv.length,
-                    ciphertext.length);
+            System.arraycopy(ciphertext, 0, data, iv.length, ciphertext.length);
 
             Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(hmacKey, "HmacSHA256"));
+            mac.init(hmacKeySpec);
             byte[] hmac = mac.doFinal(data);
 
             // [IV | CipherText | HMAC]
@@ -147,5 +148,4 @@ public final class Aes256Encrypter {
             throw new RuntimeException(ex);
         }
     }
-
 }

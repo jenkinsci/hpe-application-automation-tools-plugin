@@ -36,16 +36,11 @@
  */
 package com.microfocus.application.automation.tools;
 
-import com.microfocus.application.automation.tools.settings.UFTEncryptionGlobalConfiguration;
 import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.*;
-import hudson.security.ACL;
-import hudson.security.AuthorizationStrategy;
-import hudson.security.FullControlOnceLoggedInAuthorizationStrategy;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -68,8 +63,8 @@ public final class AlmToolsUtils {
             TaskListener listener,
             FilePath file,
             String paramFileName,
-            Node node) throws IOException, InterruptedException {
-        runOnBuildEnv(build, launcher, listener, file, paramFileName, node, "UTF-8");
+            Aes256Encrypter encrypter) throws IOException, InterruptedException {
+        runOnBuildEnv(build, launcher, listener, file, paramFileName, "UTF-8", encrypter);
     }
 
     public static void runOnBuildEnv(
@@ -78,8 +73,8 @@ public final class AlmToolsUtils {
             TaskListener listener,
             FilePath file,
             String paramFileName,
-            Node node,
-            String encoding) throws IOException, InterruptedException {
+            String encoding,
+            Aes256Encrypter encrypter) throws IOException, InterruptedException {
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         PrintStream out = listener.getLogger();
@@ -93,42 +88,14 @@ public final class AlmToolsUtils {
             args.add(encoding);
         }
 
-        /*// for encryption
-        Map<String, String> envs = new HashMap<>();
-
-        try {
-            UFTEncryptionGlobalConfiguration config = UFTEncryptionGlobalConfiguration.getInstance();
-            envs.put("hptoolslauncher.key", Secret.fromString(config.getEncKey()).getPlainText());
-        } catch (NullPointerException ignored) {
-            throw new IOException("Failed to access encryption key, the module UFTEncryption is unavailable.");
-        }
-
-        if (node == null) {
-            node = JenkinsUtils.getCurrentNode(file);
-
-            if (node == null) {
-                throw new IOException("Failed to access current executor node.");
-            }
-        }
-
-        try {
-            envs.put("hptoolslauncher.rootpath", Objects.requireNonNull(node.getRootPath()).getRemote());
-        } catch (NullPointerException e) {
-            throw new IOException(e.getMessage());
-        }*/
-
         int returnCode;
-        byte[] pk = Aes256Encrypter.getPrivateKey();
-        if (pk == null) {
-            // Run the script on node
-            // Execution result should be 0
-            //returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).envs(envs).join();
-            returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).join();
-        } else {
+        if (encrypter != null && encrypter.hasSecureKey()) {
             args.add("--use-stdin-key");
-            String input = Base64.getEncoder().encodeToString(Aes256Encrypter.getPrivateKey());
-            InputStream in = new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8));
-            returnCode = launcher.launch().cmds(args).stdin(in).stdout(out).pwd(file.getParent()).join();
+            try (InputStream in = encrypter.openSecureKeyStream()) {
+                returnCode = launcher.launch().cmds(args).stdin(in).stdout(out).pwd(file.getParent()).join();
+            }
+        } else {
+            returnCode = launcher.launch().cmds(args).stdout(out).pwd(file.getParent()).join();
         }
 
         if (returnCode != 0) {
@@ -186,7 +153,6 @@ public final class AlmToolsUtils {
         } catch (Exception e) {
             listener.error("failed copying HpToolsAborter: " + e);
         }
-
 
         if (returnCode != 0) {
             if (returnCode == 1) {

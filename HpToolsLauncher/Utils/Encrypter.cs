@@ -37,6 +37,7 @@
 
 using System;
 using System.IO;
+using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -109,15 +110,50 @@ namespace HpToolsLauncher.Utils
 
         public static string Decrypt(string cipherText)
         {
-#if DEBUG
-            return cipherText; // used for troubleshooting and testing without needing to set up keys
-#endif
-            if (cipherText.IsNullOrWhiteSpace())
+            if (cipherText.IsNullOrWhiteSpace() || _instance == null || _instance._aesKey == null)
                 return cipherText;
-            if (_instance == null || _instance._aesKey == null)
-                throw new CryptographicException("No secure key was provided. Use --use-stdin-key to provide a key via stdin.");
 
             return _instance.DecryptSecure(cipherText);
+        }
+
+        /// <summary>
+        /// Decrypts a value directly into a read-only <see cref="SecureString"/>.
+        /// The decrypted byte and character buffers are cleared before returning.
+        /// If no secure key is configured, the input is treated as plaintext for
+        /// compatibility with the legacy encrypter.
+        /// </summary>
+        /// <param name="cipherText">The Base64-encoded encrypted value.</param>
+        /// <returns>The decrypted value as a read-only <see cref="SecureString"/>.</returns>
+        public static SecureString DecryptToSecureString(string cipherText)
+        {
+            if (cipherText.IsNullOrWhiteSpace())
+                return CreateSecureString(cipherText);
+
+            if (_instance == null || _instance._aesKey == null)
+                return CreateSecureString(cipherText);
+
+            byte[] plain = null;
+            char[] chars = null;
+            try
+            {
+                plain = _instance.DecryptSecureBytes(cipherText);
+                chars = Encoding.UTF8.GetChars(plain);
+
+                SecureString secret = new SecureString();
+                foreach (char c in chars)
+                {
+                    secret.AppendChar(c);
+                }
+                secret.MakeReadOnly();
+                return secret;
+            }
+            finally
+            {
+                if (plain != null)
+                    Array.Clear(plain, 0, plain.Length);
+                if (chars != null)
+                    Array.Clear(chars, 0, chars.Length);
+            }
         }
 
         // =========================================================
@@ -160,6 +196,19 @@ namespace HpToolsLauncher.Utils
 
         private string DecryptSecure(string input)
         {
+            byte[] plain = DecryptSecureBytes(input);
+            try
+            {
+                return Encoding.UTF8.GetString(plain);
+            }
+            finally
+            {
+                Array.Clear(plain, 0, plain.Length);
+            }
+        }
+
+        private byte[] DecryptSecureBytes(string input)
+        {
             byte[] buffer = Convert.FromBase64String(input);
             // minimum: 16 (IV) + 1 block (16) + 32 (HMAC) = 64
             if (buffer.Length < 64)
@@ -190,11 +239,24 @@ namespace HpToolsLauncher.Utils
                     aes.Padding = PaddingMode.PKCS7;
                     using (ICryptoTransform decryptor = aes.CreateDecryptor())
                     {
-                        byte[] plain = decryptor.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
-                        return Encoding.UTF8.GetString(plain);
+                        return decryptor.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
                     }
                 }
             }
+        }
+
+        private static SecureString CreateSecureString(string value)
+        {
+            SecureString secret = new SecureString();
+            if (value != null)
+            {
+                foreach (char c in value)
+                {
+                    secret.AppendChar(c);
+                }
+            }
+            secret.MakeReadOnly();
+            return secret;
         }
 
         // =========================================================
