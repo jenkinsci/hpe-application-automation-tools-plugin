@@ -151,6 +151,15 @@ namespace HpToolsLauncher
             }
         }
 
+        public override void Dispose()
+        {
+            if (_digitalLab != null && _digitalLab.ConnectionInfo != null)
+            {
+                _digitalLab.ConnectionInfo.Dispose();
+            }
+            base.Dispose();
+        }
+
         /// <summary>
         /// creates instance of the runner given a source.
         /// </summary>

@@ -47,6 +47,8 @@ import com.microfocus.adm.performancecenter.plugins.common.rest.PcRestProxy;
 import com.microfocus.application.automation.tools.pc.helper.DateFormatter;
 import com.microfocus.application.automation.tools.run.PcBuilder;
 import hudson.FilePath;
+import hudson.model.Result;
+import hudson.model.Run;
 import hudson.console.HyperlinkNote;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.ClientProtocolException;
@@ -70,8 +72,19 @@ public class PcClient {
     private PcRestProxy restProxy;
     private boolean loggedIn;
     private PrintStream logger;
+    private transient Run<?, ?> run;
+    private transient volatile boolean stopSignal = false;
 
     public PcClient(PcModel pcModel, PrintStream logger) {
+        this(null, pcModel, logger);
+    }
+    
+    public void setStopSignal(boolean stop) {
+        this.stopSignal = stop;
+    }
+
+    public PcClient(Run<?, ?> run, PcModel pcModel, PrintStream logger) {
+        this.run = run;
         try {
             model = pcModel;
             String credentialsProxyId = model.getCredentialsProxyId(true);
@@ -409,6 +422,14 @@ public class PcClient {
         int threeStrikes = 3;
         do {
             try {
+                // Check for abort at the very start of each iteration, before any blocking operations
+                if (Thread.currentThread().isInterrupted() || stopSignal) {
+                    logger.println(String.format("%s - Abort signal detected (interrupted=%s, stopSignal=%s), stopping wait for run completion",
+                            DateFormatter.getDateTime(),
+                            Thread.currentThread().isInterrupted(),
+                            stopSignal));
+                    throw new InterruptedException("Build aborted by user");
+                }
 
                 if (threeStrikes < 3) {
                     logger.println(String.format("%s - Cannot get response from the server about the state of the Run (ID=%s) %s time(s) consecutively",
@@ -422,7 +443,7 @@ public class PcClient {
                                 runId));
                         break;
                     }
-                    Thread.sleep(2000);
+                    sleepWithAbortCheck(2000);
                     login();
                 }
                 response = restProxy.getRunData(runId);
@@ -439,7 +460,7 @@ public class PcClient {
                 // because the user probably stopped the run from LRE or timeslot has reached the end.
                 if (Arrays.asList(states).contains(currentState)) {
                     counter++;
-                    Thread.sleep(1000);
+                    sleepWithAbortCheck(1000);
                     if (counter > 60) {
                         logger.println(String.format("%s - Run ID: %s  - %s = %s",
                                 DateFormatter.getDateTime(),
@@ -450,8 +471,9 @@ public class PcClient {
                     }
                 } else {
                     counter = 0;
-                    Thread.sleep(interval);
+                    sleepWithAbortCheck(interval);
                 }
+                
                 threeStrikes = 3;
             } catch (InterruptedException e) {
                 throw e;
@@ -483,6 +505,28 @@ public class PcClient {
         }
         logger.println(String.format("%s - %s", DateFormatter.getDateTime(), Messages.FailedToGetRunReport()));
         return null;
+    }
+
+    /**
+     * Sleep while periodically checking for abort signals.
+     * Breaks the long sleep into small chunks so abort can be detected quickly.
+     */
+    private void sleepWithAbortCheck(long millis) throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + millis;
+        long checkInterval = 100; // Check every 100ms
+        
+        while (System.currentTimeMillis() < endTime) {
+            if (Thread.currentThread().isInterrupted() || stopSignal) {
+                throw new InterruptedException("Abort signal detected during sleep");
+            }
+            
+            long remaining = endTime - System.currentTimeMillis();
+            long sleepTime = Math.min(checkInterval, remaining);
+            if (sleepTime > 0) {
+                Thread.sleep(sleepTime);
+            }
+        }
     }
 
     public boolean logout() {

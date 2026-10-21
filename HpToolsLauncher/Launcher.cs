@@ -184,7 +184,7 @@ namespace HpToolsLauncher
             TestSuiteRunResults results = _runner.Run();
 
             string onCheckFailedTests = _ciParams.GetOrDefault("onCheckFailedTest");
-            bool rerunTestsOnFailure = !string.IsNullOrEmpty(onCheckFailedTests) && Convert.ToBoolean(onCheckFailedTests.ToLower());
+            bool rerunTestsOnFailure = !onCheckFailedTests.IsNullOrEmpty() && Convert.ToBoolean(onCheckFailedTests.ToLower());
             if (_runType != TestStorageType.MBT)
             {
                 RunSummary(resultsFilename, results);
@@ -293,7 +293,7 @@ namespace HpToolsLauncher
                     bool isFilterSelected;
                     string filter = _ciParams.GetOrDefault("FilterTests");
 
-                    isFilterSelected = !string.IsNullOrEmpty(filter) && Convert.ToBoolean(filter.ToLower());
+                    isFilterSelected = !filter.IsNullOrEmpty() && Convert.ToBoolean(filter.ToLower());
 
                     string filterByName = _ciParams.GetOrDefault("FilterByName");
 
@@ -499,7 +499,7 @@ namespace HpToolsLauncher
                     }
 
                     //If a file path was provided and it doesn't exist stop the analysis launcher
-                    if (!string.IsNullOrWhiteSpace(analysisTemplate) && !Helper.FileExists(analysisTemplate))
+                    if (!analysisTemplate.IsNullOrWhiteSpace() && !Helper.FileExists(analysisTemplate))
                     {
                         return null;
                     }
@@ -581,19 +581,18 @@ namespace HpToolsLauncher
 
                     RunAsUser uftRunAsUser = null;
                     string username = _ciParams.GetOrDefault("uftRunAsUserName");
-                    if (!string.IsNullOrEmpty(username))
+                    if (!username.IsNullOrEmpty())
                     {
                         string encryptedAndEncodedPwd = _ciParams.GetOrDefault("uftRunAsUserEncodedPassword");
                         string encryptedPwd = _ciParams.GetOrDefault("uftRunAsUserPassword");
-                        if (!string.IsNullOrEmpty(encryptedAndEncodedPwd))
+                        if (!encryptedAndEncodedPwd.IsNullOrEmpty())
                         {
                             string encodedPwd = Encrypter.Decrypt(encryptedAndEncodedPwd);
                             uftRunAsUser = new RunAsUser(username, encodedPwd);
                         }
-                        else if (!string.IsNullOrEmpty(encryptedPwd))
+                        else if (!encryptedPwd.IsNullOrEmpty())
                         {
-                            string plainTextPwd = Encrypter.Decrypt(encryptedPwd);
-                            uftRunAsUser = new RunAsUser(username, plainTextPwd.ToSecureString());
+                            uftRunAsUser = new RunAsUser(username, Encrypter.DecryptToSecureString(encryptedPwd));
                         }
                     }
 
@@ -671,7 +670,7 @@ namespace HpToolsLauncher
                 if (set.StartsWith("Root\\"))
                     set = set.Substring(5);
                 set = set.TrimEnd(" \\".ToCharArray());
-                if (!(skipEmptyEntries && string.IsNullOrWhiteSpace(set)))
+                if (!(skipEmptyEntries && set.IsNullOrWhiteSpace()))
                 {
                     parameters.Add(set);
                 }
@@ -851,7 +850,7 @@ namespace HpToolsLauncher
 
                 foreach (var testRun in results.TestRuns)
                 {
-                    if (testRun.FatalErrors > 0 && !string.IsNullOrWhiteSpace(testRun.TestPath))
+                    if (testRun.FatalErrors > 0 && !testRun.TestPath.IsNullOrWhiteSpace())
                     {
                         _exitCode = ExitCodeEnum.Failed;
                         break;
@@ -986,7 +985,7 @@ namespace HpToolsLauncher
                 {
                     string name = _ciParams[string.Format("Param{0}_Name_{1}", i, j)].Trim();
 
-                    if (string.IsNullOrWhiteSpace(name))
+                    if (name.IsNullOrWhiteSpace())
                     {
                         ConsoleWriter.WriteLine(string.Format("Found no name associated with parameter with index {0} for test {1}.", j, i));
                         continue;
@@ -995,12 +994,12 @@ namespace HpToolsLauncher
                     string val = _ciParams[string.Format("Param{0}_Value_{1}", i, j)].Trim();
 
                     string type = _ciParams[string.Format("Param{0}_Type_{1}", i, j)];
-                    if (string.IsNullOrWhiteSpace(type))
+                    if (type.IsNullOrWhiteSpace())
                     {
                         ConsoleWriter.WriteLine(string.Format("Found no type associated with parameter {0}.", name));
                         continue;
                     }
-                    else if (type == PASSWORD && !string.IsNullOrWhiteSpace(val))
+                    else if (type == PASSWORD && !val.IsNullOrWhiteSpace())
                     {
                         val = Encrypter.Decrypt(val);
                     }

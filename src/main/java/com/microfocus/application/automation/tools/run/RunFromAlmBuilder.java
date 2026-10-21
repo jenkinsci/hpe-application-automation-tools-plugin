@@ -42,15 +42,18 @@ import com.microfocus.application.automation.tools.octane.executor.UftConstants;
 import com.microfocus.application.automation.tools.uft.model.FilterTestsModel;
 import com.microfocus.application.automation.tools.settings.AlmServerSettingsGlobalConfiguration;
 import com.microfocus.application.automation.tools.uft.model.SpecifyParametersModel;
+import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+
 import java.io.IOException;
 import java.net.URL;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
+
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.VariableResolver;
@@ -58,7 +61,6 @@ import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import com.microfocus.application.automation.tools.AlmToolsUtils;
-import com.microfocus.application.automation.tools.EncryptionUtils;
 import com.microfocus.application.automation.tools.run.AlmRunTypes.RunType;
 import hudson.Extension;
 import hudson.FilePath;
@@ -69,6 +71,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
+
 import static com.microfocus.application.automation.tools.Messages.CompanyName;
 import static com.microfocus.application.automation.tools.Messages.RunFromAlmBuilderStepName;
 
@@ -208,6 +211,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     public boolean getIsEmailReportEnabled() {
         return isEmailReportEnabled;
     }
+
     //IMPORTANT: most properties are used by config.jelly and / or by pipeline-syntax generator
     public String getAlmCredentialsScope() {
         return runFromAlmModel.getCredentialsScopeValue();
@@ -265,7 +269,9 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         return runFromAlmModel.getAlmTestSetsRunOrderByCriteria();
     }
 
-    public String getAlmEmailSummaryReceivers() { return runFromAlmModel.getAlmEmailSummaryReceivers(); }
+    public String getAlmEmailSummaryReceivers() {
+        return runFromAlmModel.getAlmEmailSummaryReceivers();
+    }
 
     @DataBoundSetter
     public void setIsFilterTestsEnabled(boolean isFilterTestsEnabled) {
@@ -287,173 +293,179 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener)
-            throws InterruptedException, IOException {
-        // get the alm server settings
-        AlmServerSettingsModel almServerSettingsModel = getAlmServerSettingsModel();
-
-        if (almServerSettingsModel == null) {
-            listener.fatalError("An ALM server is not defined. Go to Manage Jenkins->Configure System and define your ALM server under OpenText\\u2122 Application Quality Management");
-
-            // set pipeline stage as failure in case if ALM server was not configured
-            build.setResult(Result.FAILURE);
-
-            return;
-        }
-
-        Node currNode = JenkinsUtils.getCurrentNode(workspace);
-        if (currNode == null) {
-            listener.error("Failed to get current executor node.");
-            return;
-        }
-
-        EnvVars env;
+    public void perform(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+        Aes256Encrypter encrypter = null;
         try {
-            env = build.getEnvironment(listener);
-        } catch (IOException e2) {
-            throw new IOException("Env Null - something went wrong with fetching jenkins build environment");
-        }
-        VariableResolver<String> varResolver = new VariableResolver.ByMap<String>(build.getEnvironment(listener));
+            // get the alm server settings
+            AlmServerSettingsModel almServerSettingsModel = getAlmServerSettingsModel();
 
-        // now merge them into one list
-        Properties mergedProps = new Properties();
+            if (almServerSettingsModel == null) {
+                listener.fatalError("An ALM server is not defined. Go to Manage Jenkins->Configure System and define your ALM server under OpenText\\u2122 Application Quality Management");
 
-        mergedProps.putAll(almServerSettingsModel.getProperties());
-        mergedProps.putAll(runFromAlmModel.getProperties(env, varResolver));
-
-        CredentialsScope scope = getCredentialsScopeOrDefault();
-        String encAlmPass;
-        try {
-            String almPassword = runFromAlmModel.getPasswordPlainText();
-            if (scope == CredentialsScope.SYSTEM) {
-                Optional<CredentialsModel> cred = almServerSettingsModel.getAlmCredentials().stream().filter(c -> c.getAlmUsername().equals(runFromAlmModel.getAlmUserName())).findFirst();
-                if (cred.isPresent()) {
-                    almPassword = cred.get().getAlmPasswordPlainText();
-                }
-            }
-
-            encAlmPass = EncryptionUtils.encrypt(almPassword, currNode);
-
-            mergedProps.remove(RunFromAlmModel.ALM_PASSWORD_KEY);
-            mergedProps.put(RunFromAlmModel.ALM_PASSWORD_KEY, encAlmPass);
-        } catch (Exception e) {
-            build.setResult(Result.FAILURE);
-            listener.fatalError("Issue with ALM Password encryption: " + e.getMessage() + ".");
-            return;
-        }
-
-        String encAlmApiKey;
-        try {
-            String almApiKeySecret = runFromAlmModel.getApiKeyPlainText();
-            if (scope == CredentialsScope.SYSTEM) {
-                Optional<SSOCredentialsModel> cred = almServerSettingsModel.getAlmSSOCredentials().stream().filter(c -> c.getAlmClientID().equals(runFromAlmModel.getAlmClientID())).findFirst();
-                if (cred.isPresent()) {
-                    almApiKeySecret = cred.get().getAlmApiKeySecretPlainText();
-                }
-            }
-
-            encAlmApiKey = EncryptionUtils.encrypt(almApiKeySecret, currNode);
-            mergedProps.remove(RunFromAlmModel.ALM_API_KEY_SECRET);
-            mergedProps.put(RunFromAlmModel.ALM_API_KEY_SECRET, encAlmApiKey);
-            mergedProps.put("almClientID", getAlmClientID());
-        } catch (Exception e) {
-            build.setResult(Result.FAILURE);
-            listener.fatalError("Issue with apiKey encryption: " + e.getMessage() + ".");
-            return;
-        }
-
-        if (isFilterTestsEnabled) {
-            filterTestsModel.addProperties(mergedProps);
-        } else {
-            mergedProps.put("FilterTests", "false");
-        }
-
-        Date now = new Date();
-        Format formatter = new SimpleDateFormat("ddMMyyyyHHmmssSSS");
-        String time = formatter.format(now);
-
-        // get a unique filename for the params file
-        String propsFileName = String.format("props%s.txt", time);
-        resultsFileName = String.format("Results%s_%d.xml", time, build.getNumber());
-        //KillFileName = "stop" + time + ".txt";
-
-        //params used when run with Pipeline
-        ParametersAction parameterAction = build.getAction(ParametersAction.class);
-        List<ParameterValue> newParams = (parameterAction != null) ? new ArrayList<>(parameterAction.getAllParameters()) : new ArrayList<>();
-        newParams.add(new StringParameterValue("buildStepName", "RunFromAlmBuilder"));
-        newParams.add(new StringParameterValue("resultsFilename", resultsFileName));
-        build.addOrReplaceAction(new ParametersAction(newParams));
-
-        mergedProps.put("runType", RunType.Alm.toString());
-        mergedProps.put("resultsFilename", resultsFileName);
-
-        if (areParametersEnabled) {
-            try {
-                specifyParametersModel.addProperties(mergedProps, "TestSet", currNode);
-            } catch (Exception e) {
-                listener.error("Error occurred while parsing parameter input, reverting back to empty array.");
-            }
-        }
-
-        // get properties serialized into a stream
-        String strProps;
-        try {
-            strProps = AlmToolsUtils.getPropsAsString(mergedProps);
-        } catch (IOException e) {
-            build.setResult(Result.FAILURE);
-            listener.error("Failed to store properties on agent machine: " + e);
-            return;
-        }
-
-        // Get the URL to the Script used to run the test, which is bundled
-        // in the plugin
-
-        URL cmdExeUrl = Hudson.getInstance().pluginManager.uberClassLoader.getResource(HP_TOOLS_LAUNCHER_EXE);
-        if (cmdExeUrl == null) {
-            build.setResult(Result.FAILURE);
-            listener.fatalError(HP_TOOLS_LAUNCHER_EXE + " not found in resources");
-            return;
-        }
-        URL cmdExeCfgUrl = Hudson.getInstance().pluginManager.uberClassLoader.getResource(HP_TOOLS_LAUNCHER_EXE_CFG);
-        if (cmdExeCfgUrl == null) {
-            build.setResult(Result.FAILURE);
-            listener.fatalError(HP_TOOLS_LAUNCHER_EXE_CFG + " not found in resources");
-            return;
-        }
-
-        FilePath fileProps = workspace.child(propsFileName);
-        FilePath cmdLineExe = workspace.child(HP_TOOLS_LAUNCHER_EXE);
-        FilePath cmdLineExeCfg = workspace.child(HP_TOOLS_LAUNCHER_EXE_CFG);
-
-        try {
-            // create a file for the properties file, and save the properties
-            if (!AlmToolsUtils.tryCreatePropsFile(listener, strProps, fileProps)) {
+                // set pipeline stage as failure in case if ALM server was not configured
                 build.setResult(Result.FAILURE);
+
                 return;
             }
-            // Copy the script to the project workspace
-            cmdLineExe.copyFrom(cmdExeUrl);
-            cmdLineExeCfg.copyFrom(cmdExeCfgUrl);
-        } catch (IOException | InterruptedException e) {
-            build.setResult(Result.FAILURE);
-            listener.error("Failed to copy props file or Functional Testing tools to agent machine. " + e);
-            return;
-        }
-        try {
-            // Run the HpToolsLauncher.exe
-            AlmToolsUtils.runOnBuildEnv(build, launcher, listener, cmdLineExe, propsFileName, currNode);
-        } catch (IOException ioe) {
-            Util.displayIOException(ioe, listener);
-            build.setResult(Result.FAILURE);
-        } catch (InterruptedException e) {
-            build.setResult(Result.ABORTED);
+
+            Node currNode = JenkinsUtils.getCurrentNode(workspace);
+            if (currNode == null) {
+                listener.error("Failed to get current executor node.");
+                return;
+            }
+            EnvVars env;
             try {
-                AlmToolsUtils.runHpToolsAborterOnBuildEnv(build, launcher, listener, propsFileName, workspace);
-            } catch (IOException e1) {
-                Util.displayIOException(e1, listener);
+                env = build.getEnvironment(listener);
+            } catch (IOException e2) {
+                throw new IOException("Env Null - something went wrong with fetching jenkins build environment");
+            }
+            VariableResolver<String> varResolver = new VariableResolver.ByMap<>(build.getEnvironment(listener));
+
+            // now merge them into one list
+            Properties mergedProps = new Properties();
+
+            mergedProps.putAll(almServerSettingsModel.getProperties());
+            mergedProps.putAll(runFromAlmModel.getProperties(env, varResolver));
+
+            CredentialsScope scope = getCredentialsScopeOrDefault();
+            encrypter = new Aes256Encrypter();
+            String encAlmPass;
+            try {
+                String almPassword = runFromAlmModel.getPasswordPlainText();
+                if (scope == CredentialsScope.SYSTEM) {
+                    Optional<CredentialsModel> cred = almServerSettingsModel.getAlmCredentials().stream().filter(c -> c.getAlmUsername().equals(runFromAlmModel.getAlmUserName())).findFirst();
+                    if (cred.isPresent()) {
+                        almPassword = cred.get().getAlmPasswordPlainText();
+                    }
+                }
+
+                encAlmPass = encrypter.encrypt(almPassword);
+
+                mergedProps.remove(RunFromAlmModel.ALM_PASSWORD_KEY);
+                mergedProps.put(RunFromAlmModel.ALM_PASSWORD_KEY, encAlmPass);
+            } catch (Exception e) {
                 build.setResult(Result.FAILURE);
-            } catch (InterruptedException e1) {
-                listener.error("Failed running HpToolsAborter " + e1.getMessage());
+                listener.fatalError("Issue with ALM Password encryption: " + e.getMessage() + ".");
+                return;
+            }
+
+            String encAlmApiKey;
+            try {
+                String almApiKeySecret = runFromAlmModel.getApiKeyPlainText();
+                if (scope == CredentialsScope.SYSTEM) {
+                    Optional<SSOCredentialsModel> cred = almServerSettingsModel.getAlmSSOCredentials().stream().filter(c -> c.getAlmClientID().equals(runFromAlmModel.getAlmClientID())).findFirst();
+                    if (cred.isPresent()) {
+                        almApiKeySecret = cred.get().getAlmApiKeySecretPlainText();
+                    }
+                }
+
+                encAlmApiKey = encrypter.encrypt(almApiKeySecret);
+                mergedProps.remove(RunFromAlmModel.ALM_API_KEY_SECRET);
+                mergedProps.put(RunFromAlmModel.ALM_API_KEY_SECRET, encAlmApiKey);
+                mergedProps.put("almClientID", getAlmClientID());
+            } catch (Exception e) {
+                build.setResult(Result.FAILURE);
+                listener.fatalError("Issue with apiKey encryption: " + e.getMessage() + ".");
+                return;
+            }
+
+            if (isFilterTestsEnabled) {
+                filterTestsModel.addProperties(mergedProps);
+            } else {
+                mergedProps.put("FilterTests", "false");
+            }
+
+            Date now = new Date();
+            Format formatter = new SimpleDateFormat("ddMMyyyyHHmmssSSS");
+            String time = formatter.format(now);
+
+            // get a unique filename for the params file
+            String propsFileName = String.format("props%s.txt", time);
+            resultsFileName = String.format("Results%s_%d.xml", time, build.getNumber());
+            //KillFileName = "stop" + time + ".txt";
+
+            //params used when run with Pipeline
+            ParametersAction parameterAction = build.getAction(ParametersAction.class);
+            List<ParameterValue> newParams = (parameterAction != null) ? new ArrayList<>(parameterAction.getAllParameters()) : new ArrayList<>();
+            newParams.add(new StringParameterValue("buildStepName", "RunFromAlmBuilder"));
+            newParams.add(new StringParameterValue("resultsFilename", resultsFileName));
+            build.addOrReplaceAction(new ParametersAction(newParams));
+
+            mergedProps.put("runType", RunType.Alm.toString());
+            mergedProps.put("resultsFilename", resultsFileName);
+
+            if (areParametersEnabled) {
+                try {
+                    specifyParametersModel.addProperties(mergedProps, "TestSet", encrypter);
+                } catch (Exception e) {
+                    listener.error("Error occurred while parsing parameter input, reverting back to empty array.");
+                }
+            }
+
+            // get properties serialized into a stream
+            String strProps;
+            try {
+                strProps = AlmToolsUtils.getPropsAsString(mergedProps);
+            } catch (IOException e) {
+                build.setResult(Result.FAILURE);
+                listener.error("Failed to store properties on agent machine: " + e);
+                return;
+            }
+
+            // Get the URL to the Script used to run the test, which is bundled
+            // in the plugin
+
+            URL cmdExeUrl = Hudson.getInstance().pluginManager.uberClassLoader.getResource(HP_TOOLS_LAUNCHER_EXE);
+            if (cmdExeUrl == null) {
+                build.setResult(Result.FAILURE);
+                listener.fatalError(HP_TOOLS_LAUNCHER_EXE + " not found in resources");
+                return;
+            }
+            URL cmdExeCfgUrl = Hudson.getInstance().pluginManager.uberClassLoader.getResource(HP_TOOLS_LAUNCHER_EXE_CFG);
+            if (cmdExeCfgUrl == null) {
+                build.setResult(Result.FAILURE);
+                listener.fatalError(HP_TOOLS_LAUNCHER_EXE_CFG + " not found in resources");
+                return;
+            }
+
+            FilePath fileProps = workspace.child(propsFileName);
+            FilePath cmdLineExe = workspace.child(HP_TOOLS_LAUNCHER_EXE);
+            FilePath cmdLineExeCfg = workspace.child(HP_TOOLS_LAUNCHER_EXE_CFG);
+
+            try {
+                // create a file for the properties file, and save the properties
+                if (!AlmToolsUtils.tryCreatePropsFile(listener, strProps, fileProps)) {
+                    build.setResult(Result.FAILURE);
+                    return;
+                }
+                // Copy the script to the project workspace
+                cmdLineExe.copyFrom(cmdExeUrl);
+                cmdLineExeCfg.copyFrom(cmdExeCfgUrl);
+            } catch (IOException | InterruptedException e) {
+                build.setResult(Result.FAILURE);
+                listener.error("Failed to copy props file or Functional Testing tools to agent machine. " + e);
+                return;
+            }
+            try {
+                // Run the HpToolsLauncher.exe
+                AlmToolsUtils.runOnBuildEnv(build, launcher, listener, cmdLineExe, propsFileName, encrypter);
+            } catch (IOException ioe) {
+                Util.displayIOException(ioe, listener);
+                build.setResult(Result.FAILURE);
+            } catch (InterruptedException e) {
+                build.setResult(Result.ABORTED);
+                try {
+                    AlmToolsUtils.runHpToolsAborterOnBuildEnv(build, launcher, listener, propsFileName, workspace);
+                } catch (IOException e1) {
+                    Util.displayIOException(e1, listener);
+                    build.setResult(Result.FAILURE);
+                } catch (InterruptedException e1) {
+                    listener.error("Failed running HpToolsAborter " + e1.getMessage());
+                }
+            }
+        } finally {
+            if (encrypter != null) {
+                encrypter.destroy();
             }
         }
     }
@@ -630,6 +642,7 @@ public class RunFromAlmBuilder extends Builder implements SimpleBuildStep {
         public List<CredentialsScope> getAlmCredentialScopes() {
             return Arrays.asList(CredentialsScope.values());
         }
+
         public boolean getHasConfigurePermission() {
             return JenkinsUtils.hasItemConfigurePermission();
         }

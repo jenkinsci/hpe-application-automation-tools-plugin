@@ -34,11 +34,13 @@
  *  limitations under the License.
  *  ___________________________________________________________________
  */
- using System.Runtime.InteropServices;
 using System;
-using System.Security;
-using System.Linq;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
 
 namespace HpToolsLauncher.Utils
 {
@@ -47,7 +49,9 @@ namespace HpToolsLauncher.Utils
         public static SecureString ToSecureString(this string plainString)
         {
             if (plainString == null)
+            {
                 return null;
+            }
 
             SecureString secureString = new SecureString();
             foreach (char c in plainString.ToCharArray())
@@ -56,20 +60,148 @@ namespace HpToolsLauncher.Utils
             }
             return secureString;
         }
-        public static string ToPlainString(this SecureString value)
+
+        public static T UseAsCharArray<T>(this SecureString secret, Func<char[], T> func)
         {
-            IntPtr valuePtr = IntPtr.Zero;
+            if (secret == null) return func(null);
+
+            char[] chars = new char[secret.Length];
+            GCHandle pin = GCHandle.Alloc(chars, GCHandleType.Pinned);
+            IntPtr bstr = IntPtr.Zero;
             try
             {
-                valuePtr = Marshal.SecureStringToBSTR(value);
-                return Marshal.PtrToStringBSTR(valuePtr);
+                bstr = Marshal.SecureStringToBSTR(secret);
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    chars[i] = (char)Marshal.ReadInt16(bstr, i * sizeof(char));
+            }
+
+                Marshal.ZeroFreeBSTR(bstr);
+                bstr = IntPtr.Zero;
+                return func(chars);
             }
             finally
             {
-                Marshal.ZeroFreeBSTR(valuePtr);
+                try
+                {
+                    Array.Clear(chars, 0, chars.Length);
+                    if (bstr != IntPtr.Zero)
+                    {
+                        Marshal.ZeroFreeBSTR(bstr);
+            }
+        }
+                finally
+                {
+                    pin.Free();
+                }
             }
         }
 
+        public static SecureString ToSecureString(this char[] chars, int start, int length)
+        {
+            SecureString secureString = new SecureString();
+            for (int i = 0; i < length; i++)
+            {
+                secureString.AppendChar(chars[start + i]);
+            }
+            secureString.MakeReadOnly();
+            return secureString;
+        }
+
+        /// <summary>
+        /// Narrows the range to the part of the buffer which is not trimmable at either end.
+        /// </summary>
+        public static void TrimRange(this char[] buf, ref int start, ref int end, Func<char, bool> isTrimmable)
+        {
+            while (start < end && isTrimmable(buf[start])) start++;
+            while (end > start && isTrimmable(buf[end - 1])) end--;
+        }
+
+        /// <summary>
+        /// Strips the surrounding whitespace, then the given characters, without materializing the secret as a managed string.
+        /// </summary>
+        public static SecureString Trim(this SecureString secret, params char[] trimChars)
+        {
+            return secret.UseAsCharArray(buf =>
+            {
+                int start = 0, end = buf.Length;
+                buf.TrimRange(ref start, ref end, char.IsWhiteSpace);
+                if (trimChars != null && trimChars.Length > 0)
+                {
+                    buf.TrimRange(ref start, ref end, c => Array.IndexOf(trimChars, c) >= 0);
+                }
+                return buf.ToSecureString(start, end - start);
+            });
+        }
+
+        /// <summary>
+        /// Hands the secret over as a plain string, for the APIs which cannot accept anything else.
+        /// The buffer is pinned before it is filled and zeroed on the way out, so the collector cannot leave a readable copy behind on the heap.
+        /// </summary>
+        public static T UseAsPlainText<T>(this SecureString secret, Func<string, T> func)
+        {
+            if (secret == null) return func(null);
+            if (secret.Length == 0) return func(string.Empty);
+
+            int len = secret.Length;
+            string plain = new string('\0', len);
+            GCHandle pin = GCHandle.Alloc(plain, GCHandleType.Pinned);
+            IntPtr buffer = pin.AddrOfPinnedObject();
+            try
+            {
+                return secret.UseAsCharArray(chars =>
+                {
+                    for (int i = 0; i < len; i++)
+                    {
+                        Marshal.WriteInt16(buffer, i * sizeof(char), chars[i]);
+                    }
+                    return func(plain);
+                });
+            }
+            finally
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    Marshal.WriteInt16(buffer, i * sizeof(char), 0);
+                }
+                pin.Free();
+            }
+        }
+
+        public static void UseAsPlainText(this SecureString secret, Action<string> action)
+        {
+            secret.UseAsPlainText<object>(plain => { action(plain); return null; });
+        }
+
+        /// <summary>
+        /// Base64 encodes the UTF-8 representation of the secret without ever materializing it as a managed string.
+        /// </summary>
+        public static string ToBase64(this SecureString secret)
+        {
+            if (secret.IsNullOrEmpty()) return string.Empty;
+
+            return secret.UseAsCharArray(chars =>
+            {
+                byte[] bytes = null;
+                try
+                {
+                    bytes = Encoding.UTF8.GetBytes(chars);
+                    return Convert.ToBase64String(bytes);
+                }
+                finally
+                {
+                    if (bytes != null)
+                    {
+                        Array.Clear(bytes, 0, bytes.Length);
+                    }
+                }
+            });
+        }
+
+        public static bool IsNullOrEmpty(this SecureString value)
+        {
+            return value == null || value.Length == 0;
+        }
         public static bool IsNullOrEmpty(this string value)
         {
             return string.IsNullOrEmpty(value);
@@ -94,6 +226,20 @@ namespace HpToolsLauncher.Utils
             return (s1 == null || s2 == null) ? (s1 == s2) : s1.Equals(s2, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Compares a range of the buffer against the given value, without extracting the range into a string first.
+        /// </summary>
+        public static bool EqualsIgnoreCase(this char[] buf, int start, int length, string value)
+        {
+            if (buf == null || value == null || length != value.Length) return false;
+
+            for (int i = 0; i < length; i++)
+            {
+                if (char.ToLowerInvariant(buf[start + i]) != char.ToLowerInvariant(value[i])) return false;
+            }
+            return true;
+        }
+
         public static bool In(this string str, bool ignoreCase, params string[] values)
         {
             if (ignoreCase)
@@ -114,5 +260,15 @@ namespace HpToolsLauncher.Utils
             var descrAttrs = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);
             return descrAttrs.Length > 0 ? descrAttrs[0].Description : enumValue.ToString();
         }
+
+        public static string[] Exclude(this IEnumerable<string> source, string value, bool ignoreCase = false)
+        {
+            var comparison = ignoreCase
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            return source.Where(s => !string.Equals(s, value, comparison)).ToArray();
+        }
+
     }
 }
