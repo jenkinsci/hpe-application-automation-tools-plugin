@@ -36,8 +36,7 @@
  */
 package com.microfocus.application.automation.tools.uft.model;
 
-import com.microfocus.application.automation.tools.EncryptionUtils;
-import hudson.model.Node;
+import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import hudson.util.Secret;
 import org.apache.commons.lang3.StringUtils;
 
@@ -75,13 +74,13 @@ public class UftRunAsUser {
         return encodedPwd;
     }
 
-    public String getEncodedPasswordAsEncrypted(Node node) throws EncryptionUtils.EncryptionException {
-        return EncryptionUtils.encrypt(encodedPwd, node);
+    public String getEncodedPasswordAsEncrypted(Aes256Encrypter encrypter) {
+        return encrypter.encrypt(encodedPwd);
     }
 
     public Secret getPassword() { return pwd; }
 
-    public String getPasswordAsEncrypted(Node node) throws EncryptionUtils.EncryptionException {
-        return EncryptionUtils.encrypt(pwd.getPlainText(), node);
+    public String getPasswordAsEncrypted(Aes256Encrypter encrypter) {
+        return encrypter.encrypt(pwd.getPlainText());
     }
 }

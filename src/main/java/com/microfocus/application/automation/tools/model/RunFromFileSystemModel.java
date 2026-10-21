@@ -36,14 +36,12 @@
  */
 package com.microfocus.application.automation.tools.model;
 
-import com.microfocus.application.automation.tools.EncryptionUtils;
 import com.microfocus.application.automation.tools.uft.utils.UftToolUtils;
 import com.microfocus.application.automation.tools.mc.JobConfigurationProxy;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
-import hudson.model.Node;
 import net.minidev.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -691,23 +689,23 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
      * @return the properties
      */
 	@Nullable
-	public Properties getProperties(EnvVars envVars, Node currNode) {
-        return createProperties(envVars, currNode);
+	public Properties getProperties(EnvVars envVars) {
+        return createProperties(envVars);
     }
 
-    private Properties createProperties(EnvVars envVars, Node currNode) {
+    private Properties createProperties(EnvVars envVars) {
         Properties props = new Properties();
 
         addTestsToProps(envVars, props);
 
         addUFTSpecificSettingsToProps(envVars, props);
 
-        if (addMobileSpecificSettingsToProps(currNode, props)) return null; // cannot continue without proper config
+        addMobileSpecificSettingsToProps(props);
 
         return props;
     }
 
-    private boolean addMobileSpecificSettingsToProps(Node currNode, Properties props) {
+    private void addMobileSpecificSettingsToProps(Properties props) {
         if (isUseProxy()){
             props.put("MobileUseProxy", "1");
             props.put("MobileProxyType", "2");
@@ -716,15 +714,7 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             if (isUseProxyAuth() && StringUtils.isNotBlank(proxySettings.getFsProxyUserName())){
                 props.put(MOBILE_PROXY_SETTING_AUTHENTICATION, "1");
                 props.put(MOBILE_PROXY_SETTING_USER_NAME,proxySettings.getFsProxyUserName());
-                String encryptedPassword;
-
-                try {
-                    encryptedPassword = EncryptionUtils.encrypt(proxySettings.getFsProxyPassword(), currNode);
-                } catch (Exception ex) {
-                    return true;
-                }
-
-                props.put(MOBILE_PROXY_SETTING_PASSWORD_FIELD, encryptedPassword);
+                props.put(MOBILE_PROXY_SETTING_PASSWORD_FIELD, "");
             } else {
                 props.put(MOBILE_PROXY_SETTING_AUTHENTICATION, "0");
                 props.put(MOBILE_PROXY_SETTING_USER_NAME, "");
@@ -757,13 +747,12 @@ public class RunFromFileSystemModel extends AbstractDescribableImpl<RunFromFileS
             props.put("MobileDeviceMetrics", "");
         }
 
-        if (authModel != null &&  authModel.getValue().equals("base")) {
+        if (authModel != null && authModel.getValue().equals("base")) {
             if (StringUtils.isNotBlank(authModel.getMcUserName())) {
                 props.put("MobileUserName", authModel.getMcUserName());
             }
         }
       
-        return false;
     }
   
     private void addUFTSpecificSettingsToProps(EnvVars envVars, Properties props) {
