@@ -523,7 +523,7 @@ public class JobConfigurationProxy {
                     deviceMetricsSb.append("Screenshot;");
                 }
                 if (useFreeMemory) {
-                    deviceMetricsSb.append("FreeMomery;");
+                    deviceMetricsSb.append("FreeMemory;");
                 }
             }
             returnDefinitionJSON.put("autActions", removeLastSemicolon(sb));
