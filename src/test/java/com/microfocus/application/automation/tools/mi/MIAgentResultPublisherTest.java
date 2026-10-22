@@ -81,6 +81,11 @@ public class MIAgentResultPublisherTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
+    private static final String EXECUTION_RESULTS =
+            "{\"CONFIGURATION\":{\"BROWSER\":{\"BROWSER_NAME\":\"Google Chrome\"}},\"COST\":{\"total_tokens\":1234}}";
+    private static final String EXECUTION_RESULTS_FIELD_METADATA =
+            "{\"data\":[{\"entity_name\":\"run_manual\",\"name\":\"execution_results\"}]}";
+
     @Test
     public void publisherDefaultsToFailingBuildOnPublishError() {
         MIAgentResultPublisher publisher = new MIAgentResultPublisher();
@@ -128,14 +133,14 @@ public class MIAgentResultPublisherTest {
         AtomicInteger attempts = new AtomicInteger();
         List<String> bodies = new ArrayList<>();
         List<String> urls = new ArrayList<>();
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             bodies.add(new String(request.getBody().readAllBytes(), StandardCharsets.UTF_8));
             urls.add(extractRequestUrl(request));
             if (attempts.incrementAndGet() == 1) {
                 throw new SocketException("Connection reset");
             }
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), mockListener());
 
@@ -157,10 +162,10 @@ public class MIAgentResultPublisherTest {
     public void perform_connectionResetExhaustsRetries_reportsOneFailure() throws Exception {
         RetryFixture fixture = retryFixture(false);
         AtomicInteger attempts = new AtomicInteger();
-        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+        fixture.publisher().setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             attempts.incrementAndGet();
             throw new SocketException("Connection reset");
-        });
+        }));
 
         fixture.publish();
 
@@ -178,10 +183,10 @@ public class MIAgentResultPublisherTest {
         for (int status : List.of(400, 401, 403, 404, 422, 429, 500, 503)) {
             RetryFixture fixture = retryFixture(false);
             AtomicInteger attempts = new AtomicInteger();
-            fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+            fixture.publisher().setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
                 attempts.incrementAndGet();
                 return mockResponse(status);
-            });
+            }));
 
             fixture.publish();
 
@@ -195,10 +200,10 @@ public class MIAgentResultPublisherTest {
     public void perform_nonTransientIOException_isNotRetried() throws Exception {
         RetryFixture fixture = retryFixture(false);
         AtomicInteger attempts = new AtomicInteger();
-        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+        fixture.publisher().setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             attempts.incrementAndGet();
             throw new IOException("Invalid request body");
-        });
+        }));
 
         fixture.publish();
 
@@ -212,14 +217,14 @@ public class MIAgentResultPublisherTest {
         RetryFixture fixture = retryFixture(true);
         AtomicInteger runAttempts = new AtomicInteger();
         AtomicInteger stepAttempts = new AtomicInteger();
-        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+        fixture.publisher().setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             if (extractRequestUrl(request).endsWith("/runs/6024")) {
                 runAttempts.incrementAndGet();
             } else if (stepAttempts.incrementAndGet() == 1) {
                 throw new SocketTimeoutException("Read timed out");
             }
             return mockResponse(200);
-        });
+        }));
 
         fixture.publish();
 
@@ -234,11 +239,11 @@ public class MIAgentResultPublisherTest {
     public void perform_interruptedRetry_stopsPublication() throws Exception {
         RetryFixture fixture = retryFixture(true);
         AtomicInteger attempts = new AtomicInteger();
-        fixture.publisher().setOctaneRequestExecutor((ignored, request) -> {
+        fixture.publisher().setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             attempts.incrementAndGet();
             Thread.currentThread().interrupt();
             throw new SocketException("Connection reset");
-        });
+        }));
 
         try {
             fixture.publish();
@@ -331,10 +336,10 @@ public class MIAgentResultPublisherTest {
         publisher.setConfigurationId("cfg");
         publisher.setWorkspaceId("2001");
         publisher.setOctaneClientProvider(instanceId -> client);
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             requests.add(request);
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -403,10 +408,10 @@ public class MIAgentResultPublisherTest {
         publisher.setConfigurationId("cfg");
         publisher.setWorkspaceId("2001");
         publisher.setOctaneClientProvider(instanceId -> client);
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             requests.add(request);
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -460,10 +465,10 @@ public class MIAgentResultPublisherTest {
         publisher.setConfigurationId("cfg");
         publisher.setWorkspaceId("2001");
         publisher.setOctaneClientProvider(instanceId -> client);
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             requests.add(request);
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -505,7 +510,7 @@ public class MIAgentResultPublisherTest {
         publisher.setWorkspaceId("2001");
         publisher.setFailBuildOnPublishError(false);
         publisher.setOctaneClientProvider(instanceId -> client);
-        publisher.setOctaneRequestExecutor((ignored, request) -> mockResponse(500));
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> mockResponse(500)));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -569,14 +574,14 @@ public class MIAgentResultPublisherTest {
         publisher.setWorkspaceId("2001");
         publisher.setFailBuildOnPublishError(false);
         publisher.setOctaneClientProvider(instanceId -> client);
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             requests.add(request);
             String url = extractRequestUrl(request);
             if (url != null && url.endsWith("/run_steps/s1")) {
                 return mockResponse(500);
             }
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -625,13 +630,13 @@ public class MIAgentResultPublisherTest {
         publisher.setWorkspaceId("2001");
         publisher.setFailBuildOnPublishError(false);
         publisher.setOctaneClientProvider(instanceId -> client);
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             String url = extractRequestUrl(request);
             if (url != null && url.endsWith("/attachments/bulk")) {
                 throw new IOException("Content-Length header already present");
             }
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -678,13 +683,13 @@ public class MIAgentResultPublisherTest {
         publisher.setOctaneClientProvider(instanceId -> client);
 
         final int[] bulkAttachmentRequests = {0};
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             String url = extractRequestUrl(request);
             if (url != null && url.endsWith("/attachments/bulk")) {
                 bulkAttachmentRequests[0]++;
             }
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -729,13 +734,13 @@ public class MIAgentResultPublisherTest {
         publisher.setFailBuildOnPublishError(false);
         publisher.setOctaneClientProvider(instanceId -> client);
 
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             String url = extractRequestUrl(request);
             if (url != null && url.endsWith("/attachments/bulk")) {
                 throw new IOException("simulated bulk upload failure");
             }
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -784,14 +789,14 @@ public class MIAgentResultPublisherTest {
         publisher.setWorkspaceId("2001");
         publisher.setFailBuildOnPublishError(false);
         publisher.setOctaneClientProvider(instanceId -> client);
-        publisher.setOctaneRequestExecutor((ignored, request) -> {
+        publisher.setOctaneRequestExecutor(ignoringFieldMetadata((ignored, request) -> {
             String url = extractRequestUrl(request);
             if (url != null && url.endsWith("/attachments/bulk")) {
                 return mockResponse(500,
                         "{\"error_code\":\"platform.general_error\",\"stack_trace\":\"l1\\nl2\\nl3\\nl4\\nl5\\nl6\\nl7\\nl8\\nl9\",\"description\":\"attachment failed\"}");
             }
             return mockResponse(200);
-        });
+        }));
 
         publisher.perform(run, workspace, mock(Launcher.class), listener);
 
@@ -835,6 +840,73 @@ public class MIAgentResultPublisherTest {
         assertEquals(MIAgentResultPublisher.MIAgentPublishSummary.Status.INVALID, summary.getStatus());
         assertTrue(summary.getMessage().contains("outside result root"));
         verify(run).setResult(Result.FAILURE);
+    }
+
+    @Test
+    public void perform_executionResultsFieldDefined_addsExecutionResultsToRunUpdate() throws Exception {
+        JSONObject runUpdate = publishRunWithExecutionResults(mockResponse(200, EXECUTION_RESULTS_FIELD_METADATA));
+
+        assertEquals(JSONValue.parse(EXECUTION_RESULTS), runUpdate.get("execution_results"));
+    }
+
+    @Test
+    public void perform_executionResultsFieldNotDefined_omitsExecutionResults() throws Exception {
+        JSONObject runUpdate = publishRunWithExecutionResults(mockResponse(200, "{\"data\":[]}"));
+
+        assertFalse(runUpdate.containsKey("execution_results"));
+    }
+
+    @Test
+    public void perform_fieldMetadataRequestFails_omitsExecutionResults() throws Exception {
+        JSONObject runUpdate = publishRunWithExecutionResults(mockResponse(500));
+
+        assertFalse(runUpdate.containsKey("execution_results"));
+    }
+
+    /** Publishes one run whose result contains execution_results and returns the body of its run update. */
+    private JSONObject publishRunWithExecutionResults(OctaneResponse metadataResponse) throws Exception {
+        FilePath workspace = new FilePath(tempFolder.getRoot());
+        FilePath resultRoot = MIAgentConstants.resultRoot(workspace);
+        FilePath runFolder = resultRoot.child("7001");
+        runFolder.mkdirs();
+        runFolder.child(MIAgentConstants.RUN_STEPS_RESULT_FILE_NAME).write(
+                "{\"native_status\":{\"name\":\"passed\"},\"execution_results\":" + EXECUTION_RESULTS + "}",
+                StandardCharsets.UTF_8.name());
+
+        JSONObject runEntry = new JSONObject();
+        runEntry.put("runId", "7001");
+        runEntry.put("runFolder", runFolder.getRemote());
+        JSONArray runs = new JSONArray();
+        runs.add(runEntry);
+        JSONObject manifest = new JSONObject();
+        manifest.put("schemaVersion", "1.0");
+        manifest.put("runs", runs);
+        resultRoot.child(MIAgentConstants.MANIFEST_FILE_NAME).write(manifest.toJSONString(), StandardCharsets.UTF_8.name());
+
+        List<OctaneRequest> runUpdates = new ArrayList<>();
+        MIAgentResultPublisher publisher = new MIAgentResultPublisher();
+        publisher.setConfigurationId("cfg");
+        publisher.setWorkspaceId("2001");
+        publisher.setOctaneClientProvider(instanceId -> mockOctaneClient("http://octane.example", "1001"));
+        publisher.setOctaneRequestExecutor((ignored, request) -> {
+            if (extractRequestUrl(request).contains("/metadata/fields")) {
+                return metadataResponse;
+            }
+            runUpdates.add(request);
+            return mockResponse(200);
+        });
+
+        publisher.perform(mock(FreeStyleBuild.class), workspace, mock(Launcher.class), mockListener());
+
+        assertEquals(1, runUpdates.size());
+        return (JSONObject) JSONValue.parse(extractRequestBody(runUpdates.get(0)));
+    }
+
+    /** Answers the execution_results field check so a test only sees the publishing requests. */
+    private MIAgentResultPublisher.OctaneRequestExecutor ignoringFieldMetadata(MIAgentResultPublisher.OctaneRequestExecutor delegate) {
+        return (client, request) -> extractRequestUrl(request).contains("/metadata/fields")
+                ? mockResponse(200, "{\"data\":[]}")
+                : delegate.execute(client, request);
     }
 
     private MIAgentResultPublisher.MIAgentPublishSummary captureSummary(Run<?, ?> run) {

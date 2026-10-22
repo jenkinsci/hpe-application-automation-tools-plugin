@@ -81,6 +81,7 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.net.SocketException;
+import java.net.URLEncoder;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -110,6 +111,8 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
     private static final String APP_JSON = "application/json";
     private static final String RUN_NATIVE_STATUS_PREFIX = "list_node.run_native_status.";
     private static final String RUN_ID_PARAMETER = "runId";
+    private static final String EXECUTION_RESULTS_FIELD = "execution_results";
+    private static final String EXECUTION_RESULTS_METADATA_QUERY = "\"entity_name='run_manual';name='execution_results'\"";
     private static final int MAX_UPDATE_ATTEMPTS = 3;
     private static final long RETRY_DELAY_MS = 1000L;
     private static final int MAX_EXCEPTION_STACK_FRAMES = 7;
@@ -212,6 +215,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
             validateManifest(manifest);
 
             PublishContext ctx = createPublishContext();
+            boolean executionResultsFieldDefined = isExecutionResultsFieldDefined(ctx, log);
             JSONArray runs = (JSONArray) manifest.get("runs");
             List<String> failures = new ArrayList<>();
             int publishedSteps = 0;
@@ -224,7 +228,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 }
                 RunPublishData runData = parseRunPublishData(resultRoot, runItem, log);
                 consumedResultFiles++; // per-run run_steps_result.json
-                RunPublishResult runPublishResult = publishSingleRun(runData, ctx, log, failures);
+                RunPublishResult runPublishResult = publishSingleRun(runData, ctx, executionResultsFieldDefined, log, failures);
                 publishedSteps += runPublishResult.publishedSteps();
                 totalSteps += runPublishResult.totalSteps();
             }
@@ -286,7 +290,7 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
                 continue;
             }
             try {
-                updateRunStatus(runId, RUN_NATIVE_STATUS_PREFIX + "skipped", reason, ctx, log);
+                updateRunStatus(runId, RUN_NATIVE_STATUS_PREFIX + "skipped", reason, null, ctx, log);
                 published++;
             } catch (InterruptedException e) {
                 throw e;
@@ -408,17 +412,23 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return path.length() > 1 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':';
     }
 
-    private RunPublishResult publishSingleRun(RunPublishData runData, PublishContext ctx, PrintStream log, List<String> failures)
-            throws InterruptedException, IOException {
+    private RunPublishResult publishSingleRun(RunPublishData runData,
+                                              PublishContext ctx,
+                                              boolean executionResultsFieldDefined,
+                                              PrintStream log,
+                                              List<String> failures) throws InterruptedException, IOException {
         String overallStatusId = toListNodeStatusId((JSONObject) runData.runResult().get("native_status"));
         if (StringUtils.isBlank(overallStatusId)) {
             overallStatusId = RUN_NATIVE_STATUS_PREFIX + "failed";
         }
 
         String runDescription = runData.runResult().get("description") == null ? null : String.valueOf(runData.runResult().get("description"));
+        Object executionResults = executionResultsFieldDefined
+                ? runData.runResult().get(EXECUTION_RESULTS_FIELD)
+                : null;
 
         try {
-            updateRunStatus(runData.runId(), overallStatusId, runDescription, ctx, log);
+            updateRunStatus(runData.runId(), overallStatusId, runDescription, executionResults, ctx, log);
         } catch (InterruptedException e) {
             throw e;
         } catch (Exception e) {
@@ -463,7 +473,34 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         return new RunPublishResult(publishedSteps, totalSteps);
     }
 
-    private void updateRunStatus(String runId, String statusId, String description, PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
+    private boolean isExecutionResultsFieldDefined(PublishContext ctx, PrintStream log) {
+        String query = URLEncoder.encode(EXECUTION_RESULTS_METADATA_QUERY, StandardCharsets.UTF_8);
+        String url = "%s/api/shared_spaces/%s/workspaces/%s/metadata/fields?query=%s"
+                .formatted(ctx.baseUrl(), ctx.sharedSpaceId(), ctx.workspaceId(), query);
+
+        try {
+            OctaneRequest request = DTOFactory.getInstance()
+                    .newDTO(OctaneRequest.class)
+                    .setMethod(HttpMethod.GET)
+                    .setHeaders(BASE_HEADERS)
+                    .setUrl(url);
+            OctaneResponse response = octaneRequestExecutor.execute(ctx.client(), request);
+            assertSuccess(response, "Field metadata request failed");
+
+            JSONObject metadata = (JSONObject) JSONValue.parse(response.getBody());
+            JSONArray fields = metadata == null ? null : (JSONArray) metadata.get("data");
+            if (fields != null && !fields.isEmpty()) {
+                return true;
+            }
+            log.println("Field run_manual.execution_results is not defined in Octane; skipping execution results.");
+        } catch (IOException | ClassCastException e) {
+            log.println(WARN_PREFIX + " Could not check field run_manual.execution_results; skipping execution results: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private void updateRunStatus(String runId, String statusId, String description, Object executionResults,
+                                 PublishContext ctx, PrintStream log) throws IOException, InterruptedException {
         JSONObject payload = new JSONObject();
         JSONObject status = new JSONObject();
         status.put("type", "list_node");
@@ -471,6 +508,9 @@ public class MIAgentResultPublisher extends Recorder implements SimpleBuildStep,
         payload.put("native_status", status);
         if (StringUtils.isNotBlank(description)) {
             payload.put("description", description);
+        }
+        if (executionResults != null) {
+            payload.put(EXECUTION_RESULTS_FIELD, executionResults);
         }
 
         log.println("updateRunStatus: statusId=" + statusId);
