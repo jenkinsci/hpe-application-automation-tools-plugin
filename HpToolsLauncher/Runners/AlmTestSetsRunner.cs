@@ -72,6 +72,7 @@ namespace HpToolsLauncher
         private const string API_TEST = "SERVICE-TEST";
         private const string GUI_TEST = "QUICKTEST_TEST";
         private const string BUSINESS_PROCESS = "BUSINESS-PROCESS";
+        private const string FLOW = "FLOW";
         private List<TestParameter> _params;
         private const string PASSWORD = "password";
         private const string REGSVR32_EXE = "regsvr32.exe";
@@ -166,7 +167,6 @@ namespace HpToolsLauncher
             string almTestSetsRunOrderByCriteria,
             string almEmailSummaryReceivers)
         {
-
             Timeout = intQcTimeout;
             RunMode = enmQcRunMode;
             RunHost = runHost;
@@ -217,7 +217,7 @@ namespace HpToolsLauncher
                 }
                 catch (Exception ex)
                 {
-                    ConsoleWriter.WriteErrLine("Failed to register ALM client components: " + ex.Message);
+                    ConsoleWriter.WriteErrLine(string.Format("Failed to register ALM client components: {0}", ex.Message));
                 }
 
                 Console.WriteLine("Checking ALM client components...");
@@ -253,7 +253,7 @@ namespace HpToolsLauncher
                 }
                 else
                 {
-                    ConsoleWriter.WriteErrLine("Unsupported file type: " + fileName);
+                    ConsoleWriter.WriteErrLine(string.Format("Unsupported file type: {0}", fileName));
                     return false;
                 }
 
@@ -313,19 +313,19 @@ namespace HpToolsLauncher
             }
             catch (UnauthorizedAccessException ex)
             {
-                Console.WriteLine("Access denied to registry: " + ex.Message);
+                Console.WriteLine(string.Format("Access denied to registry: {0}", ex.Message));
             }
             catch (SecurityException ex)
             {
-                Console.WriteLine("Security exception: " + ex.Message);
+                Console.WriteLine(string.Format("Security exception: {0}", ex.Message));
             }
             catch (IOException ex)
             {
-                Console.WriteLine("IO exception occurred: " + ex.Message);
+                Console.WriteLine(string.Format("IO exception occurred: {0}", ex.Message));
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An unexpected error occurred: " + ex.Message);
+                Console.WriteLine(string.Format("An unexpected error occurred: {0}", ex.Message));
             }
         }
 
@@ -508,15 +508,15 @@ namespace HpToolsLauncher
         /// <param name="qcPass"></param>
         /// <param name="qcDomain"></param>
         /// <param name="qcProject"></param>
-        /// <param name="SSOEnabled"></param>
+        /// <param name="ssoEnabled"></param>
         /// <returns></returns>
-        public bool ConnectToProject(string qcServerUrl, string qcLogin, string qcPass, string qcDomain, string qcProject, bool SSOEnabled, string qcClientID, string qcApiKey)
+        private bool ConnectToProject(string qcServerUrl, string qcLogin, string qcPass, string qcDomain, string qcProject, bool ssoEnabled, string qcClientID, string qcApiKey)
         {
             if (qcServerUrl.IsNullOrWhiteSpace()
-                || (qcLogin.IsNullOrWhiteSpace() && !SSOEnabled)
+                || (qcLogin.IsNullOrWhiteSpace() && !ssoEnabled)
                 || qcDomain.IsNullOrWhiteSpace()
                 || qcProject.IsNullOrWhiteSpace()
-                || (SSOEnabled && (qcClientID.IsNullOrWhiteSpace()
+                || (ssoEnabled && (qcClientID.IsNullOrWhiteSpace()
                 || qcApiKey.IsNullOrWhiteSpace())))
             {
                 ConsoleWriter.WriteLine(Resources.AlmRunnerConnParamEmpty);
@@ -528,28 +528,28 @@ namespace HpToolsLauncher
             {
                 try
                 {
-                    if (!SSOEnabled)
+                    if (!ssoEnabled)
                     {
                         Console.WriteLine("TdConnection.InitConnectionEx ...");
-                        TdConnection.InitConnectionEx(qcServerUrl);
+                        _tdConnection.InitConnectionEx(qcServerUrl);
                     }
                     else
                     {
                         Console.WriteLine("TdConnection.InitConnectionWithApiKey ...");
-                        TdConnection.InitConnectionWithApiKey(qcServerUrl, qcClientID, qcApiKey);
+                        _tdConnection.InitConnectionWithApiKey(qcServerUrl, qcClientID, qcApiKey);
                     }
                 }
                 catch (Exception ex)
                 {
                     ConsoleWriter.WriteLine(ex.Message);
                 }
-                if (TdConnection.Connected)
+                if (_tdConnection.Connected)
                 {
                     try
                     {
-                        if (!SSOEnabled)
+                        if (!ssoEnabled)
                         {
-                            TdConnection.Login(qcLogin, qcPass);
+                            _tdConnection.Login(qcLogin, qcPass);
                         }
                     }
                     catch (Exception ex)
@@ -557,18 +557,18 @@ namespace HpToolsLauncher
                         ConsoleWriter.WriteLine(ex.Message);
                     }
 
-                    if (TdConnection.LoggedIn)
+                    if (_tdConnection.LoggedIn)
                     {
                         try
                         {
-                            TdConnection.Connect(qcDomain, qcProject);
+                            _tdConnection.Connect(qcDomain, qcProject);
                         }
                         catch (Exception ex)
                         {
                             Console.WriteLine(ex.Message);
                         }
 
-                        if (TdConnection.ProjectConnected)
+                        if (_tdConnection.ProjectConnected)
                         {
                             return true;
                         }
@@ -579,7 +579,6 @@ namespace HpToolsLauncher
                     {
                         ConsoleWriter.WriteErrLine(Resources.AlmRunnerErrorAuthorization);
                     }
-
                 }
                 else
                 {
@@ -599,29 +598,29 @@ namespace HpToolsLauncher
                     ConsoleWriter.WriteLine(ex.Message);
                 }
 
-                if (TdConnectionOld.Connected)
+                if (_tdConnectionOld.Connected)
                 {
                     try
                     {
-                        TdConnectionOld.Login(qcLogin, qcPass);
+                        _tdConnectionOld.Login(qcLogin, qcPass);
                     }
                     catch (Exception ex)
                     {
                         ConsoleWriter.WriteLine(ex.Message);
                     }
 
-                    if (TdConnectionOld.LoggedIn)
+                    if (_tdConnectionOld.LoggedIn)
                     {
                         try
                         {
-                            TdConnectionOld.Connect(qcDomain, qcProject);
+                            _tdConnectionOld.Connect(qcDomain, qcProject);
                         }
                         catch (Exception ex)
                         {
                             Console.WriteLine(ex.Message);
                         }
 
-                        if (TdConnectionOld.ProjectConnected)
+                        if (_tdConnectionOld.ProjectConnected)
                         {
                             return true;
                         }
@@ -1093,7 +1092,7 @@ namespace HpToolsLauncher
             {
                 try
                 {
-                    if (test.Type.In(API_TEST, GUI_TEST, BUSINESS_PROCESS))
+                    if (test.Type.In(API_TEST, GUI_TEST, BUSINESS_PROCESS, FLOW))
                     {
                         CollectInlineParams(strParams, @params, idx);
                     }
@@ -1451,7 +1450,7 @@ namespace HpToolsLauncher
 
             // isTestPath is only true, if a specific test was given by the user
             // if, the filteredTestList is empty, because of the filtering, we should not set the job status to failed
-            // only if, the specific given test was not found
+            // only if the specific given test was not found
             if (filteredTestList.Count == 0 && isTestPath && !testExisted)
             {
                 //this will make sure run will fail at the end. (since there was an error)
@@ -1552,7 +1551,7 @@ namespace HpToolsLauncher
         /// <param name="params"></param>
         private void SetParams(ITSTest3 test, List<TestParameter> @params)
         {
-            ConsoleWriter.WriteLine("SetParams: type = " + test.Type);
+            ConsoleWriter.WriteLine("SetParams: test.Type = " + test.Type);
             switch (test.Type)
             {
                 case API_TEST:
@@ -1562,7 +1561,8 @@ namespace HpToolsLauncher
                     SetGUITestParams(test, @params);
                     break;
                 case BUSINESS_PROCESS:
-                    SetBPTTestParams(test, @params, TdConnection);
+                case FLOW:
+                    SetBPTTestParams(test, @params);
                     break;
             }
         }
@@ -1572,8 +1572,7 @@ namespace HpToolsLauncher
         /// </summary>
         /// <param name="test">The Business Process test instance.</param>
         /// <param name="params">The parameter values to apply.</param>
-        /// <param name="connection">The active ALM connection.</param>
-        private static void SetBPTTestParams(ITSTest3 test, List<TestParameter> @params, ITDConnection13 connection)
+        private void SetBPTTestParams(ITSTest3 test, List<TestParameter> @params)
         {
             Console.WriteLine("SetBPTTestParams ...");
             if (@params.Count == 0) return;
@@ -1583,7 +1582,7 @@ namespace HpToolsLauncher
 
             uint currentTestId = Convert.ToUInt32(test.TestId);
 
-            IBPComponentFactory componentFactory = (IBPComponentFactory)connection.BPComponentFactory;
+            IBPComponentFactory componentFactory = (IBPComponentFactory)_tdConnection.BPComponentFactory;
             List components = componentFactory.NewList(string.Empty);
 
             foreach (IBPComponent2 component in components)
