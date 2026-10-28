@@ -68,7 +68,7 @@
 
     <properties>
         <revision>26.3.1-beta</revision>
-        <changelist></changelist>
+        <changelist>-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}</gitHubRepo>
         <concurrency>1</concurrency>
         <msbuild.exe>C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe</msbuild.exe>
