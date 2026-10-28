@@ -39,6 +39,7 @@ package com.microfocus.application.automation.tools.mi;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,6 +52,7 @@ import java.nio.file.StandardOpenOption;
  */
 public final class AuTeConfigurationStore {
     private static final String FILE_NAME = "default-configuration.json";
+    private static final String DOCUMENTATION_FILE_NAME = "default-configuration-example.md";
 
     /** Path of each build's copy, relative to the workspace; also its artifact path. */
     public static final String SNAPSHOT_PATH = FILE_NAME;
@@ -72,7 +74,7 @@ public final class AuTeConfigurationStore {
         return Files.readAllBytes(ensureTemplate(configurationId, spaceId));
     }
 
-    /** Creates the empty template if it is missing; an existing file is never overwritten. */
+    /** Ensures the empty template and companion guide exist; existing files are never overwritten. */
     public static Path ensureTemplate(String configurationId, String spaceId) throws IOException {
         return ensureTemplate(Jenkins.get().getRootDir().toPath(), configurationId, spaceId);
     }
@@ -85,6 +87,15 @@ public final class AuTeConfigurationStore {
         if (Files.notExists(file)) {
             Files.createDirectories(file.getParent());
             Files.writeString(file, EMPTY_TEMPLATE, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW);
+        }
+        Path documentation = file.resolveSibling(DOCUMENTATION_FILE_NAME);
+        if (Files.notExists(documentation)) {
+            try (InputStream input = AuTeConfigurationStore.class.getResourceAsStream(DOCUMENTATION_FILE_NAME)) {
+                if (input == null) {
+                    throw new IOException("Bundled AuTe configuration guide not found: " + DOCUMENTATION_FILE_NAME);
+                }
+                Files.write(documentation, input.readAllBytes(), StandardOpenOption.CREATE_NEW);
+            }
         }
         return file;
     }

@@ -52,8 +52,14 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 
 public class AuTeConfigurationStoreTest {
+    private static final String DOCUMENTATION_FILE_NAME = "default-configuration-example.md";
+
     @Rule
     public TemporaryFolder temporary = new TemporaryFolder();
 
@@ -66,18 +72,57 @@ public class AuTeConfigurationStoreTest {
         for (Object section : template.values()) {
             assertEquals(new JSONObject(), section);
         }
+        assertBundledDocumentation(file);
         Files.writeString(file, "{\"administrator\":true}");
+        Path documentation = file.resolveSibling(DOCUMENTATION_FILE_NAME);
+        Files.writeString(documentation, "Administrator notes");
         AuTeConfigurationStore.ensureTemplate(root, "connection", "1001");
         assertEquals("{\"administrator\":true}", Files.readString(file));
-        assertNotEquals(file, AuTeConfigurationStore.ensureTemplate(root, "connection", "1002"));
-        assertNotEquals(file, AuTeConfigurationStore.ensureTemplate(root, "other", "1001"));
+        assertEquals("Administrator notes", Files.readString(documentation));
+        Path otherSpace = AuTeConfigurationStore.ensureTemplate(root, "connection", "1002");
+        Path otherConnection = AuTeConfigurationStore.ensureTemplate(root, "other", "1001");
+        assertNotEquals(file, otherSpace);
+        assertNotEquals(file, otherConnection);
+        assertBundledDocumentation(otherSpace);
+        assertBundledDocumentation(otherConnection);
+    }
+
+    @Test
+    public void addsMissingDocumentationToExistingConfiguration() throws Exception {
+        Path root = temporary.getRoot().toPath();
+        Path folder = Files.createDirectories(root.resolve("aute-config").resolve("connection").resolve("1001"));
+        Path file = Files.writeString(folder.resolve("default-configuration.json"), "{\"administrator\":true}");
+
+        assertEquals(file, AuTeConfigurationStore.ensureTemplate(root, "connection", "1001"));
+        assertEquals("{\"administrator\":true}", Files.readString(file));
+        assertBundledDocumentation(file);
+        Files.delete(file.resolveSibling(DOCUMENTATION_FILE_NAME));
+        AuTeConfigurationStore.ensureTemplate(root, "connection", "1001");
+        assertBundledDocumentation(file);
+    }
+
+    @Test
+    public void recreatesMissingConfigurationWithoutOverwritingDocumentation() throws Exception {
+        Path root = temporary.getRoot().toPath();
+        Path file = AuTeConfigurationStore.ensureTemplate(root, "connection", "1001");
+        Path documentation = file.resolveSibling(DOCUMENTATION_FILE_NAME);
+        Files.writeString(documentation, "Administrator notes");
+        Files.delete(file);
+
+        AuTeConfigurationStore.ensureTemplate(root, "connection", "1001");
+        assertEquals(5, ((JSONObject) JSONValue.parse(Files.readString(file))).size());
+        assertEquals("Administrator notes", Files.readString(documentation));
     }
 
     @Test
     public void concurrentCreationPublishesOneCompleteTemplate() throws Exception {
         var executor = Executors.newFixedThreadPool(4);
         try {
-            Callable<Path> create = () -> AuTeConfigurationStore.ensureTemplate(temporary.getRoot().toPath(), "connection", "1001");
+            Callable<Path> create = () -> {
+                Path file = AuTeConfigurationStore.ensureTemplate(temporary.getRoot().toPath(), "connection", "1001");
+                assertBundledDocumentation(file);
+                return file;
+            };
             var results = executor.invokeAll(Collections.nCopies(12, create));
             for (var result : results) {
                 assertEquals(5, ((JSONObject) JSONValue.parse(Files.readString(result.get()))).size());
@@ -87,8 +132,20 @@ public class AuTeConfigurationStoreTest {
         }
     }
 
-    @Test(expected = IOException.class)
+    @Test
     public void rejectsPathTraversal() throws Exception {
-        AuTeConfigurationStore.ensureTemplate(temporary.getRoot().toPath(), "../outside", "1001");
+        Path root = temporary.getRoot().toPath();
+        assertThrows(IOException.class, () -> AuTeConfigurationStore.ensureTemplate(root, "../outside", "1001"));
+        assertThrows(IOException.class, () -> AuTeConfigurationStore.ensureTemplate(root, "connection", "../outside"));
+        assertFalse(Files.exists(root.resolve("aute-config")));
+    }
+
+    private static void assertBundledDocumentation(Path template) throws IOException {
+        try (var input = AuTeConfigurationStore.class.getResourceAsStream(DOCUMENTATION_FILE_NAME)) {
+            assertNotNull("Bundled configuration guide must be available", input);
+            byte[] expected = input.readAllBytes();
+            assertFalse("Bundled configuration guide must not be empty", expected.length == 0);
+            assertArrayEquals(expected, Files.readAllBytes(template.resolveSibling(DOCUMENTATION_FILE_NAME)));
+        }
     }
 }
