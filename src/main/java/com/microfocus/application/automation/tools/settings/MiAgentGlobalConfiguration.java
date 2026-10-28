@@ -49,7 +49,7 @@ public class MiAgentGlobalConfiguration extends GlobalConfiguration implements S
 
     private int maxBuildsToKeep = 50;
     private int maxDaysToKeep = 7;
-    private String defaultLlmLogicalName;
+    private String endpointParamName;
 
     public MiAgentGlobalConfiguration() {
         load();
@@ -87,13 +87,13 @@ public class MiAgentGlobalConfiguration extends GlobalConfiguration implements S
         save();
     }
 
-    public String getDefaultLlmLogicalName() {
-        return defaultLlmLogicalName;
+    public String getEndpointParamName() {
+        return endpointParamName;
     }
 
     @DataBoundSetter
-    public void setDefaultLlmLogicalName(String defaultLlmLogicalName) {
-        this.defaultLlmLogicalName = Util.fixEmptyAndTrim(defaultLlmLogicalName);
+    public void setEndpointParamName(String endpointParamName) {
+        this.endpointParamName = Util.fixEmptyAndTrim(endpointParamName);
         save();
     }
 }

@@ -91,14 +91,15 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     private static final String MANIFEST_FILE_NAME = MIAgentConstants.MANIFEST_FILE_NAME;
 
     private static final String AU_TESTER_CONFIGURATION_FIELD = "au_tester_configuration";
-    private static final String LLM_CONFIGURATION_FIELD = "llm_configuration";
-    private static final String LLM_LOGICAL_NAME_FIELD = "ENDPOINT_LOGICAL_NAME";
+    private static final String LLM_MODELS_FIELD = "LLM_MODELS";
+    private static final String ENDPOINT_PARAM_NAME_FIELD = "ENDPOINT_PARAM_NAME";
 
     private static final String CONFIGURATION_BLOCK = "CONFIGURATION";
     private static final String RUN_TEST_BLOCK = "RUN_TEST";
     private static final String LLM_ENDPOINT_BLOCK = "LLM_ENDPOINT";
     private static final String ENVIRONMENT_BLOCK = "ENVIRONMENT";
     private static final String OUTPUT_DIR_FIELD = "OUTPUT_DIR";
+    private static final String EXECUTION_RECORDING_ENABLED = "EXECUTION_RECORDING_ENABLED";
 
     private static final String SKIPPED_NATIVE_STATUS_ID = "list_node.run_native_status.skipped";
     private static final String SKIPPED_STEP_MESSAGE = "This run step was skipped";
@@ -267,7 +268,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                                              String runId) throws IOException {
         if (StringUtils.isBlank(logicalName)) {
             throw new IOException("[AuTe][ERROR] Run %s has no '%s' in '%s' and no default is set in the Autonomous Tester settings. It must name an Autonomous Tester LLM Configuration credential."
-                .formatted(runId, LLM_LOGICAL_NAME_FIELD, LLM_CONFIGURATION_FIELD));
+                .formatted(runId, ENDPOINT_PARAM_NAME_FIELD, LLM_MODELS_FIELD));
         }
 
         AuTeLlmCredentials llmConfig = CredentialsProvider.findCredentialById(
@@ -290,21 +291,21 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     /** Octane value first, then the Jenkins global default; null when neither is set. */
     private String extractLlmLogicalName(JSONObject runData) {
         // Null when no default is configured in the Jenkins global settings.
-        String defaultName = MiAgentGlobalConfiguration.getInstance().getDefaultLlmLogicalName();
+        String defaultName = MiAgentGlobalConfiguration.getInstance().getEndpointParamName();
 
         Object configuration = runData.get(AU_TESTER_CONFIGURATION_FIELD);
         if (!(configuration instanceof JSONObject)) {
             return defaultName;
         }
-        Object llmConfiguration = ((JSONObject) configuration).get(LLM_CONFIGURATION_FIELD);
-        if (!(llmConfiguration instanceof JSONObject)) {
+        Object llmModels = ((JSONObject) configuration).get(LLM_MODELS_FIELD);
+        if (!(llmModels instanceof JSONObject)) {
             return defaultName;
         }
-        Object logicalName = ((JSONObject) llmConfiguration).get(LLM_LOGICAL_NAME_FIELD);
-        if (logicalName == null || StringUtils.isBlank(String.valueOf(logicalName))) {
+        Object endpointParamName = ((JSONObject) llmModels).get(ENDPOINT_PARAM_NAME_FIELD);
+        if (endpointParamName == null || StringUtils.isBlank(String.valueOf(endpointParamName))) {
             return defaultName;
         }
-        return String.valueOf(logicalName).trim();
+        return String.valueOf(endpointParamName).trim();
     }
 
     /** Reads the shared space default configuration copied into the workspace by {@link AuTeConfigurationSnapshotBuilder}. */
@@ -331,6 +332,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
         config.put(LLM_ENDPOINT_BLOCK, llmEndpoint);
         JSONObject environment = (JSONObject) config.get(ENVIRONMENT_BLOCK);
         environment.put(OUTPUT_DIR_FIELD, runFolder.getRemote());
+        environment.put(EXECUTION_RECORDING_ENABLED, false);
 
         JSONObject document = new JSONObject();
         document.put(CONFIGURATION_BLOCK, config);
