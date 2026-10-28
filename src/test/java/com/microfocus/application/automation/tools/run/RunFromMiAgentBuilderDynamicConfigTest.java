@@ -77,7 +77,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Verifies the per-run stdin document: {@code CONFIGURATION} carries the shared space default configuration,
- * the LLM credential (looked up by {@code ENDPOINT_LOGICAL_NAME}) as {@code LLM_ENDPOINT} and the run
+ * the LLM credential (looked up by {@code ENDPOINT_PARAM_NAME}) as {@code LLM_ENDPOINT} and the run
  * folder as {@code ENVIRONMENT.OUTPUT_DIR}; {@code RUN_TEST} carries the Octane run payload unchanged.
  */
 public class RunFromMiAgentBuilderDynamicConfigTest {
@@ -105,7 +105,7 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
 
         String convertedTests = "{\"data\":["
                 + "{\"id\":\"2001\",\"au_tester_configuration\":{"
-                + "\"llm_configuration\":{\"ENDPOINT_LOGICAL_NAME\":\"" + CREDENTIAL_ID + "\",\"VENDOR\":\"GEMINI\","
+                + "\"LLM_MODELS\":{\"ENDPOINT_PARAM_NAME\":\"" + CREDENTIAL_ID + "\","
                 + "\"executor_model\":{\"MODEL_PARAMETERS\":[{\"Name\":\"temperature\",\"Value\":\"0.2\"}]}}"
                 + "}}"
                 + "]}";
@@ -128,7 +128,7 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         assertEquals("DEBUG", config.path("ENVIRONMENT").path("LOG_LEVEL").asText());
         assertEquals(runFolder.getAbsolutePath(), config.path("ENVIRONMENT").path("OUTPUT_DIR").asText());
 
-        JsonNode llmConfiguration = document.path("RUN_TEST").path("au_tester_configuration").path("llm_configuration");
+        JsonNode llmConfiguration = document.path("RUN_TEST").path("au_tester_configuration").path("LLM_MODELS");
         assertEquals("2001", document.path("RUN_TEST").path("id").asText());
         assertTrue("Octane payload is passed unchanged", llmConfiguration.path("executor_model").path("MODEL_PARAMETERS").isArray());
         assertTrue(llmConfiguration.path("executor_model").path("LLM_EXECUTOR_VENDOR").isMissingNode());
@@ -141,8 +141,8 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         File buildWorkspace = newBuildWorkspace("shared-workspace-perform");
 
         String convertedTests = "{\"data\":["
-                + "{\"id\":\"2001\",\"au_tester_configuration\":{\"llm_configuration\":{\"ENDPOINT_LOGICAL_NAME\":\"" + CREDENTIAL_ID + "\"}}},"
-                + "{\"id\":\"2002\",\"au_tester_configuration\":{\"llm_configuration\":{\"ENDPOINT_LOGICAL_NAME\":\"" + CREDENTIAL_ID + "\"}}}"
+                + "{\"id\":\"2001\",\"au_tester_configuration\":{\"LLM_MODELS\":{\"ENDPOINT_PARAM_NAME\":\"" + CREDENTIAL_ID + "\"}}},"
+                + "{\"id\":\"2002\",\"au_tester_configuration\":{\"LLM_MODELS\":{\"ENDPOINT_PARAM_NAME\":\"" + CREDENTIAL_ID + "\"}}}"
                 + "]}";
 
         Launcher.ProcStarter procStarter = mockProcStarter();
@@ -174,7 +174,7 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         File buildWorkspace = newBuildWorkspace("shared-workspace-skipped");
 
         String convertedTests = "{\"data\":[{\"id\":\"4001\",\"au_tester_configuration\":"
-                + "{\"llm_configuration\":{\"ENDPOINT_LOGICAL_NAME\":\"" + CREDENTIAL_ID + "\"}},"
+                + "{\"LLM_MODELS\":{\"ENDPOINT_PARAM_NAME\":\"" + CREDENTIAL_ID + "\"}},"
                 + "\"run_steps\":{\"data\":[{\"type\":\"run_step\",\"id\":\"s1\"}]}}]}";
 
         Launcher.ProcStarter procStarter = mockProcStarter();
@@ -249,4 +249,3 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
         return procStarter;
     }
 }
-
