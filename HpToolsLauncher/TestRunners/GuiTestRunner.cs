@@ -84,7 +84,7 @@ namespace HpToolsLauncher
         private const string CPU = "CPU";
         private const string MEMORY = "Memory";
         private const string LOG = "Log";
-        private const string FREEMEMORY = "FreeMomery";
+        private const string FREEMEMORY = "FreeMemory";
         private const string FREEDISKSPACE = "FreeDiskSpace";
         private const string THERMALSTATE = "ThermalState";
         private const string WIFISTATE = "WifiState";

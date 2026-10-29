@@ -36,8 +36,8 @@
  */
 package com.microfocus.application.automation.tools.uft.model;
 
-import com.microfocus.application.automation.tools.EncryptionUtils;
 import com.microfocus.application.automation.tools.model.EnumDescription;
+import com.microfocus.application.automation.tools.uft.utils.Aes256Encrypter;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -99,7 +99,7 @@ public class SpecifyParametersModel extends AbstractDescribableImpl<SpecifyParam
         this.parameterJson = parameterJson;
     }
 
-    public void addProperties(Properties props, String searchStr, Node node) throws Exception {
+    public void addProperties(Properties props, String searchStr, Aes256Encrypter encrypter) throws Exception {
         JSONArray testParams = (JSONArray) JSONValue.parseStrict(parameterJson);
 
         int pidx = 1;
@@ -115,7 +115,7 @@ public class SpecifyParametersModel extends AbstractDescribableImpl<SpecifyParam
                 String val = curr.get("value").toString();
                 if (type.equals(PWD) && StringUtils.isNotBlank(val))
                 {
-                    val = EncryptionUtils.encrypt(val, node);
+                    val = encrypter.encrypt(val);
                 }
 
                 props.setProperty(String.format("Param%d_Name_%d", currPidx, i + 1), name);

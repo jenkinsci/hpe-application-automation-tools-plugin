@@ -35,11 +35,12 @@
  *  ___________________________________________________________________
  */
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
-using System.Linq;
-using System.ComponentModel;
 
 namespace HpToolsLauncher.Utils
 {
@@ -48,7 +49,9 @@ namespace HpToolsLauncher.Utils
         public static SecureString ToSecureString(this string plainString)
         {
             if (plainString == null)
+            {
                 return null;
+            }
 
             SecureString secureString = new SecureString();
             foreach (char c in plainString.ToCharArray())
@@ -71,7 +74,7 @@ namespace HpToolsLauncher.Utils
                 for (int i = 0; i < chars.Length; i++)
                 {
                     chars[i] = (char)Marshal.ReadInt16(bstr, i * sizeof(char));
-                }
+            }
 
                 Marshal.ZeroFreeBSTR(bstr);
                 bstr = IntPtr.Zero;
@@ -85,8 +88,8 @@ namespace HpToolsLauncher.Utils
                     if (bstr != IntPtr.Zero)
                     {
                         Marshal.ZeroFreeBSTR(bstr);
-                    }
-                }
+            }
+        }
                 finally
                 {
                     pin.Free();
@@ -257,5 +260,15 @@ namespace HpToolsLauncher.Utils
             var descrAttrs = (DescriptionAttribute[])fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false);
             return descrAttrs.Length > 0 ? descrAttrs[0].Description : enumValue.ToString();
         }
+
+        public static string[] Exclude(this IEnumerable<string> source, string value, bool ignoreCase = false)
+        {
+            var comparison = ignoreCase
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            return source.Where(s => !string.Equals(s, value, comparison)).ToArray();
+        }
+
     }
 }
