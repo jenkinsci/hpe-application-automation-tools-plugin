@@ -52,6 +52,8 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.Before;
+import org.junit.After;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 
@@ -78,6 +80,22 @@ public class RunFromMiAgentBuilderTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    private String originalAuteHome;
+
+    @Before
+    public void clearAuteHome() {
+        originalAuteHome = EnvVars.masterEnvVars.remove(MIAgentConstants.AUTE_HOME_ENV_VAR);
+    }
+
+    @After
+    public void restoreAuteHome() {
+        if (originalAuteHome == null) {
+            EnvVars.masterEnvVars.remove(MIAgentConstants.AUTE_HOME_ENV_VAR);
+        } else {
+            EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, originalAuteHome);
+        }
+    }
 
     @Test
     public void perform_emptyConvertedPayload_addsMiActionAndSkips() throws Exception {
@@ -213,13 +231,15 @@ public class RunFromMiAgentBuilderTest {
     }
 
     @Test
-    public void resolveRunnerExecutable_usesSharedWorkspaceParent() throws Exception {
+    public void resolveRunnerExecutable_usesInstallerLocationWithSpaces() throws Exception {
         RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
-        File sharedWorkspace = tempFolder.newFolder("shared-workspace");
-        File runnerWorkspace = new File(sharedWorkspace, "runner-1");
-        assertTrue(runnerWorkspace.mkdir());
-        File miAgentExe = new File(sharedWorkspace, "mi-agent.exe");
+        File installation = tempFolder.newFolder("Autonomous Tester");
+        File agentFolder = new File(installation, "mi-agent");
+        assertTrue(agentFolder.mkdir());
+        File miAgentExe = new File(agentFolder, "mi-agent.exe");
         assertTrue(miAgentExe.createNewFile());
+        EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, installation.getAbsolutePath());
+        File runnerWorkspace = tempFolder.newFolder("unrelated-workspace");
 
         Method resolveMethod = RunFromMiAgentBuilder.class.getDeclaredMethod("resolveRunnerExecutable", FilePath.class);
         resolveMethod.setAccessible(true);
@@ -230,31 +250,53 @@ public class RunFromMiAgentBuilderTest {
     }
 
     @Test
-    public void resolveRunnerExecutable_throwsWhenExeExistsOnlyInRunnerWorkspace() throws Exception {
-        RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
-        File sharedWorkspace = tempFolder.newFolder("shared-workspace-only-runner-has-exe");
+    public void resolveRunnerExecutable_missingVariableDoesNotFallBackToWorkspace() throws Exception {
+        File sharedWorkspace = tempFolder.newFolder("shared-workspace");
         File runnerWorkspace = new File(sharedWorkspace, "runner-2");
         assertTrue(runnerWorkspace.mkdir());
-        File miAgentExeInRunner = new File(runnerWorkspace, "mi-agent.exe");
-        assertTrue(miAgentExeInRunner.createNewFile());
-
-        Method resolveMethod = RunFromMiAgentBuilder.class.getDeclaredMethod("resolveRunnerExecutable", FilePath.class);
-        resolveMethod.setAccessible(true);
-
-        try {
-            resolveMethod.invoke(builder, new FilePath(runnerWorkspace));
-        } catch (java.lang.reflect.InvocationTargetException e) {
-            assertTrue(e.getCause() instanceof IOException);
-            assertEquals(
-                    "[AuTe][ERROR] mi-agent.exe not found at required shared location: ${WORKSPACE}/../mi-agent.exe",
-                    e.getCause().getMessage());
-            return;
-        }
-        throw new AssertionError("Expected IOException");
+        assertTrue(new File(sharedWorkspace, "mi-agent.exe").createNewFile());
+        assertTrue(new File(runnerWorkspace, "mi-agent.exe").createNewFile());
+        assertResolutionFailure(runnerWorkspace, "UFT_AUTE_HOME is not set");
     }
 
     @Test
-    public void executeRunner_throwsWhenSharedExecutableMissing() throws Exception {
+    public void resolveRunnerExecutable_blankVariableFails() throws Exception {
+        EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, "   ");
+        assertResolutionFailure(tempFolder.getRoot(), "UFT_AUTE_HOME is not set");
+    }
+
+    @Test
+    public void resolveRunnerExecutable_missingInstalledExeDoesNotFallBackToWorkspace() throws Exception {
+        File installation = tempFolder.newFolder("installation");
+        EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, installation.getAbsolutePath());
+        File workspace = tempFolder.newFolder("workspace");
+        assertTrue(new File(tempFolder.getRoot(), "mi-agent.exe").createNewFile());
+        assertTrue(new File(workspace, "mi-agent.exe").createNewFile());
+        File expected = new File(new File(installation, "mi-agent"), "mi-agent.exe");
+        assertResolutionFailure(workspace, "mi-agent.exe not found at installer location: " + expected.getAbsolutePath());
+    }
+
+    @Test
+    public void resolveRunnerExecutable_rejectsDirectory() throws Exception {
+        File installation = tempFolder.newFolder("installation");
+        EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, installation.getAbsolutePath());
+        File executableDirectory = new File(new File(installation, "mi-agent"), "mi-agent.exe");
+        assertTrue(executableDirectory.mkdirs());
+        assertResolutionFailure(tempFolder.getRoot(), executableDirectory.getAbsolutePath());
+    }
+
+    private void assertResolutionFailure(File workspace, String message) throws Exception {
+        Method resolveMethod = RunFromMiAgentBuilder.class.getDeclaredMethod("resolveRunnerExecutable", FilePath.class);
+        resolveMethod.setAccessible(true);
+        java.lang.reflect.InvocationTargetException failure = org.junit.Assert.assertThrows(
+                java.lang.reflect.InvocationTargetException.class,
+                () -> resolveMethod.invoke(new RunFromMiAgentBuilder(), new FilePath(workspace)));
+        assertTrue(failure.getCause() instanceof IOException);
+        assertTrue(failure.getCause().getMessage().contains(message));
+    }
+
+    @Test
+    public void executeRunner_throwsWhenInstallerVariableMissing() throws Exception {
         RunFromMiAgentBuilder builder = new RunFromMiAgentBuilder();
         File sharedWorkspace = tempFolder.newFolder("shared-workspace-missing-exe");
         File runnerWorkspace = new File(sharedWorkspace, "runner-3");
@@ -275,7 +317,7 @@ public class RunFromMiAgentBuilderTest {
                     new PrintStream(System.out));
         } catch (java.lang.reflect.InvocationTargetException e) {
             assertTrue(e.getCause() instanceof IOException);
-            assertTrue(e.getCause().getMessage().contains("${WORKSPACE}/../mi-agent.exe"));
+            assertTrue(e.getCause().getMessage().contains("UFT_AUTE_HOME is not set"));
             return;
         }
         throw new AssertionError("Expected IOException");

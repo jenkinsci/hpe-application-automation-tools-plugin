@@ -49,6 +49,7 @@ import com.hp.octane.integrations.dto.executor.impl.TestingToolType;
 import com.microfocus.application.automation.tools.mi.MIAgentWorkspaceCleanupPublisher;
 import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
 import hudson.FilePath;
+import hudson.EnvVars;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Result;
 import hudson.model.FreeStyleProject;
@@ -132,12 +133,15 @@ public class TestExecutionJobCreatorServiceTest {
     @Test
     public void lifecycle_copiesToRemoteAgentArchivesAndDeletesOnlyAllocatedWorkspace() throws Exception {
         FreeStyleProject project = lifecycleJob("remote");
-        var agent = jenkins.createOnlineSlave();
+        FilePath installation = jenkins.jenkins.getRootPath().child("Autonomous Tester");
+        var agent = jenkins.createOnlineSlave(null,
+                new EnvVars(MIAgentConstants.AUTE_HOME_ENV_VAR, installation.getRemote()));
         project.setAssignedLabel(agent.getSelfLabel());
         FilePath expectedWorkspace = agent.getWorkspaceFor(project);
-        FilePath executable = expectedWorkspace.getParent().child("mi-agent.exe");
+        FilePath executable = new FilePath(expectedWorkspace.getChannel(), installation.getRemote())
+                .child("mi-agent").child("mi-agent.exe");
         executable.getParent().mkdirs();
-        executable.write("shared executable", "UTF-8");
+        executable.write("installed executable", "UTF-8");
         FilePath sibling = expectedWorkspace.withSuffix("@2");
         sibling.mkdirs();
         sibling.child("active.txt").write("other build", "UTF-8");

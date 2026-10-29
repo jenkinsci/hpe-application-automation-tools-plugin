@@ -36,13 +36,21 @@
  */
 package com.microfocus.application.automation.tools.run;
 
+import com.microfocus.application.automation.tools.mi.AuTeSetupFailure;
+import com.microfocus.application.automation.tools.mi.MIAgentConstants;
 import hudson.AbortException;
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.junit.Test;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -50,26 +58,53 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
 
 public class MiAgentPreflightBuilderTest {
 
     private final Run<?, ?> build = mock(Run.class);
-    private final FilePath workspace = mock(FilePath.class);
-    private final FilePath sharedWorkspace = mock(FilePath.class);
-    private final FilePath miAgentExe = mock(FilePath.class);
     private final Launcher launcher = mock(Launcher.class);
     private final TaskListener listener = mock(TaskListener.class);
 
     private final MiAgentPreflightBuilder builder = new MiAgentPreflightBuilder();
 
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    private String originalAuteHome;
+    private FilePath workspace;
+    private File miAgentExe;
+
+    @Before
+    public void setUpInstallation() throws Exception {
+        originalAuteHome = EnvVars.masterEnvVars.remove(MIAgentConstants.AUTE_HOME_ENV_VAR);
+        File installation = tempFolder.newFolder("Autonomous Tester");
+        EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, installation.getAbsolutePath());
+        File agentFolder = new File(installation, "mi-agent");
+        assertTrue(agentFolder.mkdir());
+        miAgentExe = new File(agentFolder, "mi-agent.exe");
+        workspace = new FilePath(tempFolder.newFolder("workspace"));
+    }
+
+    @After
+    public void restoreAuteHome() {
+        if (originalAuteHome == null) {
+            EnvVars.masterEnvVars.remove(MIAgentConstants.AUTE_HOME_ENV_VAR);
+        } else {
+            EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, originalAuteHome);
+        }
+    }
+
     @Test
-    public void checkMiAgentExecutable_throwsWhenParentIsNull() throws Exception {
-        when(workspace.getParent()).thenReturn(null);
+    public void checkMiAgentExecutable_throwsWhenVariableMissing() throws Exception {
+        EnvVars.masterEnvVars.remove(MIAgentConstants.AUTE_HOME_ENV_VAR);
 
         try {
             builder.perform(build, workspace, launcher, listener);
         } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("shared workspace root"));
+            assertTrue(e.getMessage().contains("UFT_AUTE_HOME is not set"));
+            verify(build).addAction(any(AuTeSetupFailure.class));
             return;
         }
         throw new AssertionError("Expected AbortException");
@@ -77,15 +112,11 @@ public class MiAgentPreflightBuilderTest {
 
     @Test
     public void checkMiAgentExecutable_throwsWhenExeNotFound() throws Exception {
-        when(workspace.getParent()).thenReturn(sharedWorkspace);
-        when(sharedWorkspace.child(MiAgentPreflightBuilder.MI_AGENT_EXE)).thenReturn(miAgentExe);
-        when(miAgentExe.exists()).thenReturn(false);
-        when(miAgentExe.getRemote()).thenReturn("C:\\Jenkins\\workspace\\mi-agent.exe");
-
         try {
             builder.perform(build, workspace, launcher, listener);
         } catch (AbortException e) {
-            assertTrue(e.getMessage().contains("C:\\Jenkins\\workspace\\mi-agent.exe"));
+            assertTrue(e.getMessage().contains(miAgentExe.getAbsolutePath()));
+            verify(build).addAction(any(AuTeSetupFailure.class));
             return;
         }
         throw new AssertionError("Expected AbortException");
@@ -93,10 +124,7 @@ public class MiAgentPreflightBuilderTest {
 
     @Test
     public void checkMiAgentExecutable_throwsWhenExeIsDirectory() throws Exception {
-        when(workspace.getParent()).thenReturn(sharedWorkspace);
-        when(sharedWorkspace.child(MiAgentPreflightBuilder.MI_AGENT_EXE)).thenReturn(miAgentExe);
-        when(miAgentExe.exists()).thenReturn(true);
-        when(miAgentExe.isDirectory()).thenReturn(true);
+        assertTrue(miAgentExe.mkdir());
 
         try {
             builder.perform(build, workspace, launcher, listener);
@@ -109,11 +137,7 @@ public class MiAgentPreflightBuilderTest {
 
     @Test
     public void perform_succeedsWhenExePresent() throws Exception {
-        when(workspace.getParent()).thenReturn(sharedWorkspace);
-        when(sharedWorkspace.child(MiAgentPreflightBuilder.MI_AGENT_EXE)).thenReturn(miAgentExe);
-        when(miAgentExe.exists()).thenReturn(true);
-        when(miAgentExe.isDirectory()).thenReturn(false);
-        when(miAgentExe.getRemote()).thenReturn("C:\\Jenkins\\workspace\\mi-agent.exe");
+        assertTrue(miAgentExe.createNewFile());
         ByteArrayOutputStream logs = new ByteArrayOutputStream();
         PrintStream logger = new PrintStream(logs, true, StandardCharsets.UTF_8.name());
         when(listener.getLogger()).thenReturn(logger);
@@ -121,7 +145,6 @@ public class MiAgentPreflightBuilderTest {
         builder.perform(build, workspace, launcher, listener);
 
         String output = logs.toString(StandardCharsets.UTF_8.name());
-        assertTrue(output.contains("AuTe Preflight Check : mi-agent.exe found at: C:\\Jenkins\\workspace\\mi-agent.exe"));
+        assertTrue(output.contains("AuTe Preflight Check : mi-agent.exe found at: " + miAgentExe.getAbsolutePath()));
     }
 }
-

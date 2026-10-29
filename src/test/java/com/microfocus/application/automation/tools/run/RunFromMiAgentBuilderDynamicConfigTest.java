@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hp.octane.integrations.executor.TestsToRunConverter;
 import com.microfocus.application.automation.tools.mi.AuTeLlmCredentials;
+import com.microfocus.application.automation.tools.mi.MIAgentConstants;
 import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -54,6 +55,7 @@ import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import org.junit.Before;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -92,6 +94,22 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    private String originalAuteHome;
+
+    @Before
+    public void saveAuteHome() {
+        originalAuteHome = EnvVars.masterEnvVars.remove(MIAgentConstants.AUTE_HOME_ENV_VAR);
+    }
+
+    @After
+    public void restoreAuteHome() {
+        if (originalAuteHome == null) {
+            EnvVars.masterEnvVars.remove(MIAgentConstants.AUTE_HOME_ENV_VAR);
+        } else {
+            EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, originalAuteHome);
+        }
+    }
 
     @Before
     public void registerLlmCredential() {
@@ -164,6 +182,9 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
             assertEquals(runFolder(buildWorkspace, runId).getAbsolutePath(),
                 document.path("CONFIGURATION").path("ENVIRONMENT").path("OUTPUT_DIR").asText());
             assertEquals(1, argumentsCaptor.getAllValues().get(runIndex).toList().size());
+            assertEquals(new File(new File(EnvVars.masterEnvVars.get(MIAgentConstants.AUTE_HOME_ENV_VAR),
+                    "mi-agent"), "mi-agent.exe").getAbsolutePath(),
+                    argumentsCaptor.getAllValues().get(runIndex).toList().get(0));
             runIndex++;
         }
     }
@@ -206,7 +227,11 @@ public class RunFromMiAgentBuilderDynamicConfigTest {
 
     private File newBuildWorkspace(String name) throws Exception {
         File sharedWorkspace = tempFolder.newFolder(name);
-        assertTrue(new File(sharedWorkspace, "mi-agent.exe").createNewFile());
+        File installation = tempFolder.newFolder(name + "-installation");
+        File agentFolder = new File(installation, "mi-agent");
+        assertTrue(agentFolder.mkdir());
+        assertTrue(new File(agentFolder, "mi-agent.exe").createNewFile());
+        EnvVars.masterEnvVars.put(MIAgentConstants.AUTE_HOME_ENV_VAR, installation.getAbsolutePath());
         File buildWorkspace = new File(sharedWorkspace, "build-workspace");
         assertTrue(buildWorkspace.mkdir());
         Files.writeString(new File(buildWorkspace, "default-configuration.json").toPath(), DEFAULT_CONFIGURATION);

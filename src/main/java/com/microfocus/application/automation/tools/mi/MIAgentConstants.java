@@ -36,12 +36,17 @@
  */
 package com.microfocus.application.automation.tools.mi;
 
+import hudson.EnvVars;
 import hudson.FilePath;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.IOException;
 
 public final class MIAgentConstants {
     public static final String RESULT_FOLDER = "mi-agent-results";
     public static final String MANIFEST_FILE_NAME = "manifest.json";
     public static final String RUN_STEPS_RESULT_FILE_NAME = "run_steps_result.json";
+    public static final String AUTE_HOME_ENV_VAR = "UFT_AUTE_HOME";
 
     private MIAgentConstants() {
         // Prevent instantiation
@@ -49,5 +54,27 @@ public final class MIAgentConstants {
 
     public static FilePath resultRoot(FilePath workspace) {
         return workspace.child(RESULT_FOLDER);
+    }
+
+    /**
+     * Resolves the installed runner using the agent process environment, not job overrides.
+     * Restart the Jenkins agent after the installer sets {@code UFT_AUTE_HOME}.
+     */
+    public static FilePath resolveRunnerExecutable(FilePath workspace) throws IOException, InterruptedException {
+        EnvVars agentEnvironment = EnvVars.getRemote(workspace.getChannel());
+        String auteHome = StringUtils.trimToNull(agentEnvironment.get(AUTE_HOME_ENV_VAR));
+        if (auteHome == null) {
+            throw new IOException("[AuTe][ERROR] UFT_AUTE_HOME is not set in the Jenkins agent environment. "
+                    + "Install Autonomous Tester and restart the Jenkins agent.");
+        }
+
+        FilePath runner = new FilePath(workspace.getChannel(), auteHome)
+                .child("mi-agent")
+                .child("mi-agent.exe");
+        if (!runner.exists() || runner.isDirectory()) {
+            throw new IOException("[AuTe][ERROR] mi-agent.exe not found at installer location: %s"
+                    .formatted(runner.getRemote()));
+        }
+        return runner;
     }
 }

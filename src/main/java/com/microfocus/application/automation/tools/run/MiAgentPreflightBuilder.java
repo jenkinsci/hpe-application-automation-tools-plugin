@@ -37,6 +37,7 @@
 package com.microfocus.application.automation.tools.run;
 
 import com.microfocus.application.automation.tools.mi.AuTeSetupFailure;
+import com.microfocus.application.automation.tools.mi.MIAgentConstants;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
@@ -55,11 +56,10 @@ import java.io.IOException;
 
 /**
  * First build step in every Autonomous Tester (AuTe) job — verifies that mi-agent.exe is present in the
- * shared workspace root before conversion or execution begins.
+ * installer location {@code %UFT_AUTE_HOME%\mi-agent\mi-agent.exe} before conversion or execution begins.
+ * The Jenkins agent must be restarted after the installer sets the environment variable.
  */
 public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep {
-
-    static final String MI_AGENT_EXE = "mi-agent.exe";
 
     @DataBoundConstructor
     public MiAgentPreflightBuilder() {
@@ -83,18 +83,13 @@ public class MiAgentPreflightBuilder extends Builder implements SimpleBuildStep 
     }
 
     private FilePath checkMiAgentExecutable(Run<?, ?> build, FilePath workspace) throws IOException, InterruptedException {
-        // mi-agent.exe lives in the shared workspace root, one level above the job workspace
-        FilePath sharedWorkspace = workspace.getParent();
-        if (sharedWorkspace == null) {
-            throw abort(build, "Cannot resolve shared workspace root from: %s".formatted(workspace.getRemote()));
+        try {
+            return MIAgentConstants.resolveRunnerExecutable(workspace);
+        } catch (IOException e) {
+            AbortException failure = abort(build, e.getMessage());
+            failure.initCause(e);
+            throw failure;
         }
-
-        FilePath miAgentExe = sharedWorkspace.child(MI_AGENT_EXE);
-        if (!miAgentExe.exists() || miAgentExe.isDirectory()) {
-            throw abort(build, "mi-agent.exe not found at: %s".formatted(miAgentExe.getRemote()));
-        }
-
-        return miAgentExe;
     }
 
     private AbortException abort(Run<?, ?> build, String reason) {

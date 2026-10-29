@@ -86,7 +86,6 @@ import java.util.Collections;
  */
 public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
 
-    private static final String MI_AGENT_EXE = "mi-agent.exe";
     private static final String RUN_STEPS_RESULT_FILE_NAME = MIAgentConstants.RUN_STEPS_RESULT_FILE_NAME;
     private static final String MANIFEST_FILE_NAME = MIAgentConstants.MANIFEST_FILE_NAME;
 
@@ -346,10 +345,10 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
                               Launcher launcher,
                               TaskListener listener,
                               PrintStream log) throws IOException, InterruptedException {
-        FilePath sharedRunner = resolveRunnerExecutable(workspace);
+        FilePath runner = resolveRunnerExecutable(workspace);
         ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(sharedRunner.getRemote());
-        log.println("[AuTe] Resolved executable: %s".formatted(sharedRunner.getRemote()));
+        args.add(runner.getRemote());
+        log.println("[AuTe] Resolved executable: %s".formatted(runner.getRemote()));
 
         EnvVars environment = new EnvVars(build.getEnvironment(listener));
 
@@ -373,16 +372,7 @@ public class RunFromMiAgentBuilder extends Builder implements SimpleBuildStep {
     }
 
     private FilePath resolveRunnerExecutable(FilePath workspace) throws IOException, InterruptedException {
-        FilePath sharedWorkspace = workspace.getParent();
-        if (sharedWorkspace != null) {
-            FilePath sharedRunner = sharedWorkspace.child(MI_AGENT_EXE);
-            if (sharedRunner.exists() && !sharedRunner.isDirectory()) {
-                return sharedRunner;
-            }
-        }
-
-        throw new IOException("[AuTe][ERROR] mi-agent.exe not found at required shared location: ${WORKSPACE}/../%s"
-            .formatted(MI_AGENT_EXE));
+        return MIAgentConstants.resolveRunnerExecutable(workspace);
     }
 
     /** Returns the first console line containing the {@value #ERROR_PREFIX} marker, or {@code null} if none. */
