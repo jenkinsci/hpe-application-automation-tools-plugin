@@ -38,6 +38,8 @@ package com.microfocus.application.automation.tools.octane.events;
 
 import com.hp.octane.integrations.OctaneSDK;
 import com.hp.octane.integrations.dto.scm.SCMData;
+import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
+import org.apache.logging.log4j.Logger;
 import com.microfocus.application.automation.tools.octane.model.processors.scm.SCMProcessors;
 import com.microfocus.application.automation.tools.octane.model.processors.scm.SCMUtils;
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
@@ -59,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 
 @Extension
 public class SCMListenerOctaneImpl extends SCMListener {
+    private static final Logger logger = SDKBasedLoggerProvider.getLogger(SCMListenerOctaneImpl.class);
 
     @Override
     public void onChangeLogParsed(Run<?, ?> run, SCM scm, TaskListener listener, ChangeLogSet<?> changelog) throws Exception {
@@ -78,6 +81,11 @@ public class SCMListenerOctaneImpl extends SCMListener {
             SCMUtils.persistSCMData(run, jobCiId, buildCiId, scmData);
             OctaneSDK.getClients().forEach(octaneClient ->
                     octaneClient.getSCMDataService().enqueueSCMData(jobCiId, buildCiId, scmData, parents));
+            logger.info("SCM data enqueued for '{}': {} commit(s), repository {}", run.getFullDisplayName(),
+                    scmData.getCommits() == null ? 0 : scmData.getCommits().size(),
+                    scmData.getRepository() == null ? "MISSING" : "set");
+        } else {
+            logger.debug("No SCM data to send for '{}'", run.getFullDisplayName());
         }
     }
 }

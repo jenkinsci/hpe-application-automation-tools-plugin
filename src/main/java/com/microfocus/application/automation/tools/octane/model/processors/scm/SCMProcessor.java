@@ -53,4 +53,15 @@ public interface SCMProcessor {
     SCMData getSCMData(WorkflowRun run, SCM scm);
 
     CommonOriginRevision getCommonOriginRevision(Run run);
+
+    /**
+     * Builds SCM data for a run whose changelog is empty (nothing new since the previous build), so that the
+     * revision that was actually built is still reported to Octane. Octane only knows commits that were reported
+     * in some build's SCM data, and it matches a pipeline's common revision against those commits.
+     *
+     * @return SCM data containing the built revision, or null when not supported / not resolvable
+     */
+    default SCMData getBuiltRevisionSCMData(Run run, SCM scm) {
+        return null;
+    }
 }
