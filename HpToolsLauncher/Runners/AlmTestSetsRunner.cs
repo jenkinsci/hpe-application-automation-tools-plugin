@@ -1604,12 +1604,16 @@ namespace HpToolsLauncher
 
                     foreach (IBPIterationParam iterationParam in iterationParams)
                     {
-                        IBPParam parameter = iterationParam.BPParameter as IBPParam;
-                        if (parameter == null) continue;
+                        IBPParam param = iterationParam.BPParameter as IBPParam;
+                        if (param == null) continue;
 
-                        string name = parameter.ComponentParamName;
+                        string name = param.ComponentParamName;
                         TestParameter testParam;
-                        if (!paramsByName.TryGetValue(name, out testParam)) continue;
+                        if (!paramsByName.TryGetValue(name, out testParam))
+                        {
+                            ConsoleWriter.WriteLine(string.Format("Warning: No value provided for parameter '{0}' in iteration {1}. Skipping this parameter.", name, iteration.ID));
+                            continue;
+                        }
 
                         iterationParam.Value = testParam.ParamVal;
                         iterationParam.Post();
