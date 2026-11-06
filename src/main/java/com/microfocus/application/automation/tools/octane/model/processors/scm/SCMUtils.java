@@ -63,6 +63,10 @@ public class SCMUtils {
     }
 
     public static SCMData extractSCMData(Run run, SCM scm, SCMProcessor scmProcessor) {
+        if (scmProcessor == null) {
+            logger.debug("No SCMProcessor for SCM type '{}', SCM data will not be extracted", scm == null ? null : scm.getClass().getName());
+            return null;
+        }
         SCMData result = null;
         if (run.getParent() instanceof MatrixConfiguration || run instanceof AbstractBuild) {
             AbstractBuild build = (AbstractBuild) run;
@@ -74,6 +78,12 @@ public class SCMUtils {
             if (!wRun.getChangeSets().isEmpty()) {
                 result = scmProcessor.getSCMData(wRun, scm);
             }
+        }
+
+        // Nothing new since the previous build: still report the built revision, otherwise Octane never learns
+        // about commits (the merge-base) that were already built, and branch comparison cannot find them.
+        if (result == null) {
+            result = scmProcessor.getBuiltRevisionSCMData(run, scm);
         }
         return result;
     }
