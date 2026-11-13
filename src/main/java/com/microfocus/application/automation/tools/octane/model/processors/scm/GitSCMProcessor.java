@@ -449,7 +449,7 @@ class GitSCMProcessor implements SCMProcessor {
 			return null;
 		}
 
-		String rawBranchName = branches.getFirst().getName();
+		String rawBranchName = branches.get(0).getName();
 
         // Handle parameterized branch names like ${BRANCH_NAME}
 		if (rawBranchName.startsWith("${") && rawBranchName.endsWith("}")) {
@@ -530,7 +530,7 @@ class GitSCMProcessor implements SCMProcessor {
 		if (StringUtils.isEmpty(url)) {
 			List<UserRemoteConfig> remotes = gitData.getUserRemoteConfigs();
 			if (remotes != null && !remotes.isEmpty()) {
-				url = remotes.getFirst().getUrl();
+				url = remotes.get(0).getUrl();
 			}
 		}
 		if (StringUtils.isEmpty(branch)) {

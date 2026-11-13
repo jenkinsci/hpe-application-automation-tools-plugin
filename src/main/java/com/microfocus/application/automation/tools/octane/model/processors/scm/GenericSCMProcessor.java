@@ -81,6 +81,12 @@ class GenericSCMProcessor implements SCMProcessor {
 		return null;
 	}
 
+	@Override
+	public SCMData getBuiltRevisionSCMData(Run run, SCM scm) {
+		// not supported for generic SCMs
+		return null;
+	}
+
 	private SCMData extractSCMData(SCM scm, List<ChangeLogSet<? extends ChangeLogSet.Entry>> changes) {
 		logger.info("building generic scm data for SCM of type " + scm.getType());
 
