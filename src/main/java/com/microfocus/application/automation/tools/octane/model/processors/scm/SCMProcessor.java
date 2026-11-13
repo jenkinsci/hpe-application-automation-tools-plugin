@@ -59,9 +59,9 @@ public interface SCMProcessor {
      * revision that was actually built is still reported to Octane. Octane only knows commits that were reported
      * in some build's SCM data, and it matches a pipeline's common revision against those commits.
      *
+     * Implementations that do not support this should return null.
+     *
      * @return SCM data containing the built revision, or null when not supported / not resolvable
      */
-    default SCMData getBuiltRevisionSCMData(Run run, SCM scm) {
-        return null;
-    }
+    SCMData getBuiltRevisionSCMData(Run run, SCM scm);
 }

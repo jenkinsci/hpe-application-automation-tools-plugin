@@ -49,6 +49,7 @@ import hudson.model.*;
 import hudson.plugins.git.BranchSpec;
 import hudson.plugins.git.GitChangeSet;
 import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.Revision;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.extensions.GitSCMExtension;
 import hudson.plugins.git.extensions.GitSCMExtensionDescriptor;
@@ -189,17 +190,24 @@ class GitSCMProcessor implements SCMProcessor {
 		}
 		try {
 			BuildData buildData = gitData.getBuildData(run);
-			if (buildData == null || buildData.getLastBuiltRevision() == null) {
+			final Revision lastBuiltRevision = buildData != null ? buildData.getLastBuiltRevision() : null;
+			if (lastBuiltRevision == null) {
 				logger.debug("No built revision available for '{}', built revision will not be reported", run.getFullDisplayName());
 				return null;
 			}
-			String builtRevId = buildData.getLastBuiltRevision().getSha1String();
+			String builtRevId = lastBuiltRevision.getSha1String();
 			FilePath workspace = getWorkspaceForRun(run);
 			if (StringUtils.isEmpty(builtRevId) || workspace == null) {
 				logger.debug("Built revision or workspace unavailable for '{}', built revision will not be reported", run.getFullDisplayName());
 				return null;
 			}
 
+			// info layout (see CommitInfoCallable), for example:
+			// info[0] = "Dev One"                                      author name
+			// info[1] = "dev.one@example.com"                          author email
+			// info[2] = "06dcb6b6a1f0c3d9e2b47a58c1d0e9f3b2a14c75"     first parent sha ("" if root commit)
+			// info[3] = "Add more tests to SimpleCalculator"           short commit message (first line)
+			// info[4] = "1781340908000"                                author time in epoch millis
 			String[] info = workspace.act(new CommitInfoCallable(getCheckoutDirForRun(run), builtRevId));
 			if (info == null) {
 				logger.debug("Built revision {} not found in local clone of '{}'", builtRevId, run.getFullDisplayName());
@@ -267,8 +275,9 @@ class GitSCMProcessor implements SCMProcessor {
 		repository = getRepository(run, gitData);
 
 		BuildData buildData = gitData.getBuildData(run);
-		if (buildData != null && buildData.getLastBuiltRevision() != null) {
-			builtRevId = buildData.getLastBuiltRevision().getSha1String();
+		final Revision lastBuiltRevision = buildData != null ? buildData.getLastBuiltRevision() : null;
+		if (lastBuiltRevision != null) {
+			builtRevId = lastBuiltRevision.getSha1String();
 		}
 
 		tmpCommits = extractCommits(changes);
@@ -440,7 +449,7 @@ class GitSCMProcessor implements SCMProcessor {
 			return null;
 		}
 
-		String rawBranchName = branches.get(0).getName();
+		String rawBranchName = branches.getFirst().getName();
 
         // Handle parameterized branch names like ${BRANCH_NAME}
 		if (rawBranchName.startsWith("${") && rawBranchName.endsWith("}")) {
@@ -507,11 +516,13 @@ class GitSCMProcessor implements SCMProcessor {
 
 		BuildData buildData = gitData.getBuildData(run);
 		if (buildData != null) {
-			if (buildData.getRemoteUrls() != null && !buildData.getRemoteUrls().isEmpty()) {
-				url = buildData.getRemoteUrls().iterator().next();
+			final Set<String> remoteUrls = buildData.getRemoteUrls();
+			if (remoteUrls != null && !remoteUrls.isEmpty()) {
+				url = remoteUrls.iterator().next();
 			}
-			if (buildData.getLastBuiltRevision() != null && !buildData.getLastBuiltRevision().getBranches().isEmpty()) {
-				branch = buildData.getLastBuiltRevision().getBranches().iterator().next().getName();
+			final Revision lastBuiltRevision = buildData.getLastBuiltRevision();
+			if (lastBuiltRevision != null && !lastBuiltRevision.getBranches().isEmpty()) {
+				branch = lastBuiltRevision.getBranches().iterator().next().getName();
 			}
 		}
 
@@ -519,7 +530,7 @@ class GitSCMProcessor implements SCMProcessor {
 		if (StringUtils.isEmpty(url)) {
 			List<UserRemoteConfig> remotes = gitData.getUserRemoteConfigs();
 			if (remotes != null && !remotes.isEmpty()) {
-				url = remotes.get(0).getUrl();
+				url = remotes.getFirst().getUrl();
 			}
 		}
 		if (StringUtils.isEmpty(branch)) {
