@@ -50,6 +50,7 @@ import com.hp.octane.integrations.services.configurationparameters.UftTestRunner
 import com.cloudbees.hudson.plugins.folder.Folder;
 import com.microfocus.application.automation.tools.mi.MIAgentWorkspaceCleanupPublisher;
 import com.microfocus.application.automation.tools.model.LoggedJenkinsRule;
+import com.microfocus.application.automation.tools.settings.MiAgentGlobalConfiguration;
 import hudson.FilePath;
 import hudson.EnvVars;
 import hudson.model.FreeStyleBuild;
@@ -57,6 +58,7 @@ import hudson.model.Result;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.tasks.ArtifactArchiver;
+import hudson.tasks.LogRotator;
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Rule;
@@ -131,6 +133,21 @@ public class TestExecutionJobCreatorServiceTest {
         assertTrue(first.getBuildersList().get(0) instanceof AuTeConfigurationSnapshotBuilder);
         assertTrue(first.getBuildersList().get(1) instanceof MiAgentPreflightBuilder);
         assertNotNull(first.getPublishersList().get(MIAgentWorkspaceCleanupPublisher.class));
+    }
+
+    @Test
+    public void createExecutor_appliesBuildAndDayRetentionLimitsToNewJobs() throws Exception {
+        MiAgentGlobalConfiguration configuration = MiAgentGlobalConfiguration.getInstance();
+        configuration.setMaxBuildsToKeep(23);
+        configuration.setMaxDaysToKeep(11);
+
+        FreeStyleProject project = createAuTeJob("retention");
+
+        LogRotator retention = (LogRotator) project.getBuildDiscarder();
+        assertEquals(11, retention.getDaysToKeep());
+        assertEquals(23, retention.getNumToKeep());
+        assertEquals(-1, retention.getArtifactDaysToKeep());
+        assertEquals(-1, retention.getArtifactNumToKeep());
     }
 
     @Test

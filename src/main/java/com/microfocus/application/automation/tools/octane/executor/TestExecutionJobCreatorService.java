@@ -483,7 +483,8 @@ public class TestExecutionJobCreatorService {
 		addTimestamper(proj);
 		addConcurrentBuildFlag(proj);
 		MiAgentGlobalConfiguration configuration = MiAgentGlobalConfiguration.getInstance();
-		proj.setBuildDiscarder(new LogRotator(-1, configuration.getMaxBuildsToKeep(), -1, configuration.getMaxDaysToKeep()));
+		proj.setBuildDiscarder(new LogRotator(configuration.getMaxDaysToKeep(),
+				configuration.getMaxBuildsToKeep(), -1, -1));
 
 		// Build steps - copy shared space configuration, preflight check, then Autonomous Tester converter + runner
 		proj.getBuildersList().add(new AuTeConfigurationSnapshotBuilder(configurationId, spaceId));
