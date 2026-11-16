@@ -510,6 +510,9 @@ public class JobConfigurationProxy {
                 Boolean useLogs = (Boolean) collectJSON.get("logs");
                 Boolean useScreenshot = (Boolean) collectJSON.get("screenshot");
                 Boolean useFreeMemory = (Boolean) collectJSON.get("freeMemory");
+                Boolean useFreeDiskSpace = (Boolean) collectJSON.get("freeDiskSpace");
+                Boolean useWifiState = (Boolean) collectJSON.get("wifiState");
+                Boolean useThermalState = (Boolean) collectJSON.get("thermalState");
                 if (useCPU) {
                     deviceMetricsSb.append("CPU;");
                 }
@@ -524,6 +527,15 @@ public class JobConfigurationProxy {
                 }
                 if (useFreeMemory) {
                     deviceMetricsSb.append("FreeMemory;");
+                }
+                if (useFreeDiskSpace) {
+                    deviceMetricsSb.append("FreeDiskSpace;");
+                }
+                if (useWifiState) {
+                    deviceMetricsSb.append("WifiState;");
+                }
+                if (useThermalState) {
+                    deviceMetricsSb.append("ThermalState;");
                 }
             }
             returnDefinitionJSON.put("autActions", removeLastSemicolon(sb));
