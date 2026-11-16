@@ -84,6 +84,12 @@ class SvnSCMProcessor implements SCMProcessor {
 		return null;
 	}
 
+	@Override
+	public SCMData getBuiltRevisionSCMData(Run run, SCM scm) {
+		// not supported for Subversion
+		return null;
+	}
+
 	private SCMData extractSCMData(Run run, SCM scm, List<ChangeLogSet<? extends ChangeLogSet.Entry>> changes) {
 		if (!(scm instanceof SubversionSCM)) {
 			throw new IllegalArgumentException("SubversionSCM type of SCM was expected here, found '" + scm.getClass().getName() + "'");
