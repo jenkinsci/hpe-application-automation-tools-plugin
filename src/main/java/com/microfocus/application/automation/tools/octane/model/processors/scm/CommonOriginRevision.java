@@ -41,4 +41,10 @@ import java.io.Serializable;
 public class CommonOriginRevision implements Serializable {
     public String branch;
     public String revision;
+
+    @Override
+    public String toString() {
+        String shortRevision = revision != null && revision.length() > 8 ? revision.substring(0, 8) : revision;
+        return "CommonOriginRevision{branch=" + branch + ", revision=" + shortRevision + "}";
+    }
 }

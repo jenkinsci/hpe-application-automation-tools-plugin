@@ -46,10 +46,11 @@ import com.microfocus.application.automation.tools.octane.model.processors.proje
 import com.microfocus.application.automation.tools.octane.tests.build.BuildHandlerUtils;
 import hudson.FilePath;
 import hudson.model.*;
-import hudson.plugins.git.Branch;
 import hudson.plugins.git.BranchSpec;
 import hudson.plugins.git.GitChangeSet;
 import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.Revision;
+import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.extensions.GitSCMExtension;
 import hudson.plugins.git.extensions.GitSCMExtensionDescriptor;
 import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
@@ -72,7 +73,6 @@ import org.eclipse.jgit.errors.NoMergeBaseException;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -93,7 +93,11 @@ import java.util.*;
 class GitSCMProcessor implements SCMProcessor {
 	private static final Logger logger = SDKBasedLoggerProvider.getLogger(GitSCMProcessor.class);
 	private static final DTOFactory dtoFactory = DTOFactory.getInstance();
-	private static final String DEFAULT_REMOTE_BRANCH = "refs/remotes/origin/master";
+	private static final String[] DEFAULT_REMOTE_BRANCH_CANDIDATES = {
+			"refs/remotes/origin/main",
+			"refs/remotes/origin/master",
+			"refs/remotes/origin/latest"
+	};
 
 	// Reflection method names used for SCM extraction
 	private static final String METHOD_GET_DEFINITION = "getDefinition";
@@ -173,6 +177,63 @@ class GitSCMProcessor implements SCMProcessor {
 	}
 
 	/**
+	 * Reports the revision that was built as a single commit when the build has no changelog.
+	 * Commit metadata is read from the local clone; if anything is unavailable nothing is reported.
+	 * @param run the Jenkins run (supports both AbstractBuild and WorkflowRun)
+	 * @param scm the SCM instance
+	 * @return the SCMData representing the built revision, or null if unavailable
+	 */
+	@Override
+	public SCMData getBuiltRevisionSCMData(Run run, SCM scm) {
+		if (!(scm instanceof GitSCM gitData)) {
+			return null;
+		}
+		try {
+			BuildData buildData = gitData.getBuildData(run);
+			final Revision lastBuiltRevision = buildData != null ? buildData.getLastBuiltRevision() : null;
+			if (lastBuiltRevision == null) {
+				logger.debug("No built revision available for '{}', built revision will not be reported", run.getFullDisplayName());
+				return null;
+			}
+			String builtRevId = lastBuiltRevision.getSha1String();
+			FilePath workspace = getWorkspaceForRun(run);
+			if (StringUtils.isEmpty(builtRevId) || workspace == null) {
+				logger.debug("Built revision or workspace unavailable for '{}', built revision will not be reported", run.getFullDisplayName());
+				return null;
+			}
+
+			// info layout (see CommitInfoCallable), for example:
+			// info[0] = "Dev One"                                      author name
+			// info[1] = "dev.one@example.com"                          author email
+			// info[2] = "06dcb6b6a1f0c3d9e2b47a58c1d0e9f3b2a14c75"     first parent sha ("" if root commit)
+			// info[3] = "Add more tests to SimpleCalculator"           short commit message (first line)
+			// info[4] = "1781340908000"                                author time in epoch millis
+			String[] info = workspace.act(new CommitInfoCallable(getCheckoutDirForRun(run), builtRevId));
+			if (info == null) {
+				logger.debug("Built revision {} is not the commit checked out in the workspace of '{}', not reported", builtRevId, run.getFullDisplayName());
+				return null;
+			}
+
+			SCMCommit commit = dtoFactory.newDTO(SCMCommit.class)
+					.setRevId(builtRevId)
+					.setParentRevId(StringUtils.defaultIfEmpty(info[2], null))
+					.setTime(Long.parseLong(info[4]))
+					.setUser(info[0])
+					.setUserEmail(info[1])
+					.setComment(info[3])
+					.setChanges(new ArrayList<>());
+
+			return dtoFactory.newDTO(SCMData.class)
+					.setRepository(getRepository(run, gitData))
+					.setBuiltRevId(builtRevId)
+					.setCommits(new ArrayList<>(List.of(commit)));
+		} catch (Exception e) {
+			logger.warn("failed to report built revision for '{}': {}", run.getFullDisplayName(), e.getClass().getSimpleName());
+			return null;
+		}
+	}
+
+	/**
 	 * Gets the workspace for a given run, handling both AbstractBuild and WorkflowRun types.
 	 */
 	private FilePath getWorkspaceForRun(Run run) {
@@ -214,8 +275,9 @@ class GitSCMProcessor implements SCMProcessor {
 		repository = getRepository(run, gitData);
 
 		BuildData buildData = gitData.getBuildData(run);
-		if (buildData != null && buildData.getLastBuiltRevision() != null) {
-			builtRevId = buildData.getLastBuiltRevision().getSha1String();
+		final Revision lastBuiltRevision = buildData != null ? buildData.getLastBuiltRevision() : null;
+		if (lastBuiltRevision != null) {
+			builtRevId = lastBuiltRevision.getSha1String();
 		}
 
 		tmpCommits = extractCommits(changes);
@@ -387,7 +449,7 @@ class GitSCMProcessor implements SCMProcessor {
 			return null;
 		}
 
-		String rawBranchName = branches.stream().findFirst().toString();
+		String rawBranchName = branches.get(0).getName();
 
         // Handle parameterized branch names like ${BRANCH_NAME}
 		if (rawBranchName.startsWith("${") && rawBranchName.endsWith("}")) {
@@ -446,27 +508,44 @@ class GitSCMProcessor implements SCMProcessor {
 	}
 
 	private SCMRepository getRepository(Run run, GitSCM gitData) {
-		SCMRepository result = null;
+		if (gitData == null) {
+			return null;
+		}
 		String url = null;
 		String branch = null;
-		if (gitData != null && gitData.getBuildData(run) != null) {
-			BuildData buildData = gitData.getBuildData(run);
-			if (buildData != null) {
-				if (buildData.getRemoteUrls() != null && !buildData.getRemoteUrls().isEmpty()) {
-					url = (String) buildData.getRemoteUrls().toArray()[0];
-				}
-				if (buildData.getLastBuiltRevision() != null && !buildData.getLastBuiltRevision().getBranches().isEmpty()) {
-					branch = ((Branch) buildData.getLastBuiltRevision().getBranches().toArray()[0]).getName();
-				}
-				result = dtoFactory.newDTO(SCMRepository.class)
-						.setType(SCMType.GIT)
-						.setUrl(url)
-						.setBranch(branch);
-			} else {
-				logger.warn("failed to obtain BuildData; no SCM repository info will be available");
+
+		BuildData buildData = gitData.getBuildData(run);
+		if (buildData != null) {
+			final Set<String> remoteUrls = buildData.getRemoteUrls();
+			if (remoteUrls != null && !remoteUrls.isEmpty()) {
+				url = remoteUrls.iterator().next();
+			}
+			final Revision lastBuiltRevision = buildData.getLastBuiltRevision();
+			if (lastBuiltRevision != null && !lastBuiltRevision.getBranches().isEmpty()) {
+				branch = lastBuiltRevision.getBranches().iterator().next().getName();
 			}
 		}
-		return result;
+
+		// Fallback: BuildData may be missing/incomplete; use the configured SCM instead
+		if (StringUtils.isEmpty(url)) {
+			List<UserRemoteConfig> remotes = gitData.getUserRemoteConfigs();
+			if (remotes != null && !remotes.isEmpty()) {
+				url = remotes.get(0).getUrl();
+			}
+		}
+		if (StringUtils.isEmpty(branch)) {
+			branch = extractBranchFromGitSCM(gitData, run);
+		}
+
+		if (StringUtils.isEmpty(url)) {
+			// the URL itself is intentionally not logged (may contain credentials)
+			logger.warn("SCM repository url could not be resolved for run '{}'; Octane may ignore the SCM data", run.getFullDisplayName());
+			return null;
+		}
+		return dtoFactory.newDTO(SCMRepository.class)
+				.setType(SCMType.GIT)
+				.setUrl(url)
+				.setBranch(branch);
 	}
 
 	private List<SCMCommit> extractCommits(List<ChangeLogSet<? extends ChangeLogSet.Entry>> changes) {
@@ -526,7 +605,52 @@ class GitSCMProcessor implements SCMProcessor {
 				.setUserEmail(userEmail);
 	}
 
-	private static final class FileContentCallable extends MasterToSlaveFileCallable<String> {
+	/** Reads author, email, first parent, short message and time (millis) of a commit from the local clone. */
+	private static final class CommitInfoCallable extends MasterToSlaveFileCallable<String[]> {
+		private final String checkoutDir;
+		private final String revision;
+
+		CommitInfoCallable(String checkoutDir, String revision) {
+			this.checkoutDir = checkoutDir;
+			this.revision = revision;
+		}
+
+		@Override
+		public String[] invoke(File rootDir, VirtualChannel channel) throws IOException {
+			File repoDir = new File(rootDir, checkoutDir + File.separator + ".git");
+			if (!repoDir.exists()) {
+				// no clone in the job workspace yet (for example a library checkout before the main checkout)
+				return null;
+			}
+			try (Git git = Git.open(repoDir);
+			     Repository repo = git.getRepository();
+			     RevWalk walk = new RevWalk(repo)) {
+				ObjectId id = repo.resolve(revision);
+				// only report the commit checked out in this workspace, any other checkout (shared library,
+				// additional repository) is not the job's own source and must not be reported
+				if (id == null || !id.equals(repo.resolve(Constants.HEAD))) {
+					return null;
+				}
+				RevCommit commit;
+				try {
+					commit = walk.parseCommit(id);
+				} catch (org.eclipse.jgit.errors.MissingObjectException e) {
+					return null;
+				}
+				org.eclipse.jgit.lib.PersonIdent author = commit.getAuthorIdent();
+				String parent = commit.getParentCount() > 0 ? commit.getParent(0).getName() : "";
+				return new String[]{
+						author.getName(),
+						author.getEmailAddress(),
+						parent,
+						commit.getShortMessage(),
+						String.valueOf(author.getWhen().getTime())
+				};
+			}
+		}
+	}
+
+	static final class FileContentCallable extends MasterToSlaveFileCallable<String> {
 		private final String checkoutDir;
 		private final String userDefaultBranch;
 
@@ -558,6 +682,7 @@ class GitSCMProcessor implements SCMProcessor {
 					// Try to find the default remote branch
 					String defaultRemoteBranch = findDefaultRemoteBranch(repo);
 					if (defaultRemoteBranch == null) {
+						logger.warn("No default remote branch found for merge-base calculation; set the {} parameter to specify it", DEFAULT_BRANCH_PARAMETER);
 						return "";
 					}
 
@@ -577,21 +702,16 @@ class GitSCMProcessor implements SCMProcessor {
 					}
 					final RevCommit base2 = walk.next();
 					if (base2 != null) {
+						logger.warn("Multiple merge-bases found between HEAD and '{}'; common revision will not be reported", defaultRemoteBranch);
 						throw new NoMergeBaseException(NoMergeBaseException.MergeBaseFailureReason.MULTIPLE_MERGE_BASES_NOT_SUPPORTED,
 								MessageFormat.format(JGitText.get().multipleMergeBasesFor, currentBranchCommit.name(), masterCommit.name(), base.name(), base2.name()));
 					}
 
-					//in order to return actual revision and not merge commit
-					while (base.getParents().length > 1) {
-						RevCommit base_1 = base.getParent(0);
-						RevCommit base_2 = base.getParent(1);
-						if (base_1.getParents().length == 1) {
-							base = base_1;
-						} else {
-							base = base_2;
-						}
-					}
-					return base.getId().getName();
+					// Return the true merge-base as computed by git. A merge commit is a valid
+					// merge-base; replacing it with an older ancestor would produce a revision that
+					// Octane never received in any SCM data, breaking the pipeline comparison.
+					logger.debug("merge-base resolved against '{}': {}", defaultRemoteBranch, shortSha(base.getName()));
+					return base.getName();
 				}
 			}
 		}
@@ -600,7 +720,7 @@ class GitSCMProcessor implements SCMProcessor {
 		 * Tries to find the default remote branch in the repository.
 		 * Strategy:
 		 * 0. User-specified default branch parameter (DEFAULT_PROJECT_BRANCH job parameter)
-		 * 1. Fallback to refs/remotes/origin/master
+		 * 1. First existing ref of DEFAULT_REMOTE_BRANCH_CANDIDATES (origin/main, origin/master, origin/latest)
 		 *
 		 * @param repo the Git repository
 		 * @return the ref name of the default remote branch, or null if not found
@@ -612,13 +732,15 @@ class GitSCMProcessor implements SCMProcessor {
 				if (resolvedBranch != null) {
 					return resolvedBranch;
 				}
-				logger.warn("User-specified default branch '{}' not found, falling back to master", userDefaultBranch);
+				logger.warn("User-specified default branch '{}' not found, falling back to origin/main, origin/master or origin/latest", userDefaultBranch);
 			}
 
-			// Strategy 1: Fallback to master
-			if (refExists(repo, DEFAULT_REMOTE_BRANCH)) {
-				logger.debug("Using default remote branch for merge-base: {}", DEFAULT_REMOTE_BRANCH);
-				return DEFAULT_REMOTE_BRANCH;
+			// Strategy 1: well-known default branch names
+			for (String candidate : DEFAULT_REMOTE_BRANCH_CANDIDATES) {
+				if (refExists(repo, candidate)) {
+					logger.debug("Using default remote branch for merge-base: {}", candidate);
+					return candidate;
+				}
 			}
 
 			return null;
@@ -648,6 +770,10 @@ class GitSCMProcessor implements SCMProcessor {
 			}
 
 			return null;
+		}
+
+		private static String shortSha(String sha) {
+			return sha != null && sha.length() > 8 ? sha.substring(0, 8) : sha;
 		}
 
 		private boolean refExists(Repository repo, String refName) {

@@ -82,6 +82,12 @@ class StarTeamSCMProcessor implements SCMProcessor {
     return null;
   }
 
+  @Override
+  public SCMData getBuiltRevisionSCMData(Run run, SCM scm) {
+    // not supported for StarTeam
+    return null;
+  }
+
   private SCMData extractSCMData(Run run, SCM scm, List<ChangeLogSet<? extends ChangeLogSet.Entry>> changes) {
     if (!(scm.getClass().getName().equals("hudson.plugins.starteam.StarTeamSCM"))) {    
       throw new IllegalArgumentException("SCM type of StarTeamSCM was expected here, found '" + scm.getClass().getName() + "'");
