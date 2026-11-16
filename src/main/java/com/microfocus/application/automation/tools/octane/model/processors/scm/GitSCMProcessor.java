@@ -94,9 +94,9 @@ class GitSCMProcessor implements SCMProcessor {
 	private static final Logger logger = SDKBasedLoggerProvider.getLogger(GitSCMProcessor.class);
 	private static final DTOFactory dtoFactory = DTOFactory.getInstance();
 	private static final String[] DEFAULT_REMOTE_BRANCH_CANDIDATES = {
-			"refs/remotes/origin/HEAD",
 			"refs/remotes/origin/main",
-			"refs/remotes/origin/master"
+			"refs/remotes/origin/master",
+			"refs/remotes/origin/latest"
 	};
 
 	// Reflection method names used for SCM extraction
@@ -210,7 +210,7 @@ class GitSCMProcessor implements SCMProcessor {
 			// info[4] = "1781340908000"                                author time in epoch millis
 			String[] info = workspace.act(new CommitInfoCallable(getCheckoutDirForRun(run), builtRevId));
 			if (info == null) {
-				logger.debug("Built revision {} not found in local clone of '{}'", builtRevId, run.getFullDisplayName());
+				logger.debug("Built revision {} is not the commit checked out in the workspace of '{}', not reported", builtRevId, run.getFullDisplayName());
 				return null;
 			}
 
@@ -618,11 +618,17 @@ class GitSCMProcessor implements SCMProcessor {
 		@Override
 		public String[] invoke(File rootDir, VirtualChannel channel) throws IOException {
 			File repoDir = new File(rootDir, checkoutDir + File.separator + ".git");
+			if (!repoDir.exists()) {
+				// no clone in the job workspace yet (for example a library checkout before the main checkout)
+				return null;
+			}
 			try (Git git = Git.open(repoDir);
 			     Repository repo = git.getRepository();
 			     RevWalk walk = new RevWalk(repo)) {
 				ObjectId id = repo.resolve(revision);
-				if (id == null) {
+				// only report the commit checked out in this workspace, any other checkout (shared library,
+				// additional repository) is not the job's own source and must not be reported
+				if (id == null || !id.equals(repo.resolve(Constants.HEAD))) {
 					return null;
 				}
 				RevCommit commit;
@@ -714,7 +720,7 @@ class GitSCMProcessor implements SCMProcessor {
 		 * Tries to find the default remote branch in the repository.
 		 * Strategy:
 		 * 0. User-specified default branch parameter (DEFAULT_PROJECT_BRANCH job parameter)
-		 * 1. Fallback to refs/remotes/origin/master
+		 * 1. First existing ref of DEFAULT_REMOTE_BRANCH_CANDIDATES (origin/main, origin/master, origin/latest)
 		 *
 		 * @param repo the Git repository
 		 * @return the ref name of the default remote branch, or null if not found
@@ -726,10 +732,10 @@ class GitSCMProcessor implements SCMProcessor {
 				if (resolvedBranch != null) {
 					return resolvedBranch;
 				}
-				logger.warn("User-specified default branch '{}' not found, falling back to master", userDefaultBranch);
+				logger.warn("User-specified default branch '{}' not found, falling back to origin/main, origin/master or origin/latest", userDefaultBranch);
 			}
 
-			// Strategy 1: origin/HEAD, then well-known default branch names
+			// Strategy 1: well-known default branch names
 			for (String candidate : DEFAULT_REMOTE_BRANCH_CANDIDATES) {
 				if (refExists(repo, candidate)) {
 					logger.debug("Using default remote branch for merge-base: {}", candidate);

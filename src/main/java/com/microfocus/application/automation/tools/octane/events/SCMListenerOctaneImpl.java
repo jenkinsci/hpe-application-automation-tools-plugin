@@ -50,6 +50,7 @@ import hudson.model.listeners.SCMListener;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.SCM;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -78,10 +79,15 @@ public class SCMListenerOctaneImpl extends SCMListener {
 
         if (scmData != null) {
             String parents = BuildHandlerUtils.getRootJobCiIds(run);
-            SCMUtils.persistSCMData(run, jobCiId, buildCiId, scmData);
+            try {
+                SCMUtils.persistSCMData(run, jobCiId, buildCiId, scmData);
+            } catch (IOException e) {
+                // already logged by persistSCMData; reporting to Octane must never fail the build's checkout
+                logger.warn("SCM data of '{}' could not be saved, it is still sent to Octane", run.getFullDisplayName());
+            }
             OctaneSDK.getClients().forEach(octaneClient ->
                     octaneClient.getSCMDataService().enqueueSCMData(jobCiId, buildCiId, scmData, parents));
-            logger.info("SCM data enqueued for '{}': {} commit(s), repository {}", run.getFullDisplayName(),
+            logger.debug("SCM data enqueued for '{}': {} commit(s), repository {}", run.getFullDisplayName(),
                     scmData.getCommits() == null ? 0 : scmData.getCommits().size(),
                     scmData.getRepository() == null ? "MISSING" : "set");
         } else {
