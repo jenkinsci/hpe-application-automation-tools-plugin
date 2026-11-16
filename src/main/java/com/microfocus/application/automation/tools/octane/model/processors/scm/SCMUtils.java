@@ -37,6 +37,7 @@
 package com.microfocus.application.automation.tools.octane.model.processors.scm;
 
 import com.hp.octane.integrations.dto.DTOFactory;
+import com.hp.octane.integrations.dto.scm.SCMCommit;
 import com.hp.octane.integrations.dto.scm.SCMData;
 import com.microfocus.application.automation.tools.octane.configuration.SDKBasedLoggerProvider;
 import hudson.FilePath;
@@ -80,12 +81,52 @@ public class SCMUtils {
             }
         }
 
-        // Nothing new since the previous build: still report the built revision, otherwise Octane never learns
-        // about commits (the merge-base) that were already built, and branch comparison cannot find them.
-        if (result == null) {
-            result = scmProcessor.getBuiltRevisionSCMData(run, scm);
+        // Nothing new since the previous build (no changelog, or a changelog without commits, which pipelines can
+        // produce): still report the built revision, otherwise Octane never learns about commits (the merge-base)
+        // that were already built, and branch comparison cannot find them. Octane ignores SCM data without commits.
+        if (result == null || result.getCommits() == null || result.getCommits().isEmpty()) {
+            SCMData builtRevisionData = scmProcessor.getBuiltRevisionSCMData(run, scm);
+            if (builtRevisionData != null && !isAlreadyReportedByPreviousBuild(run, builtRevisionData.getBuiltRevId())) {
+                result = builtRevisionData;
+            }
         }
         return result;
+    }
+
+    /**
+     * Returns true if the previous build of the same job already sent a commit with this revision, so a rebuild
+     * without changes does not report the same commit again. Fails open: if anything cannot be read, returns false.
+     */
+    private static boolean isAlreadyReportedByPreviousBuild(Run run, String revision) {
+        Run previousBuild = run.getPreviousBuild();
+        if (previousBuild == null || revision == null) {
+            return false;
+        }
+        try {
+            FilePath previousFile = new FilePath(previousBuild.getRootDir()).child(SCM_DATA_FILE);
+            if (!previousFile.exists()) {
+                return false;
+            }
+            SCMData[] previousData = dtoFactory.dtoCollectionFromJson(previousFile.readToString(), SCMData[].class);
+            if (previousData == null) {
+                return false;
+            }
+            for (SCMData data : previousData) {
+                if (data != null && data.getCommits() != null) {
+                    for (SCMCommit commit : data.getCommits()) {
+                        if (revision.equals(commit.getRevId())) {
+                            logger.debug("Built revision already reported by previous build of '{}', not sent again", run.getFullDisplayName());
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            logger.debug("Could not read SCM data of previous build of '{}': {}", run.getFullDisplayName(), e.getClass().getSimpleName());
+        }
+        return false;
     }
 
     public static void persistSCMData(Run run, String jobCiId, String buildCiId, SCMData scmData) throws IOException, InterruptedException {

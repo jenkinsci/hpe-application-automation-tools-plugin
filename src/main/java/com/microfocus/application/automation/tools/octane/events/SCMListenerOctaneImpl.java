@@ -81,7 +81,7 @@ public class SCMListenerOctaneImpl extends SCMListener {
             SCMUtils.persistSCMData(run, jobCiId, buildCiId, scmData);
             OctaneSDK.getClients().forEach(octaneClient ->
                     octaneClient.getSCMDataService().enqueueSCMData(jobCiId, buildCiId, scmData, parents));
-            logger.info("SCM data enqueued for '{}': {} commit(s), repository {}", run.getFullDisplayName(),
+            logger.debug("SCM data enqueued for '{}': {} commit(s), repository {}", run.getFullDisplayName(),
                     scmData.getCommits() == null ? 0 : scmData.getCommits().size(),
                     scmData.getRepository() == null ? "MISSING" : "set");
         } else {
