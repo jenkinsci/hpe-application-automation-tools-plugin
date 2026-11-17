@@ -357,7 +357,7 @@ Utils.loadMC = function(a, b, prEnv){
 			var openedWindow = window.open('/','test parameters','height=820,width=1130');
 			openedWindow.location.href = 'about:blank';
 			if (isSaaS) {
-				openedWindow.location.href = baseUrl + "/integration8/en/#/main/wizard?TENANTID=" + tenantId + "&jobId=" +  jobId + "&displayUFTMode=true&deviceOnly=true";
+				openedWindow.location.href = baseUrl + "/integration8/en/#/main/wizard?TENANTID="+tenantId+"&jobId="+jobId+"&displayUFTMode=true&deviceOnly=true";
 			} else {
 				openedWindow.location.href = baseUrl+"/integration8/en/#/login?jobId="+jobId+"&displayUFTMode=true&deviceOnly=true";
 			}
