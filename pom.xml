@@ -92,7 +92,7 @@
 		<commons-cli.version>1.4</commons-cli.version>
 		<javax-annotation-api.version>1.3.2</javax-annotation-api.version>
 		<svconfigurator.version>5.8</svconfigurator.version>
-		<integrations-sdk.version>2.26.3.1</integrations-sdk.version>
+		<integrations-sdk.version>2.26.3-SNAPSHOT</integrations-sdk.version>
 		<jenkins-multijob-plugin.version>627.v7c23cef20a_6a</jenkins-multijob-plugin.version>
 		<extended-choice-parameter.version>346.vd87693c5a_86c</extended-choice-parameter.version>
 		<random-string-parameter.version>1.0</random-string-parameter.version>
