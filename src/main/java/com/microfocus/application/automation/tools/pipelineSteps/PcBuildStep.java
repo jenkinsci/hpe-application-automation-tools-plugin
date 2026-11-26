@@ -39,14 +39,19 @@ package com.microfocus.application.automation.tools.pipelineSteps;
 import com.microfocus.adm.performancecenter.plugins.common.pcentities.PostRunAction;
 import com.microfocus.application.automation.tools.run.PcBuilder;
 import hudson.Extension;
+import hudson.model.Item;
+import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.QueryParameter;
 
+import java.util.List;
 import java.util.Set;
 
 public class PcBuildStep extends Step {
@@ -172,6 +177,22 @@ public class PcBuildStep extends Step {
         @Override
         public String getFunctionName() {
             return "pcBuild";
+        }
+
+        public List<PostRunAction> getPostRunActions() {
+            return Jenkins.get().getDescriptorByType(PcBuilder.DescriptorImpl.class).getPostRunActions();
+        }
+
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item project,
+                                                     @QueryParameter String credentialsId) {
+            return Jenkins.get().getDescriptorByType(PcBuilder.DescriptorImpl.class)
+                    .doFillCredentialsIdItems(project, credentialsId);
+        }
+
+        public ListBoxModel doFillCredentialsProxyIdItems(@AncestorInPath Item project,
+                                                          @QueryParameter String credentialsProxyId) {
+            return Jenkins.get().getDescriptorByType(PcBuilder.DescriptorImpl.class)
+                    .doFillCredentialsIdItems(project, credentialsProxyId);
         }
     }
 

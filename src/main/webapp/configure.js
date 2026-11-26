@@ -280,9 +280,9 @@ async function loadMobileInfo(a, b, o, err) {
             let openedWindow = window.open('/', 'test parameters', 'height=820,width=1130');
             openedWindow.location.href = 'about:blank';
             if (isSaaS) {
-                openedWindow.location.href = baseUrl + "/integration8/en/#/main/wizard?TENANTID=" + tenantId + "&jobId=" +  jobId + "&displayUFTMode=true";
+                openedWindow.location.href = baseUrl + "/integration8/en/#/main/wizard?TENANTID=" + tenantId + "&jobId=" +  jobId + "&displayUFTMode=true&metricsSupport=v2";
             } else {
-                openedWindow.location.href = baseUrl + "/integration8/en/#/login?jobId=" + jobId + "&displayUFTMode=true";
+                openedWindow.location.href = baseUrl + "/integration8/en/#/login?jobId=" + jobId + "&displayUFTMode=true&metricsSupport=v2";
             }
 
             const msgCallback = async (ev) => {
