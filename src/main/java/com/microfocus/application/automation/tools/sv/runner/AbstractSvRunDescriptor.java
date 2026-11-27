@@ -36,7 +36,7 @@
  */
 package com.microfocus.application.automation.tools.sv.runner;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.microfocus.application.automation.tools.model.SvServerSettingsModel;

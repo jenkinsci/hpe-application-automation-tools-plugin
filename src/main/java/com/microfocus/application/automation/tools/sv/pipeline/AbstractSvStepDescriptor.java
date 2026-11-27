@@ -36,7 +36,7 @@
  */
 package com.microfocus.application.automation.tools.sv.pipeline;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 import com.microfocus.application.automation.tools.model.SvServerSettingsModel;
 import com.microfocus.application.automation.tools.sv.runner.AbstractSvRunDescriptor;

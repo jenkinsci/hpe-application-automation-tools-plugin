@@ -45,7 +45,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Properties;
 
 public class SummaryDataLogModel extends AbstractDescribableImpl<SummaryDataLogModel> {

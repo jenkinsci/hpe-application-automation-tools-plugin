@@ -47,7 +47,7 @@ import hudson.model.Descriptor;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 
 public class AlmServerSettingsModel extends AbstractDescribableImpl<AlmServerSettingsModel> implements Comparable<AlmServerSettingsModel>{

@@ -73,7 +73,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.beans.IntrospectionException;
 import java.io.File;
 import java.io.IOException;

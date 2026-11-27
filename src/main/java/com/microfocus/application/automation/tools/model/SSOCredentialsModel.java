@@ -42,7 +42,7 @@ import hudson.model.Descriptor;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.io.Serializable;
 
 public class SSOCredentialsModel extends AbstractDescribableImpl<SSOCredentialsModel> implements Serializable {

@@ -43,7 +43,7 @@ import com.microfocus.application.automation.tools.common.model.VariableWrapper;
 import hudson.AbortException;
 import hudson.FilePath;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.List;

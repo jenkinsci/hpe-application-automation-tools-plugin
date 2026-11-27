@@ -46,7 +46,7 @@ import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.apache.commons.lang3.StringUtils;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.HashMap;
 
 public class SseBuilderPublishResultStepExecution extends AbstractSynchronousNonBlockingStepExecution<Void> {
