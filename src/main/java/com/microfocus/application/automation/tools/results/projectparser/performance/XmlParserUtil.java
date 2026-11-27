@@ -39,7 +39,7 @@ package com.microfocus.application.automation.tools.results.projectparser.perfor
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 /**
  * Created by kazaky on 17/10/2016.

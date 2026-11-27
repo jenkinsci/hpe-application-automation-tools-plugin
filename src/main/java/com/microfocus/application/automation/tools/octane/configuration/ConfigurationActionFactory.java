@@ -41,7 +41,7 @@ import hudson.model.Action;
 import hudson.model.Job;
 import jenkins.model.TransientActionFactory;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Collection;
 import java.util.Collections;
 

@@ -36,7 +36,7 @@
  */
 package com.microfocus.application.automation.tools.pipelineSteps;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import com.microfocus.application.automation.tools.sv.pipeline.AbstractSvStep;
 import hudson.FilePath;

@@ -49,7 +49,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class RunFromAlmModel extends AbstractDescribableImpl<RunFromAlmModel> {
 
